@@ -1,5 +1,6 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { connect, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -25,6 +26,8 @@ export const PORTS = {
   plain: 22084,
   badToken: 22085,
   m1: 22086,
+  /** M2 three-node mesh (bridge network, host.docker.internal). */
+  m2: 22087,
 } as const;
 
 export function dockerCompose(
@@ -107,8 +110,147 @@ function composeUrlEnv(service: string): string {
       return "EASYPLANE_CORE_PLAIN_URL";
     case "core-bad-token":
       return "EASYPLANE_CORE_BAD_TOKEN_URL";
+    case "core-m2-a":
+      return "EASYPLANE_M2_A_URL";
+    case "core-m2-b":
+      return "EASYPLANE_M2_B_URL";
+    case "core-m2-c":
+      return "EASYPLANE_M2_C_URL";
     default:
       throw new Error(`unknown compose service: ${service}`);
+  }
+}
+
+/**
+ * M2 topology: the relay container has a fixed address on the compose network.
+ * The host dials its "host pool" ports (host -> container is allowed without
+ * firewall changes), and the easytier clients dial the paired "client" ports.
+ */
+export const M2_RELAY_IP = "172.28.0.10";
+/** Client-side ports of the relay, one tunnel per container. */
+export const M2_TUNNEL_PORTS = { a: 23001, b: 23002, c: 23003 } as const;
+const M2_HOST_PORTS = [23011, 23012, 23013] as const;
+
+/** Starts the test-only TCP relay used by the M2 mesh. */
+export function startM2Relay(): void {
+  dockerCompose(["up", "-d", "--force-recreate", "m2-relay"]);
+}
+
+/**
+ * Opens the host side of a relay tunnel. Each easytier-core config-server
+ * connection (including the Noise re-connect) consumes one socket, so a small
+ * pool is pre-opened per device.
+ */
+export async function openM2RelayPool(
+  letter: "a" | "b" | "c",
+  serverPort: number,
+  count = 8,
+): Promise<Socket[]> {
+  const hostPort = M2_HOST_PORTS[["a", "b", "c"].indexOf(letter)]!;
+  // The relay container may still be starting its Python entrypoint.
+  const deadline = Date.now() + 20_000;
+  const connectOnce = (): Promise<Socket> =>
+    new Promise<Socket>((resolveSocket, reject) => {
+      const candidate = connect({ host: M2_RELAY_IP, port: hostPort });
+      const timer = setTimeout(() => {
+        candidate.destroy();
+        reject(new Error(`relay host port ${hostPort} did not accept a connection`));
+      }, 5_000);
+      candidate.once("connect", () => {
+        clearTimeout(timer);
+        candidate.setNoDelay(true);
+        resolveSocket(candidate);
+      });
+      candidate.once("error", (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+    });
+  const connectLocal = (): Promise<Socket> =>
+    new Promise<Socket>((resolveSocket, reject) => {
+      const candidate = connect({ host: "127.0.0.1", port: serverPort });
+      candidate.once("connect", () => {
+        candidate.setNoDelay(true);
+        resolveSocket(candidate);
+      });
+      candidate.once("error", reject);
+    });
+  const sockets: Socket[] = [];
+  for (let index = 0; index < count; index += 1) {
+    let relaySocket: Socket | undefined;
+    for (;;) {
+      try {
+        relaySocket = await connectOnce();
+        break;
+      } catch (error) {
+        if (Date.now() > deadline) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+    }
+    // Last hop: the pool socket is piped to the local control plane, so from
+    // easytier-core's point of view it is dialling the server directly.
+    const local = await connectLocal();
+    relaySocket.on("error", () => local.destroy());
+    local.on("error", () => relaySocket.destroy());
+    relaySocket.pipe(local);
+    local.pipe(relaySocket);
+    sockets.push(relaySocket, local);
+  }
+  return sockets;
+}
+
+/** Runs a command inside a running conformance container and returns stdout. */
+export function execIn(
+  service: string,
+  command: string[],
+  options: { timeoutMs?: number; allowFailure?: boolean } = {},
+): { status: number; stdout: string; stderr: string } {
+  const result = spawnSync(
+    "docker",
+    ["compose", "-f", COMPOSE_FILE, "--profile", "test", "exec", "-T", service, ...command],
+    {
+      env: process.env,
+      encoding: "utf8",
+      timeout: options.timeoutMs ?? 30_000,
+    },
+  );
+  if (result.error) throw result.error;
+  if (result.status !== 0 && !options.allowFailure) {
+    throw new Error(
+      `docker compose exec ${service} ${command.join(" ")} failed (exit ${result.status})\n` +
+        `stdout:\n${result.stdout ?? ""}\nstderr:\n${result.stderr ?? ""}`,
+    );
+  }
+  return {
+    status: result.status ?? -1,
+    stdout: result.stdout ?? "",
+    stderr: result.stderr ?? "",
+  };
+}
+
+/** Starts a detached command inside a container (e.g. an HTTP server). */
+export function execDetached(service: string, command: string[]): void {
+  const result = spawnSync(
+    "docker",
+    [
+      "compose",
+      "-f",
+      COMPOSE_FILE,
+      "--profile",
+      "test",
+      "exec",
+      "-d",
+      "-T",
+      service,
+      ...command,
+    ],
+    { env: process.env, encoding: "utf8", timeout: 30_000 },
+  );
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    throw new Error(
+      `docker compose exec -d ${service} failed: ${result.stderr ?? result.stdout}`,
+    );
   }
 }
 

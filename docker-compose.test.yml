@@ -21,6 +21,25 @@ x-core: &core
     RUST_LOG: ${EASYPLANE_CORE_LOG:-info}
     ET_LOG: ${EASYPLANE_CORE_LOG:-info}
 
+# M2 mesh: three clients on an isolated bridge network. Each container has its
+# own network namespace, so every instance gets its own TUN device and routing
+# table (host networking would put three TUNs of the same /24 in one namespace).
+# They reach the vitest-hosted control plane through host.docker.internal, and
+# each other through the compose service names used in the pushed peer URLs.
+x-m2-core: &m2-core
+  build:
+    context: ./docker/easytier-core
+  image: easyplane/easytier-core-test:2.6.4-81487c36
+  profiles: ["test"]
+  cap_add: ["NET_ADMIN"]
+  devices: ["/dev/net/tun:/dev/net/tun"]
+  networks: ["m2"]
+  restart: "no"
+  environment:
+    RUST_LOG: ${EASYPLANE_CORE_LOG:-info}
+    ET_LOG: ${EASYPLANE_CORE_LOG:-info}
+
+
 services:
   core-ws:
     <<: *core
@@ -88,3 +107,67 @@ services:
       - 66666666-6666-4666-8666-666666666666
       - --hostname
       - core-bad-token
+
+  # Test-only byte pump between the clients and the vitest-hosted control
+  # plane (see test/conformance/relay/relay.py).
+  m2-relay:
+    image: easyplane/easytier-core-test:2.6.4-81487c36
+    profiles: ["test"]
+    container_name: easyplane-conformance-relay
+    entrypoint: ["python3", "/relay.py"]
+    volumes:
+      - ./test/conformance/relay/relay.py:/relay.py:ro
+    environment:
+      EASYPLANE_RELAY_PAIRS: 23001:23011,23002:23012,23003:23013,23004:23014,23005:23015
+    networks:
+      m2:
+        ipv4_address: 172.28.0.10
+    restart: "no"
+
+  core-m2-a:
+    <<: *m2-core
+    container_name: easyplane-core-m2-a
+    command:
+      - --config-server
+      - ${EASYPLANE_M2_A_URL:-ws://host.docker.internal:22087/token-m2-a}
+      - --machine-id
+      - aaaaaaaa-1111-4111-8111-111111111111
+      - --hostname
+      - core-a
+      # EasyTier keeps the DNS zone in local flags, not in NetworkConfig.
+      - --tld-dns-zone
+      - ${EASYPLANE_M2_DNS_ZONE:-ep.test.}
+
+  core-m2-b:
+    <<: *m2-core
+    container_name: easyplane-core-m2-b
+    command:
+      - --config-server
+      - ${EASYPLANE_M2_B_URL:-ws://host.docker.internal:22087/token-m2-b}
+      - --machine-id
+      - bbbbbbbb-2222-4222-8222-222222222222
+      - --hostname
+      - core-b
+      - --tld-dns-zone
+      - ${EASYPLANE_M2_DNS_ZONE:-ep.test.}
+
+  core-m2-c:
+    <<: *m2-core
+    container_name: easyplane-core-m2-c
+    command:
+      - --config-server
+      - ${EASYPLANE_M2_C_URL:-ws://host.docker.internal:22087/token-m2-c}
+      - --machine-id
+      - cccccccc-3333-4333-8333-333333333333
+      - --hostname
+      - core-c
+      - --tld-dns-zone
+      - ${EASYPLANE_M2_DNS_ZONE:-ep.test.}
+
+networks:
+  m2:
+    name: easyplane-conformance-m2
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+          gateway: 172.28.0.1

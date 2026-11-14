@@ -7,7 +7,7 @@ import {
   type AppContext,
   type AppEnv,
 } from "@easyplane/server";
-import { createSilentLogger } from "@easyplane/server";
+import { createLogger, createSilentLogger } from "@easyplane/server";
 
 import { createTestDatabase, type TestDatabase } from "./database.js";
 import { MOCK_USERS, startMockIdp, type MockIdp } from "./mock-oidc.js";
@@ -83,7 +83,11 @@ export async function createTestApp(
     env,
     db: database.db,
     pool: database.pool,
-    logger: createSilentLogger(),
+    // Silent by default; a test can opt into logs with EASYPLANE_LOG_LEVEL.
+    logger:
+      env.logLevel === "silent"
+        ? createSilentLogger()
+        : createLogger({ level: env.logLevel as "debug" }),
   });
   const app = await buildApp(context, { serveWeb: false });
   await app.ready();

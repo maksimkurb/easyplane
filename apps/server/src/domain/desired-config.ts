@@ -98,12 +98,20 @@ export interface BuildNetworkConfigOptions {
 export function buildNetworkConfig(
   options: BuildNetworkConfigOptions,
 ): manage.NetworkConfig {
+  // `gen_config` (api_input.rs) only applies peer URLs for PublicServer and
+  // Manual; a Standalone instance silently ignores them. Ask for Manual when
+  // the config lists peers, otherwise the mesh would never form.
+  const networkingMethod =
+    options.stored.networkingMethod === "standalone" &&
+    options.stored.peerUrls.length > 0
+      ? "manual"
+      : options.stored.networkingMethod;
   const base = buildMinimalNetworkConfig({
     instanceId: options.instanceId,
     networkName: options.networkName,
     networkSecret: options.networkSecret,
     hostname: options.hostname,
-    networkingMethod: options.stored.networkingMethod,
+    networkingMethod,
     dhcp: options.stored.dhcp,
     virtualIpv4: options.assignedIpv4 ?? options.stored.virtualIpv4 ?? "10.144.144.1",
     networkLength:
@@ -196,11 +204,52 @@ export function configMatchesDesired(
     }
   }
 
-  const remotePeers = new Set(remote.peerUrls);
+  // Url::to_string in the client appends a trailing "/" to
+  // "tcp://host:port", so compare normalised forms.
+  const normalizeUrl = (value: string) => value.replace(/\/+$/, "");
+  const remotePeers = new Set(remote.peerUrls.map(normalizeUrl));
   if (remotePeers.size !== desired.peerUrls.length) return false;
   for (const peer of desired.peerUrls) {
-    if (!remotePeers.has(peer)) return false;
+    if (!remotePeers.has(normalizeUrl(peer))) return false;
   }
 
   return true;
+}
+
+/**
+ * Explains why a reported config does not match the desired one. Used by the
+ * push path's debug log (and useful when a client normalises something new).
+ */
+export function describeConfigMismatch(
+  remote: manage.NetworkConfig | undefined,
+  desired: manage.NetworkConfig,
+): string[] {
+  if (!remote) return ["client reports no config"];
+  const reasons: string[] = [];
+  const check = (name: string, left: unknown, right: unknown) => {
+    if (JSON.stringify(left) !== JSON.stringify(right)) {
+      reasons.push(`${name}: client=${JSON.stringify(left)} desired=${JSON.stringify(right)}`);
+    }
+  };
+  check("networkName", remote.networkName, desired.networkName);
+  if (remote.networkSecret !== desired.networkSecret) reasons.push("networkSecret differs");
+  check("hostname", remote.hostname, desired.hostname);
+  check("dhcp", Boolean(remote.dhcp), Boolean(desired.dhcp));
+  check("noTun", Boolean(remote.noTun), Boolean(desired.noTun));
+  check("enableMagicDns", Boolean(remote.enableMagicDns), Boolean(desired.enableMagicDns));
+  check("enableExitNode", Boolean(remote.enableExitNode), Boolean(desired.enableExitNode));
+  check(
+    "enableManualRoutes",
+    Boolean(remote.enableManualRoutes),
+    Boolean(desired.enableManualRoutes),
+  );
+  check("proxyCidrs", [...(remote.proxyCidrs ?? [])].sort(), [...(desired.proxyCidrs ?? [])].sort());
+  check("routes", [...(remote.routes ?? [])].sort(), [...(desired.routes ?? [])].sort());
+  check("peerUrls", [...remote.peerUrls].map((u) => u.replace(/\/+$/, "")).sort(), [...desired.peerUrls].map((u) => u.replace(/\/+$/, "")).sort());
+  check("virtualIpv4", remote.virtualIpv4, desired.virtualIpv4);
+  check("networkLength", remote.networkLength, desired.networkLength);
+  if (canonicalAcl(remote.acl) !== canonicalAcl(desired.acl)) {
+    reasons.push("acl differs");
+  }
+  return reasons;
 }

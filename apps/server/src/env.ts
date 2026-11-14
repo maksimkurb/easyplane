@@ -73,6 +73,12 @@ const envSchema = z.object({
   EASYPLANE_SESSION_ABSOLUTE_HOURS: z.coerce.number().int().positive().default(168),
   EASYPLANE_DEVICE_ONLINE_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
   EASYPLANE_RECONCILE_INTERVAL_MS: z.coerce.number().int().positive().default(15_000),
+  /** Minimum gap between route reports per device (CollectNetworkInfo). */
+  EASYPLANE_ROUTE_REPORT_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .nonnegative()
+    .default(30_000),
   EASYPLANE_UNKNOWN_TOKEN_LIMIT_PER_MINUTE: z.coerce
     .number()
     .int()
@@ -113,6 +119,7 @@ export interface AppEnv {
   sessionAbsoluteMs: number;
   deviceOnlineTimeoutMs: number;
   reconcileIntervalMs: number;
+  routeReportIntervalMs: number;
   unknownTokenLimitPerMinute: number;
   maxPendingDevicesPerNetwork: number;
   webDir: string | undefined;
@@ -192,6 +199,7 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     sessionAbsoluteMs: parsed.EASYPLANE_SESSION_ABSOLUTE_HOURS * 3_600_000,
     deviceOnlineTimeoutMs: parsed.EASYPLANE_DEVICE_ONLINE_TIMEOUT_MS,
     reconcileIntervalMs: parsed.EASYPLANE_RECONCILE_INTERVAL_MS,
+    routeReportIntervalMs: parsed.EASYPLANE_ROUTE_REPORT_INTERVAL_MS,
     unknownTokenLimitPerMinute: parsed.EASYPLANE_UNKNOWN_TOKEN_LIMIT_PER_MINUTE,
     maxPendingDevicesPerNetwork:
       parsed.EASYPLANE_MAX_PENDING_DEVICES_PER_NETWORK,

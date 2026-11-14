@@ -6,6 +6,7 @@ import {
   cidrContains,
   isValidDnsLabel,
   magicDnsName,
+  mergePeerObservations,
   normalizeCidr,
   normalizeDnsZone,
   toDnsLabel,
@@ -69,9 +70,10 @@ describe("route state", () => {
           removable: true,
         },
       ],
+      peerObservations: [],
     });
     expect(report.approvedCidrs).toEqual(["192.168.50.0/24"]);
-    expect(report.reportedCidrs).toEqual(["10.99.0.0/16", "192.168.50.0/24"]);
+    expect(report.configuredCidrs).toEqual(["10.99.0.0/16", "192.168.50.0/24"]);
     expect(report.unapprovedCidrs).toEqual(["10.99.0.0/16"]);
     expect(report.missingCidrs).toEqual([]);
     expect(report.reportedExitNode).toBe(true);
@@ -92,10 +94,49 @@ describe("route state", () => {
           removable: false,
         },
       ],
+      peerObservations: [],
     });
     expect(report.unapprovedCidrs).toEqual(["172.16.0.0/12"]);
     expect(report.unmanagedInstances).toHaveLength(1);
     expect(report.missingCidrs).toEqual(["192.168.50.0/24"]);
+  });
+
+  it("uses peer observations for the advertising device", () => {
+    const base = buildRouteReport({
+      approvals: routes,
+      deviceId: "router",
+      instances: [],
+      peerObservations: [
+        { ipv4: "10.0.0.9", hostname: "stranger", proxyCidrs: ["172.31.0.0/16"] },
+      ],
+    });
+    expect(base.observedCidrs).toEqual(["172.31.0.0/16"]);
+    expect(base.unapprovedObservedCidrs).toEqual(["172.31.0.0/16"]);
+    expect(base.unknownPeers).toHaveLength(1);
+    const merged = mergePeerObservations(
+      base,
+      [
+        {
+          ipv4: "10.0.0.2",
+          hostname: "router",
+          proxyCidrs: ["192.168.50.0/24", "192.168.99.0/24"],
+          observerDeviceId: "x",
+          observerHostname: "x",
+          at: new Date(0).toISOString(),
+        },
+      ],
+      routes,
+      "router",
+    );
+    expect(merged.observedCidrs).toEqual([
+      "172.31.0.0/16",
+      "192.168.50.0/24",
+      "192.168.99.0/24",
+    ]);
+    expect(merged.unapprovedObservedCidrs).toEqual([
+      "172.31.0.0/16",
+      "192.168.99.0/24",
+    ]);
   });
 
   it("accepts only non-overlapping subnet requests", () => {

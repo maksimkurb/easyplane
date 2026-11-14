@@ -103,13 +103,14 @@ export async function createAppContext(
     sessions: deviceSessions,
     audit,
     logger,
+    reportIntervalMs: env.routeReportIntervalMs,
     compileAcl: async (network, deviceId, policyVersion) => {
       if (!policies) return undefined;
       return policies.compileForVersion(network, deviceId, policyVersion);
     },
-    recordReport: async (device, instances) => {
+    recordReport: async (device, payload) => {
       if (!routes) return;
-      await routes.recordReport(device, instances);
+      await routes.recordReport(device, payload);
     },
   });
   policies = new PolicyService({ db, secretBox, audit, push });

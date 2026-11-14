@@ -388,13 +388,26 @@ export const reportedInstanceSchema = z.object({
   removable: z.boolean(),
 });
 
+export const peerObservationSchema = z.object({
+  ipv4: z.string(),
+  hostname: z.string(),
+  proxyCidrs: z.array(z.string()),
+  deviceId: z.string().optional(),
+});
+
 export const routeReportSchema = z.object({
   approvedCidrs: z.array(z.string()),
-  reportedCidrs: z.array(z.string()),
+  /** Proxy CIDRs the device's own instance is configured with. */
+  configuredCidrs: z.array(z.string()),
+  /** CIDRs peers advertise for this device. */
+  observedCidrs: z.array(z.string()),
   unapprovedCidrs: z.array(z.string()),
+  unapprovedObservedCidrs: z.array(z.string()),
   missingCidrs: z.array(z.string()),
   reportedExitNode: z.boolean(),
   unmanagedInstances: z.array(reportedInstanceSchema),
+  /** Peers advertising routes that are not known devices. */
+  unknownPeers: z.array(peerObservationSchema),
 });
 
 export const routeReportEntrySchema = z.object({

@@ -4,6 +4,7 @@ import {
   getDevice,
   getDeviceRoute,
   getNetworkById,
+  listDevicesInNetwork,
   listDeviceRoutes,
   listNetworkRoutes,
   updateDevice,
@@ -13,7 +14,10 @@ import type { Device, DeviceRoute } from "../db/schema.js";
 import {
   buildRouteReport,
   cidrContains,
+  mergePeerObservations,
   validateSubnetRequest,
+  type PeerObservation,
+  type PeerObservationRecord,
   type ReportedInstance,
   type RouteReport,
 } from "../domain/routes.js";
@@ -105,12 +109,24 @@ export class RouteService {
     });
     const names = await this.hostnames(devices);
     const routes = rows.map((row) => toDto(row, names.get(row.deviceId) ?? ""));
-    const reports: RouteReportDto[] = devices.map((device) => ({
-      deviceId: device.id,
-      deviceHostname: names.get(device.id) ?? "",
-      report: this.reportOf(device),
-      collectedAt: device.reportedStateAt?.toISOString() ?? null,
+    const approvals = rows.map((row) => ({
+      deviceId: row.deviceId,
+      kind: row.kind,
+      cidr: row.cidr,
+      state: row.state,
     }));
+    const reports: RouteReportDto[] = devices.map((device) => {
+      const stored = this.reportOf(device);
+      const observations = this.observationsOf(device);
+      return {
+        deviceId: device.id,
+        deviceHostname: names.get(device.id) ?? "",
+        report: stored
+          ? mergePeerObservations(stored, observations, approvals, device.id)
+          : stored,
+        collectedAt: device.reportedStateAt?.toISOString() ?? null,
+      };
+    });
     return { routes, reports };
   }
 
@@ -217,50 +233,127 @@ export class RouteService {
     return toDto(updated, device.dnsName ?? device.hostname);
   }
 
-  /** Stores the latest route report collected from the client. */
+  /**
+   * Stores the latest route report collected from one client.
+   *
+   * `instances` is what the device's own instances are configured with;
+   * `peerObservations` is what this device sees other members advertising, which
+   * is how the control plane learns a device's real proxy CIDRs (EasyTier
+   * excludes the local peer from its own route list).
+   */
   async recordReport(
     device: Device,
-    instances: readonly ReportedInstance[],
+    payload: {
+      instances: readonly ReportedInstance[];
+      peerObservations: readonly PeerObservation[];
+    },
   ): Promise<RouteReport> {
-    const approvals = await listDeviceRoutes(this.db, device.id);
+    const devices = await listDevicesInNetwork(this.db, device.networkId);
+    const networkRoutes = await listNetworkRoutes(this.db, device.networkId);
+    const approvals = networkRoutes.map((row) => ({
+      deviceId: row.deviceId,
+      kind: row.kind,
+      cidr: row.cidr,
+      state: row.state,
+    }));
+    const byIp = new Map(
+      devices
+        .filter((entry) => entry.virtualIpv4)
+        .map((entry) => [entry.virtualIpv4!, entry]),
+    );
+
     const report = buildRouteReport({
-      approvals: approvals.map((row) => ({
-        deviceId: row.deviceId,
-        kind: row.kind,
-        cidr: row.cidr,
-        state: row.state,
-      })),
+      approvals,
       deviceId: device.id,
-      instances,
+      instances: payload.instances,
+      peerObservations: payload.peerObservations,
+      knownDeviceIps: devices
+        .filter((entry) => entry.virtualIpv4)
+        .map((entry) => ({ deviceId: entry.id, ipv4: entry.virtualIpv4! })),
     });
     const previous = this.reportOf(device);
     await updateDevice(this.db, device.id, {
-      reportedState: { [REPORT_KEY]: report, instances },
+      reportedState: {
+        [REPORT_KEY]: report,
+        instances: payload.instances,
+        peerObservations: payload.peerObservations,
+        checkedAt: new Date().toISOString(),
+      },
       reportedStateAt: new Date(),
     });
-    if (
-      report.unapprovedCidrs.length > 0 &&
-      JSON.stringify(previous?.unapprovedCidrs ?? []) !==
-        JSON.stringify(report.unapprovedCidrs)
-    ) {
-      await this.options.audit.record({
-        orgId: device.orgId,
-        actorType: "device",
-        action: "route.unapproved_reported",
-        targetType: "device",
-        targetId: device.id,
-        metadata: {
-          cidrs: report.unapprovedCidrs,
-          unmanagedInstances: report.unmanagedInstances.length,
+    await this.auditIfChanged(device, previous, report);
+
+    // Attribute peer observations to the devices they describe.
+    const now = new Date().toISOString();
+    for (const observation of payload.peerObservations) {
+      const target = byIp.get(observation.ipv4);
+      if (!target || target.id === device.id) continue;
+      const state = target.reportedState as Record<string, unknown>;
+      const existing = Array.isArray(state.advertisedByPeers)
+        ? (state.advertisedByPeers as PeerObservationRecord[])
+        : [];
+      const next: PeerObservationRecord[] = [
+        ...existing.filter((entry) => entry.observerDeviceId !== device.id),
+        {
+          ipv4: observation.ipv4,
+          hostname: observation.hostname,
+          proxyCidrs: observation.proxyCidrs,
+          observerDeviceId: device.id,
+          observerHostname: device.dnsName ?? device.hostname,
+          at: now,
         },
+      ];
+      await updateDevice(this.db, target.id, {
+        reportedState: { ...state, advertisedByPeers: next },
       });
     }
     return report;
+  }
+
+  private async auditIfChanged(
+    device: Device,
+    previous: RouteReport | null,
+    report: RouteReport,
+  ): Promise<void> {
+    const before = [
+      ...(previous?.unapprovedCidrs ?? []),
+      ...(previous?.unapprovedObservedCidrs ?? []),
+      ...(previous?.unknownPeers ?? []).flatMap((peer) => peer.proxyCidrs),
+    ].sort();
+    const after = [
+      ...report.unapprovedCidrs,
+      ...report.unapprovedObservedCidrs,
+      ...report.unknownPeers.flatMap((peer) => peer.proxyCidrs),
+    ].sort();
+    if (JSON.stringify(before) === JSON.stringify(after)) return;
+    await this.options.audit.record({
+      orgId: device.orgId,
+      actorType: "device",
+      action: "route.unapproved_reported",
+      targetType: "device",
+      targetId: device.id,
+      metadata: {
+        cidrs: report.unapprovedCidrs,
+        observedCidrs: report.unapprovedObservedCidrs,
+        unknownPeers: report.unknownPeers.map((peer) => ({
+          ipv4: peer.ipv4,
+          cidrs: peer.proxyCidrs,
+        })),
+        unmanagedInstances: report.unmanagedInstances.length,
+      },
+    });
   }
 
   reportOf(device: Device): RouteReport | null {
     const state = device.reportedState as Record<string, unknown>;
     const report = state[REPORT_KEY] as RouteReport | undefined;
     return report ?? null;
+  }
+
+  observationsOf(device: Device): PeerObservationRecord[] {
+    const state = device.reportedState as Record<string, unknown>;
+    return Array.isArray(state.advertisedByPeers)
+      ? (state.advertisedByPeers as PeerObservationRecord[])
+      : [];
   }
 }

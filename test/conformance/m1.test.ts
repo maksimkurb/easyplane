@@ -231,9 +231,8 @@ describe("M1 conformance: invite -> pending -> approve -> config -> status -> bl
       headers: headers(),
       payload: {
         config: {
-          hostname: "m1-revised",
-          enableMagicDns: true,
           noTun: process.env.EASYPLANE_CONFORMANCE_NO_TUN === "1",
+          mtu: 1400,
         },
         note: "conformance revision 2",
       },
@@ -253,8 +252,26 @@ describe("M1 conformance: invite -> pending -> approve -> config -> status -> bl
     const client = test.context.controlPlane.listClients()[0]!;
     const instanceId = instanceIdFor(network.id, device.id);
     const pushed = await client.remote.getNetworkInstanceConfig(instanceId);
-    expect(pushed.config?.hostname).toBe("m1-revised");
-    expect(pushed.config?.enableMagicDns).toBe(true);
+    expect(pushed.config?.mtu).toBe(1400);
+    expect(pushed.config?.noTun).toBe(
+      process.env.EASYPLANE_CONFORMANCE_NO_TUN === "1",
+    );
+
+    // The hostname is device identity: renaming is its own endpoint and keeps
+    // the revision history intact.
+    const renamed = await test.app.inject({
+      method: "PUT",
+      url: `/api/devices/${device.id}/hostname`,
+      headers: headers(),
+      payload: { dnsName: "m1-revised" },
+    });
+    expect(renamed.statusCode).toBe(200);
+    await poll(
+      "renamed hostname on the client",
+      async () => (await client.remote.getNetworkInstanceConfig(instanceId)).config,
+      (config) => config?.hostname === "m1-revised",
+    );
+    device = await getDevice();
   });
 
   it("rolls back to revision 1 on the real client", async () => {
@@ -276,7 +293,10 @@ describe("M1 conformance: invite -> pending -> approve -> config -> status -> bl
     const client = test.context.controlPlane.listClients()[0]!;
     const instanceId = instanceIdFor(network.id, device.id);
     const pushed = await client.remote.getNetworkInstanceConfig(instanceId);
-    expect(pushed.config?.hostname).toBe(inviteMachineHost);
+    // The rename survives a rollback; revision 1's mtu/noTun come back.
+    expect(pushed.config?.hostname).toBe("m1-revised");
+    // The client reports its build default (1380) when no MTU is pushed.
+    expect(pushed.config?.mtu).not.toBe(1400);
     expect(pushed.config?.enableMagicDns).toBe(false);
   });
 

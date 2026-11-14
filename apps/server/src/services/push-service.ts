@@ -14,9 +14,10 @@ import type { Device, Network } from "../db/schema.js";
 import {
   buildNetworkConfig,
   configMatchesDesired,
+  describeConfigMismatch,
   normalizeDesiredConfig,
 } from "../domain/desired-config.js";
-import { parseIpv4 } from "../domain/ip.js";
+import { formatIpv4, parseIpv4 } from "../domain/ip.js";
 import {
   acceptedRoutesFor,
   approvedExitNode,
@@ -56,7 +57,13 @@ export interface PushServiceOptions {
     policyVersion: number,
   ) => Promise<acl.Acl | undefined>;
   /** Persists what the client reports about its routes. */
-  recordReport?: (device: Device, instances: ReportedInstance[]) => Promise<void>;
+  recordReport?: (
+    device: Device,
+    payload: {
+      instances: ReportedInstance[];
+      peerObservations: Array<{ ipv4: string; hostname: string; proxyCidrs: string[] }>;
+    },
+  ) => Promise<void>;
   /** Minimum gap between route reports per device. */
   reportIntervalMs?: number;
 }
@@ -223,6 +230,10 @@ export class PushService {
                 revision: latest.revision,
               };
             }
+            this.options.logger.debug("config differs; repushing", {
+              deviceId,
+              mismatch: describeConfigMismatch(reported.config, desired),
+            });
           }
         }
       } catch (error) {
@@ -469,25 +480,40 @@ export class PushService {
         }
       }
       const instances: ReportedInstance[] = [];
+      const peerObservations: Array<{
+        ipv4: string;
+        hostname: string;
+        proxyCidrs: string[];
+      }> = [];
       for (const [id, info] of entries) {
         const meta = metaById.get(id);
         if (meta && meta.networkName !== network.networkName) continue;
-        const own =
-          info.routes?.find(
-            (route) =>
-              route.ipv4Addr?.address?.addr === toIpv4Number(device.virtualIpv4),
-          ) ?? info.routes?.[0];
+        const configured =
+          id === managedId
+            ? (await client.remote.getNetworkInstanceConfig(id)).config?.proxyCidrs ?? []
+            : [];
         instances.push({
           instanceId: id,
           networkName: meta?.networkName ?? network.networkName,
           hostname: info.myNodeInfo?.hostname ?? "",
-          proxyCidrs: own?.proxyCidrs ?? [],
+          proxyCidrs: configured,
           exitNode: id === managedId ? managedExitNode : false,
           unmanaged: id !== managedId,
           removable: id === managedId,
         });
+        // CollectNetworkInfo lists peers only, never the local node, so this
+        // is how the control plane learns what others advertise.
+        for (const route of info.routes ?? []) {
+          const addr = route.ipv4Addr?.address?.addr;
+          if (addr === undefined || addr === null) continue;
+          peerObservations.push({
+            ipv4: formatIpv4(addr >>> 0),
+            hostname: route.hostname ?? "",
+            proxyCidrs: route.proxyCidrs ?? [],
+          });
+        }
       }
-      await this.options.recordReport(device, instances);
+      await this.options.recordReport(device, { instances, peerObservations });
     } catch (error) {
       this.options.logger.debug("route report failed", {
         deviceId: device.id,

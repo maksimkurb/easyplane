@@ -126,15 +126,35 @@ export interface ReportedInstance {
   removable: boolean;
 }
 
+/** A peer entry as another device's route table reports it. */
+export interface PeerObservation {
+  ipv4: string;
+  hostname: string;
+  proxyCidrs: string[];
+  /** Device id when the observing side could match the peer to a device. */
+  deviceId?: string;
+}
+
 export interface RouteReport {
   approvedCidrs: string[];
-  reportedCidrs: string[];
-  /** Reported CIDRs that are not approved for this device. */
+  /**
+   * Proxy CIDRs the device's own instance is configured with
+   * (GetNetworkInstanceConfig). For a managed instance this is what EasyPlane
+   * pushed; a difference means drift.
+   */
+  configuredCidrs: string[];
+  /** CIDRs peers advertise for this device (CollectNetworkInfo routes). */
+  observedCidrs: string[];
+  /** Configured CIDRs that are not approved for this device. */
   unapprovedCidrs: string[];
+  /** Peer-observed CIDRs that are not approved for this device. */
+  unapprovedObservedCidrs: string[];
   /** Approved CIDRs the client does not report (push pending or broken). */
   missingCidrs: string[];
   reportedExitNode: boolean;
   unmanagedInstances: ReportedInstance[];
+  /** Peers advertising routes that EasyPlane does not know as devices. */
+  unknownPeers: PeerObservation[];
 }
 
 /**
@@ -146,11 +166,16 @@ export interface RouteReport {
 export function buildRouteReport(input: {
   approvals: readonly RouteRecord[];
   deviceId: string;
+  /** Own configured instance (GetNetworkInstanceConfig). */
   instances: readonly ReportedInstance[];
+  /** What this device sees other peers advertising. */
+  peerObservations: readonly PeerObservation[];
+  /** Device ids known to the caller, used to classify peers. */
+  knownDeviceIps?: Iterable<{ deviceId: string; ipv4: string }>;
 }): RouteReport {
   const approved = approvedSubnetCidrs(input.approvals, input.deviceId);
   const approvedSet = new Set(approved);
-  const reported = new Set<string>();
+  const configured = new Set<string>();
   const unapproved = new Set<string>();
   const unmanaged: ReportedInstance[] = [];
   let reportedExitNode = false;
@@ -162,23 +187,54 @@ export function buildRouteReport(input: {
       try {
         cidr = normalizeCidr(raw);
       } catch {
-        reported.add(raw);
+        configured.add(raw);
         unapproved.add(raw);
         continue;
       }
-      reported.add(cidr);
+      configured.add(cidr);
       if (!approvedSet.has(cidr)) unapproved.add(cidr);
     }
     if (instance.exitNode) reportedExitNode = true;
   }
 
+  const knownIps = new Set(
+    Array.from(input.knownDeviceIps ?? [], (entry) => entry.ipv4),
+  );
+  const observed = new Set<string>();
+  const unknownPeers: PeerObservation[] = [];
+  for (const peer of input.peerObservations) {
+    for (const raw of peer.proxyCidrs) {
+      try {
+        observed.add(normalizeCidr(raw));
+      } catch {
+        observed.add(raw);
+      }
+    }
+    if (!knownIps.has(peer.ipv4)) {
+      unknownPeers.push({
+        ...peer,
+        proxyCidrs: peer.proxyCidrs.map((raw) => {
+          try {
+            return normalizeCidr(raw);
+          } catch {
+            return raw;
+          }
+        }),
+      });
+    }
+  }
+  const unapprovedObserved = [...observed].filter((cidr) => !approvedSet.has(cidr));
+
   return {
     approvedCidrs: approved,
-    reportedCidrs: [...reported].sort(),
+    configuredCidrs: [...configured].sort(),
+    observedCidrs: [...observed].sort(),
     unapprovedCidrs: [...unapproved].sort(),
-    missingCidrs: approved.filter((cidr) => !reported.has(cidr)),
+    unapprovedObservedCidrs: unapprovedObserved.sort(),
+    missingCidrs: approved.filter((cidr) => !configured.has(cidr)),
     reportedExitNode,
     unmanagedInstances: unmanaged,
+    unknownPeers,
   };
 }
 
@@ -203,4 +259,43 @@ export function validateSubnetRequest(
     }
   }
   return { cidr: normalized };
+}
+
+export interface PeerObservationRecord extends PeerObservation {
+  observerDeviceId: string;
+  observerHostname: string;
+  at: string;
+}
+
+/**
+ * Merges what peers say a device advertises into its report. This is the only
+ * way EasyTier exposes a device's own proxy CIDRs: `CollectNetworkInfo` route
+ * entries deliberately exclude the local peer, so the control plane reads them
+ * from the other members of the network.
+ */
+export function mergePeerObservations(
+  report: RouteReport,
+  observations: readonly PeerObservationRecord[],
+  approvals: readonly RouteRecord[],
+  deviceId: string,
+): RouteReport {
+  if (observations.length === 0) return report;
+  const approved = new Set(approvedSubnetCidrs(approvals, deviceId));
+  const observed = new Set(report.observedCidrs);
+  for (const observation of observations) {
+    for (const raw of observation.proxyCidrs) {
+      try {
+        observed.add(normalizeCidr(raw));
+      } catch {
+        observed.add(raw);
+      }
+    }
+  }
+  return {
+    ...report,
+    observedCidrs: [...observed].sort(),
+    unapprovedObservedCidrs: [...observed]
+      .filter((cidr) => !approved.has(cidr))
+      .sort(),
+  };
 }

@@ -78,6 +78,7 @@ export {
   normalizeDesiredConfig,
   buildNetworkConfig,
   configMatchesDesired,
+  describeConfigMismatch,
   type DesiredConfig,
 } from "./domain/desired-config.js";
 export {
@@ -133,10 +134,13 @@ export {
   approvedSubnetCidrs,
   buildRouteReport,
   cidrContains,
+  mergePeerObservations,
   cidrsOverlap,
   ipv4ToHostCidr,
   normalizeCidr,
   validateSubnetRequest,
+  type PeerObservation,
+  type PeerObservationRecord,
   type ReportedInstance,
   type RouteKind,
   type RouteRecord,

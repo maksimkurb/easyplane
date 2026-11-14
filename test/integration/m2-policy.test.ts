@@ -444,19 +444,25 @@ describe("M2: policy, MagicDNS and route approval API", () => {
       where: (table, { eq }) => eq(table.id, db.id),
     });
     expect(stored).toBeDefined();
-    const report = await test.context.routes.recordReport(stored!, [
-      {
-        instanceId: "local-file",
-        networkName: "m2-policy",
-        hostname: "db",
-        proxyCidrs: ["10.123.0.0/16"],
-        exitNode: false,
-        unmanaged: true,
-        removable: false,
-      },
-    ]);
+    const report = await test.context.routes.recordReport(stored!, {
+      instances: [
+        {
+          instanceId: "local-file",
+          networkName: "m2-policy",
+          hostname: "db",
+          proxyCidrs: ["10.123.0.0/16"],
+          exitNode: false,
+          unmanaged: true,
+          removable: false,
+        },
+      ],
+      peerObservations: [
+        { ipv4: "10.77.0.99", hostname: "stranger", proxyCidrs: ["172.31.0.0/16"] },
+      ],
+    });
     expect(report.unapprovedCidrs).toEqual(["10.123.0.0/16"]);
     expect(report.unmanagedInstances).toHaveLength(1);
+    expect(report.unknownPeers).toHaveLength(1);
     const refreshed = (await test.app.inject({
       method: "GET",
       url: `/api/devices/${db.id}`,
