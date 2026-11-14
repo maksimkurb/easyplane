@@ -8,6 +8,7 @@ import { DeviceDetailPage } from "@/pages/device-detail-page"
 import { DevicesPage } from "@/pages/devices-page"
 import { NetworkDetailPage } from "@/pages/network-detail-page"
 import { NetworksPage } from "@/pages/networks-page"
+import { PolicyPage } from "@/pages/policy-page"
 import { useTranslation } from "react-i18next"
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
         </Route>
         <Route component={NetworksPage} path="/networks" />
         <Route component={NetworkDetailPage} path="/networks/:id" />
+        <Route component={PolicyPage} path="/networks/:id/policy" />
         <Route path="/devices">
           <DevicesPage />
         </Route>

@@ -5,6 +5,7 @@
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
  * OpenAPI spec version: 0.2.0-M2
  */
+import type { ListNetworkRoutes200ReportsItemReportUnknownPeersItem } from './listNetworkRoutes200ReportsItemReportUnknownPeersItem';
 import type { ListNetworkRoutes200ReportsItemReportUnmanagedInstancesItem } from './listNetworkRoutes200ReportsItemReportUnmanagedInstancesItem';
 
 /**
@@ -12,9 +13,12 @@ import type { ListNetworkRoutes200ReportsItemReportUnmanagedInstancesItem } from
  */
 export type ListNetworkRoutes200ReportsItemReport = {
   approvedCidrs: string[];
-  reportedCidrs: string[];
+  configuredCidrs: string[];
+  observedCidrs: string[];
   unapprovedCidrs: string[];
+  unapprovedObservedCidrs: string[];
   missingCidrs: string[];
   reportedExitNode: boolean;
   unmanagedInstances: ListNetworkRoutes200ReportsItemReportUnmanagedInstancesItem[];
+  unknownPeers: ListNetworkRoutes200ReportsItemReportUnknownPeersItem[];
 } | null;

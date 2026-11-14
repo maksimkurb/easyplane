@@ -117,6 +117,7 @@ export * from './listNetworkPolicyVersions200ItemSummary';
 export * from './listNetworkRoutes200';
 export * from './listNetworkRoutes200ReportsItem';
 export * from './listNetworkRoutes200ReportsItemReport';
+export * from './listNetworkRoutes200ReportsItemReportUnknownPeersItem';
 export * from './listNetworkRoutes200ReportsItemReportUnmanagedInstancesItem';
 export * from './listNetworkRoutes200RoutesItem';
 export * from './listNetworkRoutes200RoutesItemKind';

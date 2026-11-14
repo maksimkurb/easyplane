@@ -15,6 +15,7 @@ import {
   useRollbackDeviceRevision,
 } from "@/api/generated/easyplane"
 import { useAuth } from "@/auth/auth-context"
+import { DevicePolicyCard } from "@/components/device-policy-card"
 import { DeviceStatusBadges } from "@/components/device-status"
 import { PageHeader } from "@/components/shared/page-header"
 import { SectionCard } from "@/components/shared/section-card"
@@ -130,6 +131,8 @@ export function DeviceDetailPage() {
           ) : null}
         </SectionCard>
 
+        <DevicePolicyCard deviceId={device.id} />
+
         {canManage && device.state === "approved" ? (
           <SectionCard
             description={t("devices.detail.editHint")}
@@ -236,11 +239,8 @@ function RevisionForm({
   onSaved: () => Promise<void>
 }) {
   const { t } = useTranslation()
-  const [hostname, setHostname] = useState(
-    typeof initial?.hostname === "string" ? initial.hostname : ""
-  )
   const [noTun, setNoTun] = useState(initial?.noTun === true)
-  const [magicDns, setMagicDns] = useState(initial?.enableMagicDns === true)
+  const [acceptRoutes, setAcceptRoutes] = useState(initial?.acceptRoutes === true)
   const [peerUrls, setPeerUrls] = useState(
     Array.isArray(initial?.peerUrls) ? (initial.peerUrls as string[]).join("\n") : ""
   )
@@ -266,9 +266,8 @@ function RevisionForm({
           deviceId,
           data: {
             config: {
-              hostname: hostname || undefined,
               noTun,
-              enableMagicDns: magicDns,
+              acceptRoutes,
               peerUrls: peerUrls
                 .split("\n")
                 .map((entry) => entry.trim())
@@ -280,26 +279,14 @@ function RevisionForm({
       }}
     >
       <FieldGroup className="gap-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field className="gap-2">
-            <FieldLabel htmlFor="revision-hostname">
-              {t("devices.detail.hostname")}
-            </FieldLabel>
-            <Input
-              id="revision-hostname"
-              onChange={(event) => setHostname(event.target.value)}
-              value={hostname}
-            />
-          </Field>
-          <Field className="gap-2">
-            <FieldLabel htmlFor="revision-note">{t("devices.detail.note")}</FieldLabel>
-            <Input
-              id="revision-note"
-              onChange={(event) => setNote(event.target.value)}
-              value={note}
-            />
-          </Field>
-        </div>
+        <Field className="gap-2 sm:max-w-64">
+          <FieldLabel htmlFor="revision-note">{t("devices.detail.note")}</FieldLabel>
+          <Input
+            id="revision-note"
+            onChange={(event) => setNote(event.target.value)}
+            value={note}
+          />
+        </Field>
         <Field className="gap-2">
           <FieldLabel htmlFor="revision-peers">
             {t("devices.detail.peerUrls")}
@@ -322,10 +309,10 @@ function RevisionForm({
           </label>
           <label className="flex items-center gap-2 text-sm">
             <Checkbox
-              checked={magicDns}
-              onCheckedChange={(checked) => setMagicDns(checked === true)}
+              checked={acceptRoutes}
+              onCheckedChange={(checked) => setAcceptRoutes(checked === true)}
             />
-            {t("devices.detail.magicDns")}
+            {t("devices.detail.acceptRoutes")}
           </label>
         </div>
         <Button className="w-fit" disabled={createRevision.isPending} type="submit">

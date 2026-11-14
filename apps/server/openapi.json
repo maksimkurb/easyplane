@@ -5517,13 +5517,25 @@
                                   "type": "string"
                                 }
                               },
-                              "reportedCidrs": {
+                              "configuredCidrs": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "observedCidrs": {
                                 "type": "array",
                                 "items": {
                                   "type": "string"
                                 }
                               },
                               "unapprovedCidrs": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "unapprovedObservedCidrs": {
                                 "type": "array",
                                 "items": {
                                   "type": "string"
@@ -5579,15 +5591,47 @@
                                   ],
                                   "additionalProperties": false
                                 }
+                              },
+                              "unknownPeers": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "ipv4": {
+                                      "type": "string"
+                                    },
+                                    "hostname": {
+                                      "type": "string"
+                                    },
+                                    "proxyCidrs": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "deviceId": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "ipv4",
+                                    "hostname",
+                                    "proxyCidrs"
+                                  ],
+                                  "additionalProperties": false
+                                }
                               }
                             },
                             "required": [
                               "approvedCidrs",
-                              "reportedCidrs",
+                              "configuredCidrs",
+                              "observedCidrs",
                               "unapprovedCidrs",
+                              "unapprovedObservedCidrs",
                               "missingCidrs",
                               "reportedExitNode",
-                              "unmanagedInstances"
+                              "unmanagedInstances",
+                              "unknownPeers"
                             ],
                             "additionalProperties": false
                           },

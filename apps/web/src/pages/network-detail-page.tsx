@@ -7,6 +7,7 @@ import {
   EyeIcon,
   KeyRoundIcon,
   PlusIcon,
+  ShieldIcon,
   Trash2Icon,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -25,6 +26,8 @@ import type { CreateInvite201 } from "@/api/generated/model"
 import { useAuth } from "@/auth/auth-context"
 import { CopyButton } from "@/components/copy-button"
 import { DeviceStatusBadges, InviteStatusBadge } from "@/components/device-status"
+import { NetworkMagicDnsCard } from "@/components/network-magic-dns-card"
+import { NetworkRoutesCard } from "@/components/network-routes-card"
 import { PageHeader } from "@/components/shared/page-header"
 import { SectionCard } from "@/components/shared/section-card"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/shared/field"
@@ -91,6 +94,7 @@ export function NetworkDetailPage() {
   })
 
   const network = networkQuery.data?.data
+  const loadedPolicyVersion = network?.policyVersion ?? 0
   const devices = devicesQuery.data?.data ?? []
   const invites = invitesQuery.data?.data ?? []
   const baseUrl = config?.publicConfigServerUrl ?? window.location.origin
@@ -141,6 +145,27 @@ export function NetworkDetailPage() {
       />
 
       <div className="grid gap-4">
+        <SectionCard
+          action={
+            <Link href={`/networks/${network.id}/policy`}>
+              <Button size="sm" variant="outline">
+                <ShieldIcon className="size-4" />
+                {t("policy.title")}
+              </Button>
+            </Link>
+          }
+          description={t("policy.cardHint")}
+          title={
+            loadedPolicyVersion > 0
+              ? t("policy.activeVersion", { version: loadedPolicyVersion })
+              : t("policy.noPolicy")
+          }
+        >
+          <p className="text-sm text-muted-foreground">
+            {loadedPolicyVersion > 0 ? t("policy.cardActive") : t("policy.cardInactive")}
+          </p>
+        </SectionCard>
+
         <SectionCard title={t("networks.networkName")}>
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <div>
@@ -224,6 +249,10 @@ export function NetworkDetailPage() {
             </div>
           )}
         </SectionCard>
+
+        <NetworkMagicDnsCard networkId={network.id} />
+
+        <NetworkRoutesCard networkId={network.id} />
 
         <SectionCard
           description={t("invites.description")}
