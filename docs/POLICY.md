@@ -133,6 +133,8 @@ With `options.strictTags` the compiler also adds `source_groups = ["tag:x"]` to
 allow rules whose source is a tag, and declares those tags' secrets on the
 destination so EasyTier can verify the sender's `group_proof`
 (`peer_ospf_route.rs` verifies HMACs with the local group secret). See §6.
+[verified] — a strict-tag policy keeps the allowed flow working on real clients,
+which requires the proof to verify.
 
 ## 4. Tailscale construct -> EasyTier primitive
 
@@ -172,7 +174,12 @@ destination so EasyTier can verify the sender's `group_proof`
 - `curl http://<web>:8080` from both clients returns 200;
 - `curl http://<web>:8081` times out and exits non-zero (the packet is dropped
   at the destination, not reset);
-- the web device cannot reach a client at all (no statement, default drop).
+- the web device cannot reach a client at all (no statement, default drop);
+- saving the same policy with `options.strictTags: true` adds
+  `sourceGroups = ["tag:client"]` to the destination rule and the allowed flow
+  still returns 200, i.e. EasyTier verified the sender's group proof with the
+  declared secret (a wrong/missing secret would fail the proof and drop the
+  packet). [verified]
 
 ## 5. MagicDNS
 

@@ -463,6 +463,62 @@ describe("M2 conformance: ACL enforcement, MagicDNS and routes on real easytier-
       { allowFailure: true },
     );
     expect(reverse.stdout.trim()).toBe("000");
+
+    // strictTags additionally requires EasyTier's verified group proof from the
+    // source, i.e. the tag -> group secret/membership mapping really works.
+    const strict = await test.app.inject({
+      method: "PUT",
+      url: `/api/networks/${network.id}/policy`,
+      headers: headers(),
+      payload: {
+        document: {
+          tagOwners: { "tag:web": [], "tag:client": [] },
+          options: { strictTags: true },
+          acls: [
+            {
+              name: "clients-to-web",
+              action: "accept",
+              src: ["tag:client"],
+              dst: ["tag:web:8080"],
+              proto: "tcp",
+            },
+          ],
+        },
+        note: "strict tags",
+      },
+    });
+    expect(strict.statusCode).toBe(200);
+    for (const letter of ["a", "b", "c"] as const) {
+      await poll(
+        `${letter} applied the strict policy`,
+        () => getDevice(letter),
+        (device) => device.appliedRevision === 4 && device.lastPushError === null,
+      );
+    }
+    const strictPushed = await pushedConfig("a");
+    const strictInbound = strictPushed?.acl?.aclV1?.chains.find(
+      (chain) => chain.chainType === 1,
+    );
+    expect(strictInbound?.rules[0]?.sourceGroups).toEqual(["tag:client"]);
+
+    const strictAllowed = await poll(
+      "b reaches a:8080 with strict tags",
+      async () =>
+        execIn(SERVICES.b, [
+          "curl",
+          "-s",
+          "-o",
+          "/dev/null",
+          "-w",
+          "%{http_code}",
+          "--max-time",
+          "4",
+          `http://${aIp}:8080/`,
+        ], { allowFailure: true }),
+      (result) => result.stdout.trim() === "200",
+      90_000,
+    );
+    expect(strictAllowed.stdout.trim()).toBe("200");
   });
 
   it("resolves MagicDNS names on a real client", async () => {
