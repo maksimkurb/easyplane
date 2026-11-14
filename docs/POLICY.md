@@ -45,7 +45,11 @@ Consequences that are real, not cosmetic:
   with `HMAC-SHA256(EASYPLANE_ENCRYPTION_KEY, "easyplane.acl-group" || networkId
   || tag)` and only exist in the pushed config;
 - a device only enforces what its chain says. Policy changes on the server do
-  nothing to an offline device until it reconnects and is pushed.
+  nothing to an offline device until it reconnects and is pushed;
+- revisions created before M2 (`policy_version = null`) follow the network's
+  active policy; revisions created by M2 pin the version they were compiled
+  with, so rolling a device back restores that ACL too. Disabling the policy
+  creates revisions with `policy_version = 0` (no ACL pushed at all).
 
 ## 2. The document
 

@@ -365,6 +365,89 @@ describe("M2: policy, MagicDNS and route approval API", () => {
     );
   });
 
+  it("pins the policy version on revisions and restores it on rollback", async () => {
+    // v2 replaces the policy; every approved device gets a revision.
+    const v2 = await test.app.inject({
+      method: "PUT",
+      url: `/api/networks/${networkId}/policy`,
+      headers: headers(admin),
+      payload: {
+        document: {
+          acls: [
+            { name: "any-22", action: "accept", src: ["*"], dst: ["*:22"], proto: "tcp" },
+          ],
+        },
+        note: "v2",
+      },
+    });
+    expect(v2.statusCode).toBe(200);
+    expect((v2.json() as { policy: { version: number } }).policy.version).toBe(2);
+
+    const revisions = await test.app.inject({
+      method: "GET",
+      url: `/api/devices/${db.id}/revisions`,
+      headers: authed(admin),
+    });
+    const rows = revisions.json() as Array<{
+      revision: number;
+      source: string;
+      policyVersion: number | null;
+    }>;
+    expect(rows[0]).toMatchObject({ source: "policy", policyVersion: 2 });
+    // The revision created by policy v1 still pins v1.
+    const v1Revision = rows.find((row) => row.policyVersion === 1);
+    expect(v1Revision).toBeDefined();
+
+    const rolled = await test.app.inject({
+      method: "POST",
+      url: `/api/devices/${db.id}/revisions/${v1Revision!.revision}/rollback`,
+      headers: headers(admin),
+    });
+    expect(rolled.statusCode).toBe(201);
+    expect(
+      (rolled.json() as { revision: { policyVersion: number | null } }).revision
+        .policyVersion,
+    ).toBe(1);
+
+    // Disabling removes the ACL again and records a revision with version 0.
+    const disabled = await test.app.inject({
+      method: "DELETE",
+      url: `/api/networks/${networkId}/policy`,
+      headers: headers(admin),
+    });
+    expect(disabled.statusCode).toBe(200);
+    const network = await test.app.inject({
+      method: "GET",
+      url: `/api/networks/${networkId}`,
+      headers: authed(admin),
+    });
+    expect((network.json() as { policyVersion: number }).policyVersion).toBe(0);
+    const after = await test.app.inject({
+      method: "GET",
+      url: `/api/devices/${db.id}/revisions`,
+      headers: authed(admin),
+    });
+    expect(
+      (after.json() as Array<{ policyVersion: number | null }>)[0]?.policyVersion,
+    ).toBe(0);
+
+    // Put a policy back for the remaining tests.
+    const restored = await test.app.inject({
+      method: "PUT",
+      url: `/api/networks/${networkId}/policy`,
+      headers: headers(admin),
+      payload: {
+        document: {
+          acls: [
+            { name: "web-to-db", action: "accept", src: ["tag:web"], dst: ["tag:db:5432"], proto: "tcp" },
+          ],
+        },
+        note: "restore for route tests",
+      },
+    });
+    expect(restored.statusCode).toBe(200);
+  });
+
   it("keeps route requests pending until an admin approves them", async () => {
     const requested = await test.app.inject({
       method: "POST",
