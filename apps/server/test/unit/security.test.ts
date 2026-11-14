@@ -25,6 +25,19 @@ describe("secret box", () => {
     expect(box.decrypt(second)).toBe("s3cret");
   });
 
+  it("derives stable ACL group secrets per network and tag", () => {
+    const box = new SecretBox(KEY);
+    const other = new SecretBox("cd".repeat(32));
+    const secret = box.derive("easyplane.acl-group", "net-a", "tag:web");
+    expect(secret).toMatch(/^[0-9a-f]{64}$/);
+    // Same inputs -> same secret (nothing needs to be stored).
+    expect(box.derive("easyplane.acl-group", "net-a", "tag:web")).toBe(secret);
+    // Different network, tag or master key -> different secret.
+    expect(box.derive("easyplane.acl-group", "net-b", "tag:web")).not.toBe(secret);
+    expect(box.derive("easyplane.acl-group", "net-a", "tag:db")).not.toBe(secret);
+    expect(other.derive("easyplane.acl-group", "net-a", "tag:web")).not.toBe(secret);
+  });
+
   it("rejects a tampered payload", () => {
     const box = new SecretBox(KEY);
     const payload = box.encrypt("s3cret");
