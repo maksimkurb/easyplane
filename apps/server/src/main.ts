@@ -19,8 +19,10 @@ async function main(): Promise<void> {
     .filter((token) => token.length > 0);
 
   const secureSetting = (process.env.EASYPLANE_SECURE ?? "on").toLowerCase();
-  if (secureSetting === "off" && (process.env.EASYPLANE_REQUIRE_SECURE ?? "") === "1") {
-    throw new Error("EASYPLANE_SECURE=off conflicts with EASYPLANE_REQUIRE_SECURE=1");
+  if (tokens.length === 0) {
+    logger.warn(
+      "EASYPLANE_TOKENS is empty: every config-server token is accepted (M0 lab mode only)",
+    );
   }
 
   const wssPort = parsePort(process.env.EASYPLANE_WSS_PORT, null);

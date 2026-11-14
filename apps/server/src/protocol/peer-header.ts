@@ -47,7 +47,14 @@ export function isEncrypted(header: PeerManagerHeader): boolean {
  */
 export function buildTunnelPayload(
   payload: Uint8Array,
-  opts: { fromPeerId: number; toPeerId: number; packetType: number; flags?: number },
+  opts: {
+    fromPeerId: number;
+    toPeerId: number;
+    packetType: number;
+    flags?: number;
+    /** Override the declared (plaintext) length, e.g. for encrypted packets. */
+    declaredLen?: number;
+  },
 ): Buffer {
   const buf = Buffer.allocUnsafe(PEER_MANAGER_HEADER_SIZE + payload.length);
   encodePeerManagerHeader(
@@ -58,7 +65,7 @@ export function buildTunnelPayload(
       flags: opts.flags ?? 0,
       forwardCounter: 1,
       reserved: 0,
-      len: payload.length,
+      len: opts.declaredLen ?? payload.length,
     },
     buf,
   );

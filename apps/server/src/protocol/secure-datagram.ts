@@ -180,6 +180,9 @@ export class SecureDatagramSession {
       toPeerId: 0,
       packetType: PacketType.Data,
       flags: PEER_HEADER_FLAG_ENCRYPTED,
+      // web_security.rs fills the header before encryption, so `len` keeps the
+      // plaintext length even though tag+nonce are appended to the payload.
+      declaredLen: innerTunnelPayload.length,
     });
   }
 
