@@ -1,0 +1,169 @@
+# Deploying EasyPlane (M1 draft)
+
+EasyPlane is one Node process plus PostgreSQL. The process serves the web UI,
+the HTTP API and the EasyTier config-server listeners (`ws`, `wss`, `tcp`).
+`docker compose up` builds and runs both.
+
+```
+browser ──https──▶ reverse proxy ──▶ server:8080  (UI + /api)
+easytier-core ──wss──▶ reverse proxy ──▶ server:22023 (ws config-server)
+easytier-core ──tcp──▶ server:22020
+server ──▶ postgres:5432
+```
+
+## 1. Quick start
+
+```bash
+cp .env.example .env
+# edit .env: POSTGRES_PASSWORD, EASYPLANE_ENCRYPTION_KEY,
+#            EASYPLANE_BOOTSTRAP_ADMIN_TOKEN, public URLs, OIDC providers
+openssl rand -base64 32   # use for EASYPLANE_ENCRYPTION_KEY
+openssl rand -base64 32   # use for EASYPLANE_BOOTSTRAP_ADMIN_TOKEN
+
+docker compose up -d --build
+docker compose logs -f server
+```
+
+Migrations are applied automatically at startup (`apps/server/drizzle`).
+Open the panel, use **Break-glass bootstrap** once with the token and an admin
+email, then sign in through OIDC. After an admin exists the token is refused
+unless `EASYPLANE_BOOTSTRAP_REENABLE=true`; re-disable it afterwards.
+
+## 2. TLS and reverse proxy
+
+Two supported shapes:
+
+**A. Reverse proxy terminates TLS (recommended).** The server listens on plain
+HTTP/WS. Example nginx:
+
+```nginx
+# Panel + API
+server {
+  listen 443 ssl http2;
+  server_name easyplane.example.com;
+  # ssl_certificate ...;
+  location / {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+
+# EasyTier config server: the invite token is the last path segment.
+server {
+  listen 443 ssl http2;
+  server_name vpn.example.com;
+  location / {
+    proxy_pass http://127.0.0.1:22023;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_read_timeout 3600s;
+  }
+}
+```
+
+Set `EASYPLANE_PUBLIC_CONFIG_SERVER_URL=wss://vpn.example.com` so invite
+commands get the right URL. `EASYPLANE_TRUST_PROXY=true` makes Fastify honour
+`X-Forwarded-*` for the OIDC redirect URI and client IP rate limiting.
+
+**B. The server terminates TLS itself.** Mount a certificate and set:
+
+```
+EASYPLANE_WSS_PORT=22024
+EASYPLANE_TLS_CERT=/certs/fullchain.pem
+EASYPLANE_TLS_KEY=/certs/privkey.pem
+EASYPLANE_PUBLIC_CONFIG_SERVER_URL=wss://vpn.example.com:22024
+```
+
+EasyTier clients do not verify the config-server certificate, but the panel's
+own HTTPS should still use a valid certificate (OIDC redirects, secure cookies).
+
+Keep the `tcp://` listener (22020) only if clients need it; it carries no TLS
+and the invite token travels in `HeartbeatRequest.user_token` (verified in the
+upstream client: non-websocket schemes clear the URL path before dialling).
+
+## 3. OIDC
+
+Register one redirect URI per provider:
+
+```
+https://<panel-host>/api/auth/callback/<provider-id>
+```
+
+`EASYPLANE_OIDC_PROVIDERS` is a JSON array:
+
+```json
+[
+  {
+    "id": "keycloak",
+    "label": "Company SSO",
+    "issuer": "https://sso.example.com/realms/main",
+    "clientId": "easyplane",
+    "clientSecret": "...",
+    "scopes": "openid email profile",
+    "roleClaim": "groups",
+    "adminGroups": ["easyplane-admins"],
+    "memberGroups": ["easyplane-members"],
+    "defaultRole": "viewer",
+    "allowedEmailDomains": ["example.com"]
+  }
+]
+```
+
+- `roleClaim` may be an array claim or a space/comma separated string. Admin
+  wins over member; no match gives `defaultRole`.
+- Set `useUserinfo` (default true) if your IdP only puts groups in userinfo.
+- Public clients without a secret are supported (PKCE S256 is mandatory).
+- The issuer must match the discovery document exactly.
+
+Roles are enforced server-side: viewers read everything except the audit log;
+members additionally create invites and manage devices/config; only admins
+create/delete networks, reveal/rotate secrets and read the audit log.
+
+## 4. Connecting a device
+
+Create a network, then an invite. The panel shows:
+
+```
+easytier-core --config-server wss://vpn.example.com/<invite-token> --hostname my-device
+```
+
+and the plain `wss://.../<token>` URL for the Android app. The client appears
+as **pending** and receives no config until approved. On approval it gets the
+next free address in the network CIDR and revision 1 of its desired config.
+Changing the desired config creates a revision and pushes it immediately when
+the device is online; on reconnect the server verifies the running instance and
+re-pushes if needed. Blocking deletes the running instance and refuses the
+token; deleting a device does the same and removes its history.
+
+## 5. Operations
+
+- `GET /health` returns database and client counts; the container healthcheck
+  uses it.
+- Logs are structured JSON (pino for HTTP, a small JSON logger for the control
+  plane). Cookies, authorization headers and CSRF headers are redacted.
+- Session housekeeping runs hourly; expired sessions and OIDC states are
+  deleted.
+- Unknown config-server tokens are rate-limited per source IP
+  (`EASYPLANE_UNKNOWN_TOKEN_LIMIT_PER_MINUTE`) and pending devices are capped
+  per network (`EASYPLANE_MAX_PENDING_DEVICES_PER_NETWORK`).
+
+Backups: `pg_dump` covers everything, **plus** `EASYPLANE_ENCRYPTION_KEY` —
+without it the stored EasyTier network secrets cannot be decrypted. Rotating
+that key is not implemented in M1.
+
+```bash
+docker compose exec postgres pg_dump -U easyplane easyplane | gzip > easyplane.sql.gz
+```
+
+## 6. M1 limitations
+
+- No UDP config-server transport, no key rotation for the encryption key.
+- No SSE/WebSocket browser updates: pages poll via TanStack Query refetch.
+- Tags/ACL/MagicDNS policy is M2; the tags table exists but is unused.
+- Single organisation per deployment.
+- No outbound calls except configured OIDC discovery/token/userinfo and
+  EasyTier clients.

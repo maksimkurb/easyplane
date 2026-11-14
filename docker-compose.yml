@@ -1,0 +1,60 @@
+# EasyPlane deployment: Postgres + the server (which also serves the built UI).
+#
+#   cp .env.example .env    # then edit every CHANGE_ME / generate the keys
+#   docker compose up -d --build
+#
+# The server runs drizzle migrations automatically on startup.
+
+name: easyplane
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-easyplane}
+      POSTGRES_USER: ${POSTGRES_USER:-easyplane}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-easyplane} -d ${POSTGRES_DB:-easyplane}
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Not published: only the server needs it. Uncomment to inspect locally.
+    # ports:
+    #   - "127.0.0.1:5432:5432"
+
+  server:
+    build:
+      context: .
+      dockerfile: docker/server.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      EASYPLANE_DATABASE_URL: postgres://${POSTGRES_USER:-easyplane}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-easyplane}
+      EASYPLANE_HOST: 0.0.0.0
+      EASYPLANE_HTTP_PORT: "8080"
+      EASYPLANE_WEB_DIR: /app/apps/web/dist
+    ports:
+      - "${EASYPLANE_HTTP_BIND:-0.0.0.0:8080}:8080"
+      # EasyTier config-server listeners (place a TLS proxy in front for wss).
+      - "${EASYPLANE_TCP_BIND:-0.0.0.0:22020}:22020"
+      - "${EASYPLANE_WS_BIND:-0.0.0.0:22023}:22023"
+      # If the server terminates TLS itself, mount the cert/key into the
+      # container, set EASYPLANE_WSS_PORT/EASYPLANE_TLS_CERT/EASYPLANE_TLS_KEY
+      # and publish that port here.
+      # - "22024:22024"
+    volumes:
+      # Optional: TLS certificates for the built-in wss listener.
+      # - ./certs:/certs:ro
+
+volumes:
+  pgdata:
