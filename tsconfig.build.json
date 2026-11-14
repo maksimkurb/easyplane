@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/proto" },
+    { "path": "packages/shared" },
+    { "path": "apps/server" }
+  ]
+}

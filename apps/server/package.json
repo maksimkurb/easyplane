@@ -1,0 +1,23 @@
+{
+  "name": "@easyplane/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "start": "node dist/main.js",
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@easyplane/proto": "workspace:*",
+    "@easyplane/shared": "workspace:*",
+    "ws": "^8.18.3"
+  }
+}

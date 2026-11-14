@@ -1,4 +1,12 @@
 node_modules
 dist
+*.tsbuildinfo
 .env
+.env.*
+!.env.example
 *.log
+coverage
+# Test client binary built from the pinned upstream ref (see scripts/build-test-client.sh)
+docker/easytier-core/easytier-core
+scratch/
+docker/easytier-core/BUILD_INFO

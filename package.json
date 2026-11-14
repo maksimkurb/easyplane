@@ -1,12 +1,37 @@
 {
   "name": "easyplane",
-  "version": "1.0.0",
-  "description": "Control Plane for EasyTier clients",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Control plane for EasyTier: protocol-compatible config server + web panel",
   "license": "GPL-3.0",
-  "author": "",
-  "type": "commonjs",
-  "main": "index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc -b tsconfig.build.json --pretty && tsc -p tsconfig.test.json",
+    "test": "vitest run --project unit",
+    "test:unit": "vitest run --project unit",
+    "test:conformance": "vitest run --project conformance",
+    "dev": "tsx apps/server/src/main.ts",
+    "protos:sync": "scripts/sync-protos.sh",
+    "protos:check": "scripts/check-protos.sh",
+    "test-client:build": "scripts/build-test-client.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/ws": "^8.18.1",
+    "ts-proto": "^2.10.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
   }
 }

@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "baseUrl": ".",
+    "paths": {
+      "@easyplane/proto": ["packages/proto/src/index.ts"],
+      "@easyplane/shared": ["packages/shared/src/index.ts"],
+      "@easyplane/server": ["apps/server/src/index.ts"]
+    }
+  },
+  "include": [
+    "apps/server/src/**/*.ts",
+    "apps/server/test/**/*.ts",
+    "test/**/*.ts",
+    "packages/*/src/**/*.ts",
+    "vitest.config.ts"
+  ]
+}
