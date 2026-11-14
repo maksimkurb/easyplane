@@ -5,9 +5,9 @@
 # Usage: scripts/sync-protos.sh <tag|commit>
 #
 # Source checkout resolution (first match wins):
-#   1. $EASYTIER_REF_REPO            (e.g. /home/maksimkurb/Dev/EasyTier)
-#   2. ./vendor/EasyTier             (unused by default)
-#   3. /home/maksimkurb/Dev/EasyTier
+#   1. $EASYTIER_REF_REPO           (explicit checkout)
+#   2. ../EasyTier                  (sibling checkout, next to this repo)
+#   3. ./vendor/EasyTier
 #   4. clone $EASYTIER_GIT_URL into a temporary directory
 #
 # Only easytier-proto/proto/*.proto is imported from upstream; nothing else is
@@ -31,7 +31,7 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 resolve_repo() {
   local candidates=()
   [[ -n "${EASYTIER_REF_REPO:-}" ]] && candidates+=("$EASYTIER_REF_REPO")
-  candidates+=("$ROOT_DIR/vendor/EasyTier" "/home/maksimkurb/Dev/EasyTier")
+  candidates+=("$ROOT_DIR/../EasyTier" "$ROOT_DIR/vendor/EasyTier")
   for candidate in "${candidates[@]}"; do
     if [[ -d "$candidate/.git" ]] && git -C "$candidate" cat-file -e "$REF^{commit}" 2>/dev/null; then
       echo "$candidate"
