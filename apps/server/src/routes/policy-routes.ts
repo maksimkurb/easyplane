@@ -14,6 +14,7 @@ import {
   testReachabilitySchema,
 } from "../app/schemas.js";
 import {
+  describePolicy,
   normalizePolicyDocument,
   parsePolicyText,
   PolicyValidationError,
@@ -100,7 +101,6 @@ export function registerPolicyRoutes(
         request.params.networkId,
         document,
       );
-      const { describePolicy } = await import("../domain/policy/index.js");
       return {
         warnings: result.warnings,
         devices: result.devices,

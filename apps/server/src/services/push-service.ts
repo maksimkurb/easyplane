@@ -471,10 +471,12 @@ export class PushService {
         metas.map((meta) => [meta.instId ? protoToUuid(meta.instId) : "", meta]),
       );
       let managedExitNode = false;
+      let managedProxyCidrs: string[] = [];
       if (ids.includes(managedId)) {
         try {
           const config = await client.remote.getNetworkInstanceConfig(managedId);
           managedExitNode = Boolean(config.config?.enableExitNode);
+          managedProxyCidrs = config.config?.proxyCidrs ?? [];
         } catch {
           // The instance may be mid-restart; the CIDR report is still useful.
         }
@@ -488,10 +490,7 @@ export class PushService {
       for (const [id, info] of entries) {
         const meta = metaById.get(id);
         if (meta && meta.networkName !== network.networkName) continue;
-        const configured =
-          id === managedId
-            ? (await client.remote.getNetworkInstanceConfig(id)).config?.proxyCidrs ?? []
-            : [];
+        const configured = id === managedId ? managedProxyCidrs : [];
         instances.push({
           instanceId: id,
           networkName: meta?.networkName ?? network.networkName,

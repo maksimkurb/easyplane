@@ -33,16 +33,16 @@ Roles: **Admin**, **Member** (manages own devices/invites), **Viewer** (read-onl
 - **D3** As a user, the browser updates live (SSE/WS) without refresh.
 - **D4** As an Admin I see an audit log of approvals, policy changes, invites, config pushes (no secrets).
 
-## Policy (M2)
+## Policy (M2, implemented — see docs/POLICY.md for the exact mapping)
 - **Q1** As an Admin I define tags (`tag:server`) and a policy (UI + JSON/HuJSON advanced editor) with validation.
 - **Q2** As an Admin I test "can A reach B on port P" before saving.
 - **Q3** The policy compiles to EasyTier ACL primitives (chains, rules, groups with secrets, credentials) and the compiled per-device config is pushed. Docs list what maps cleanly, what is approximated, what is unsupported. Golden tests cover the compiler.
 - **Q4** A denied flow is actually blocked on real clients (e2e).
 
-## MagicDNS (M2)
+## MagicDNS (M2, implemented; the DNS zone is a client-side flag)
 - **M1** As an Admin I enable/disable MagicDNS per network and set the zone; hostnames are unique per network, renameable; resolved names/IPs are shown; a client resolves a name (e2e).
 
-## Routes (M2)
+## Routes (M2, implemented; revocation limits are documented)
 - **R1** As a Device owner/Admin I request subnet routes / exit node; they stay pending until approved; only approved routes are pushed.
 - **R2** As an Admin I see routes devices actually report (CollectNetworkInfo) that are unapproved, flagged, with an honest note on what can/cannot be revoked remotely (e.g. file-configured instances are read-only).
 

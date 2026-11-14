@@ -2,7 +2,6 @@ import { acl } from "@easyplane/proto";
 
 import type { DbExecutor } from "../db/repositories.js";
 import {
-  getDeviceById,
   getNetworkById,
   getNetworkPolicyVersion,
   insertNetworkPolicy,
@@ -40,7 +39,7 @@ import { approvedRoutesForNetwork } from "../db/repositories.js";
 import { cidrPrefix } from "../domain/ip.js";
 import { nextRevisionNumber } from "../domain/revisions.js";
 import type { SecretBox } from "../security/crypto.js";
-import { AppError, conflict, invalid, notFound } from "./errors.js";
+import { AppError, invalid, notFound } from "./errors.js";
 import type { AuditService } from "./audit.js";
 import type { PushService } from "./push-service.js";
 import type { RequestActor } from "./device-service.js";
@@ -633,12 +632,4 @@ export class PolicyService {
     return { id: tag.id, name: tag.name, color: tag.color };
   }
 
-  /** Fails loudly instead of silently pushing a policy referencing a dead tag. */
-  async requireDevice(networkId: string, deviceId: string): Promise<Device> {
-    const device = await getDeviceById(this.db, deviceId);
-    if (!device || device.networkId !== networkId) {
-      conflict("device does not belong to this network");
-    }
-    return device;
-  }
 }

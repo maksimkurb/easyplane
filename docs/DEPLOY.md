@@ -1,4 +1,4 @@
-# Deploying EasyPlane (M1 draft)
+# Deploying EasyPlane (M2)
 
 EasyPlane is one Node process plus PostgreSQL. The process serves the web UI,
 the HTTP API and the EasyTier config-server listeners (`ws`, `wss`, `tcp`).
@@ -139,6 +139,28 @@ the device is online; on reconnect the server verifies the running instance and
 re-pushes if needed. Blocking deletes the running instance and refuses the
 token; deleting a device does the same and removes its history.
 
+## 4b. Policy, MagicDNS and routes
+
+- **Policy** lives per network (`/networks/:id/policy` in the panel). Saving a
+  policy creates a new version and a config revision for every approved device
+  in that network, then pushes. No policy means EasyTier's ACL filter is off.
+  Read [docs/POLICY.md](POLICY.md) before locking a network down: the ingress
+  chain defaults to drop, so a missing statement blocks traffic; egress is only
+  restricted by explicit deny statements.
+- **MagicDNS**: the per-network switch is pushed as `enable_magic_dns`. The
+  zone is used for names in the panel only — EasyTier keeps `tld_dns_zone` in
+  local client flags, so managed clients answer in `et.net.`. Keep the zone at
+  `et.net.` unless every client runs its own instance with `--tld-dns-zone`.
+  DNS names are unique per network; renaming pushes a new hostname without a
+  revision.
+- **Routes**: members request subnet/exit-node routes on the device page,
+  admins approve them in the network page. Only approved routes are pushed.
+  Route reports are collected every `EASYPLANE_ROUTE_REPORT_INTERVAL_MS`
+  (default 30 s) from `CollectNetworkInfo`; a route the control plane never
+  approved, or one advertised by an instance it did not create, is flagged and
+  audited. A *separate* local `easytier-core` process is invisible to the
+  control plane — see docs/POLICY.md §7 for what can and cannot be revoked.
+
 ## 5. Operations
 
 - `GET /health` returns database and client counts; the container healthcheck
@@ -159,7 +181,7 @@ that key is not implemented in M1.
 docker compose exec postgres pg_dump -U easyplane easyplane | gzip > easyplane.sql.gz
 ```
 
-## 6. M1 limitations and risks
+## 6. M1/M2 limitations and risks
 
 - **Run one server instance.** The device-session registry, unknown-token
   limiter and reconcile timer are in-process. A second replica could not push
@@ -178,8 +200,14 @@ docker compose exec postgres pg_dump -U easyplane easyplane | gzip > easyplane.s
   can claim a machine id; approval is the security boundary. Rotate/revoke
   invites if one leaks.
 - No SSE/WebSocket browser updates: pages poll via TanStack Query refetch.
-- Tags/ACL/MagicDNS policy is M2; the tags table exists but is unused. One
-  organisation per deployment, roles are deployment-wide.
+- Policy is enforced at the destination only. EasyTier has no outbound
+  connection tracking, so the outbound chain is default-allow (docs/POLICY.md
+  §6). A hostile member can spoof source IPs in data packets unless
+  `options.strictTags` is enabled, which in turn hands the tag secret to the
+  verifier.
+- MagicDNS zone cannot be pushed (client flag only). Route approval is manual —
+  there are no auto-approvers yet.
+- One organisation per deployment, roles are deployment-wide.
 - No browser E2E suite yet (the UI is covered by unit tests, typecheck, lint
   and a served-build smoke test).
 - No outbound calls except configured OIDC discovery/token/userinfo and

@@ -152,8 +152,30 @@ export class RouteService {
     let cidr = "";
     if (input.kind === "subnet") {
       if (!input.cidr) invalid("a subnet route needs a CIDR");
+      // Overlap is a network-wide property: two devices serving the same CIDR
+      // would make the overlay route ambiguous.
+      const networkRoutes = (await listNetworkRoutes(this.db, device.networkId))
+        .filter((row) => row.deviceId !== deviceId)
+        .map((row) => ({
+          deviceId: row.deviceId,
+          kind: row.kind,
+          cidr: row.cidr,
+          state: row.state,
+        }));
       try {
-        cidr = validateSubnetRequest(input.cidr, existing).cidr;
+        cidr = validateSubnetRequest(
+          input.cidr,
+          [
+            ...existing.map((row) => ({
+              deviceId: row.deviceId,
+              kind: row.kind,
+              cidr: row.cidr,
+              state: row.state,
+            })),
+            ...networkRoutes,
+          ],
+          deviceId,
+        ).cidr;
       } catch (error) {
         invalid(error instanceof Error ? error.message : "invalid route");
       }
@@ -292,6 +314,16 @@ export class RouteService {
       const existing = Array.isArray(state.advertisedByPeers)
         ? (state.advertisedByPeers as PeerObservationRecord[])
         : [];
+      const previous = existing.find((entry) => entry.observerDeviceId === device.id);
+      // Steady state: the same peer sees the same CIDRs; skip the write so a
+      // report for N devices is not N² database updates per reconcile tick.
+      if (
+        previous &&
+        previous.ipv4 === observation.ipv4 &&
+        JSON.stringify(previous.proxyCidrs) === JSON.stringify(observation.proxyCidrs)
+      ) {
+        continue;
+      }
       const next: PeerObservationRecord[] = [
         ...existing.filter((entry) => entry.observerDeviceId !== device.id),
         {

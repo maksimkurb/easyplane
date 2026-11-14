@@ -12,8 +12,10 @@ import {
   useGetDevice,
   useListDeviceRoutes,
   useListTags,
+  useListUsers,
   useRenameDevice,
   useRequestDeviceRoute,
+  useSetDeviceOwner,
   useSetDeviceTags,
 } from "@/api/generated/easyplane"
 import { useAuth } from "@/auth/auth-context"
@@ -48,6 +50,7 @@ export function DevicePolicyCard({ deviceId }: { deviceId: string }) {
   const deviceQuery = useGetDevice(deviceId)
   const tagsQuery = useListTags()
   const routesQuery = useListDeviceRoutes(deviceId)
+  const usersQuery = useListUsers({ query: { enabled: isAdmin } })
   const device = deviceQuery.data?.data
   const [dnsName, setDnsName] = useState("")
   const [newTag, setNewTag] = useState("")
@@ -71,6 +74,13 @@ export function DevicePolicyCard({ deviceId }: { deviceId: string }) {
     },
   })
   const setTags = useSetDeviceTags({
+    mutation: {
+      onSuccess: refresh,
+      onError: (error) =>
+        toast.error(error instanceof Error ? error.message : t("common.error")),
+    },
+  })
+  const setOwner = useSetDeviceOwner({
     mutation: {
       onSuccess: refresh,
       onError: (error) =>
@@ -180,6 +190,32 @@ export function DevicePolicyCard({ deviceId }: { deviceId: string }) {
             </span>
           ) : null}
         </div>
+
+        {isAdmin ? (
+          <div className="flex flex-wrap items-end gap-2">
+            <Field className="w-64 gap-1">
+              <FieldLabel>{t("devices.detail.owner")}</FieldLabel>
+              <Select
+                onValueChange={(value) =>
+                  setOwner.mutate({ deviceId, data: { userId: value === "__none" ? null : value } })
+                }
+                value={device.ownerUserId ?? "__none"}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">{t("devices.detail.noOwner")}</SelectItem>
+                  {(usersQuery.data?.data ?? []).map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.displayName || user.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+        ) : null}
 
         {canManage ? (
           <div className="flex flex-wrap items-end gap-2">

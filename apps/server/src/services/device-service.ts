@@ -14,6 +14,7 @@ import {
   listDevices,
   listRevisions,
   listRevisionsWithAuthor,
+  listTags,
   pendingDeviceCount,
   setDeviceTags,
   takenDnsNames,
@@ -823,6 +824,15 @@ export class DeviceService {
     const network = await getNetworkById(this.options.db, device.networkId);
     if (!network) notFound("network not found");
     const normalized = [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
+    if (normalized.length > 0) {
+      const known = new Set(
+        (await listTags(this.options.db, actor.orgId)).map((tag) => tag.name),
+      );
+      const unknown = normalized.filter((tag) => !known.has(tag));
+      if (unknown.length > 0) {
+        invalid(`unknown tag(s): ${unknown.join(", ")}`);
+      }
+    }
     await setDeviceTags(this.options.db, deviceId, normalized);
     const updated = await getDevice(this.options.db, actor.orgId, deviceId);
     if (!updated) notFound("device not found");

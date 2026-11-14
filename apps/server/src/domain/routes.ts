@@ -238,10 +238,16 @@ export function buildRouteReport(input: {
   };
 }
 
-/** True when every CIDR a device wants to serve is a valid, non-overlapping route. */
+/**
+ * Validates a subnet request against the other routes in the network. Callers
+ * pass the *other* devices' non-rejected routes: the same device may re-request
+ * its own CIDR (the row is updated in place), and two devices serving the same
+ * or overlapping CIDR would make routing ambiguous.
+ */
 export function validateSubnetRequest(
   cidr: string,
   existing: readonly RouteRecord[],
+  deviceId?: string,
 ): { cidr: string } {
   const normalized = normalizeCidr(cidr);
   if (normalized === "0.0.0.0/0") {
@@ -251,7 +257,10 @@ export function validateSubnetRequest(
   }
   for (const route of existing) {
     if (route.kind !== "subnet" || route.state === "rejected") continue;
-    if (normalizeCidr(route.cidr) === normalized) continue;
+    // Re-requesting your own CIDR updates the row in place.
+    if (deviceId && route.deviceId === deviceId && normalizeCidr(route.cidr) === normalized) {
+      continue;
+    }
     if (cidrsOverlap(route.cidr, normalized)) {
       throw new Error(
         `route ${normalized} overlaps ${route.cidr}, which is already requested or approved in this network`,

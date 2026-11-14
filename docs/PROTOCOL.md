@@ -450,3 +450,78 @@ Rollback is append-only: restoring revision *n* creates a new revision with a
 copy of that content and `rollback_of_revision = n`. [verified]
 
 `RetainNetworkInstance` is not part of the push path (see §8).
+
+## 11. M2: policy, MagicDNS and routes on the wire (no new RPC)
+
+M2 adds no method and no message: everything rides in the `NetworkConfig`
+pushed by `RunNetworkInstance`, and everything the panel learns comes back from
+`GetNetworkInstanceConfig` / `CollectNetworkInfo`. Details derived from
+`easytier-core/src/config/api_input.rs` are listed below because they change
+what a control plane may assume.
+
+### 11.1 Fields used by the M2 compiler
+
+| NetworkConfig field | EasyTier effect | Notes |
+| --- | --- | --- |
+| `acl` (`acl.Acl`) | `cfg.set_acl(...)`, applied to the instance's `AclFilter` | ignored when `Acl::is_empty()`; always send chains. Rules are sorted by descending `priority`, first match wins. `ports` are destination ports, `source_ports` are source ports; port criteria only apply when the packet carries a port, so an `Any`-protocol rule with ports also matches ICMP. |
+| `proxy_cidrs` | subnet router (`--proxy-networks`); advertised to peers | `"real"` or `"real->mapped"`. Advertisements are visible in *other* peers' `CollectNetworkInfo` routes. |
+| `enable_exit_node` | `--enable-exit-node` | reported back by `GetNetworkInstanceConfig`. |
+| `routes` + `enable_manual_routes` | install routes towards the overlay (`--manual-routes`) | `new_from_config` only reports `routes` (and sets `enable_manual_routes = true`) when the list is non-empty. |
+| `enable_magic_dns` | `flags.accept_dns` (`dns_server`) | zone is **not** in NetworkConfig; see §11.3. |
+| `hostname` | instance hostname; becomes the MagicDNS record name | EasyPlane pushes the device's unique DNS name. |
+
+### 11.2 Peer URLs need a non-Standalone networking method [verified]
+
+`gen_config` applies `peer_urls`/`peers` only inside the `PublicServer` and
+`Manual` branches; a `Standalone` instance silently ignores them. A config that
+lists peers while asking for `Standalone` therefore never forms a mesh.
+EasyPlane compiles `peer_urls` + `Standalone` as `Manual`.
+
+The client's `new_from_config` reports the peer list as `Url::to_string`, which
+appends a trailing `/` (`tcp://host:11010/`); drift comparison must normalise it.
+
+### 11.3 `tld_dns_zone` cannot be pushed [source, verified in the negative]
+
+`NetworkConfig` has no zone field and `gen_config` builds the instance flags
+from defaults, so a config-server-managed instance always serves the default
+zone `et.net.` — a client started with `--tld-dns-zone other.test.` still
+answers in `et.net.` for the pushed instance. The panel therefore treats the
+per-network zone as a naming/UI setting and warns about the client-side flag.
+`dig +short core-a.et.net @100.100.100.101` inside a real client returns the
+peer's virtual IP. [verified]
+
+### 11.4 Route reports
+
+- `CollectNetworkInfo([])` returns every instance in the process (empty
+  `inst_ids` means "all"); `CollectNetworkInfo([id])` filters.
+- Each `api.instance.Route` is a **peer** entry (`peer_id`, `ipv4_addr`,
+  `hostname`, `proxy_cidrs`); `route_table.list_routes` skips `my_peer_id`, so a
+  device's own advertisement is never in its own list. The control plane reads
+  it from the other members' reports and attributes it by virtual IP.
+- `GetNetworkInstanceConfig` returns the instance's current config
+  (`proxy_cidrs`, `enable_exit_node`, `acl`, ...) and its `ConfigSource`
+  (`ConfigSourceWeb` for everything EasyPlane pushed).
+- `GetNetworkInstanceConfig` fails with `instance config control not found`
+  while an instance is being (re)created by `RunNetworkInstance`; callers must
+  tolerate a short window of errors. [verified]
+- `DeleteNetworkInstance` only works while the client is connected; a
+  file-backed instance (`-c`/`-f`) is `READ_ONLY|NO_DELETE` and a separate
+  process is invisible to the control plane.
+
+### 11.5 What M2 verified with three real clients
+
+`test/conformance/m2.test.ts` (three containers, isolated bridge network, each
+with its own TUN):
+
+- a compiled ACL arrives via `RunNetworkInstance`, the client logs
+  `ACL rules built: 1 inbound, 0 outbound, 0 forward`, an allowed TCP flow
+  returns 200 and a denied port times out in both directions;
+- MagicDNS resolves a peer name on a client;
+- a pending subnet route is absent from the pushed config, an approved one is
+  pushed and reported back, an extra non-managed instance advertising a route
+  shows up as an unapproved/unknown peer, and exit-node approval flips
+  `enable_exit_node`.
+
+The containers reach the vitest-hosted listener through a test-only TCP relay
+because this host drops traffic from Docker bridges to host ports; the
+WebSocket, Noise upgrade and RPCs are end-to-end. See the test header.

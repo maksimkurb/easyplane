@@ -144,6 +144,14 @@ describe("route state", () => {
       cidr: "192.168.70.0/24",
     });
     expect(() => validateSubnetRequest("192.168.50.128/25", routes)).toThrow(/overlaps/);
+    // Another device cannot claim the same CIDR...
+    expect(() =>
+      validateSubnetRequest("192.168.50.0/24", routes, "another-device"),
+    ).toThrow(/overlaps/);
+    // ...but the owner can re-request it (the row is updated in place).
+    expect(validateSubnetRequest("192.168.50.0/24", routes, "router").cidr).toBe(
+      "192.168.50.0/24",
+    );
     expect(() => validateSubnetRequest("0.0.0.0/0", routes)).toThrow(/exit node/);
     expect(() => validateSubnetRequest("not-a-cidr", routes)).toThrow();
   });

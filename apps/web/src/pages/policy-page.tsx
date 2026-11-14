@@ -241,7 +241,21 @@ export function PolicyPage() {
         >
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <Button
-              onClick={() => setMode("form")}
+              onClick={() => {
+                if (mode === "json") {
+                  // Parse the editor back into the form; refuse on bad JSON
+                  // instead of silently dropping the edits.
+                  try {
+                    const parsed = JSON.parse(text) as PolicyDocumentShape
+                    setBase((previous) => ({ ...previous, ...parsed }))
+                    setRows(toRows(parsed))
+                  } catch {
+                    toast.error(t("policy.jsonParseError"))
+                    return
+                  }
+                }
+                setMode("form")
+              }}
               size="sm"
               variant={mode === "form" ? "default" : "outline"}
             >
