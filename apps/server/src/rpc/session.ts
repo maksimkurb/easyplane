@@ -286,6 +286,9 @@ export class RpcSession extends EventEmitter<RpcSessionEvents> {
   }
 
   private sendResponse(request: common.RpcPacket, response: common.RpcResponse): void {
+    // The handler may close the session itself (blocked device, rate limit);
+    // there is nobody left to answer in that case.
+    if (this.closed) return;
     const body = encodeRpcResponse(response);
     const rpcPacket: common.RpcPacket = {
       fromPeer: request.toPeer,
@@ -300,8 +303,13 @@ export class RpcSession extends EventEmitter<RpcSessionEvents> {
       // Deliberately no compression_info: the client then leaves response
       // bodies uncompressed (see easytier-core/src/rpc/server.rs).
     };
-    this.sendRpcPacket(rpcPacket);
-    this.stats.responsesOut += 1;
+    try {
+      this.sendRpcPacket(rpcPacket);
+      this.stats.responsesOut += 1;
+    } catch (error) {
+      // The link can close between the `closed` check and the write.
+      this.emit("error", error instanceof Error ? error : new Error(String(error)));
+    }
   }
 
   private sendRpcPacket(packet: common.RpcPacket): void {

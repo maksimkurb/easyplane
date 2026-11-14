@@ -24,6 +24,7 @@ export const PORTS = {
   secure: 22083,
   plain: 22084,
   badToken: 22085,
+  m1: 22086,
 } as const;
 
 export function dockerCompose(

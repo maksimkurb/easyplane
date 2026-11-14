@@ -169,6 +169,39 @@ export async function loginWithMockIdp(
   };
 }
 
+/** Break-glass login for suites that do not need an IdP (conformance). */
+export async function bootstrapAdmin(
+  test: TestApp,
+  email = "admin@example.com",
+): Promise<LoginResult> {
+  const response = await test.app.inject({
+    method: "POST",
+    url: "/api/auth/bootstrap",
+    headers: { host: TEST_HOST },
+    payload: { token: BOOTSTRAP_TOKEN, email, displayName: "Admin" },
+  });
+  if (response.statusCode !== 200) {
+    throw new Error(`bootstrap failed: ${response.statusCode} ${response.body}`);
+  }
+  const cookies = response.cookies as Array<{ name: string; value: string }>;
+  const session = cookies.find((cookie) => cookie.name === "easyplane_session");
+  const csrf = cookies.find((cookie) => cookie.name === "easyplane_csrf");
+  if (!session || !csrf) throw new Error("bootstrap did not set session cookies");
+  const me = await test.app.inject({
+    method: "GET",
+    url: "/api/auth/me",
+    headers: { host: TEST_HOST, cookie: `easyplane_session=${session.value}` },
+  });
+  const body = me.json() as { user: { id: string; role: string }; csrfToken: string };
+  return {
+    statusCode: response.statusCode,
+    cookie: `easyplane_session=${session.value}; easyplane_csrf=${csrf.value}`,
+    csrfToken: body.csrfToken,
+    userId: body.user.id,
+    role: body.user.role,
+  };
+}
+
 export function sessionCookie(login: LoginResult): string {
   return login.cookie.split(";")[0]!;
 }
