@@ -576,6 +576,24 @@ export async function listRevisions(
     .orderBy(desc(configRevisions.revision));
 }
 
+export interface RevisionWithAuthor {
+  revision: typeof configRevisions.$inferSelect;
+  createdByEmail: string | null;
+}
+
+/** Revision history with the author's email for the "who/when" column. */
+export async function listRevisionsWithAuthor(
+  db: DbExecutor,
+  deviceId: string,
+): Promise<RevisionWithAuthor[]> {
+  return db
+    .select({ revision: configRevisions, createdByEmail: users.email })
+    .from(configRevisions)
+    .leftJoin(users, eq(users.id, configRevisions.createdBy))
+    .where(eq(configRevisions.deviceId, deviceId))
+    .orderBy(desc(configRevisions.revision));
+}
+
 export async function getRevision(
   db: DbExecutor,
   deviceId: string,

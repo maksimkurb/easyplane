@@ -96,6 +96,7 @@ export const revisionSchema = z.object({
   source: z.enum(["approval", "manual", "rollback"]),
   rollbackOfRevision: z.number().int().nullable(),
   createdBy: z.string().nullable(),
+  createdByEmail: z.string().nullable(),
   createdAt: z.string(),
 });
 

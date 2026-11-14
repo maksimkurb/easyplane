@@ -10,6 +10,7 @@ import {
   insertRevision,
   listDevices,
   listRevisions,
+  listRevisionsWithAuthor,
   pendingDeviceCount,
   touchInvite,
   updateDevice,
@@ -70,6 +71,7 @@ export interface RevisionDto {
   source: "approval" | "manual" | "rollback";
   rollbackOfRevision: number | null;
   createdBy: string | null;
+  createdByEmail: string | null;
   createdAt: string;
 }
 
@@ -182,7 +184,7 @@ export class DeviceService {
     rollbackOfRevision: number | null;
     createdBy: string | null;
     createdAt: Date;
-  }): RevisionDto {
+  }, createdByEmail: string | null = null): RevisionDto {
     return {
       id: revision.id,
       deviceId: revision.deviceId,
@@ -192,6 +194,7 @@ export class DeviceService {
       source: revision.source,
       rollbackOfRevision: revision.rollbackOfRevision,
       createdBy: revision.createdBy,
+      createdByEmail,
       createdAt: revision.createdAt.toISOString(),
     };
   }
@@ -341,8 +344,10 @@ export class DeviceService {
   async listRevisions(actor: RequestActor, deviceId: string): Promise<RevisionDto[]> {
     const device = await getDevice(this.options.db, actor.orgId, deviceId);
     if (!device) notFound("device not found");
-    const revisions = await listRevisions(this.options.db, deviceId);
-    return revisions.map((revision) => this.revisionToDto(revision));
+    const revisions = await listRevisionsWithAuthor(this.options.db, deviceId);
+    return revisions.map((row) =>
+      this.revisionToDto(row.revision, row.createdByEmail),
+    );
   }
 
   private validateAddress(

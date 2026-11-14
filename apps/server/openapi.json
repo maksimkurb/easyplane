@@ -2417,6 +2417,10 @@
                         "nullable": true,
                         "type": "string"
                       },
+                      "createdByEmail": {
+                        "nullable": true,
+                        "type": "string"
+                      },
                       "createdAt": {
                         "type": "string"
                       }
@@ -2430,6 +2434,7 @@
                       "source",
                       "rollbackOfRevision",
                       "createdBy",
+                      "createdByEmail",
                       "createdAt"
                     ],
                     "additionalProperties": false
@@ -2528,6 +2533,10 @@
                           "nullable": true,
                           "type": "string"
                         },
+                        "createdByEmail": {
+                          "nullable": true,
+                          "type": "string"
+                        },
                         "createdAt": {
                           "type": "string"
                         }
@@ -2541,6 +2550,7 @@
                         "source",
                         "rollbackOfRevision",
                         "createdBy",
+                        "createdByEmail",
                         "createdAt"
                       ],
                       "additionalProperties": false
@@ -2780,6 +2790,10 @@
                           "nullable": true,
                           "type": "string"
                         },
+                        "createdByEmail": {
+                          "nullable": true,
+                          "type": "string"
+                        },
                         "createdAt": {
                           "type": "string"
                         }
@@ -2793,6 +2807,7 @@
                         "source",
                         "rollbackOfRevision",
                         "createdBy",
+                        "createdByEmail",
                         "createdAt"
                       ],
                       "additionalProperties": false
