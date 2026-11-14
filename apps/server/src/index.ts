@@ -4,7 +4,14 @@ export { RemoteWebClient } from "./control/remote-client.js";
 export { buildMinimalNetworkConfig, type MinimalNetworkConfigOptions } from "./config/network-config.js";
 export { createLogger, createSilentLogger, type Logger } from "./logger.js";
 export { RpcSession } from "./rpc/session.js";
-export { RpcRemoteError } from "./rpc/codec.js";
+export {
+  RpcRemoteError,
+  decompressBody,
+  decompressZstd,
+  decompressZstdFallback,
+  makeRemoteError,
+  remoteErrorToMessage,
+} from "./rpc/codec.js";
 export {
   WEB_CLIENT_SERVICE,
   WEB_SERVER_SERVICE,

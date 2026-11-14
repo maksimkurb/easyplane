@@ -1,5 +1,7 @@
 import * as zlib from "node:zlib";
 
+import { decompress as fzstdDecompress } from "fzstd";
+
 import { common, error as protoError } from "@easyplane/proto";
 
 /** RPC-level failure surfaced by the remote peer (`common.RpcResponse.error`). */
@@ -18,26 +20,33 @@ const COMPRESSION_NONE = 1;
 const COMPRESSION_ZSTD = 2;
 
 /**
- * Decompress an RPC body. EasyTier only compresses when the peer advertised a
- * smaller payload; zstd support was added to Node after v22, so probe instead
- * of assuming.
+ * zstd decompression. Node only gained `zlib.zstdDecompressSync` in 23.8, while
+ * the brief targets Node 22+, so fall back to the pure-JS `fzstd` decoder.
+ *
+ * A config-server client can legitimately send zstd request bodies: it learns
+ * the peer's `accepted_algo` from earlier responses (see
+ * easytier-core/src/rpc/client.rs) and compresses only when the result is
+ * smaller than the raw body.
  */
+export function decompressZstd(input: Buffer): Buffer {
+  const zstd = zlib as unknown as {
+    zstdDecompressSync?: (buffer: Buffer) => Buffer;
+  };
+  if (typeof zstd.zstdDecompressSync === "function") {
+    return zstd.zstdDecompressSync(input);
+  }
+  return decompressZstdFallback(input);
+}
+
+/** Pure-JS zstd path, exported so tests exercise it on every Node version. */
+export function decompressZstdFallback(input: Buffer): Buffer {
+  return Buffer.from(fzstdDecompress(input));
+}
+
 export function decompressBody(algo: number, body: Uint8Array): Buffer {
   const input = Buffer.from(body.buffer, body.byteOffset, body.byteLength);
   if (algo === COMPRESSION_NONE || algo === 0) return input;
-  if (algo === COMPRESSION_ZSTD) {
-    const zstd = zlib as unknown as {
-      zstdDecompressSync?: (buffer: Buffer) => Buffer;
-    };
-    if (typeof zstd.zstdDecompressSync !== "function") {
-      throw new Error(
-        "received a zstd-compressed RPC body but this Node build has no zstd support " +
-          "(run Node >= 23.8, or the client will normally not compress because the " +
-          "server advertises no accepted algorithm)",
-      );
-    }
-    return zstd.zstdDecompressSync(input);
-  }
+  if (algo === COMPRESSION_ZSTD) return decompressZstd(input);
   throw new Error(`unsupported RPC compression algorithm: ${algo}`);
 }
 

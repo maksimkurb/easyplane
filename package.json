@@ -18,7 +18,7 @@
     "test": "vitest run --project unit",
     "test:unit": "vitest run --project unit",
     "test:conformance": "vitest run --project conformance",
-    "dev": "tsx apps/server/src/main.ts",
+    "dev": "tsc -b tsconfig.build.json && tsx apps/server/src/main.ts",
     "protos:sync": "scripts/sync-protos.sh",
     "protos:check": "scripts/check-protos.sh",
     "test-client:build": "scripts/build-test-client.sh"

@@ -229,11 +229,15 @@ message RpcResponse { bytes response = 1; error.Error error = 2; uint64 runtime_
   `(is_request, from_peer, transaction_id)`. `CollectNetworkInfo` on a running
   instance exercises this. [verified]
 - **Compression**: `compression_info.accepted_algo` advertises zstd support.
-  EasyTier compresses a body only when it is smaller. EasyPlane leaves
-  `compression_info` unset in its requests, which makes the client return
-  **uncompressed** responses (its `compress_packet(None)` path). Inbound
-  request bodies are still decompressed when marked zstd (needs a Node build
-  with zstd; Node ≥ 23.8). [source + verified that responses are uncompressed]
+  EasyTier compresses a body only when the compressed form is smaller.
+  EasyPlane leaves `compression_info` unset in its requests, which makes the
+  client return **uncompressed** responses (its `compress_packet(None)` path).
+  Inbound client requests do carry `compression_info` (observed `algo = None`
+  with bodies of 3–188 bytes; no zstd body was ever observed because
+  heartbeat-sized payloads do not shrink), but any inbound zstd body is still
+  decoded, via `zlib.zstdDecompressSync` when available or the pure-JS
+  `fzstd` fallback, so Node 22+ works too. [verified for the None path; source
+  for the zstd path, with a frame-format unit test]
 
 ## 6. Services on the control channel
 
