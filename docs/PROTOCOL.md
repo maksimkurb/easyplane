@@ -342,8 +342,9 @@ Observed behaviour with the real client:
   epochs ahead and keep a 256-packet replay window); we do not implement the
   `sync_root_key` rekey message because EasyTier's web client never sends one.
 - **`RetainNetworkInstance` reconciliation loop.** The method is implemented and
-  callable; the periodic "retain what the server still wants" driver belongs to
-  M1's desired-state engine.
+  callable, but M1 converges devices with `RunNetworkInstance` + verification
+  instead (see §10.4) rather than deleting whatever the server does not list.
+  `RetainNetworkInstance` remains available for a future "adopt and prune" mode.
 - **zstd compression of our own RPC bodies.** We always send uncompressed and
   ask the client not to compress responses. Inbound zstd is supported when the
   Node runtime provides `zlib.zstdDecompressSync`.
@@ -367,3 +368,85 @@ Client version used: `easytier-core 2.6.4-81487c36`, built from the pinned
 commit by `scripts/build-test-client.sh`. The official `v2.6.4` release binary
 is **not** byte-identical to the pin (different commit) and was therefore not
 used.
+
+## 10. M1 control-plane semantics (no wire change)
+
+M1 adds identity, approval and desired state **on top of** the M0 channel. The
+bytes on the wire are unchanged; this section records how the server uses them.
+
+### 10.1 Invite token is the config-server token
+
+Invites are created by the panel and their plaintext is shown once. Only
+`sha256(token)` is stored. The token is placed in the config-server URL:
+
+```
+easytier-core --config-server wss://host/<invite-token> --hostname my-device
+```
+
+The client percent-decodes the last path segment and sends it as
+`HeartbeatRequest.user_token`; over `tcp` the path is cleared before dialling,
+so the heartbeat field is the authoritative source (§2). The server resolves
+the hash to an invite, the invite to a network, and `(network, machine_id)` to
+a device. [verified — conformance m1.test.ts]
+
+- Unknown token → RPC error at heartbeat time; the client logs
+  `config-server heartbeat failed`, tears the session down and retries every
+  second. The server rate-limits unknown tokens per source IP and closes the
+  link once the window is exceeded. [verified]
+- Expired/exhausted/revoked invites cannot create **new** devices, but the
+  token remains usable for an already-registered device of that invite (it is
+  the only credential a deployed client has; revoking must not silently kick
+  the fleet). [verified for exhausted/revoked]
+- `--hostname` and `--machine-id` are the upstream CLI flags
+  (`easytier/src/core.rs`), verified in the pinned source.
+
+### 10.2 Enrollment and approval
+
+A new `machine_id` becomes a `pending` device with hostname, EasyTier version,
+OS info and source IP from the heartbeat, plus the invite used. Pending devices
+receive **no** `WebClientService` calls and run nothing: the conformance test
+queries `ListNetworkInstance` on the real client and gets an empty list.
+[verified]
+
+Approval allocates an address from the network CIDR, creates revision 1 of the
+desired config (`source = approval`) and schedules a push. Blocking and
+deleting call `DeleteNetworkInstance` for the deterministic instance id before
+closing the session, then refuse heartbeats. [verified — the client logs the
+heartbeat rejection and never receives config again]
+
+### 10.3 Deterministic instance id
+
+One EasyTier instance per `(network, device)`. Its UUID is derived as
+`sha256("easyplane.network-instance" || networkId || deviceId)` formatted as a
+v5-shaped UUID. The same id is used for `RunNetworkInstance`,
+`CollectNetworkInfo`, `GetNetworkInstanceConfig` and `DeleteNetworkInstance`,
+so the server can verify or stop exactly the instance it owns. [verified]
+
+### 10.4 Desired vs applied, idempotent push
+
+The desired config is stored per device as an append-only revision. The
+EasyTier `network_secret` is **not** stored in revision rows: it lives on the
+network row (AES-256-GCM) and is merged in when a config is built.
+
+Push path:
+
+1. `RunNetworkInstance{inst_id, config, overwrite=true, source=ConfigSourceWeb}`
+   with a 20 s RPC timeout. [verified]
+2. Poll `CollectNetworkInfo([inst_id])` until `running = true` or
+   `error_msg` is reported (max ~6 s). [verified]
+3. Record `applied_revision` and clear the error, or store `last_push_error`.
+
+On every reconnect/heartbeat where applied < desired (or after a failure) and
+periodically while online, the server verifies `ListNetworkInstance` +
+`GetNetworkInstanceConfig` and re-pushes only when the instance is missing or
+the reported config diverges. The comparison is **semantic**, because upstream
+normalises the config: `networkingMethod` (Standalone comes back as Manual),
+build defaults (`bindDevice`, `multiThread`) and other fields are ignored; the
+network name/secret, hostname, DHCP/IPv4/prefix, `noTun`, MagicDNS and peer URLs
+are compared. [verified — revision 2 and rollback revision 3 are read back from
+the real client]
+
+Rollback is append-only: restoring revision *n* creates a new revision with a
+copy of that content and `rollback_of_revision = n`. [verified]
+
+`RetainNetworkInstance` is not part of the push path (see §8).

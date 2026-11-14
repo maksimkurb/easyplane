@@ -27,6 +27,8 @@ function sleep(ms: number): Promise<void> {
 
 /** Starts (or reuses) the throwaway Postgres used by the test suites. */
 export async function ensureTestPostgres(): Promise<void> {
+  // CI provides a Postgres service; local runs start a container instead.
+  if (process.env.EASYPLANE_TEST_DATABASE_URL) return;
   if (!dockerAvailable()) {
     throw new Error(
       "docker is not available; integration and conformance tests need Postgres (or set EASYPLANE_TEST_DATABASE_URL)",

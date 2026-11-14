@@ -36,10 +36,63 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun run test:unit
+      - name: Web lint and tests
+        run: bun run lint && bun run test:web
+      - name: Web production build
+        run: bun run web:build
+      - name: Fail on generated OpenAPI / client drift
+        run: |
+          bun run openapi:generate
+          bun run --cwd apps/web api:generate
+          git diff --exit-code -- apps/server/openapi.json apps/web/src/api/generated
+
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: easyplane
+          POSTGRES_PASSWORD: easyplane
+          POSTGRES_DB: easyplane
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U easyplane"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      - name: Integration (Postgres + mock OIDC)
+        env:
+          EASYPLANE_TEST_DATABASE_URL: postgres://easyplane:easyplane@127.0.0.1:5432/easyplane
+        run: bun run test:integration
 
   conformance:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: easyplane
+          POSTGRES_PASSWORD: easyplane
+          POSTGRES_DB: easyplane
+        ports:
+          - 22090:5432
+        options: >-
+          --health-cmd "pg_isready -U easyplane"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -54,7 +107,9 @@ jobs:
         run: scripts/build-test-client.sh
       - name: Build the conformance image
         run: docker compose -f docker-compose.test.yml --profile test build
-      - name: Conformance (real easytier-core over ws/wss/tcp + secure mode)
+      - name: Conformance (real easytier-core, M0 + M1 invite flow)
+        env:
+          EASYPLANE_TEST_DATABASE_URL: postgres://easyplane:easyplane@127.0.0.1:22090/easyplane
         run: bun run test:conformance
       - name: Dump container logs on failure
         if: failure()
@@ -62,3 +117,10 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose -f docker-compose.test.yml --profile test down --remove-orphans || true
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the deployment image
+        run: docker build -f docker/server.Dockerfile -t easyplane/server:ci .
