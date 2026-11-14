@@ -159,11 +159,28 @@ that key is not implemented in M1.
 docker compose exec postgres pg_dump -U easyplane easyplane | gzip > easyplane.sql.gz
 ```
 
-## 6. M1 limitations
+## 6. M1 limitations and risks
 
-- No UDP config-server transport, no key rotation for the encryption key.
+- **Run one server instance.** The device-session registry, unknown-token
+  limiter and reconcile timer are in-process. A second replica could not push
+  to devices connected to the first, and rate limits would be per replica.
+  Horizontal scaling needs sticky config-server sessions or a shared registry.
+- Blocking a device stops its instance via `DeleteNetworkInstance` only while
+  it is connected. An offline blocked device cannot be reached; its EasyTier
+  network keeps running locally until the process restarts, and its next
+  heartbeat is refused. Deleting a device has the same property.
+- The OIDC client authenticates at the token endpoint with
+  `client_secret_post` (or no secret + PKCE). Providers that require
+  `client_secret_basic`, mTLS or JWT client assertions are not supported yet.
+- No UDP config-server transport and no encryption-key rotation. Losing
+  `EASYPLANE_ENCRYPTION_KEY` makes stored network secrets unrecoverable.
+- `machine_id` is self-reported by the client. Anyone holding a valid invite
+  can claim a machine id; approval is the security boundary. Rotate/revoke
+  invites if one leaks.
 - No SSE/WebSocket browser updates: pages poll via TanStack Query refetch.
-- Tags/ACL/MagicDNS policy is M2; the tags table exists but is unused.
-- Single organisation per deployment.
+- Tags/ACL/MagicDNS policy is M2; the tags table exists but is unused. One
+  organisation per deployment, roles are deployment-wide.
+- No browser E2E suite yet (the UI is covered by unit tests, typecheck, lint
+  and a served-build smoke test).
 - No outbound calls except configured OIDC discovery/token/userinfo and
   EasyTier clients.
