@@ -82,6 +82,7 @@ function serviceKey(descriptor: { domainName: string; protoName: string; service
 export class RpcSession extends EventEmitter<RpcSessionEvents> {
   readonly id = randomUUID();
   readonly label: string;
+  readonly remoteAddress: string;
   readonly transportKind: TunnelLink["transportKind"];
   readonly secure: boolean;
 
@@ -105,6 +106,7 @@ export class RpcSession extends EventEmitter<RpcSessionEvents> {
   constructor(private readonly link: TunnelLink) {
     super();
     this.label = link.label;
+    this.remoteAddress = link.remoteAddress;
     this.transportKind = link.transportKind;
     this.secure = link.secure;
     this.nextTransactionId = BigInt(1 + Math.floor(Math.random() * 0x7fffffff));

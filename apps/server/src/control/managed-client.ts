@@ -47,6 +47,7 @@ export class ManagedClient extends EventEmitter<ManagedClientEvents> {
     session.on("closed", () => {
       this.closed = true;
       for (const waiter of this.closeWaiters.splice(0)) waiter();
+      this.emit("closed");
     });
   }
 
@@ -64,6 +65,10 @@ export class ManagedClient extends EventEmitter<ManagedClientEvents> {
 
   get label(): string {
     return this.session.label;
+  }
+
+  get remoteAddress(): string {
+    return this.session.remoteAddress;
   }
 
   get heartbeatCount(): number {

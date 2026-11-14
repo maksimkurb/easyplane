@@ -75,6 +75,8 @@ export class FrameQueue {
 export interface FrameTransport {
   readonly kind: TransportKind;
   readonly label: string;
+  /** Peer address (no port), used for rate limiting by source IP. */
+  readonly remoteAddress: string;
   readonly frames: FrameQueue;
   sendFrame(tunnelPayload: Buffer): void;
   close(): void;
@@ -82,6 +84,7 @@ export interface FrameTransport {
 
 class TcpFrameTransport implements FrameTransport {
   readonly kind = "tcp" as const;
+  readonly remoteAddress: string;
   readonly frames = new FrameQueue();
   private pending: Buffer = Buffer.alloc(0);
 
@@ -89,6 +92,7 @@ class TcpFrameTransport implements FrameTransport {
     private readonly socket: Socket,
     readonly label: string,
   ) {
+    this.remoteAddress = socket.remoteAddress ?? "";
     socket.setNoDelay(true);
     socket.on("data", (chunk: Buffer) => this.onData(chunk));
     socket.on("error", (error) => this.frames.end(error));
@@ -136,6 +140,7 @@ class WebSocketFrameTransport implements FrameTransport {
     private readonly ws: WebSocket,
     readonly kind: TransportKind,
     readonly label: string,
+    readonly remoteAddress: string,
   ) {
     ws.on("message", (data, isBinary) => {
       // tokio-websockets delivers binary messages only; text is a protocol error.
@@ -177,6 +182,7 @@ export function websocketFrameTransport(
   ws: WebSocket,
   kind: TransportKind,
   label: string,
+  remoteAddress = "",
 ): FrameTransport {
-  return new WebSocketFrameTransport(ws, kind, label);
+  return new WebSocketFrameTransport(ws, kind, label, remoteAddress);
 }

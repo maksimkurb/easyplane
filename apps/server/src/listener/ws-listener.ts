@@ -56,7 +56,14 @@ export class WsConfigServerListener {
         const path = request.url ?? "/";
         const label = `${this.kind}://${remote}${path}`;
         this.options.logger.debug("websocket connection accepted", { remote: label });
-        this.options.onTransport(websocketFrameTransport(ws, this.kind, label));
+        this.options.onTransport(
+          websocketFrameTransport(
+            ws,
+            this.kind,
+            label,
+            request.socket.remoteAddress ?? "",
+          ),
+        );
       });
     });
 

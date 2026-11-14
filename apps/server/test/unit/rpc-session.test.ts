@@ -16,6 +16,7 @@ import { PEER_MANAGER_HEADER_SIZE } from "@easyplane/server";
 class MemoryLink implements TunnelLink {
   readonly transportKind = "ws" as const;
   readonly label = "memory";
+  readonly remoteAddress = "127.0.0.1";
   readonly secure = false;
   readonly queue = new FrameQueue();
   readonly sent: Buffer[] = [];

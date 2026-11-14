@@ -22,6 +22,7 @@ import type { FrameTransport } from "./frames.js";
 export interface TunnelLink {
   readonly transportKind: FrameTransport["kind"];
   readonly label: string;
+  readonly remoteAddress: string;
   readonly secure: boolean;
   nextPacket(): Promise<Buffer | null>;
   sendPacket(tunnelPayload: Buffer): void;
@@ -45,6 +46,10 @@ class Link implements TunnelLink {
 
   get label(): string {
     return this.transport.label;
+  }
+
+  get remoteAddress(): string {
+    return this.transport.remoteAddress;
   }
 
   get secure(): boolean {
