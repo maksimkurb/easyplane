@@ -356,7 +356,7 @@ and real `easytier-core` containers from `docker-compose.test.yml`
 
 | test | proves |
 | --- | --- |
-| `ws.test.ts` | ws accept, Noise upgrade, GetFeature, Heartbeat pacing, ValidateConfig, RunNetworkInstance, CollectNetworkInfo, ListNetworkInstance, GetNetworkInstanceConfig, ListNetworkInstanceMeta, restart/reconnect + re-push |
+| `ws.test.ts` | ws accept, Noise upgrade, GetFeature, Heartbeat pacing, ValidateConfig, RunNetworkInstance, CollectNetworkInfo, ListNetworkInstance, GetNetworkInstanceConfig, ListNetworkInstanceMeta, multi-piece config push, restart/reconnect + re-push |
 | `wss.test.ts` | TLS listener + the same stack |
 | `tcp.test.ts` | tcp framing + the same stack |
 | `secure-mode.test.ts` | `--secure-mode` clients (Noise is mandatory) |

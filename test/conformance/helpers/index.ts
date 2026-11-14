@@ -196,6 +196,24 @@ export function conformanceNetworkConfig(): manage.NetworkConfig {
   });
 }
 
+/** A config whose RunNetworkInstance body exceeds one TCP MTU. */
+export function largeConformanceNetworkConfig(): manage.NetworkConfig {
+  const noTun = process.env.EASYPLANE_CONFORMANCE_NO_TUN === "1";
+  const whitelist = Array.from({ length: 300 }, (_, index) => `whitelist-${String(index).padStart(3, "0")}`);
+  return buildMinimalNetworkConfig({
+    instanceId: CONFORMANCE_INSTANCE_ID,
+    networkName: CONFORMANCE_NETWORK_NAME,
+    networkSecret: CONFORMANCE_NETWORK_SECRET,
+    hostname: CONFORMANCE_HOSTNAME,
+    virtualIpv4: "10.144.144.1",
+    networkLength: 24,
+    networkingMethod: "standalone",
+    noTun,
+    enableRelayNetworkWhitelist: true,
+    relayNetworkWhitelist: whitelist,
+  });
+}
+
 export interface M0Evidence {
   transport: string;
   secure: boolean;

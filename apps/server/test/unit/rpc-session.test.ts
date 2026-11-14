@@ -18,6 +18,7 @@ class MemoryLink implements TunnelLink {
   readonly label = "memory";
   readonly secure = false;
   readonly queue = new FrameQueue();
+  readonly sent: Buffer[] = [];
   peer!: MemoryLink;
 
   static pair(): [MemoryLink, MemoryLink] {
@@ -33,6 +34,7 @@ class MemoryLink implements TunnelLink {
   }
 
   sendPacket(tunnelPayload: Buffer): void {
+    this.sent.push(Buffer.from(tunnelPayload));
     this.peer.queue.push(Buffer.from(tunnelPayload));
   }
 
@@ -134,6 +136,36 @@ describe("RPC session (easytier-core/src/rpc/*)", () => {
     const response = decodeResponseFrame(responseFrame!);
     expect(Buffer.from(response.response).toString()).toBe("ok");
     expect(handlerBody?.equals(payload)).toBe(true);
+    server.close();
+  });
+
+  it("splits large requests so every TCP/secure frame stays under the 2000-byte MTU", async () => {
+    const [a, b] = MemoryLink.pair();
+    const server = new RpcSession(a);
+    const client = new RpcSession(b);
+    let receivedLength = 0;
+    server.register(TEST_SERVICE, 1, async (body) => {
+      receivedLength = body.length;
+      return Buffer.from("ok");
+    });
+    void server.run();
+    void client.run();
+
+    const payload = Buffer.alloc(8192, 7);
+    const response = await client.call({
+      descriptor: { ...TEST_SERVICE, methodIndex: 1 },
+      payload,
+    });
+    expect(response.toString()).toBe("ok");
+    expect(receivedLength).toBe(payload.length);
+
+    // Every tunnel payload the client wrote must fit the Rust reader's MTU.
+    const frames = b.sent;
+    expect(frames.length).toBeGreaterThan(1);
+    for (const frame of frames) {
+      expect(frame.length).toBeLessThanOrEqual(2000);
+    }
+    client.close();
     server.close();
   });
 

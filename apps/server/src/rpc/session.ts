@@ -59,6 +59,15 @@ export interface RpcSessionEvents {
 const DEFAULT_TIMEOUT_MS = 5000;
 const PIECE_IDLE_TIMEOUT_MS = 10_000;
 
+/**
+ * Encoded RpcPacket budget for outbound requests. Upstream's TCP tunnel reader
+ * uses a 2000-byte MTU (framed.rs `TCP_MTU_BYTES`), and EasyTier splits RPC
+ * bodies into pieces for a ~1300-byte UDP budget regardless of transport
+ * (rpc/packet.rs). Staying at 1200 bytes of protobuf leaves room for the 4-byte
+ * TCP length, the 16-byte peer-manager header and the web-secure AEAD tail.
+ */
+const MAX_PIECE_ENCODED_BYTES = 1200;
+
 function serviceKey(descriptor: { domainName: string; protoName: string; serviceName: string }): string {
   return `${descriptor.domainName}\u0000${descriptor.protoName}\u0000${descriptor.serviceName}`;
 }
@@ -355,7 +364,7 @@ export class RpcSession extends EventEmitter<RpcSessionEvents> {
     });
 
     try {
-      this.sendRpcPacket(rpcPacket);
+      for (const piece of this.splitRequest(rpcPacket)) this.sendRpcPacket(piece);
       this.stats.requestsOut += 1;
     } catch (error) {
       const pending = this.pendingCalls.get(key);
@@ -366,6 +375,49 @@ export class RpcSession extends EventEmitter<RpcSessionEvents> {
       }
     }
     return promise;
+  }
+
+  /**
+   * Split an RPC request body into `total_pieces`/`piece_idx` pieces, mirroring
+   * `split_rpc_content_for_udp_budget` (rpc/packet.rs). Every piece repeats the
+   * descriptor, as upstream does when the body is not compressed; receivers use
+   * piece 0's descriptor.
+   */
+  private splitRequest(packet: common.RpcPacket): common.RpcPacket[] {
+    const body = Buffer.from(packet.body);
+    if (body.length <= MAX_PIECE_ENCODED_BYTES / 2) {
+      return [{ ...packet, totalPieces: 1, pieceIdx: 0 }];
+    }
+
+    const chunks: Buffer[] = [];
+    let offset = 0;
+    while (offset < body.length) {
+      let length = Math.min(MAX_PIECE_ENCODED_BYTES, body.length - offset);
+      for (;;) {
+        const probe: common.RpcPacket = {
+          ...packet,
+          body: body.subarray(offset, offset + length),
+          totalPieces: 127,
+          pieceIdx: chunks.length,
+        };
+        const encoded = common.RpcPacket.encode(probe).finish().length;
+        if (encoded <= MAX_PIECE_ENCODED_BYTES || length <= 1) break;
+        length = Math.max(1, length - 32);
+      }
+      chunks.push(body.subarray(offset, offset + length));
+      offset += length;
+    }
+
+    if (chunks.length === 1) return [{ ...packet, totalPieces: 1, pieceIdx: 0 }];
+    if (chunks.length > 127) {
+      throw new Error(`rpc request too large to split: ${chunks.length} pieces`);
+    }
+    return chunks.map((chunk, pieceIdx) => ({
+      ...packet,
+      body: chunk,
+      totalPieces: chunks.length,
+      pieceIdx,
+    }));
   }
 
   private resolveCall(packet: common.RpcPacket): void {

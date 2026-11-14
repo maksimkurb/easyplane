@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { manage } from "@easyplane/proto";
 import {
   CONFORMANCE_HOSTNAME,
   CONFORMANCE_INSTANCE_ID,
@@ -7,6 +8,7 @@ import {
   assertM0ClientBehaviour,
   conformanceNetworkConfig,
   ipv4ToU32,
+  largeConformanceNetworkConfig,
   requireDockerConformanceEnvironment,
   startCore,
   startTestServer,
@@ -59,6 +61,41 @@ describe("M0 conformance: ws:// config-server", () => {
     expect(evidence.configSource).toBe(2); // ConfigSourceWeb
     expect(evidence.metaNetworkName).toBe("easyplane-conformance");
     expect(evidence.heartbeatReportsInstance).toBe(true);
+  }, 180_000);
+
+  it("pushes a config larger than one TCP MTU using RPC piece splitting", async () => {
+    if (!harness) throw new Error("previous test did not start the harness");
+    const client = harness.server.listClients()[0];
+    if (!client) throw new Error("no active client");
+
+    const config = largeConformanceNetworkConfig();
+    const bodyLength = manage.RunNetworkInstanceRequest.encode({
+      instId: { part1: 0, part2: 0, part3: 0, part4: 0 },
+      config,
+      overwrite: true,
+      source: manage.ConfigSource.ConfigSourceWeb,
+    }).finish().length;
+    // The upstream TCP reader caps frames at 2000 bytes, so this config must be
+    // split into multiple RpcPacket pieces by the server.
+    expect(bodyLength).toBeGreaterThan(4000);
+
+    await client.remote.runNetworkInstance({
+      instId: CONFORMANCE_INSTANCE_ID,
+      config,
+      overwrite: true,
+    });
+
+    const deadline = Date.now() + 30_000;
+    let pushed: manage.GetNetworkInstanceConfigResponse | undefined;
+    while (Date.now() < deadline) {
+      pushed = await client.remote.getNetworkInstanceConfig(CONFORMANCE_INSTANCE_ID);
+      if (pushed.config?.relayNetworkWhitelist.length === 300) break;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    // Reassembly on the client proves every piece arrived.
+    expect(pushed?.config?.relayNetworkWhitelist).toHaveLength(300);
+    expect(pushed?.config?.relayNetworkWhitelist[0]).toBe("whitelist-000");
+    expect(pushed?.config?.relayNetworkWhitelist[299]).toBe("whitelist-299");
   }, 180_000);
 
   it("survives a client restart (1 s retry) without leaking sessions and can re-push state", async () => {

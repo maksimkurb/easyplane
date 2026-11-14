@@ -22,6 +22,8 @@ export interface MinimalNetworkConfigOptions {
   listenerUrls?: string[];
   noTun?: boolean;
   enableMagicDns?: boolean;
+  enableRelayNetworkWhitelist?: boolean;
+  relayNetworkWhitelist?: string[];
 }
 
 const NETWORKING_METHOD = {
@@ -50,10 +52,11 @@ export function buildMinimalNetworkConfig(options: MinimalNetworkConfigOptions):
     listenerUrls: options.listenerUrls ?? [],
     noTun: options.noTun ?? false,
     enableMagicDns: options.enableMagicDns ?? false,
+    enableRelayNetworkWhitelist: options.enableRelayNetworkWhitelist,
+    relayNetworkWhitelist: options.relayNetworkWhitelist ?? [],
     // Repeated fields are non-optional in the generated types; left empty so
     // the config stays minimal (see easytier-core/src/config/api_input.rs).
     proxyCidrs: [],
-    relayNetworkWhitelist: [],
     routes: [],
     exitNodes: [],
     mappedListeners: [],
