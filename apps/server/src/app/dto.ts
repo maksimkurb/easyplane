@@ -7,6 +7,7 @@ export function toUserDto(user: User) {
     email: user.email,
     displayName: user.displayName,
     role: user.role,
+    groups: user.groups,
     bootstrap: user.bootstrap,
     lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
   };

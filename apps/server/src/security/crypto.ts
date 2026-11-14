@@ -2,6 +2,7 @@ import {
   createCipheriv,
   createDecipheriv,
   createHash,
+  createHmac,
   randomBytes,
   randomUUID,
   timingSafeEqual,
@@ -70,6 +71,20 @@ export class SecretBox {
       decipher.update(ciphertext),
       decipher.final(),
     ]).toString("utf8");
+  }
+
+  /**
+   * Derives a stable secret (hex) from the master key and a domain plus parts.
+   * Used for EasyTier ACL group secrets, which must never be stored: the same
+   * inputs always produce the same secret, and it is not recoverable without
+   * `EASYPLANE_ENCRYPTION_KEY`.
+   */
+  derive(domain: string, ...parts: string[]): string {
+    return createHmac("sha256", this.key)
+      .update(domain)
+      .update("\u0000")
+      .update(parts.join("\u0000"))
+      .digest("hex");
   }
 }
 

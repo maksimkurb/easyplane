@@ -305,8 +305,8 @@ describe("networks, invites, devices, desired state and audit", () => {
       url: `/api/devices/${deviceId}/revisions`,
       headers: headers(),
       payload: {
-        config: { hostname: "node-a2", noTun: true, enableMagicDns: true },
-        note: "enable magic dns",
+        config: { noTun: true, peerUrls: ["tcp://peer.example:11010"] },
+        note: "enable no-tun",
       },
     });
     expect(created.statusCode).toBe(201);
@@ -319,8 +319,20 @@ describe("networks, invites, devices, desired state and audit", () => {
       appliedRevision: 2,
       sync: "in-sync",
     });
+    expect(activeFake.lastRun?.config?.noTun).toBe(true);
+    expect(activeFake.lastRun?.config?.peerUrls).toEqual(["tcp://peer.example:11010"]);
+
+    // The hostname is device identity, not revision content: renaming uses its
+    // own endpoint and repushes without creating a revision.
+    const renamed = await test.app.inject({
+      method: "PUT",
+      url: `/api/devices/${deviceId}/hostname`,
+      headers: headers(),
+      payload: { dnsName: "node-a2" },
+    });
+    expect(renamed.statusCode).toBe(200);
+    await waitFor(async () => activeFake.lastRun?.config?.hostname, (value) => value === "node-a2");
     expect(activeFake.lastRun?.config?.hostname).toBe("node-a2");
-    expect(activeFake.lastRun?.config?.enableMagicDns).toBe(true);
   });
 
   it("rolls back by appending a revision with the old content", async () => {
@@ -341,7 +353,11 @@ describe("networks, invites, devices, desired state and audit", () => {
 
     const dto = await waitFor(getDevice, (value) => value.appliedRevision === 3);
     expect(dto.desiredRevision).toBe(3);
-    expect(activeFake.lastRun?.config?.hostname).toBe("node-a");
+    // The rename survives a rollback; the revision content (noTun/peers) does not.
+    expect(activeFake.lastRun?.config?.hostname).toBe("node-a2");
+    // Revision 1 inherited the network default (noTun: true).
+    expect(activeFake.lastRun?.config?.noTun).toBe(true);
+    expect(activeFake.lastRun?.config?.peerUrls).toEqual([]);
     expect(activeFake.lastRun?.config?.enableMagicDns).toBe(false);
 
     const list = await test.app.inject({
@@ -366,7 +382,7 @@ describe("networks, invites, devices, desired state and audit", () => {
       method: "POST",
       url: `/api/devices/${deviceId}/revisions`,
       headers: headers(),
-      payload: { config: { hostname: "broken" }, note: "force failure" },
+      payload: { config: { noTun: true, mtu: 1400 }, note: "force failure" },
     });
     expect(failed.statusCode).toBe(201);
 

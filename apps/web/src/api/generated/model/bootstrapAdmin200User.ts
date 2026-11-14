@@ -3,7 +3,7 @@
  * Do not edit manually.
  * EasyPlane API
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
- * OpenAPI spec version: 0.1.0-M1
+ * OpenAPI spec version: 0.2.0-M2
  */
 import type { BootstrapAdmin200UserRole } from './bootstrapAdmin200UserRole';
 
@@ -12,6 +12,7 @@ export type BootstrapAdmin200User = {
   email: string;
   displayName: string;
   role: BootstrapAdmin200UserRole;
+  groups: string[];
   bootstrap: boolean;
   /** @nullable */
   lastLoginAt: string | null;

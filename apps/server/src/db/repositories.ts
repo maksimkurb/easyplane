@@ -1,18 +1,25 @@
-import { and, asc, count, desc, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
 
 import type { Database } from "./client.js";
 import {
   auditLog,
   configRevisions,
+  deviceRoutes,
+  deviceTags,
   devices,
   invites,
+  networkPolicies,
   networks,
   oidcLoginStates,
   organisations,
   sessions,
+  tags,
   userIdentities,
   users,
   type Device,
+  type DeviceRoute,
+  type DeviceRouteKind,
+  type DeviceRouteState,
   type DeviceState,
   type User,
   type UserRole,
@@ -103,6 +110,7 @@ export async function insertUser(
     displayName?: string;
     role?: UserRole;
     bootstrap?: boolean;
+    groups?: string[];
   },
 ): Promise<User> {
   const rows = await db
@@ -113,6 +121,7 @@ export async function insertUser(
       displayName: values.displayName ?? "",
       role: values.role ?? "viewer",
       bootstrap: values.bootstrap ?? false,
+      groups: values.groups ?? [],
     })
     .returning();
   if (!rows[0]) throw new Error("failed to create user");
@@ -123,7 +132,10 @@ export async function updateUser(
   db: DbExecutor,
   id: string,
   values: Partial<
-    Pick<User, "displayName" | "role" | "lastLoginAt" | "disabled" | "bootstrap">
+    Pick<
+      User,
+      "displayName" | "role" | "lastLoginAt" | "disabled" | "bootstrap" | "groups"
+    >
   >,
 ): Promise<User | undefined> {
   const rows = await db
@@ -309,7 +321,13 @@ export async function updateNetwork(
   values: Partial<
     Pick<
       typeof networks.$inferInsert,
-      "name" | "ipv4Cidr" | "defaultConfig" | "secretCiphertext"
+      | "name"
+      | "ipv4Cidr"
+      | "defaultConfig"
+      | "secretCiphertext"
+      | "magicDnsEnabled"
+      | "magicDnsZone"
+      | "policyVersion"
     >
   >,
 ): Promise<typeof networks.$inferSelect | undefined> {
@@ -533,6 +551,17 @@ export async function usedVirtualIps(
     .filter((ip): ip is string => typeof ip === "string" && ip.length > 0);
 }
 
+export async function listDevicesInNetwork(
+  db: DbExecutor,
+  networkId: string,
+): Promise<Device[]> {
+  return db
+    .select()
+    .from(devices)
+    .where(eq(devices.networkId, networkId))
+    .orderBy(asc(devices.dnsName));
+}
+
 export async function listDevicesForReconcile(
   db: DbExecutor,
   orgId: string,
@@ -668,4 +697,291 @@ export async function findUnclaimedDevices(
         or(isNull(devices.virtualIpv4), eq(devices.state, "pending")),
       ),
     );
+}
+
+// ---------------------------------------------------------------------------
+// M2: policy, tags, MagicDNS and routes
+// ---------------------------------------------------------------------------
+
+export async function listTags(
+  db: DbExecutor,
+  orgId: string,
+): Promise<(typeof tags.$inferSelect)[]> {
+  return db.select().from(tags).where(eq(tags.orgId, orgId)).orderBy(asc(tags.name));
+}
+
+export async function upsertTag(
+  db: DbExecutor,
+  values: { orgId: string; name: string; color?: string },
+): Promise<typeof tags.$inferSelect> {
+  const rows = await db
+    .insert(tags)
+    .values({ orgId: values.orgId, name: values.name, color: values.color ?? "" })
+    .onConflictDoUpdate({
+      target: [tags.orgId, tags.name],
+      set: { color: values.color ?? "" },
+    })
+    .returning();
+  if (!rows[0]) throw new Error("failed to upsert tag");
+  return rows[0];
+}
+
+export async function getTag(
+  db: DbExecutor,
+  orgId: string,
+  name: string,
+): Promise<typeof tags.$inferSelect | undefined> {
+  const rows = await db
+    .select()
+    .from(tags)
+    .where(and(eq(tags.orgId, orgId), eq(tags.name, name)))
+    .limit(1);
+  return rows[0];
+}
+
+export interface DeviceTagRow {
+  deviceId: string;
+  tagName: string;
+}
+
+export async function listDeviceTags(
+  db: DbExecutor,
+  orgId: string,
+): Promise<DeviceTagRow[]> {
+  const rows = await db
+    .select({ deviceId: deviceTags.deviceId, tagName: tags.name })
+    .from(deviceTags)
+    .innerJoin(tags, eq(tags.id, deviceTags.tagId))
+    .where(eq(tags.orgId, orgId));
+  return rows;
+}
+
+export async function setDeviceTags(
+  db: DbExecutor,
+  deviceId: string,
+  tagNames: string[],
+): Promise<void> {
+  await db.delete(deviceTags).where(eq(deviceTags.deviceId, deviceId));
+  if (tagNames.length === 0) return;
+  const rows = await db
+    .select({ id: tags.id, name: tags.name })
+    .from(tags)
+    .where(inArray(tags.name, tagNames));
+  const values = rows.map((row) => ({ deviceId, tagId: row.id }));
+  if (values.length === 0) return;
+  await db.insert(deviceTags).values(values).onConflictDoNothing();
+}
+
+export async function getNetworkPolicyVersion(
+  db: DbExecutor,
+  networkId: string,
+  version: number,
+): Promise<typeof networkPolicies.$inferSelect | undefined> {
+  const rows = await db
+    .select()
+    .from(networkPolicies)
+    .where(
+      and(
+        eq(networkPolicies.networkId, networkId),
+        eq(networkPolicies.version, version),
+      ),
+    )
+    .limit(1);
+  return rows[0];
+}
+
+export async function listNetworkPolicies(
+  db: DbExecutor,
+  networkId: string,
+): Promise<(typeof networkPolicies.$inferSelect)[]> {
+  return db
+    .select()
+    .from(networkPolicies)
+    .where(eq(networkPolicies.networkId, networkId))
+    .orderBy(desc(networkPolicies.version));
+}
+
+export async function insertNetworkPolicy(
+  db: DbExecutor,
+  values: typeof networkPolicies.$inferInsert,
+): Promise<typeof networkPolicies.$inferSelect> {
+  const rows = await db.insert(networkPolicies).values(values).returning();
+  if (!rows[0]) throw new Error("failed to insert policy version");
+  return rows[0];
+}
+
+export async function listNetworkRoutes(
+  db: DbExecutor,
+  networkId: string,
+): Promise<DeviceRoute[]> {
+  return db
+    .select()
+    .from(deviceRoutes)
+    .where(eq(deviceRoutes.networkId, networkId))
+    .orderBy(asc(deviceRoutes.createdAt));
+}
+
+export async function listDeviceRoutes(
+  db: DbExecutor,
+  deviceId: string,
+): Promise<DeviceRoute[]> {
+  return db
+    .select()
+    .from(deviceRoutes)
+    .where(eq(deviceRoutes.deviceId, deviceId))
+    .orderBy(asc(deviceRoutes.createdAt));
+}
+
+export async function getDeviceRoute(
+  db: DbExecutor,
+  id: string,
+): Promise<DeviceRoute | undefined> {
+  const rows = await db
+    .select()
+    .from(deviceRoutes)
+    .where(eq(deviceRoutes.id, id))
+    .limit(1);
+  return rows[0];
+}
+
+export async function upsertDeviceRoute(
+  db: DbExecutor,
+  values: {
+    orgId: string;
+    networkId: string;
+    deviceId: string;
+    kind: DeviceRouteKind;
+    cidr: string;
+    requestedBy: string | null;
+    note?: string;
+  },
+): Promise<DeviceRoute> {
+  const rows = await db
+    .insert(deviceRoutes)
+    .values({
+      orgId: values.orgId,
+      networkId: values.networkId,
+      deviceId: values.deviceId,
+      kind: values.kind,
+      cidr: values.cidr,
+      state: "pending",
+      note: values.note ?? "",
+      requestedBy: values.requestedBy,
+      decidedAt: null,
+      decidedBy: null,
+    })
+    .onConflictDoUpdate({
+      target: [deviceRoutes.deviceId, deviceRoutes.kind, deviceRoutes.cidr],
+      set: {
+        state: "pending",
+        note: values.note ?? "",
+        requestedBy: values.requestedBy,
+        decidedAt: null,
+        decidedBy: null,
+        updatedAt: new Date(),
+      },
+    })
+    .returning();
+  if (!rows[0]) throw new Error("failed to request route");
+  return rows[0];
+}
+
+export async function decideDeviceRoute(
+  db: DbExecutor,
+  id: string,
+  values: {
+    state: DeviceRouteState;
+    decidedBy: string | null;
+    note?: string;
+  },
+): Promise<DeviceRoute | undefined> {
+  const rows = await db
+    .update(deviceRoutes)
+    .set({
+      state: values.state,
+      decidedBy: values.decidedBy,
+      decidedAt: new Date(),
+      ...(values.note !== undefined ? { note: values.note } : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(deviceRoutes.id, id))
+    .returning();
+  return rows[0];
+}
+
+export async function approvedRoutesForDevice(
+  db: DbExecutor,
+  deviceId: string,
+): Promise<DeviceRoute[]> {
+  return db
+    .select()
+    .from(deviceRoutes)
+    .where(
+      and(eq(deviceRoutes.deviceId, deviceId), eq(deviceRoutes.state, "approved")),
+    );
+}
+
+export async function approvedRoutesForNetwork(
+  db: DbExecutor,
+  networkId: string,
+): Promise<DeviceRoute[]> {
+  return db
+    .select()
+    .from(deviceRoutes)
+    .where(
+      and(
+        eq(deviceRoutes.networkId, networkId),
+        eq(deviceRoutes.state, "approved"),
+      ),
+    );
+}
+
+export async function listApprovedDevicesInNetwork(
+  db: DbExecutor,
+  networkId: string,
+): Promise<Device[]> {
+  return db
+    .select()
+    .from(devices)
+    .where(and(eq(devices.networkId, networkId), eq(devices.state, "approved")))
+    .orderBy(asc(devices.hostname));
+}
+
+/** Every DNS name in use in a network, for uniqueness checks. */
+export async function takenDnsNames(
+  db: DbExecutor,
+  networkId: string,
+  excludeDeviceId?: string,
+): Promise<string[]> {
+  const rows = await db
+    .select({ id: devices.id, dnsName: devices.dnsName })
+    .from(devices)
+    .where(
+      and(
+        eq(devices.networkId, networkId),
+        sql`${devices.dnsName} IS NOT NULL`,
+        ...(excludeDeviceId ? [ne(devices.id, excludeDeviceId)] : []),
+      ),
+    );
+  return rows
+    .map((row) => row.dnsName)
+    .filter((name): name is string => typeof name === "string" && name.length > 0);
+}
+
+export async function findDeviceByDnsName(
+  db: DbExecutor,
+  networkId: string,
+  dnsName: string,
+): Promise<Device | undefined> {
+  const rows = await db
+    .select()
+    .from(devices)
+    .where(
+      and(
+        eq(devices.networkId, networkId),
+        sql`lower(${devices.dnsName}) = lower(${dnsName})`,
+      ),
+    )
+    .limit(1);
+  return rows[0];
 }

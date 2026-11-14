@@ -18,6 +18,7 @@ import {
   patchNetworkSchema,
 } from "../app/schemas.js";
 import { requireAuth } from "../app/auth-hooks.js";
+import { pushNetworkDevices } from "../services/push-service.js";
 
 export function registerNetworkRoutes(
   app: FastifyInstance,
@@ -92,12 +93,29 @@ export function registerNetworkRoutes(
     },
     async (request) => {
       const auth = requireRole(request, ["admin"]);
-      return context.networks.update(
+      const before = await context.networks.requireNetwork(
+        auth.organisation.id,
+        request.params.networkId,
+      );
+      const network = await context.networks.update(
         auth.organisation.id,
         auth.user.id,
         request.params.networkId,
         request.body,
       );
+      // MagicDNS is a network-level setting: flip it on every device.
+      if (
+        network.magicDnsEnabled !== before.magicDnsEnabled ||
+        network.magicDnsZone !== before.magicDnsZone
+      ) {
+        await pushNetworkDevices(
+          context.db,
+          context.push,
+          request.params.networkId,
+          "magic dns updated",
+        );
+      }
+      return network;
     },
   );
 

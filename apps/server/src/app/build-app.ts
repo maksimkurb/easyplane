@@ -23,7 +23,10 @@ import type { AppContext } from "./context.js";
 import { VERSION } from "./context.js";
 import { registerAuditRoutes } from "../routes/audit-routes.js";
 import { registerDeviceRoutes } from "../routes/devices-routes.js";
+import { registerDnsRoutes } from "../routes/dns-routes.js";
 import { registerNetworkRoutes } from "../routes/networks-routes.js";
+import { registerPolicyRoutes } from "../routes/policy-routes.js";
+import { registerRouteRoutes } from "../routes/route-routes.js";
 import { registerSystemRoutes } from "../routes/system-routes.js";
 
 export interface BuildAppOptions {
@@ -104,6 +107,9 @@ export async function buildApp(
         { name: "invites" },
         { name: "devices" },
         { name: "config" },
+        { name: "policy" },
+        { name: "dns" },
+        { name: "routes" },
         { name: "audit" },
         { name: "users" },
       ],
@@ -115,6 +121,9 @@ export async function buildApp(
   registerSystemRoutes(app, context);
   registerNetworkRoutes(app, context);
   registerDeviceRoutes(app, context);
+  registerPolicyRoutes(app, context);
+  registerDnsRoutes(app, context);
+  registerRouteRoutes(app, context);
   registerAuditRoutes(app, context);
 
   app.get(

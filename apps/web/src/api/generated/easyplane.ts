@@ -3,7 +3,7 @@
  * Do not edit manually.
  * EasyPlane API
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
- * OpenAPI spec version: 0.1.0-M1
+ * OpenAPI spec version: 0.2.0-M2
  */
 import {
   useMutation,
@@ -30,40 +30,70 @@ import type {
   BlockDevice200,
   BootstrapAdmin200,
   BootstrapAdminBody,
+  CheckDnsZone200,
+  CheckDnsZoneBody,
   CreateDeviceRevision201,
   CreateDeviceRevisionBody,
   CreateInvite201,
   CreateInviteBody,
   CreateNetwork201,
   CreateNetworkBody,
+  CreateTag201,
+  CreateTagBody,
+  DecideDeviceRoute200,
+  DecideDeviceRouteBody,
   DeleteDevice200,
   DeleteNetwork200,
+  DeleteNetworkPolicy200,
   FinishOidcLoginParams,
   GetAppConfig200,
   GetDevice200,
   GetMe200,
   GetNetwork200,
+  GetNetworkPolicy200,
   GetOrganisation200,
   Health200,
   Health503,
   ListAuditLog200Item,
   ListAuditLogParams,
   ListDeviceRevisions200Item,
+  ListDeviceRoutes200Item,
   ListDevices200Item,
   ListDevicesParams,
   ListInvites200Item,
   ListLoginProviders200,
+  ListMagicDnsNames200,
+  ListNetworkPolicyVersions200Item,
+  ListNetworkRoutes200,
   ListNetworks200Item,
+  ListTags200Item,
   ListUsers200Item,
   Logout200,
+  PreviewNetworkPolicy200,
+  PreviewNetworkPolicyBody,
   PushDeviceConfig200,
+  RenameDevice200,
+  RenameDeviceBody,
+  RepushMagicDns200,
+  RequestDeviceRoute201,
+  RequestDeviceRouteBody,
   RevealNetworkSecret200,
   RevokeInvite200,
   RollbackDeviceRevision201,
   RotateNetworkSecret200,
+  SaveNetworkPolicy200,
+  SaveNetworkPolicyBody,
+  SetDeviceOwner200,
+  SetDeviceOwnerBody,
+  SetDeviceTags200,
+  SetDeviceTagsBody,
   StartOidcLoginParams,
+  TestNetworkReachability200,
+  TestNetworkReachabilityBody,
   UpdateNetwork200,
-  UpdateNetworkBody
+  UpdateNetworkBody,
+  ValidateNetworkPolicy200,
+  ValidateNetworkPolicyBody
 } from './model';
 
 import { apiFetch } from '../client';
@@ -2844,6 +2874,1692 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getRollbackDeviceRevisionMutationOptions(options), queryClient);
+    }
+
+export type getNetworkPolicyResponse200 = {
+  data: GetNetworkPolicy200
+  status: 200
+}
+
+export type getNetworkPolicyResponseSuccess = (getNetworkPolicyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getNetworkPolicyResponse = (getNetworkPolicyResponseSuccess)
+
+export const getGetNetworkPolicyUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/policy`
+}
+
+export const getNetworkPolicy = async (networkId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getNetworkPolicyResponse> => {
+
+  return apiFetch<getNetworkPolicyResponse>(getGetNetworkPolicyUrl(networkId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNetworkPolicyQueryKey = (networkId: string,) => {
+    return [
+    `/api/networks/${networkId}/policy`
+    ] as const;
+    }
+
+
+export const getGetNetworkPolicyQueryOptions = <TData = Awaited<ReturnType<typeof getNetworkPolicy>>, TError = unknown>(networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNetworkPolicy>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNetworkPolicyQueryKey(networkId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNetworkPolicy>>> = ({ signal }) => getNetworkPolicy(networkId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: networkId !== null && networkId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNetworkPolicy>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetNetworkPolicyQueryResult = NonNullable<Awaited<ReturnType<typeof getNetworkPolicy>>>
+export type GetNetworkPolicyQueryError = unknown
+
+
+export function useGetNetworkPolicy<TData = Awaited<ReturnType<typeof getNetworkPolicy>>, TError = unknown>(
+ networkId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNetworkPolicy>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getNetworkPolicy>>,
+          TError,
+          Awaited<ReturnType<typeof getNetworkPolicy>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetNetworkPolicy<TData = Awaited<ReturnType<typeof getNetworkPolicy>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNetworkPolicy>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getNetworkPolicy>>,
+          TError,
+          Awaited<ReturnType<typeof getNetworkPolicy>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetNetworkPolicy<TData = Awaited<ReturnType<typeof getNetworkPolicy>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNetworkPolicy>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetNetworkPolicy<TData = Awaited<ReturnType<typeof getNetworkPolicy>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNetworkPolicy>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetNetworkPolicyQueryOptions(networkId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type saveNetworkPolicyResponse200 = {
+  data: SaveNetworkPolicy200
+  status: 200
+}
+
+export type saveNetworkPolicyResponseSuccess = (saveNetworkPolicyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type saveNetworkPolicyResponse = (saveNetworkPolicyResponseSuccess)
+
+export const getSaveNetworkPolicyUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/policy`
+}
+
+export const saveNetworkPolicy = async (networkId: string,
+    saveNetworkPolicyBody: SaveNetworkPolicyBody, options?: Parameters<typeof apiFetch>[1]): Promise<saveNetworkPolicyResponse> => {
+
+  return apiFetch<saveNetworkPolicyResponse>(getSaveNetworkPolicyUrl(networkId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(saveNetworkPolicyBody)
+  }
+);}
+
+
+
+
+
+export const getSaveNetworkPolicyMutationKey = () => ['saveNetworkPolicy'] as const;
+
+export const getSaveNetworkPolicyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveNetworkPolicy>>, TError,SaveNetworkPolicyMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveNetworkPolicy>>, TError,SaveNetworkPolicyMutationVariables, TContext> => {
+
+const mutationKey = getSaveNetworkPolicyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveNetworkPolicy>>, SaveNetworkPolicyMutationVariables> = (props) => {
+          const {networkId,data} = props ?? {};
+
+          return  saveNetworkPolicy(networkId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveNetworkPolicyMutationResult = NonNullable<Awaited<ReturnType<typeof saveNetworkPolicy>>>
+    export type SaveNetworkPolicyMutationBody = SaveNetworkPolicyBody
+    export type SaveNetworkPolicyMutationError = unknown
+    export type SaveNetworkPolicyMutationVariables = {networkId: string;data: SaveNetworkPolicyBody}
+
+    export const useSaveNetworkPolicy = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveNetworkPolicy>>, TError,SaveNetworkPolicyMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof saveNetworkPolicy>>,
+        TError,
+        SaveNetworkPolicyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveNetworkPolicyMutationOptions(options), queryClient);
+    }
+
+export type deleteNetworkPolicyResponse200 = {
+  data: DeleteNetworkPolicy200
+  status: 200
+}
+
+export type deleteNetworkPolicyResponseSuccess = (deleteNetworkPolicyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type deleteNetworkPolicyResponse = (deleteNetworkPolicyResponseSuccess)
+
+export const getDeleteNetworkPolicyUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/policy`
+}
+
+export const deleteNetworkPolicy = async (networkId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteNetworkPolicyResponse> => {
+
+  return apiFetch<deleteNetworkPolicyResponse>(getDeleteNetworkPolicyUrl(networkId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteNetworkPolicyMutationKey = () => ['deleteNetworkPolicy'] as const;
+
+export const getDeleteNetworkPolicyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNetworkPolicy>>, TError,DeleteNetworkPolicyMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteNetworkPolicy>>, TError,DeleteNetworkPolicyMutationVariables, TContext> => {
+
+const mutationKey = getDeleteNetworkPolicyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteNetworkPolicy>>, DeleteNetworkPolicyMutationVariables> = (props) => {
+          const {networkId} = props ?? {};
+
+          return  deleteNetworkPolicy(networkId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteNetworkPolicyMutationResult = NonNullable<Awaited<ReturnType<typeof deleteNetworkPolicy>>>
+
+    export type DeleteNetworkPolicyMutationError = unknown
+    export type DeleteNetworkPolicyMutationVariables = {networkId: string}
+
+    export const useDeleteNetworkPolicy = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNetworkPolicy>>, TError,DeleteNetworkPolicyMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteNetworkPolicy>>,
+        TError,
+        DeleteNetworkPolicyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteNetworkPolicyMutationOptions(options), queryClient);
+    }
+
+export type listNetworkPolicyVersionsResponse200 = {
+  data: ListNetworkPolicyVersions200Item[]
+  status: 200
+}
+
+export type listNetworkPolicyVersionsResponseSuccess = (listNetworkPolicyVersionsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listNetworkPolicyVersionsResponse = (listNetworkPolicyVersionsResponseSuccess)
+
+export const getListNetworkPolicyVersionsUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/policy/versions`
+}
+
+export const listNetworkPolicyVersions = async (networkId: string, options?: Parameters<typeof apiFetch>[1]): Promise<listNetworkPolicyVersionsResponse> => {
+
+  return apiFetch<listNetworkPolicyVersionsResponse>(getListNetworkPolicyVersionsUrl(networkId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNetworkPolicyVersionsQueryKey = (networkId: string,) => {
+    return [
+    `/api/networks/${networkId}/policy/versions`
+    ] as const;
+    }
+
+
+export const getListNetworkPolicyVersionsQueryOptions = <TData = Awaited<ReturnType<typeof listNetworkPolicyVersions>>, TError = unknown>(networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNetworkPolicyVersions>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNetworkPolicyVersionsQueryKey(networkId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNetworkPolicyVersions>>> = ({ signal }) => listNetworkPolicyVersions(networkId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: networkId !== null && networkId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNetworkPolicyVersions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListNetworkPolicyVersionsQueryResult = NonNullable<Awaited<ReturnType<typeof listNetworkPolicyVersions>>>
+export type ListNetworkPolicyVersionsQueryError = unknown
+
+
+export function useListNetworkPolicyVersions<TData = Awaited<ReturnType<typeof listNetworkPolicyVersions>>, TError = unknown>(
+ networkId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNetworkPolicyVersions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listNetworkPolicyVersions>>,
+          TError,
+          Awaited<ReturnType<typeof listNetworkPolicyVersions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListNetworkPolicyVersions<TData = Awaited<ReturnType<typeof listNetworkPolicyVersions>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNetworkPolicyVersions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listNetworkPolicyVersions>>,
+          TError,
+          Awaited<ReturnType<typeof listNetworkPolicyVersions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListNetworkPolicyVersions<TData = Awaited<ReturnType<typeof listNetworkPolicyVersions>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNetworkPolicyVersions>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListNetworkPolicyVersions<TData = Awaited<ReturnType<typeof listNetworkPolicyVersions>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNetworkPolicyVersions>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListNetworkPolicyVersionsQueryOptions(networkId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type validateNetworkPolicyResponse200 = {
+  data: ValidateNetworkPolicy200
+  status: 200
+}
+
+export type validateNetworkPolicyResponseSuccess = (validateNetworkPolicyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type validateNetworkPolicyResponse = (validateNetworkPolicyResponseSuccess)
+
+export const getValidateNetworkPolicyUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/policy/validate`
+}
+
+export const validateNetworkPolicy = async (networkId: string,
+    validateNetworkPolicyBody: ValidateNetworkPolicyBody, options?: Parameters<typeof apiFetch>[1]): Promise<validateNetworkPolicyResponse> => {
+
+  return apiFetch<validateNetworkPolicyResponse>(getValidateNetworkPolicyUrl(networkId),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(validateNetworkPolicyBody)
+  }
+);}
+
+
+
+
+
+export const getValidateNetworkPolicyMutationKey = () => ['validateNetworkPolicy'] as const;
+
+export const getValidateNetworkPolicyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof validateNetworkPolicy>>, TError,ValidateNetworkPolicyMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof validateNetworkPolicy>>, TError,ValidateNetworkPolicyMutationVariables, TContext> => {
+
+const mutationKey = getValidateNetworkPolicyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof validateNetworkPolicy>>, ValidateNetworkPolicyMutationVariables> = (props) => {
+          const {networkId,data} = props ?? {};
+
+          return  validateNetworkPolicy(networkId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ValidateNetworkPolicyMutationResult = NonNullable<Awaited<ReturnType<typeof validateNetworkPolicy>>>
+    export type ValidateNetworkPolicyMutationBody = ValidateNetworkPolicyBody
+    export type ValidateNetworkPolicyMutationError = unknown
+    export type ValidateNetworkPolicyMutationVariables = {networkId: string;data: ValidateNetworkPolicyBody}
+
+    export const useValidateNetworkPolicy = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof validateNetworkPolicy>>, TError,ValidateNetworkPolicyMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof validateNetworkPolicy>>,
+        TError,
+        ValidateNetworkPolicyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getValidateNetworkPolicyMutationOptions(options), queryClient);
+    }
+
+export type previewNetworkPolicyResponse200 = {
+  data: PreviewNetworkPolicy200
+  status: 200
+}
+
+export type previewNetworkPolicyResponseSuccess = (previewNetworkPolicyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type previewNetworkPolicyResponse = (previewNetworkPolicyResponseSuccess)
+
+export const getPreviewNetworkPolicyUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/policy/preview`
+}
+
+export const previewNetworkPolicy = async (networkId: string,
+    previewNetworkPolicyBody: PreviewNetworkPolicyBody, options?: Parameters<typeof apiFetch>[1]): Promise<previewNetworkPolicyResponse> => {
+
+  return apiFetch<previewNetworkPolicyResponse>(getPreviewNetworkPolicyUrl(networkId),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(previewNetworkPolicyBody)
+  }
+);}
+
+
+
+
+
+export const getPreviewNetworkPolicyMutationKey = () => ['previewNetworkPolicy'] as const;
+
+export const getPreviewNetworkPolicyMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewNetworkPolicy>>, TError,PreviewNetworkPolicyMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewNetworkPolicy>>, TError,PreviewNetworkPolicyMutationVariables, TContext> => {
+
+const mutationKey = getPreviewNetworkPolicyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewNetworkPolicy>>, PreviewNetworkPolicyMutationVariables> = (props) => {
+          const {networkId,data} = props ?? {};
+
+          return  previewNetworkPolicy(networkId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewNetworkPolicyMutationResult = NonNullable<Awaited<ReturnType<typeof previewNetworkPolicy>>>
+    export type PreviewNetworkPolicyMutationBody = PreviewNetworkPolicyBody
+    export type PreviewNetworkPolicyMutationError = unknown
+    export type PreviewNetworkPolicyMutationVariables = {networkId: string;data: PreviewNetworkPolicyBody}
+
+    export const usePreviewNetworkPolicy = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewNetworkPolicy>>, TError,PreviewNetworkPolicyMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof previewNetworkPolicy>>,
+        TError,
+        PreviewNetworkPolicyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPreviewNetworkPolicyMutationOptions(options), queryClient);
+    }
+
+export type testNetworkReachabilityResponse200 = {
+  data: TestNetworkReachability200
+  status: 200
+}
+
+export type testNetworkReachabilityResponseSuccess = (testNetworkReachabilityResponse200) & {
+  headers: Headers;
+};
+;
+
+export type testNetworkReachabilityResponse = (testNetworkReachabilityResponseSuccess)
+
+export const getTestNetworkReachabilityUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/policy/test`
+}
+
+export const testNetworkReachability = async (networkId: string,
+    testNetworkReachabilityBody: TestNetworkReachabilityBody, options?: Parameters<typeof apiFetch>[1]): Promise<testNetworkReachabilityResponse> => {
+
+  return apiFetch<testNetworkReachabilityResponse>(getTestNetworkReachabilityUrl(networkId),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(testNetworkReachabilityBody)
+  }
+);}
+
+
+
+
+
+export const getTestNetworkReachabilityMutationKey = () => ['testNetworkReachability'] as const;
+
+export const getTestNetworkReachabilityMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testNetworkReachability>>, TError,TestNetworkReachabilityMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof testNetworkReachability>>, TError,TestNetworkReachabilityMutationVariables, TContext> => {
+
+const mutationKey = getTestNetworkReachabilityMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof testNetworkReachability>>, TestNetworkReachabilityMutationVariables> = (props) => {
+          const {networkId,data} = props ?? {};
+
+          return  testNetworkReachability(networkId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TestNetworkReachabilityMutationResult = NonNullable<Awaited<ReturnType<typeof testNetworkReachability>>>
+    export type TestNetworkReachabilityMutationBody = TestNetworkReachabilityBody
+    export type TestNetworkReachabilityMutationError = unknown
+    export type TestNetworkReachabilityMutationVariables = {networkId: string;data: TestNetworkReachabilityBody}
+
+    export const useTestNetworkReachability = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testNetworkReachability>>, TError,TestNetworkReachabilityMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof testNetworkReachability>>,
+        TError,
+        TestNetworkReachabilityMutationVariables,
+        TContext
+      > => {
+      return useMutation(getTestNetworkReachabilityMutationOptions(options), queryClient);
+    }
+
+export type listMagicDnsNamesResponse200 = {
+  data: ListMagicDnsNames200
+  status: 200
+}
+
+export type listMagicDnsNamesResponseSuccess = (listMagicDnsNamesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listMagicDnsNamesResponse = (listMagicDnsNamesResponseSuccess)
+
+export const getListMagicDnsNamesUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/dns`
+}
+
+export const listMagicDnsNames = async (networkId: string, options?: Parameters<typeof apiFetch>[1]): Promise<listMagicDnsNamesResponse> => {
+
+  return apiFetch<listMagicDnsNamesResponse>(getListMagicDnsNamesUrl(networkId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMagicDnsNamesQueryKey = (networkId: string,) => {
+    return [
+    `/api/networks/${networkId}/dns`
+    ] as const;
+    }
+
+
+export const getListMagicDnsNamesQueryOptions = <TData = Awaited<ReturnType<typeof listMagicDnsNames>>, TError = unknown>(networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMagicDnsNames>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMagicDnsNamesQueryKey(networkId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMagicDnsNames>>> = ({ signal }) => listMagicDnsNames(networkId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: networkId !== null && networkId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMagicDnsNames>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListMagicDnsNamesQueryResult = NonNullable<Awaited<ReturnType<typeof listMagicDnsNames>>>
+export type ListMagicDnsNamesQueryError = unknown
+
+
+export function useListMagicDnsNames<TData = Awaited<ReturnType<typeof listMagicDnsNames>>, TError = unknown>(
+ networkId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMagicDnsNames>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMagicDnsNames>>,
+          TError,
+          Awaited<ReturnType<typeof listMagicDnsNames>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMagicDnsNames<TData = Awaited<ReturnType<typeof listMagicDnsNames>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMagicDnsNames>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMagicDnsNames>>,
+          TError,
+          Awaited<ReturnType<typeof listMagicDnsNames>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMagicDnsNames<TData = Awaited<ReturnType<typeof listMagicDnsNames>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMagicDnsNames>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMagicDnsNames<TData = Awaited<ReturnType<typeof listMagicDnsNames>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMagicDnsNames>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListMagicDnsNamesQueryOptions(networkId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type renameDeviceResponse200 = {
+  data: RenameDevice200
+  status: 200
+}
+
+export type renameDeviceResponseSuccess = (renameDeviceResponse200) & {
+  headers: Headers;
+};
+;
+
+export type renameDeviceResponse = (renameDeviceResponseSuccess)
+
+export const getRenameDeviceUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/devices/${deviceId}/hostname`
+}
+
+export const renameDevice = async (deviceId: string,
+    renameDeviceBody: RenameDeviceBody, options?: Parameters<typeof apiFetch>[1]): Promise<renameDeviceResponse> => {
+
+  return apiFetch<renameDeviceResponse>(getRenameDeviceUrl(deviceId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(renameDeviceBody)
+  }
+);}
+
+
+
+
+
+export const getRenameDeviceMutationKey = () => ['renameDevice'] as const;
+
+export const getRenameDeviceMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameDevice>>, TError,RenameDeviceMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameDevice>>, TError,RenameDeviceMutationVariables, TContext> => {
+
+const mutationKey = getRenameDeviceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameDevice>>, RenameDeviceMutationVariables> = (props) => {
+          const {deviceId,data} = props ?? {};
+
+          return  renameDevice(deviceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameDeviceMutationResult = NonNullable<Awaited<ReturnType<typeof renameDevice>>>
+    export type RenameDeviceMutationBody = RenameDeviceBody
+    export type RenameDeviceMutationError = unknown
+    export type RenameDeviceMutationVariables = {deviceId: string;data: RenameDeviceBody}
+
+    export const useRenameDevice = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameDevice>>, TError,RenameDeviceMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof renameDevice>>,
+        TError,
+        RenameDeviceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRenameDeviceMutationOptions(options), queryClient);
+    }
+
+export type listTagsResponse200 = {
+  data: ListTags200Item[]
+  status: 200
+}
+
+export type listTagsResponseSuccess = (listTagsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listTagsResponse = (listTagsResponseSuccess)
+
+export const getListTagsUrl = () => {
+
+
+
+
+  return `/api/tags`
+}
+
+export const listTags = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listTagsResponse> => {
+
+  return apiFetch<listTagsResponse>(getListTagsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTagsQueryKey = () => {
+    return [
+    `/api/tags`
+    ] as const;
+    }
+
+
+export const getListTagsQueryOptions = <TData = Awaited<ReturnType<typeof listTags>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTagsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTags>>> = ({ signal }) => listTags({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListTagsQueryResult = NonNullable<Awaited<ReturnType<typeof listTags>>>
+export type ListTagsQueryError = unknown
+
+
+export function useListTags<TData = Awaited<ReturnType<typeof listTags>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listTags>>,
+          TError,
+          Awaited<ReturnType<typeof listTags>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListTags<TData = Awaited<ReturnType<typeof listTags>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listTags>>,
+          TError,
+          Awaited<ReturnType<typeof listTags>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListTags<TData = Awaited<ReturnType<typeof listTags>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListTags<TData = Awaited<ReturnType<typeof listTags>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListTagsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type createTagResponse201 = {
+  data: CreateTag201
+  status: 201
+}
+
+export type createTagResponseSuccess = (createTagResponse201) & {
+  headers: Headers;
+};
+;
+
+export type createTagResponse = (createTagResponseSuccess)
+
+export const getCreateTagUrl = () => {
+
+
+
+
+  return `/api/tags`
+}
+
+export const createTag = async (createTagBody: CreateTagBody, options?: Parameters<typeof apiFetch>[1]): Promise<createTagResponse> => {
+
+  return apiFetch<createTagResponse>(getCreateTagUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(createTagBody)
+  }
+);}
+
+
+
+
+
+export const getCreateTagMutationKey = () => ['createTag'] as const;
+
+export const getCreateTagMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTag>>, TError,CreateTagMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTag>>, TError,CreateTagMutationVariables, TContext> => {
+
+const mutationKey = getCreateTagMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTag>>, CreateTagMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createTag(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTagMutationResult = NonNullable<Awaited<ReturnType<typeof createTag>>>
+    export type CreateTagMutationBody = CreateTagBody
+    export type CreateTagMutationError = unknown
+    export type CreateTagMutationVariables = {data: CreateTagBody}
+
+    export const useCreateTag = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTag>>, TError,CreateTagMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createTag>>,
+        TError,
+        CreateTagMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateTagMutationOptions(options), queryClient);
+    }
+
+export type setDeviceTagsResponse200 = {
+  data: SetDeviceTags200
+  status: 200
+}
+
+export type setDeviceTagsResponseSuccess = (setDeviceTagsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type setDeviceTagsResponse = (setDeviceTagsResponseSuccess)
+
+export const getSetDeviceTagsUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/devices/${deviceId}/tags`
+}
+
+export const setDeviceTags = async (deviceId: string,
+    setDeviceTagsBody: SetDeviceTagsBody, options?: Parameters<typeof apiFetch>[1]): Promise<setDeviceTagsResponse> => {
+
+  return apiFetch<setDeviceTagsResponse>(getSetDeviceTagsUrl(deviceId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(setDeviceTagsBody)
+  }
+);}
+
+
+
+
+
+export const getSetDeviceTagsMutationKey = () => ['setDeviceTags'] as const;
+
+export const getSetDeviceTagsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setDeviceTags>>, TError,SetDeviceTagsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setDeviceTags>>, TError,SetDeviceTagsMutationVariables, TContext> => {
+
+const mutationKey = getSetDeviceTagsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setDeviceTags>>, SetDeviceTagsMutationVariables> = (props) => {
+          const {deviceId,data} = props ?? {};
+
+          return  setDeviceTags(deviceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetDeviceTagsMutationResult = NonNullable<Awaited<ReturnType<typeof setDeviceTags>>>
+    export type SetDeviceTagsMutationBody = SetDeviceTagsBody
+    export type SetDeviceTagsMutationError = unknown
+    export type SetDeviceTagsMutationVariables = {deviceId: string;data: SetDeviceTagsBody}
+
+    export const useSetDeviceTags = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setDeviceTags>>, TError,SetDeviceTagsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof setDeviceTags>>,
+        TError,
+        SetDeviceTagsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetDeviceTagsMutationOptions(options), queryClient);
+    }
+
+export type setDeviceOwnerResponse200 = {
+  data: SetDeviceOwner200
+  status: 200
+}
+
+export type setDeviceOwnerResponseSuccess = (setDeviceOwnerResponse200) & {
+  headers: Headers;
+};
+;
+
+export type setDeviceOwnerResponse = (setDeviceOwnerResponseSuccess)
+
+export const getSetDeviceOwnerUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/devices/${deviceId}/owner`
+}
+
+export const setDeviceOwner = async (deviceId: string,
+    setDeviceOwnerBody: SetDeviceOwnerBody, options?: Parameters<typeof apiFetch>[1]): Promise<setDeviceOwnerResponse> => {
+
+  return apiFetch<setDeviceOwnerResponse>(getSetDeviceOwnerUrl(deviceId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(setDeviceOwnerBody)
+  }
+);}
+
+
+
+
+
+export const getSetDeviceOwnerMutationKey = () => ['setDeviceOwner'] as const;
+
+export const getSetDeviceOwnerMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setDeviceOwner>>, TError,SetDeviceOwnerMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setDeviceOwner>>, TError,SetDeviceOwnerMutationVariables, TContext> => {
+
+const mutationKey = getSetDeviceOwnerMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setDeviceOwner>>, SetDeviceOwnerMutationVariables> = (props) => {
+          const {deviceId,data} = props ?? {};
+
+          return  setDeviceOwner(deviceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetDeviceOwnerMutationResult = NonNullable<Awaited<ReturnType<typeof setDeviceOwner>>>
+    export type SetDeviceOwnerMutationBody = SetDeviceOwnerBody
+    export type SetDeviceOwnerMutationError = unknown
+    export type SetDeviceOwnerMutationVariables = {deviceId: string;data: SetDeviceOwnerBody}
+
+    export const useSetDeviceOwner = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setDeviceOwner>>, TError,SetDeviceOwnerMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof setDeviceOwner>>,
+        TError,
+        SetDeviceOwnerMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetDeviceOwnerMutationOptions(options), queryClient);
+    }
+
+export type checkDnsZoneResponse200 = {
+  data: CheckDnsZone200
+  status: 200
+}
+
+export type checkDnsZoneResponseSuccess = (checkDnsZoneResponse200) & {
+  headers: Headers;
+};
+;
+
+export type checkDnsZoneResponse = (checkDnsZoneResponseSuccess)
+
+export const getCheckDnsZoneUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/dns/zone/check`
+}
+
+export const checkDnsZone = async (networkId: string,
+    checkDnsZoneBody: CheckDnsZoneBody, options?: Parameters<typeof apiFetch>[1]): Promise<checkDnsZoneResponse> => {
+
+  return apiFetch<checkDnsZoneResponse>(getCheckDnsZoneUrl(networkId),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(checkDnsZoneBody)
+  }
+);}
+
+
+
+
+
+export const getCheckDnsZoneMutationKey = () => ['checkDnsZone'] as const;
+
+export const getCheckDnsZoneMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkDnsZone>>, TError,CheckDnsZoneMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkDnsZone>>, TError,CheckDnsZoneMutationVariables, TContext> => {
+
+const mutationKey = getCheckDnsZoneMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkDnsZone>>, CheckDnsZoneMutationVariables> = (props) => {
+          const {networkId,data} = props ?? {};
+
+          return  checkDnsZone(networkId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckDnsZoneMutationResult = NonNullable<Awaited<ReturnType<typeof checkDnsZone>>>
+    export type CheckDnsZoneMutationBody = CheckDnsZoneBody
+    export type CheckDnsZoneMutationError = unknown
+    export type CheckDnsZoneMutationVariables = {networkId: string;data: CheckDnsZoneBody}
+
+    export const useCheckDnsZone = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkDnsZone>>, TError,CheckDnsZoneMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof checkDnsZone>>,
+        TError,
+        CheckDnsZoneMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCheckDnsZoneMutationOptions(options), queryClient);
+    }
+
+export type repushMagicDnsResponse200 = {
+  data: RepushMagicDns200
+  status: 200
+}
+
+export type repushMagicDnsResponseSuccess = (repushMagicDnsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type repushMagicDnsResponse = (repushMagicDnsResponseSuccess)
+
+export const getRepushMagicDnsUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/dns/repush`
+}
+
+export const repushMagicDns = async (networkId: string, options?: Parameters<typeof apiFetch>[1]): Promise<repushMagicDnsResponse> => {
+
+  return apiFetch<repushMagicDnsResponse>(getRepushMagicDnsUrl(networkId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRepushMagicDnsMutationKey = () => ['repushMagicDns'] as const;
+
+export const getRepushMagicDnsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof repushMagicDns>>, TError,RepushMagicDnsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof repushMagicDns>>, TError,RepushMagicDnsMutationVariables, TContext> => {
+
+const mutationKey = getRepushMagicDnsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof repushMagicDns>>, RepushMagicDnsMutationVariables> = (props) => {
+          const {networkId} = props ?? {};
+
+          return  repushMagicDns(networkId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RepushMagicDnsMutationResult = NonNullable<Awaited<ReturnType<typeof repushMagicDns>>>
+
+    export type RepushMagicDnsMutationError = unknown
+    export type RepushMagicDnsMutationVariables = {networkId: string}
+
+    export const useRepushMagicDns = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof repushMagicDns>>, TError,RepushMagicDnsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof repushMagicDns>>,
+        TError,
+        RepushMagicDnsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRepushMagicDnsMutationOptions(options), queryClient);
+    }
+
+export type listNetworkRoutesResponse200 = {
+  data: ListNetworkRoutes200
+  status: 200
+}
+
+export type listNetworkRoutesResponseSuccess = (listNetworkRoutesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listNetworkRoutesResponse = (listNetworkRoutesResponseSuccess)
+
+export const getListNetworkRoutesUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/routes`
+}
+
+export const listNetworkRoutes = async (networkId: string, options?: Parameters<typeof apiFetch>[1]): Promise<listNetworkRoutesResponse> => {
+
+  return apiFetch<listNetworkRoutesResponse>(getListNetworkRoutesUrl(networkId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNetworkRoutesQueryKey = (networkId: string,) => {
+    return [
+    `/api/networks/${networkId}/routes`
+    ] as const;
+    }
+
+
+export const getListNetworkRoutesQueryOptions = <TData = Awaited<ReturnType<typeof listNetworkRoutes>>, TError = unknown>(networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNetworkRoutes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNetworkRoutesQueryKey(networkId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNetworkRoutes>>> = ({ signal }) => listNetworkRoutes(networkId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: networkId !== null && networkId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNetworkRoutes>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListNetworkRoutesQueryResult = NonNullable<Awaited<ReturnType<typeof listNetworkRoutes>>>
+export type ListNetworkRoutesQueryError = unknown
+
+
+export function useListNetworkRoutes<TData = Awaited<ReturnType<typeof listNetworkRoutes>>, TError = unknown>(
+ networkId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNetworkRoutes>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listNetworkRoutes>>,
+          TError,
+          Awaited<ReturnType<typeof listNetworkRoutes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListNetworkRoutes<TData = Awaited<ReturnType<typeof listNetworkRoutes>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNetworkRoutes>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listNetworkRoutes>>,
+          TError,
+          Awaited<ReturnType<typeof listNetworkRoutes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListNetworkRoutes<TData = Awaited<ReturnType<typeof listNetworkRoutes>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNetworkRoutes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListNetworkRoutes<TData = Awaited<ReturnType<typeof listNetworkRoutes>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNetworkRoutes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListNetworkRoutesQueryOptions(networkId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type listDeviceRoutesResponse200 = {
+  data: ListDeviceRoutes200Item[]
+  status: 200
+}
+
+export type listDeviceRoutesResponseSuccess = (listDeviceRoutesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listDeviceRoutesResponse = (listDeviceRoutesResponseSuccess)
+
+export const getListDeviceRoutesUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/devices/${deviceId}/routes`
+}
+
+export const listDeviceRoutes = async (deviceId: string, options?: Parameters<typeof apiFetch>[1]): Promise<listDeviceRoutesResponse> => {
+
+  return apiFetch<listDeviceRoutesResponse>(getListDeviceRoutesUrl(deviceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDeviceRoutesQueryKey = (deviceId: string,) => {
+    return [
+    `/api/devices/${deviceId}/routes`
+    ] as const;
+    }
+
+
+export const getListDeviceRoutesQueryOptions = <TData = Awaited<ReturnType<typeof listDeviceRoutes>>, TError = unknown>(deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDeviceRoutes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDeviceRoutesQueryKey(deviceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDeviceRoutes>>> = ({ signal }) => listDeviceRoutes(deviceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: deviceId !== null && deviceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDeviceRoutes>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListDeviceRoutesQueryResult = NonNullable<Awaited<ReturnType<typeof listDeviceRoutes>>>
+export type ListDeviceRoutesQueryError = unknown
+
+
+export function useListDeviceRoutes<TData = Awaited<ReturnType<typeof listDeviceRoutes>>, TError = unknown>(
+ deviceId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDeviceRoutes>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listDeviceRoutes>>,
+          TError,
+          Awaited<ReturnType<typeof listDeviceRoutes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListDeviceRoutes<TData = Awaited<ReturnType<typeof listDeviceRoutes>>, TError = unknown>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDeviceRoutes>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listDeviceRoutes>>,
+          TError,
+          Awaited<ReturnType<typeof listDeviceRoutes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListDeviceRoutes<TData = Awaited<ReturnType<typeof listDeviceRoutes>>, TError = unknown>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDeviceRoutes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListDeviceRoutes<TData = Awaited<ReturnType<typeof listDeviceRoutes>>, TError = unknown>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listDeviceRoutes>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListDeviceRoutesQueryOptions(deviceId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type requestDeviceRouteResponse201 = {
+  data: RequestDeviceRoute201
+  status: 201
+}
+
+export type requestDeviceRouteResponseSuccess = (requestDeviceRouteResponse201) & {
+  headers: Headers;
+};
+;
+
+export type requestDeviceRouteResponse = (requestDeviceRouteResponseSuccess)
+
+export const getRequestDeviceRouteUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/devices/${deviceId}/routes`
+}
+
+export const requestDeviceRoute = async (deviceId: string,
+    requestDeviceRouteBody: RequestDeviceRouteBody, options?: Parameters<typeof apiFetch>[1]): Promise<requestDeviceRouteResponse> => {
+
+  return apiFetch<requestDeviceRouteResponse>(getRequestDeviceRouteUrl(deviceId),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(requestDeviceRouteBody)
+  }
+);}
+
+
+
+
+
+export const getRequestDeviceRouteMutationKey = () => ['requestDeviceRoute'] as const;
+
+export const getRequestDeviceRouteMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestDeviceRoute>>, TError,RequestDeviceRouteMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestDeviceRoute>>, TError,RequestDeviceRouteMutationVariables, TContext> => {
+
+const mutationKey = getRequestDeviceRouteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestDeviceRoute>>, RequestDeviceRouteMutationVariables> = (props) => {
+          const {deviceId,data} = props ?? {};
+
+          return  requestDeviceRoute(deviceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestDeviceRouteMutationResult = NonNullable<Awaited<ReturnType<typeof requestDeviceRoute>>>
+    export type RequestDeviceRouteMutationBody = RequestDeviceRouteBody
+    export type RequestDeviceRouteMutationError = unknown
+    export type RequestDeviceRouteMutationVariables = {deviceId: string;data: RequestDeviceRouteBody}
+
+    export const useRequestDeviceRoute = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestDeviceRoute>>, TError,RequestDeviceRouteMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof requestDeviceRoute>>,
+        TError,
+        RequestDeviceRouteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestDeviceRouteMutationOptions(options), queryClient);
+    }
+
+export type decideDeviceRouteResponse200 = {
+  data: DecideDeviceRoute200
+  status: 200
+}
+
+export type decideDeviceRouteResponseSuccess = (decideDeviceRouteResponse200) & {
+  headers: Headers;
+};
+;
+
+export type decideDeviceRouteResponse = (decideDeviceRouteResponseSuccess)
+
+export const getDecideDeviceRouteUrl = (routeId: string,) => {
+
+
+
+
+  return `/api/routes/${routeId}/decision`
+}
+
+export const decideDeviceRoute = async (routeId: string,
+    decideDeviceRouteBody: DecideDeviceRouteBody, options?: Parameters<typeof apiFetch>[1]): Promise<decideDeviceRouteResponse> => {
+
+  return apiFetch<decideDeviceRouteResponse>(getDecideDeviceRouteUrl(routeId),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(decideDeviceRouteBody)
+  }
+);}
+
+
+
+
+
+export const getDecideDeviceRouteMutationKey = () => ['decideDeviceRoute'] as const;
+
+export const getDecideDeviceRouteMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decideDeviceRoute>>, TError,DecideDeviceRouteMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof decideDeviceRoute>>, TError,DecideDeviceRouteMutationVariables, TContext> => {
+
+const mutationKey = getDecideDeviceRouteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof decideDeviceRoute>>, DecideDeviceRouteMutationVariables> = (props) => {
+          const {routeId,data} = props ?? {};
+
+          return  decideDeviceRoute(routeId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DecideDeviceRouteMutationResult = NonNullable<Awaited<ReturnType<typeof decideDeviceRoute>>>
+    export type DecideDeviceRouteMutationBody = DecideDeviceRouteBody
+    export type DecideDeviceRouteMutationError = unknown
+    export type DecideDeviceRouteMutationVariables = {routeId: string;data: DecideDeviceRouteBody}
+
+    export const useDecideDeviceRoute = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decideDeviceRoute>>, TError,DecideDeviceRouteMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof decideDeviceRoute>>,
+        TError,
+        DecideDeviceRouteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDecideDeviceRouteMutationOptions(options), queryClient);
     }
 
 export type listAuditLogResponse200 = {

@@ -5,6 +5,7 @@ import {
   deleteNetwork,
   getNetwork,
   insertNetwork,
+  listDevicesInNetwork,
   listNetworks,
   networkDeviceCounts,
   updateNetwork,
@@ -12,6 +13,7 @@ import {
 } from "../db/repositories.js";
 import type { Network } from "../db/schema.js";
 import { parseCidr } from "../domain/ip.js";
+import { normalizeDnsZone } from "../domain/magic-dns.js";
 import { normalizeDesiredConfig } from "../domain/desired-config.js";
 import {
   generateNetworkSecret,
@@ -27,6 +29,9 @@ export interface NetworkDto {
   networkName: string;
   ipv4Cidr: string;
   defaultConfig: Record<string, unknown>;
+  magicDnsEnabled: boolean;
+  magicDnsZone: string;
+  policyVersion: number;
   createdAt: string;
   updatedAt: string;
   deviceCounts: { pending: number; approved: number; blocked: number };
@@ -42,6 +47,9 @@ function toDto(
     networkName: network.networkName,
     ipv4Cidr: network.ipv4Cidr,
     defaultConfig: network.defaultConfig,
+    magicDnsEnabled: network.magicDnsEnabled,
+    magicDnsZone: network.magicDnsZone,
+    policyVersion: network.policyVersion,
     createdAt: network.createdAt.toISOString(),
     updatedAt: network.updatedAt.toISOString(),
     deviceCounts: counts,
@@ -132,7 +140,12 @@ export class NetworkService {
     orgId: string,
     userId: string,
     id: string,
-    values: { name?: string; ipv4Cidr?: string },
+    values: {
+      name?: string;
+      ipv4Cidr?: string;
+      magicDnsEnabled?: boolean;
+      magicDnsZone?: string;
+    },
   ): Promise<NetworkDto> {
     const network = await this.requireNetwork(orgId, id);
     if (values.ipv4Cidr !== undefined && values.ipv4Cidr !== network.ipv4Cidr) {
@@ -151,20 +164,85 @@ export class NetworkService {
         }
       }
     }
+    let zone: string | undefined;
+    if (values.magicDnsZone !== undefined) {
+      try {
+        zone = normalizeDnsZone(values.magicDnsZone);
+      } catch (error) {
+        invalid(error instanceof Error ? error.message : "invalid DNS zone");
+      }
+    }
+    const dnsChanged =
+      (values.magicDnsEnabled !== undefined &&
+        values.magicDnsEnabled !== network.magicDnsEnabled) ||
+      (zone !== undefined && zone !== network.magicDnsZone);
     const updated = await updateNetwork(this.db, id, {
       ...(values.name !== undefined ? { name: values.name.trim() } : {}),
       ...(values.ipv4Cidr !== undefined ? { ipv4Cidr: values.ipv4Cidr } : {}),
+      ...(values.magicDnsEnabled !== undefined
+        ? { magicDnsEnabled: values.magicDnsEnabled }
+        : {}),
+      ...(zone !== undefined ? { magicDnsZone: zone } : {}),
     });
     if (!updated) notFound("network not found");
     await this.audit.record({
       orgId,
       actorUserId: userId,
-      action: "network.updated",
+      action: dnsChanged ? "network.magicdns_updated" : "network.updated",
       targetType: "network",
       targetId: id,
-      metadata: { changed: Object.keys(values) },
+      metadata: {
+        changed: Object.keys(values),
+        ...(dnsChanged
+          ? {
+              magicDnsEnabled: updated.magicDnsEnabled,
+              magicDnsZone: updated.magicDnsZone,
+            }
+          : {}),
+      },
     });
     return toDto(updated, await networkDeviceCounts(this.db, id));
+  }
+
+  /**
+   * Names MagicDNS should answer for this network, from the control plane's
+   * point of view. EasyTier itself derives records from peer hostnames, so this
+   * table is what operators expect and what the device names are validated
+   * against.
+   */
+  async resolvedNames(
+    orgId: string,
+    id: string,
+  ): Promise<
+    Array<{
+      deviceId: string;
+      hostname: string;
+      zone: string;
+      fqdn: string;
+      ipv4: string | null;
+      state: "pending" | "approved" | "blocked";
+      reportedHostname: string;
+      /** True when the client's own hostname differs from the DNS name. */
+      renamed: boolean;
+    }>
+  > {
+    const network = await this.requireNetwork(orgId, id);
+    const devices = await listDevicesInNetwork(this.db, id);
+    return devices
+      .filter((device) => device.dnsName && device.virtualIpv4)
+      .map((device) => ({
+        deviceId: device.id,
+        hostname: device.dnsName ?? "",
+        zone: network.magicDnsZone,
+        fqdn: `${device.dnsName}.${network.magicDnsZone}`,
+        ipv4: device.virtualIpv4,
+        state: device.state,
+        reportedHostname: device.hostname,
+        renamed:
+          device.hostname !== "" &&
+          device.hostname.toLowerCase() !== (device.dnsName ?? "").toLowerCase(),
+      }))
+      .sort((left, right) => left.fqdn.localeCompare(right.fqdn));
   }
 
   async delete(orgId: string, userId: string, id: string): Promise<void> {

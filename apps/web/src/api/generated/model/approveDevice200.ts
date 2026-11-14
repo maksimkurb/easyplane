@@ -3,10 +3,11 @@
  * Do not edit manually.
  * EasyPlane API
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
- * OpenAPI spec version: 0.1.0-M1
+ * OpenAPI spec version: 0.2.0-M2
  */
 import type { ApproveDevice200Online } from './approveDevice200Online';
 import type { ApproveDevice200Os } from './approveDevice200Os';
+import type { ApproveDevice200ReportedState } from './approveDevice200ReportedState';
 import type { ApproveDevice200State } from './approveDevice200State';
 import type { ApproveDevice200Sync } from './approveDevice200Sync';
 
@@ -20,6 +21,12 @@ export type ApproveDevice200 = {
   label: string;
   machineId: string;
   hostname: string;
+  /** @nullable */
+  dnsName: string | null;
+  /** @nullable */
+  magicDnsName: string | null;
+  magicDnsZone: string;
+  magicDnsEnabled: boolean;
   easytierVersion: string;
   os: ApproveDevice200Os;
   sourceIp: string;
@@ -27,6 +34,12 @@ export type ApproveDevice200 = {
   virtualIpv4: string | null;
   /** @nullable */
   inviteId: string | null;
+  /** @nullable */
+  ownerUserId: string | null;
+  tags: string[];
+  reportedState: ApproveDevice200ReportedState;
+  /** @nullable */
+  reportedStateAt: string | null;
   /**
      * @minimum -9007199254740991
      * @maximum 9007199254740991
@@ -39,6 +52,11 @@ export type ApproveDevice200 = {
      * @nullable
      */
   appliedRevision: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  policyVersion: number;
   /** @nullable */
   appliedAt: string | null;
   /** @nullable */

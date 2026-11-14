@@ -15,9 +15,11 @@ import { DeviceService } from "../services/device-service.js";
 import { DeviceSessionRegistry } from "../services/device-sessions.js";
 import { InviteService } from "../services/invite-service.js";
 import { NetworkService } from "../services/network-service.js";
+import { PolicyService } from "../services/policy-service.js";
 import { PushService } from "../services/push-service.js";
+import { RouteService } from "../services/route-service.js";
 
-export const VERSION = "0.1.0-M1";
+export const VERSION = "0.2.0-M2";
 
 function normalizeIp(value: string): string {
   if (value.startsWith("::ffff:")) return value.slice("::ffff:".length);
@@ -40,6 +42,8 @@ export interface AppContext {
   deviceSessions: DeviceSessionRegistry;
   push: PushService;
   devices: DeviceService;
+  policies: PolicyService;
+  routes: RouteService;
   controlPlane: ControlPlaneServer;
 }
 
@@ -89,13 +93,29 @@ export async function createAppContext(
   const networks = new NetworkService(db, secretBox, audit);
   const invites = new InviteService(db, audit);
   const deviceSessions = new DeviceSessionRegistry();
+  // PolicyService and RouteService are wired after the push service because
+  // they need to schedule pushes; the push service only needs callbacks.
+  let policies: PolicyService | undefined;
+  let routes: RouteService | undefined;
   const push = new PushService({
     db,
     secretBox,
     sessions: deviceSessions,
     audit,
     logger,
+    compileAcl: async (network, deviceId, policyVersion) => {
+      if (!policies) return undefined;
+      return policies.compileForVersion(network, deviceId, policyVersion);
+    },
+    recordReport: async (device, instances) => {
+      if (!routes) return;
+      await routes.recordReport(device, instances);
+    },
   });
+  policies = new PolicyService({ db, secretBox, audit, push });
+  routes = new RouteService({ db, audit, push });
+  const policyService = policies;
+  const routeService = routes;
 
   let controlPlane: ControlPlaneServer | undefined;
   const devices = new DeviceService({
@@ -152,6 +172,8 @@ export async function createAppContext(
     deviceSessions,
     push,
     devices,
+    policies: policyService,
+    routes: routeService,
     controlPlane,
   };
 }

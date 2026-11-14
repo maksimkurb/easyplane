@@ -1,4 +1,4 @@
-import { manage } from "@easyplane/proto";
+import { acl, manage } from "@easyplane/proto";
 
 /**
  * Builds the NetworkConfig that M0 pushes over RunNetworkInstance.
@@ -24,6 +24,15 @@ export interface MinimalNetworkConfigOptions {
   enableMagicDns?: boolean;
   enableRelayNetworkWhitelist?: boolean;
   relayNetworkWhitelist?: string[];
+  /** Subnets this device proxies (`--proxy-networks`). */
+  proxyCidrs?: string[];
+  /** Routes this device installs towards the overlay (`--manual-routes`). */
+  routes?: string[];
+  enableManualRoutes?: boolean;
+  /** Use the device as an exit node (`--enable-exit-node`). */
+  enableExitNode?: boolean;
+  /** Compiled ACL; `undefined` leaves EasyTier's ACL filter disabled. */
+  acl?: acl.Acl;
 }
 
 const NETWORKING_METHOD = {
@@ -56,12 +65,16 @@ export function buildMinimalNetworkConfig(options: MinimalNetworkConfigOptions):
     relayNetworkWhitelist: options.relayNetworkWhitelist ?? [],
     // Repeated fields are non-optional in the generated types; left empty so
     // the config stays minimal (see easytier-core/src/config/api_input.rs).
-    proxyCidrs: [],
-    routes: [],
+    proxyCidrs: options.proxyCidrs ?? [],
+    routes: options.routes ?? [],
+    enableManualRoutes:
+      options.enableManualRoutes ?? (options.routes ?? []).length > 0,
+    enableExitNode: options.enableExitNode,
     exitNodes: [],
     mappedListeners: [],
     portForwards: [],
     managedCredentials: [],
     peers: [],
+    ...(options.acl ? { acl: options.acl } : {}),
   };
 }

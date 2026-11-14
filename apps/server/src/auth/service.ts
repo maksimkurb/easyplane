@@ -184,6 +184,7 @@ export class AuthService {
       const user = await updateUser(this.db, identity.userId, {
         displayName: input.mapped.displayName,
         role: input.mapped.role,
+        groups: input.mapped.groups,
         lastLoginAt: new Date(),
       });
       if (!user) throw new AuthError("linked user disappeared", 500);
@@ -207,6 +208,7 @@ export class AuthService {
       const user = await updateUser(this.db, byEmail.id, {
         displayName: byEmail.displayName || input.mapped.displayName,
         role: keepBootstrapAdmin ? "admin" : input.mapped.role,
+        groups: input.mapped.groups,
         lastLoginAt: new Date(),
       });
       if (!user) throw new AuthError("failed to update user", 500);
@@ -218,6 +220,7 @@ export class AuthService {
       email: input.mapped.email,
       displayName: input.mapped.displayName,
       role: input.mapped.role,
+      groups: input.mapped.groups,
     });
     await insertIdentity(this.db, {
       userId: user.id,

@@ -108,5 +108,50 @@ export {
 export { DeviceSessionRegistry } from "./services/device-sessions.js";
 export { InviteService, type InviteDto } from "./services/invite-service.js";
 export { NetworkService, type NetworkDto } from "./services/network-service.js";
-export { instanceIdFor, PushService, type PushResult } from "./services/push-service.js";
+export {
+  instanceIdFor,
+  PushService,
+  pushNetworkDevices,
+  type PushResult,
+} from "./services/push-service.js";
+
+// M2
+export * from "./domain/policy/index.js";
+export { canonicalAcl } from "./domain/policy/canonical.js";
+export {
+  DEFAULT_MAGIC_DNS_ZONE,
+  allocateDnsLabel,
+  isValidDnsLabel,
+  magicDnsName,
+  normalizeDnsZone,
+  toDnsLabel,
+  type ResolvedName,
+} from "./domain/magic-dns.js";
+export {
+  acceptedRoutesFor,
+  approvedExitNode,
+  approvedSubnetCidrs,
+  buildRouteReport,
+  cidrContains,
+  cidrsOverlap,
+  ipv4ToHostCidr,
+  normalizeCidr,
+  validateSubnetRequest,
+  type ReportedInstance,
+  type RouteKind,
+  type RouteRecord,
+  type RouteReport,
+  type RouteState,
+} from "./domain/routes.js";
+export {
+  PolicyService,
+  type CompiledAclSummary,
+  type PolicyVersionDto,
+  type PreviewResult,
+} from "./services/policy-service.js";
+export {
+  RouteService,
+  type DeviceRouteDto,
+  type RouteReportDto,
+} from "./services/route-service.js";
 export { AppError } from "./services/errors.js";

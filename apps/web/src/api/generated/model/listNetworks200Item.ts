@@ -3,7 +3,7 @@
  * Do not edit manually.
  * EasyPlane API
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
- * OpenAPI spec version: 0.1.0-M1
+ * OpenAPI spec version: 0.2.0-M2
  */
 import type { ListNetworks200ItemDefaultConfig } from './listNetworks200ItemDefaultConfig';
 import type { ListNetworks200ItemDeviceCounts } from './listNetworks200ItemDeviceCounts';
@@ -14,6 +14,13 @@ export type ListNetworks200Item = {
   networkName: string;
   ipv4Cidr: string;
   defaultConfig: ListNetworks200ItemDefaultConfig;
+  magicDnsEnabled: boolean;
+  magicDnsZone: string;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  policyVersion: number;
   createdAt: string;
   updatedAt: string;
   deviceCounts: ListNetworks200ItemDeviceCounts;

@@ -27,6 +27,21 @@ export const revisionSourceEnum = pgEnum("revision_source", [
   "approval",
   "manual",
   "rollback",
+  /** Created automatically when the network policy document changed. */
+  "policy",
+]);
+
+/** A route a device asks to serve (subnet proxy) or be (exit node). */
+export const deviceRouteKindEnum = pgEnum("device_route_kind", [
+  "subnet",
+  "exit_node",
+]);
+
+/** Route requests are pending until an admin approves or rejects them. */
+export const deviceRouteStateEnum = pgEnum("device_route_state", [
+  "pending",
+  "approved",
+  "rejected",
 ]);
 
 const createdAt = timestamp("created_at", { withTimezone: true })
@@ -50,6 +65,11 @@ export const users = pgTable(
     email: text("email").notNull(),
     displayName: text("display_name").notNull().default(""),
     role: userRoleEnum("role").notNull().default("viewer"),
+    /**
+     * IdP groups from the last OIDC login. Policy `group:<name>` subjects
+     * expand to the devices owned by the matching users.
+     */
+    groups: text("groups").array().notNull().default(sql`'{}'::text[]`),
     /** Created by the break-glass token rather than an OIDC identity. */
     bootstrap: boolean("bootstrap").notNull().default(false),
     disabled: boolean("disabled").notNull().default(false),
@@ -134,6 +154,16 @@ export const networks = pgTable(
     secretCiphertext: text("secret_ciphertext").notNull(),
     /** IPv4 CIDR the control plane allocates device addresses from. */
     ipv4Cidr: text("ipv4_cidr").notNull().default("10.144.144.0/24"),
+    /** Per-network MagicDNS switch (pushed as `enable_magic_dns`). */
+    magicDnsEnabled: boolean("magic_dns_enabled").notNull().default(false),
+    /**
+     * DNS zone used for generated names. EasyTier keeps the zone in its local
+     * flags (`--tld-dns-zone`), not in NetworkConfig, so the value is also
+     * shown to operators as a client-side requirement.
+     */
+    magicDnsZone: text("magic_dns_zone").notNull().default("et.net."),
+    /** Latest policy document version (0 = no policy, traffic unrestricted). */
+    policyVersion: integer("policy_version").notNull().default(0),
     /** Non-secret defaults merged into every device's desired config. */
     defaultConfig: jsonb("default_config")
       .$type<Record<string, unknown>>()
@@ -204,6 +234,24 @@ export const devices = pgTable(
     }),
     /** Address reserved for this device in the network CIDR. */
     virtualIpv4: text("virtual_ipv4"),
+    /**
+     * Unique, DNS-safe hostname inside the network. Authoritative for the
+     * EasyTier `hostname` pushed to the client and for MagicDNS names.
+     */
+    dnsName: text("dns_name"),
+    /** Member/admin account that owns the device (policy `group:` subjects). */
+    ownerUserId: uuid("owner_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    /**
+     * Last route report collected from the client: instances it runs, proxy
+     * CIDRs it advertises, and which of those were not approved here.
+     */
+    reportedState: jsonb("reported_state")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    reportedStateAt: timestamp("reported_state_at", { withTimezone: true }),
     /** Latest desired config revision number (null until approved). */
     desiredRevision: integer("desired_revision"),
     /** Revision the client last confirmed running. */
@@ -232,8 +280,89 @@ export const devices = pgTable(
       table.machineId,
     ),
     uniqueIndex("devices_network_ip_uq").on(table.networkId, table.virtualIpv4),
+    /**
+     * MagicDNS names are unique per network, case-insensitively. The service
+     * also checks before writing so the API returns a clear 409.
+     */
+    uniqueIndex("devices_network_dns_name_uq").on(
+      table.networkId,
+      sql`lower(${table.dnsName})`,
+    ),
     index("devices_state_idx").on(table.state),
     index("devices_org_idx").on(table.orgId),
+  ],
+);
+
+/**
+ * Append-only policy document versions. The active version is
+ * `networks.policy_version`; nothing is ever overwritten, so a config revision
+ * can name the policy version it was compiled with.
+ */
+export const networkPolicies = pgTable(
+  "network_policies",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organisations.id, { onDelete: "cascade" }),
+    networkId: uuid("network_id")
+      .notNull()
+      .references(() => networks.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    /** Validated, normalised policy document (never contains secrets). */
+    document: jsonb("document").$type<Record<string, unknown>>().notNull(),
+    note: text("note").notNull().default(""),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex("network_policies_network_version_uq").on(
+      table.networkId,
+      table.version,
+    ),
+  ],
+);
+
+/**
+ * Subnet/exit-node route requests. Only `approved` rows are compiled into the
+ * pushed config; `pending` and `rejected` rows exist for the approval workflow.
+ */
+export const deviceRoutes = pgTable(
+  "device_routes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organisations.id, { onDelete: "cascade" }),
+    networkId: uuid("network_id")
+      .notNull()
+      .references(() => networks.id, { onDelete: "cascade" }),
+    deviceId: uuid("device_id")
+      .notNull()
+      .references(() => devices.id, { onDelete: "cascade" }),
+    kind: deviceRouteKindEnum("kind").notNull(),
+    /** IPv4 CIDR for `subnet`; empty string for `exit_node`. */
+    cidr: text("cidr").notNull().default(""),
+    state: deviceRouteStateEnum("state").notNull().default("pending"),
+    note: text("note").notNull().default(""),
+    requestedBy: uuid("requested_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    decidedBy: uuid("decided_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    createdAt,
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("device_routes_uq").on(table.deviceId, table.kind, table.cidr),
+    index("device_routes_network_idx").on(table.networkId),
+    index("device_routes_state_idx").on(table.state),
   ],
 );
 
@@ -284,6 +413,11 @@ export const configRevisions = pgTable(
     revision: integer("revision").notNull(),
     /** Non-secret NetworkConfig; the network secret lives only on `networks`. */
     config: jsonb("config").$type<Record<string, unknown>>().notNull(),
+    /**
+     * Policy document version this revision's compiled ACL was built from.
+     * Route approvals and MagicDNS are network state, not revision content.
+     */
+    policyVersion: integer("policy_version"),
     note: text("note").notNull().default(""),
     source: revisionSourceEnum("source").notNull().default("manual"),
     rollbackOfRevision: integer("rollback_of_revision"),
@@ -373,3 +507,7 @@ export type Device = typeof devices.$inferSelect;
 export type DeviceState = Device["state"];
 export type ConfigRevision = typeof configRevisions.$inferSelect;
 export type AuditEntry = typeof auditLog.$inferSelect;
+export type NetworkPolicy = typeof networkPolicies.$inferSelect;
+export type DeviceRoute = typeof deviceRoutes.$inferSelect;
+export type DeviceRouteKind = DeviceRoute["kind"];
+export type DeviceRouteState = DeviceRoute["state"];

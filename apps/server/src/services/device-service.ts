@@ -1,17 +1,22 @@
 import type { Database } from "../db/client.js";
 import {
   deleteDevice,
+  findDeviceByDnsName,
   findDeviceInNetwork,
+  findUserById,
   getDevice,
   getNetworkById,
   getRevision,
   incrementInviteUses,
   insertDevice,
   insertRevision,
+  listDeviceTags,
   listDevices,
   listRevisions,
   listRevisionsWithAuthor,
   pendingDeviceCount,
+  setDeviceTags,
+  takenDnsNames,
   touchInvite,
   updateDevice,
   usedVirtualIps,
@@ -24,6 +29,13 @@ import {
 import { normalizeDesiredConfig, type DesiredConfig } from "../domain/desired-config.js";
 import { allocateIpv4, cidrPrefix, parseCidr, parseIpv4 } from "../domain/ip.js";
 import { evaluateInvite } from "../domain/invite.js";
+import {
+  DEFAULT_MAGIC_DNS_ZONE,
+  allocateDnsLabel,
+  isValidDnsLabel,
+  normalizeDnsZone,
+  toDnsLabel,
+} from "../domain/magic-dns.js";
 import { nextRevisionNumber, planRollback } from "../domain/revisions.js";
 import type { ManagedClient } from "../control/managed-client.js";
 import type { Logger } from "../logger.js";
@@ -45,14 +57,27 @@ export interface DeviceDto extends DeviceStatus {
   networkId: string;
   networkName: string;
   machineId: string;
+  /** Hostname the client reports (informational). */
   hostname: string;
+  /** Unique DNS name inside the network; authoritative for pushes/MagicDNS. */
+  dnsName: string | null;
+  /** `<dnsName>.<network zone>` when MagicDNS can resolve the device. */
+  magicDnsName: string | null;
+  magicDnsZone: string;
+  magicDnsEnabled: boolean;
   easytierVersion: string;
   os: { type: string; version: string; distribution: string };
   sourceIp: string;
   virtualIpv4: string | null;
   inviteId: string | null;
+  ownerUserId: string | null;
+  tags: string[];
+  /** Last route report (proxy CIDRs / unmanaged instances), if any. */
+  reportedState: Record<string, unknown>;
+  reportedStateAt: string | null;
   desiredRevision: number | null;
   appliedRevision: number | null;
+  policyVersion: number;
   appliedAt: string | null;
   lastPushAt: string | null;
   lastPushError: string | null;
@@ -68,7 +93,8 @@ export interface RevisionDto {
   revision: number;
   config: Record<string, unknown>;
   note: string;
-  source: "approval" | "manual" | "rollback";
+  source: "approval" | "manual" | "rollback" | "policy";
+  policyVersion: number | null;
   rollbackOfRevision: number | null;
   createdBy: string | null;
   createdByEmail: string | null;
@@ -138,7 +164,25 @@ export class DeviceService {
     );
   }
 
-  private toDto(device: Device, networkName: string, now = new Date()): DeviceDto {
+  private async tagsByDevice(orgId: string, deviceId?: string): Promise<Map<string, string[]>> {
+    const rows = await listDeviceTags(this.options.db, orgId);
+    const map = new Map<string, string[]>();
+    for (const row of rows) {
+      if (deviceId && row.deviceId !== deviceId) continue;
+      const list = map.get(row.deviceId) ?? [];
+      list.push(row.tagName);
+      map.set(row.deviceId, list);
+    }
+    for (const list of map.values()) list.sort();
+    return map;
+  }
+
+  private toDto(
+    device: Device,
+    network: Network | undefined,
+    tags: string[] = [],
+    now = new Date(),
+  ): DeviceDto {
     const status = computeDeviceStatus({
       state: device.state,
       lastSeenAt: device.lastSeenAt,
@@ -148,13 +192,20 @@ export class DeviceService {
       appliedRevision: device.appliedRevision,
       lastPushError: device.lastPushError,
     });
+    const zone = network?.magicDnsZone ?? DEFAULT_MAGIC_DNS_ZONE;
+    const magicDnsEnabled = network?.magicDnsEnabled ?? false;
     return {
       ...status,
       id: device.id,
       networkId: device.networkId,
-      networkName,
+      networkName: network?.name ?? "",
       machineId: device.machineId,
       hostname: device.hostname,
+      dnsName: device.dnsName,
+      magicDnsName:
+        device.dnsName && magicDnsEnabled ? `${device.dnsName}.${zone}` : null,
+      magicDnsZone: zone,
+      magicDnsEnabled,
       easytierVersion: device.easytierVersion,
       os: {
         type: device.osType,
@@ -164,8 +215,13 @@ export class DeviceService {
       sourceIp: device.sourceIp,
       virtualIpv4: device.virtualIpv4,
       inviteId: device.inviteId,
+      ownerUserId: device.ownerUserId,
+      tags,
+      reportedState: device.reportedState,
+      reportedStateAt: device.reportedStateAt?.toISOString() ?? null,
       desiredRevision: device.desiredRevision,
       appliedRevision: device.appliedRevision,
+      policyVersion: network?.policyVersion ?? 0,
       appliedAt: device.appliedAt?.toISOString() ?? null,
       lastPushAt: device.lastPushAt?.toISOString() ?? null,
       lastPushError: device.lastPushError,
@@ -182,7 +238,8 @@ export class DeviceService {
     revision: number;
     config: Record<string, unknown>;
     note: string;
-    source: "approval" | "manual" | "rollback";
+    source: "approval" | "manual" | "rollback" | "policy";
+    policyVersion: number | null;
     rollbackOfRevision: number | null;
     createdBy: string | null;
     createdAt: Date;
@@ -194,6 +251,7 @@ export class DeviceService {
       config: revision.config,
       note: revision.note,
       source: revision.source,
+      policyVersion: revision.policyVersion,
       rollbackOfRevision: revision.rollbackOfRevision,
       createdBy: revision.createdBy,
       createdByEmail,
@@ -324,15 +382,20 @@ export class DeviceService {
     filters: { networkId?: string; state?: DeviceState } = {},
   ): Promise<DeviceDto[]> {
     const devices = await listDevices(this.options.db, actor.orgId, filters);
-    const names = new Map<string, string>();
+    const networks = new Map<string, Network>();
     for (const device of devices) {
-      if (!names.has(device.networkId)) {
+      if (!networks.has(device.networkId)) {
         const network = await getNetworkById(this.options.db, device.networkId);
-        names.set(device.networkId, network?.name ?? "");
+        if (network) networks.set(device.networkId, network);
       }
     }
+    const tags = await this.tagsByDevice(actor.orgId);
     return devices.map((device) =>
-      this.toDto(device, names.get(device.networkId) ?? ""),
+      this.toDto(
+        device,
+        networks.get(device.networkId),
+        tags.get(device.id) ?? [],
+      ),
     );
   }
 
@@ -340,7 +403,8 @@ export class DeviceService {
     const device = await getDevice(this.options.db, actor.orgId, deviceId);
     if (!device) notFound("device not found");
     const network = await getNetworkById(this.options.db, device.networkId);
-    return this.toDto(device, network?.name ?? "");
+    const tags = await this.tagsByDevice(actor.orgId, deviceId);
+    return this.toDto(device, network, tags.get(deviceId) ?? []);
   }
 
   async listRevisions(actor: RequestActor, deviceId: string): Promise<RevisionDto[]> {
@@ -373,6 +437,20 @@ export class DeviceService {
     return address;
   }
 
+  /**
+   * Picks the DNS name for a device: the sanitised client hostname when free,
+   * otherwise `name-2`, `name-3`... The name is unique per network
+   * (case-insensitive) and enforced by a unique index as well.
+   */
+  private async allocateDnsName(
+    networkId: string,
+    requested: string,
+    ignoreDeviceId?: string,
+  ): Promise<string> {
+    const taken = await takenDnsNames(this.options.db, networkId, ignoreDeviceId);
+    return allocateDnsLabel(requested, taken);
+  }
+
   async approve(
     actor: RequestActor,
     deviceId: string,
@@ -396,6 +474,15 @@ export class DeviceService {
           );
         })();
 
+    let dnsName = device.dnsName;
+    if (!dnsName) {
+      dnsName = await this.allocateDnsName(
+        network.id,
+        device.hostname || device.machineId.slice(0, 8),
+        device.id,
+      );
+    }
+
     const revisions = await listRevisions(this.options.db, deviceId);
     let desiredRevision = device.desiredRevision;
     if (revisions.length === 0) {
@@ -411,6 +498,7 @@ export class DeviceService {
         config,
         note: "initial config on approval",
         source: "approval",
+        policyVersion: network.policyVersion,
         createdBy: actor.userId,
       });
       desiredRevision = revision.revision;
@@ -420,6 +508,8 @@ export class DeviceService {
     const updated = await updateDevice(this.options.db, deviceId, {
       state: "approved",
       virtualIpv4: address,
+      dnsName,
+      ownerUserId: device.ownerUserId ?? actor.userId,
       approvedAt: now,
       approvedBy: actor.userId,
       blockedAt: null,
@@ -436,11 +526,13 @@ export class DeviceService {
       metadata: {
         networkId: network.id,
         virtualIpv4: address,
+        dnsName,
         desiredRevision,
       },
     });
     this.options.push.schedule(deviceId, "approved");
-    return this.toDto(updated, network.name);
+    const tags = await this.tagsByDevice(actor.orgId, deviceId);
+    return this.toDto(updated, network, tags.get(deviceId) ?? []);
   }
 
   /**
@@ -513,7 +605,8 @@ export class DeviceService {
       },
     });
     const network = await getNetworkById(this.options.db, device.networkId);
-    return this.toDto(updated, network?.name ?? "");
+    const tags = await this.tagsByDevice(actor.orgId, deviceId);
+    return this.toDto(updated, network, tags.get(deviceId) ?? []);
   }
 
   async remove(actor: RequestActor, deviceId: string): Promise<void> {
@@ -560,6 +653,11 @@ export class DeviceService {
     if (!device) notFound("device not found");
     const network = await getNetworkById(this.options.db, device.networkId);
     if (!network) notFound("network not found");
+    if (input.config.hostname !== undefined) {
+      invalid(
+        "hostname is the device's unique DNS name; use PUT /api/devices/:deviceId/hostname to rename it",
+      );
+    }
 
     let config: DesiredConfig;
     try {
@@ -591,6 +689,7 @@ export class DeviceService {
       config,
       note: input.note ?? "",
       source: "manual",
+      policyVersion: network.policyVersion,
       createdBy: actor.userId,
     });
     const updated = await updateDevice(this.options.db, deviceId, {
@@ -608,12 +707,14 @@ export class DeviceService {
         revision: revision.revision,
         note: revision.note,
         virtualIpv4: config.virtualIpv4 ?? null,
+        policyVersion: revision.policyVersion,
       },
     });
     this.options.push.schedule(deviceId, "revision created");
+    const tags = await this.tagsByDevice(actor.orgId, deviceId);
     return {
       revision: this.revisionToDto(revision),
-      device: this.toDto(updated, network.name),
+      device: this.toDto(updated, network, tags.get(deviceId) ?? []),
     };
   }
 
@@ -650,6 +751,7 @@ export class DeviceService {
       config,
       note: `rollback to revision ${targetRevision}`,
       source: "rollback",
+      policyVersion: target.policyVersion,
       rollbackOfRevision: plan.rollbackOfRevision,
       createdBy: actor.userId,
     });
@@ -664,13 +766,105 @@ export class DeviceService {
       action: "device.config.rollback",
       targetType: "device",
       targetId: deviceId,
-      metadata: { revision: revision.revision, rollbackOf: targetRevision },
+      metadata: {
+        revision: revision.revision,
+        rollbackOf: targetRevision,
+        policyVersion: revision.policyVersion,
+      },
     });
     this.options.push.schedule(deviceId, "rollback");
+    const tags = await this.tagsByDevice(actor.orgId, deviceId);
     return {
       revision: this.revisionToDto(revision),
-      device: this.toDto(updated, network.name),
+      device: this.toDto(updated, network, tags.get(deviceId) ?? []),
     };
+  }
+
+  /**
+   * Renames a device's unique DNS name. MagicDNS records and the pushed
+   * `hostname` follow it; a new revision is not needed because the name is
+   * device identity, not revision content.
+   */
+  async rename(actor: RequestActor, deviceId: string, requested: string): Promise<DeviceDto> {
+    const device = await getDevice(this.options.db, actor.orgId, deviceId);
+    if (!device) notFound("device not found");
+    const network = await getNetworkById(this.options.db, device.networkId);
+    if (!network) notFound("network not found");
+    const label = requested.trim().toLowerCase();
+    if (!isValidDnsLabel(label)) {
+      invalid(
+        "DNS name must be 1-63 lowercase letters, digits or dashes and must not start or end with a dash",
+      );
+    }
+    const taken = await takenDnsNames(this.options.db, network.id, device.id);
+    if (taken.some((name) => name.toLowerCase() === label)) {
+      conflict(`the name "${label}" is already used in this network`);
+    }
+    const previous = device.dnsName;
+    const updated = await updateDevice(this.options.db, deviceId, { dnsName: label });
+    if (!updated) throw new AppError(500, "failed to rename device");
+    await this.options.audit.record({
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: "device.renamed",
+      targetType: "device",
+      targetId: deviceId,
+      metadata: { previous, dnsName: label, networkId: network.id },
+    });
+    this.options.push.schedule(deviceId, "renamed");
+    const tags = await this.tagsByDevice(actor.orgId, deviceId);
+    return this.toDto(updated, network, tags.get(deviceId) ?? []);
+  }
+
+  /** Replaces a device's tags (policy subjects of kind `tag:`). */
+  async setTags(actor: RequestActor, deviceId: string, tags: string[]): Promise<DeviceDto> {
+    const device = await getDevice(this.options.db, actor.orgId, deviceId);
+    if (!device) notFound("device not found");
+    const network = await getNetworkById(this.options.db, device.networkId);
+    if (!network) notFound("network not found");
+    const normalized = [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
+    await setDeviceTags(this.options.db, deviceId, normalized);
+    const updated = await getDevice(this.options.db, actor.orgId, deviceId);
+    if (!updated) notFound("device not found");
+    await this.options.audit.record({
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: "device.tags_updated",
+      targetType: "device",
+      targetId: deviceId,
+      metadata: { tags: normalized, networkId: network.id },
+    });
+    // A tag change changes the compiled ACL of other devices in the network.
+    this.options.push.schedule(deviceId, "tags updated");
+    return this.toDto(updated, network, normalized);
+  }
+
+  /** Assigns the owning account used by policy `group:` subjects. */
+  async setOwner(
+    actor: RequestActor,
+    deviceId: string,
+    ownerUserId: string | null,
+  ): Promise<DeviceDto> {
+    const device = await getDevice(this.options.db, actor.orgId, deviceId);
+    if (!device) notFound("device not found");
+    const network = await getNetworkById(this.options.db, device.networkId);
+    if (!network) notFound("network not found");
+    if (ownerUserId) {
+      const user = await findUserById(this.options.db, ownerUserId);
+      if (!user || user.orgId !== actor.orgId) notFound("user not found");
+    }
+    const updated = await updateDevice(this.options.db, deviceId, { ownerUserId });
+    if (!updated) throw new AppError(500, "failed to update the device owner");
+    await this.options.audit.record({
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: "device.owner_updated",
+      targetType: "device",
+      targetId: deviceId,
+      metadata: { ownerUserId, previousOwner: device.ownerUserId },
+    });
+    const tags = await this.tagsByDevice(actor.orgId, deviceId);
+    return this.toDto(updated, network, tags.get(deviceId) ?? []);
   }
 
   /**

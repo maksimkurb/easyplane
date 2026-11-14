@@ -3,10 +3,11 @@
  * Do not edit manually.
  * EasyPlane API
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
- * OpenAPI spec version: 0.1.0-M1
+ * OpenAPI spec version: 0.2.0-M2
  */
 import type { ListDevices200ItemOnline } from './listDevices200ItemOnline';
 import type { ListDevices200ItemOs } from './listDevices200ItemOs';
+import type { ListDevices200ItemReportedState } from './listDevices200ItemReportedState';
 import type { ListDevices200ItemState } from './listDevices200ItemState';
 import type { ListDevices200ItemSync } from './listDevices200ItemSync';
 
@@ -20,6 +21,12 @@ export type ListDevices200Item = {
   label: string;
   machineId: string;
   hostname: string;
+  /** @nullable */
+  dnsName: string | null;
+  /** @nullable */
+  magicDnsName: string | null;
+  magicDnsZone: string;
+  magicDnsEnabled: boolean;
   easytierVersion: string;
   os: ListDevices200ItemOs;
   sourceIp: string;
@@ -27,6 +34,12 @@ export type ListDevices200Item = {
   virtualIpv4: string | null;
   /** @nullable */
   inviteId: string | null;
+  /** @nullable */
+  ownerUserId: string | null;
+  tags: string[];
+  reportedState: ListDevices200ItemReportedState;
+  /** @nullable */
+  reportedStateAt: string | null;
   /**
      * @minimum -9007199254740991
      * @maximum 9007199254740991
@@ -39,6 +52,11 @@ export type ListDevices200Item = {
      * @nullable
      */
   appliedRevision: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  policyVersion: number;
   /** @nullable */
   appliedAt: string | null;
   /** @nullable */

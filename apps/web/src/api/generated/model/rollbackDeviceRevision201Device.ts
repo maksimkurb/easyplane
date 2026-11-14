@@ -3,10 +3,11 @@
  * Do not edit manually.
  * EasyPlane API
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
- * OpenAPI spec version: 0.1.0-M1
+ * OpenAPI spec version: 0.2.0-M2
  */
 import type { RollbackDeviceRevision201DeviceOnline } from './rollbackDeviceRevision201DeviceOnline';
 import type { RollbackDeviceRevision201DeviceOs } from './rollbackDeviceRevision201DeviceOs';
+import type { RollbackDeviceRevision201DeviceReportedState } from './rollbackDeviceRevision201DeviceReportedState';
 import type { RollbackDeviceRevision201DeviceState } from './rollbackDeviceRevision201DeviceState';
 import type { RollbackDeviceRevision201DeviceSync } from './rollbackDeviceRevision201DeviceSync';
 
@@ -20,6 +21,12 @@ export type RollbackDeviceRevision201Device = {
   label: string;
   machineId: string;
   hostname: string;
+  /** @nullable */
+  dnsName: string | null;
+  /** @nullable */
+  magicDnsName: string | null;
+  magicDnsZone: string;
+  magicDnsEnabled: boolean;
   easytierVersion: string;
   os: RollbackDeviceRevision201DeviceOs;
   sourceIp: string;
@@ -27,6 +34,12 @@ export type RollbackDeviceRevision201Device = {
   virtualIpv4: string | null;
   /** @nullable */
   inviteId: string | null;
+  /** @nullable */
+  ownerUserId: string | null;
+  tags: string[];
+  reportedState: RollbackDeviceRevision201DeviceReportedState;
+  /** @nullable */
+  reportedStateAt: string | null;
   /**
      * @minimum -9007199254740991
      * @maximum 9007199254740991
@@ -39,6 +52,11 @@ export type RollbackDeviceRevision201Device = {
      * @nullable
      */
   appliedRevision: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  policyVersion: number;
   /** @nullable */
   appliedAt: string | null;
   /** @nullable */

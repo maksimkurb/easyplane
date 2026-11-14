@@ -15,6 +15,7 @@ export const userSchema = z.object({
   email: z.string(),
   displayName: z.string(),
   role: roleSchema,
+  groups: z.array(z.string()),
   bootstrap: z.boolean(),
   lastLoginAt: z.string().nullable(),
 });
@@ -37,6 +38,9 @@ export const networkSchema = z.object({
   networkName: z.string(),
   ipv4Cidr: z.string(),
   defaultConfig: z.record(z.string(), z.unknown()),
+  magicDnsEnabled: z.boolean(),
+  magicDnsZone: z.string(),
+  policyVersion: z.number().int(),
   createdAt: z.string(),
   updatedAt: z.string(),
   deviceCounts: networkCountsSchema,
@@ -67,6 +71,10 @@ export const deviceSchema = z.object({
   label: z.string(),
   machineId: z.string(),
   hostname: z.string(),
+  dnsName: z.string().nullable(),
+  magicDnsName: z.string().nullable(),
+  magicDnsZone: z.string(),
+  magicDnsEnabled: z.boolean(),
   easytierVersion: z.string(),
   os: z.object({
     type: z.string(),
@@ -76,8 +84,13 @@ export const deviceSchema = z.object({
   sourceIp: z.string(),
   virtualIpv4: z.string().nullable(),
   inviteId: z.string().nullable(),
+  ownerUserId: z.string().nullable(),
+  tags: z.array(z.string()),
+  reportedState: z.record(z.string(), z.unknown()),
+  reportedStateAt: z.string().nullable(),
   desiredRevision: z.number().int().nullable(),
   appliedRevision: z.number().int().nullable(),
+  policyVersion: z.number().int(),
   appliedAt: z.string().nullable(),
   lastPushAt: z.string().nullable(),
   lastPushError: z.string().nullable(),
@@ -93,7 +106,8 @@ export const revisionSchema = z.object({
   revision: z.number().int(),
   config: z.record(z.string(), z.unknown()),
   note: z.string(),
-  source: z.enum(["approval", "manual", "rollback"]),
+  source: z.enum(["approval", "manual", "rollback", "policy"]),
+  policyVersion: z.number().int().nullable(),
   rollbackOfRevision: z.number().int().nullable(),
   createdBy: z.string().nullable(),
   createdByEmail: z.string().nullable(),
@@ -159,6 +173,8 @@ export const patchNetworkSchema = z
   .object({
     name: z.string().min(1).max(120).optional(),
     ipv4Cidr: z.string().min(1).max(32).optional(),
+    magicDnsEnabled: z.boolean().optional(),
+    magicDnsZone: z.string().min(3).max(200).optional(),
   })
   .strict();
 
@@ -208,3 +224,202 @@ export const paramsRevisionSchema = z.object({
   revision: z.coerce.number().int().positive(),
 });
 export const paramsProviderSchema = z.object({ provider: z.string().min(1) });
+export const paramsRouteSchema = z.object({ routeId: z.string().uuid() });
+
+// ---------------------------------------------------------------------------
+// M2: policy, MagicDNS, tags and routes
+// ---------------------------------------------------------------------------
+
+export const policySummarySchema = z.object({
+  statements: z.number().int(),
+  tags: z.array(z.string()),
+  groups: z.array(z.string()),
+  hosts: z.array(z.string()),
+  strictTags: z.boolean(),
+});
+
+export const policyVersionSchema = z.object({
+  id: z.string(),
+  networkId: z.string(),
+  version: z.number().int(),
+  document: z.record(z.string(), z.unknown()),
+  note: z.string(),
+  createdBy: z.string().nullable(),
+  createdAt: z.string(),
+  summary: policySummarySchema,
+});
+
+export const policyStateSchema = z.object({
+  version: z.number().int(),
+  policy: policyVersionSchema.nullable(),
+});
+
+export const compiledAclSummarySchema = z.object({
+  deviceId: z.string(),
+  hostname: z.string(),
+  inboundRules: z.number().int(),
+  outboundRules: z.number().int(),
+  forwardRules: z.number().int(),
+  declaredGroups: z.array(z.string()),
+  hash: z.string(),
+});
+
+export const reachabilitySchema = z.object({
+  allowed: z.boolean(),
+  egress: z.object({
+    action: z.string(),
+    matchedRule: z.string().nullable(),
+  }),
+  ingress: z.object({
+    action: z.string(),
+    matchedRule: z.string().nullable(),
+  }),
+  explanation: z.array(z.string()),
+});
+
+export const previewSchema = z.object({
+  warnings: z.array(z.string()),
+  devices: z.array(compiledAclSummarySchema),
+  reachability: reachabilitySchema,
+});
+
+/** Either a parsed document or HuJSON text, validated by the policy module. */
+export const savePolicySchema = z
+  .object({
+    document: z.record(z.string(), z.unknown()).optional(),
+    /** HuJSON/JSON text; comments and trailing commas are allowed. */
+    text: z.string().min(1).max(1_000_000).optional(),
+    note: z.string().max(500).optional(),
+  })
+  .strict()
+  .refine(
+    (value) => (value.document === undefined) !== (value.text === undefined),
+    "provide exactly one of document or text",
+  );
+
+export const savePolicyTextSchema = z
+  .object({
+    /** HuJSON/JSON text; parsed with comments and trailing commas allowed. */
+    text: z.string().min(1).max(1_000_000),
+    note: z.string().max(500).optional(),
+  })
+  .strict();
+
+export const previewInputSchema = z
+  .object({
+    document: z.record(z.string(), z.unknown()).optional(),
+    srcDeviceId: z.string().uuid(),
+    dstDeviceId: z.string().uuid().optional(),
+    dstCidr: z.string().max(32).optional(),
+    port: z.number().int().min(0).max(65535).optional(),
+    protocol: z.enum(["tcp", "udp", "icmp"]).default("tcp"),
+  })
+  .strict();
+
+export const testReachabilitySchema = z
+  .object({
+    srcDeviceId: z.string().uuid(),
+    dstDeviceId: z.string().uuid().optional(),
+    dstCidr: z.string().max(32).optional(),
+    port: z.number().int().min(0).max(65535).optional(),
+    protocol: z.enum(["tcp", "udp", "icmp"]).default("tcp"),
+  })
+  .strict();
+
+export const dnsNameSchema = z.object({
+  deviceId: z.string(),
+  hostname: z.string(),
+  zone: z.string(),
+  fqdn: z.string(),
+  ipv4: z.string().nullable(),
+  state: deviceStateSchema,
+  reportedHostname: z.string(),
+  renamed: z.boolean(),
+});
+
+export const renameDeviceSchema = z
+  .object({ dnsName: z.string().min(1).max(63) })
+  .strict();
+
+export const deviceTagsSchema = z
+  .object({ tags: z.array(z.string().min(1).max(120)).max(64) })
+  .strict();
+
+export const tagSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  color: z.string(),
+  deviceCount: z.number().int(),
+});
+
+export const createTagSchema = z
+  .object({
+    name: z.string().min(1).max(120),
+    color: z.string().max(32).optional(),
+  })
+  .strict();
+
+export const routeKindSchema = z.enum(["subnet", "exit_node"]);
+export const routeStateSchema = z.enum(["pending", "approved", "rejected"]);
+
+export const deviceRouteSchema = z.object({
+  id: z.string(),
+  networkId: z.string(),
+  deviceId: z.string(),
+  deviceHostname: z.string(),
+  kind: routeKindSchema,
+  cidr: z.string(),
+  state: routeStateSchema,
+  note: z.string(),
+  requestedBy: z.string().nullable(),
+  decidedBy: z.string().nullable(),
+  decidedAt: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const reportedInstanceSchema = z.object({
+  instanceId: z.string(),
+  networkName: z.string(),
+  hostname: z.string(),
+  proxyCidrs: z.array(z.string()),
+  exitNode: z.boolean(),
+  unmanaged: z.boolean(),
+  removable: z.boolean(),
+});
+
+export const routeReportSchema = z.object({
+  approvedCidrs: z.array(z.string()),
+  reportedCidrs: z.array(z.string()),
+  unapprovedCidrs: z.array(z.string()),
+  missingCidrs: z.array(z.string()),
+  reportedExitNode: z.boolean(),
+  unmanagedInstances: z.array(reportedInstanceSchema),
+});
+
+export const routeReportEntrySchema = z.object({
+  deviceId: z.string(),
+  deviceHostname: z.string(),
+  report: routeReportSchema.nullable(),
+  collectedAt: z.string().nullable(),
+});
+
+export const routeListSchema = z.object({
+  routes: z.array(deviceRouteSchema),
+  reports: z.array(routeReportEntrySchema),
+});
+
+export const requestRouteSchema = z
+  .object({
+    kind: routeKindSchema,
+    cidr: z.string().max(32).optional(),
+    note: z.string().max(500).optional(),
+  })
+  .strict();
+
+export const decideRouteSchema = z
+  .object({
+    state: z.enum(["approved", "rejected"]),
+    note: z.string().max(500).optional(),
+  })
+  .strict();

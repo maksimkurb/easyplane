@@ -3,7 +3,7 @@
  * Do not edit manually.
  * EasyPlane API
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
- * OpenAPI spec version: 0.1.0-M1
+ * OpenAPI spec version: 0.2.0-M2
  */
 
 export type ListDeviceRevisions200ItemSource = typeof ListDeviceRevisions200ItemSource[keyof typeof ListDeviceRevisions200ItemSource];
@@ -13,4 +13,5 @@ export const ListDeviceRevisions200ItemSource = {
   approval: 'approval',
   manual: 'manual',
   rollback: 'rollback',
+  policy: 'policy',
 } as const;

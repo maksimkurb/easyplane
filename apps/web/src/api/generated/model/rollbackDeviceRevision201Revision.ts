@@ -3,7 +3,7 @@
  * Do not edit manually.
  * EasyPlane API
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
- * OpenAPI spec version: 0.1.0-M1
+ * OpenAPI spec version: 0.2.0-M2
  */
 import type { RollbackDeviceRevision201RevisionConfig } from './rollbackDeviceRevision201RevisionConfig';
 import type { RollbackDeviceRevision201RevisionSource } from './rollbackDeviceRevision201RevisionSource';
@@ -19,6 +19,12 @@ export type RollbackDeviceRevision201Revision = {
   config: RollbackDeviceRevision201RevisionConfig;
   note: string;
   source: RollbackDeviceRevision201RevisionSource;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  policyVersion: number | null;
   /**
      * @minimum -9007199254740991
      * @maximum 9007199254740991

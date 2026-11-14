@@ -12,12 +12,12 @@ function desired(overrides: Record<string, unknown> = {}) {
     networkId: "11111111-1111-4111-8111-111111111111",
     deviceId: "22222222-2222-4222-8222-222222222222",
     instanceId: "33333333-3333-4333-8333-333333333333",
-    deviceHostname: "node-a",
+    hostname: "node-a",
     networkName: "net",
     networkSecret: "secret",
     assignedIpv4: "10.144.144.2",
     ipv4Cidr: "10.144.144.0/24",
-    stored: normalizeDesiredConfig({ hostname: "node-a", ...overrides }),
+    stored: normalizeDesiredConfig({ ...overrides }),
   });
 }
 

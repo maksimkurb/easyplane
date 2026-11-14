@@ -3,7 +3,7 @@
   "info": {
     "title": "EasyPlane API",
     "description": "Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.",
-    "version": "0.1.0-M1"
+    "version": "0.2.0-M2"
   },
   "components": {
     "securitySchemes": {
@@ -381,6 +381,12 @@
                             "viewer"
                           ]
                         },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
                         "bootstrap": {
                           "type": "boolean"
                         },
@@ -394,6 +400,7 @@
                         "email",
                         "displayName",
                         "role",
+                        "groups",
                         "bootstrap",
                         "lastLoginAt"
                       ],
@@ -445,6 +452,12 @@
                             "viewer"
                           ]
                         },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
                         "bootstrap": {
                           "type": "boolean"
                         },
@@ -458,6 +471,7 @@
                         "email",
                         "displayName",
                         "role",
+                        "groups",
                         "bootstrap",
                         "lastLoginAt"
                       ],
@@ -585,6 +599,12 @@
                           "viewer"
                         ]
                       },
+                      "groups": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
                       "bootstrap": {
                         "type": "boolean"
                       },
@@ -598,6 +618,7 @@
                       "email",
                       "displayName",
                       "role",
+                      "groups",
                       "bootstrap",
                       "lastLoginAt"
                     ],
@@ -642,6 +663,17 @@
                         "type": "object",
                         "additionalProperties": {}
                       },
+                      "magicDnsEnabled": {
+                        "type": "boolean"
+                      },
+                      "magicDnsZone": {
+                        "type": "string"
+                      },
+                      "policyVersion": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
                       "createdAt": {
                         "type": "string"
                       },
@@ -681,6 +713,9 @@
                       "networkName",
                       "ipv4Cidr",
                       "defaultConfig",
+                      "magicDnsEnabled",
+                      "magicDnsZone",
+                      "policyVersion",
                       "createdAt",
                       "updatedAt",
                       "deviceCounts"
@@ -752,6 +787,17 @@
                       "type": "object",
                       "additionalProperties": {}
                     },
+                    "magicDnsEnabled": {
+                      "type": "boolean"
+                    },
+                    "magicDnsZone": {
+                      "type": "string"
+                    },
+                    "policyVersion": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "createdAt": {
                       "type": "string"
                     },
@@ -791,6 +837,9 @@
                     "networkName",
                     "ipv4Cidr",
                     "defaultConfig",
+                    "magicDnsEnabled",
+                    "magicDnsZone",
+                    "policyVersion",
                     "createdAt",
                     "updatedAt",
                     "deviceCounts"
@@ -845,6 +894,17 @@
                       "type": "object",
                       "additionalProperties": {}
                     },
+                    "magicDnsEnabled": {
+                      "type": "boolean"
+                    },
+                    "magicDnsZone": {
+                      "type": "string"
+                    },
+                    "policyVersion": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "createdAt": {
                       "type": "string"
                     },
@@ -884,6 +944,9 @@
                     "networkName",
                     "ipv4Cidr",
                     "defaultConfig",
+                    "magicDnsEnabled",
+                    "magicDnsZone",
+                    "policyVersion",
                     "createdAt",
                     "updatedAt",
                     "deviceCounts"
@@ -916,6 +979,14 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 32
+                  },
+                  "magicDnsEnabled": {
+                    "type": "boolean"
+                  },
+                  "magicDnsZone": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 200
                   }
                 },
                 "additionalProperties": false
@@ -959,6 +1030,17 @@
                       "type": "object",
                       "additionalProperties": {}
                     },
+                    "magicDnsEnabled": {
+                      "type": "boolean"
+                    },
+                    "magicDnsZone": {
+                      "type": "string"
+                    },
+                    "policyVersion": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "createdAt": {
                       "type": "string"
                     },
@@ -998,6 +1080,9 @@
                     "networkName",
                     "ipv4Cidr",
                     "defaultConfig",
+                    "magicDnsEnabled",
+                    "magicDnsZone",
+                    "policyVersion",
                     "createdAt",
                     "updatedAt",
                     "deviceCounts"
@@ -1603,6 +1688,20 @@
                       "hostname": {
                         "type": "string"
                       },
+                      "dnsName": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "magicDnsName": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "magicDnsZone": {
+                        "type": "string"
+                      },
+                      "magicDnsEnabled": {
+                        "type": "boolean"
+                      },
                       "easytierVersion": {
                         "type": "string"
                       },
@@ -1637,6 +1736,24 @@
                         "nullable": true,
                         "type": "string"
                       },
+                      "ownerUserId": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "tags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "reportedState": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "reportedStateAt": {
+                        "nullable": true,
+                        "type": "string"
+                      },
                       "desiredRevision": {
                         "nullable": true,
                         "type": "integer",
@@ -1645,6 +1762,11 @@
                       },
                       "appliedRevision": {
                         "nullable": true,
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "policyVersion": {
                         "type": "integer",
                         "minimum": -9007199254740991,
                         "maximum": 9007199254740991
@@ -1687,13 +1809,22 @@
                       "label",
                       "machineId",
                       "hostname",
+                      "dnsName",
+                      "magicDnsName",
+                      "magicDnsZone",
+                      "magicDnsEnabled",
                       "easytierVersion",
                       "os",
                       "sourceIp",
                       "virtualIpv4",
                       "inviteId",
+                      "ownerUserId",
+                      "tags",
+                      "reportedState",
+                      "reportedStateAt",
                       "desiredRevision",
                       "appliedRevision",
+                      "policyVersion",
                       "appliedAt",
                       "lastPushAt",
                       "lastPushError",
@@ -1779,6 +1910,20 @@
                     "hostname": {
                       "type": "string"
                     },
+                    "dnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsZone": {
+                      "type": "string"
+                    },
+                    "magicDnsEnabled": {
+                      "type": "boolean"
+                    },
                     "easytierVersion": {
                       "type": "string"
                     },
@@ -1813,6 +1958,24 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "reportedState": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "reportedStateAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "desiredRevision": {
                       "nullable": true,
                       "type": "integer",
@@ -1821,6 +1984,11 @@
                     },
                     "appliedRevision": {
                       "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "policyVersion": {
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -1863,13 +2031,22 @@
                     "label",
                     "machineId",
                     "hostname",
+                    "dnsName",
+                    "magicDnsName",
+                    "magicDnsZone",
+                    "magicDnsEnabled",
                     "easytierVersion",
                     "os",
                     "sourceIp",
                     "virtualIpv4",
                     "inviteId",
+                    "ownerUserId",
+                    "tags",
+                    "reportedState",
+                    "reportedStateAt",
                     "desiredRevision",
                     "appliedRevision",
+                    "policyVersion",
                     "appliedAt",
                     "lastPushAt",
                     "lastPushError",
@@ -2012,6 +2189,20 @@
                     "hostname": {
                       "type": "string"
                     },
+                    "dnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsZone": {
+                      "type": "string"
+                    },
+                    "magicDnsEnabled": {
+                      "type": "boolean"
+                    },
                     "easytierVersion": {
                       "type": "string"
                     },
@@ -2046,6 +2237,24 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "reportedState": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "reportedStateAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "desiredRevision": {
                       "nullable": true,
                       "type": "integer",
@@ -2054,6 +2263,11 @@
                     },
                     "appliedRevision": {
                       "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "policyVersion": {
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -2096,13 +2310,22 @@
                     "label",
                     "machineId",
                     "hostname",
+                    "dnsName",
+                    "magicDnsName",
+                    "magicDnsZone",
+                    "magicDnsEnabled",
                     "easytierVersion",
                     "os",
                     "sourceIp",
                     "virtualIpv4",
                     "inviteId",
+                    "ownerUserId",
+                    "tags",
+                    "reportedState",
+                    "reportedStateAt",
                     "desiredRevision",
                     "appliedRevision",
+                    "policyVersion",
                     "appliedAt",
                     "lastPushAt",
                     "lastPushError",
@@ -2187,6 +2410,20 @@
                     "hostname": {
                       "type": "string"
                     },
+                    "dnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsZone": {
+                      "type": "string"
+                    },
+                    "magicDnsEnabled": {
+                      "type": "boolean"
+                    },
                     "easytierVersion": {
                       "type": "string"
                     },
@@ -2221,6 +2458,24 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "reportedState": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "reportedStateAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "desiredRevision": {
                       "nullable": true,
                       "type": "integer",
@@ -2229,6 +2484,11 @@
                     },
                     "appliedRevision": {
                       "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "policyVersion": {
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
@@ -2271,13 +2531,22 @@
                     "label",
                     "machineId",
                     "hostname",
+                    "dnsName",
+                    "magicDnsName",
+                    "magicDnsZone",
+                    "magicDnsEnabled",
                     "easytierVersion",
                     "os",
                     "sourceIp",
                     "virtualIpv4",
                     "inviteId",
+                    "ownerUserId",
+                    "tags",
+                    "reportedState",
+                    "reportedStateAt",
                     "desiredRevision",
                     "appliedRevision",
+                    "policyVersion",
                     "appliedAt",
                     "lastPushAt",
                     "lastPushError",
@@ -2394,8 +2663,15 @@
                         "enum": [
                           "approval",
                           "manual",
-                          "rollback"
+                          "rollback",
+                          "policy"
                         ]
+                      },
+                      "policyVersion": {
+                        "nullable": true,
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
                       },
                       "rollbackOfRevision": {
                         "nullable": true,
@@ -2422,6 +2698,7 @@
                       "config",
                       "note",
                       "source",
+                      "policyVersion",
                       "rollbackOfRevision",
                       "createdBy",
                       "createdByEmail",
@@ -2510,8 +2787,15 @@
                           "enum": [
                             "approval",
                             "manual",
-                            "rollback"
+                            "rollback",
+                            "policy"
                           ]
+                        },
+                        "policyVersion": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         },
                         "rollbackOfRevision": {
                           "nullable": true,
@@ -2538,6 +2822,7 @@
                         "config",
                         "note",
                         "source",
+                        "policyVersion",
                         "rollbackOfRevision",
                         "createdBy",
                         "createdByEmail",
@@ -2590,6 +2875,20 @@
                         "hostname": {
                           "type": "string"
                         },
+                        "dnsName": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "magicDnsName": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "magicDnsZone": {
+                          "type": "string"
+                        },
+                        "magicDnsEnabled": {
+                          "type": "boolean"
+                        },
                         "easytierVersion": {
                           "type": "string"
                         },
@@ -2624,6 +2923,24 @@
                           "nullable": true,
                           "type": "string"
                         },
+                        "ownerUserId": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "tags": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "reportedState": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        },
+                        "reportedStateAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
                         "desiredRevision": {
                           "nullable": true,
                           "type": "integer",
@@ -2632,6 +2949,11 @@
                         },
                         "appliedRevision": {
                           "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "policyVersion": {
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
@@ -2674,13 +2996,22 @@
                         "label",
                         "machineId",
                         "hostname",
+                        "dnsName",
+                        "magicDnsName",
+                        "magicDnsZone",
+                        "magicDnsEnabled",
                         "easytierVersion",
                         "os",
                         "sourceIp",
                         "virtualIpv4",
                         "inviteId",
+                        "ownerUserId",
+                        "tags",
+                        "reportedState",
+                        "reportedStateAt",
                         "desiredRevision",
                         "appliedRevision",
+                        "policyVersion",
                         "appliedAt",
                         "lastPushAt",
                         "lastPushError",
@@ -2767,8 +3098,15 @@
                           "enum": [
                             "approval",
                             "manual",
-                            "rollback"
+                            "rollback",
+                            "policy"
                           ]
+                        },
+                        "policyVersion": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         },
                         "rollbackOfRevision": {
                           "nullable": true,
@@ -2795,6 +3133,7 @@
                         "config",
                         "note",
                         "source",
+                        "policyVersion",
                         "rollbackOfRevision",
                         "createdBy",
                         "createdByEmail",
@@ -2847,6 +3186,20 @@
                         "hostname": {
                           "type": "string"
                         },
+                        "dnsName": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "magicDnsName": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "magicDnsZone": {
+                          "type": "string"
+                        },
+                        "magicDnsEnabled": {
+                          "type": "boolean"
+                        },
                         "easytierVersion": {
                           "type": "string"
                         },
@@ -2881,6 +3234,24 @@
                           "nullable": true,
                           "type": "string"
                         },
+                        "ownerUserId": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "tags": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "reportedState": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        },
+                        "reportedStateAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
                         "desiredRevision": {
                           "nullable": true,
                           "type": "integer",
@@ -2889,6 +3260,11 @@
                         },
                         "appliedRevision": {
                           "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "policyVersion": {
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
@@ -2931,13 +3307,22 @@
                         "label",
                         "machineId",
                         "hostname",
+                        "dnsName",
+                        "magicDnsName",
+                        "magicDnsZone",
+                        "magicDnsEnabled",
                         "easytierVersion",
                         "os",
                         "sourceIp",
                         "virtualIpv4",
                         "inviteId",
+                        "ownerUserId",
+                        "tags",
+                        "reportedState",
+                        "reportedStateAt",
                         "desiredRevision",
                         "appliedRevision",
+                        "policyVersion",
                         "appliedAt",
                         "lastPushAt",
                         "lastPushError",
@@ -2952,6 +3337,2640 @@
                   "required": [
                     "revision",
                     "device"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/policy": {
+      "get": {
+        "operationId": "getNetworkPolicy",
+        "tags": [
+          "policy"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "policy": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "networkId": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "document": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        },
+                        "note": {
+                          "type": "string"
+                        },
+                        "createdBy": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "statements": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "tags": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "groups": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "hosts": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "strictTags": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "statements",
+                            "tags",
+                            "groups",
+                            "hosts",
+                            "strictTags"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "networkId",
+                        "version",
+                        "document",
+                        "note",
+                        "createdBy",
+                        "createdAt",
+                        "summary"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "version",
+                    "policy"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "saveNetworkPolicy",
+        "tags": [
+          "policy"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "document": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000000
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "policy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "networkId": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "document": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        },
+                        "note": {
+                          "type": "string"
+                        },
+                        "createdBy": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "statements": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "tags": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "groups": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "hosts": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "strictTags": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "statements",
+                            "tags",
+                            "groups",
+                            "hosts",
+                            "strictTags"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "networkId",
+                        "version",
+                        "document",
+                        "note",
+                        "createdBy",
+                        "createdAt",
+                        "summary"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "revisionsCreated": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "policy",
+                    "revisionsCreated"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteNetworkPolicy",
+        "tags": [
+          "policy"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "revisionsCreated": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "revisionsCreated"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/policy/versions": {
+      "get": {
+        "operationId": "listNetworkPolicyVersions",
+        "tags": [
+          "policy"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "networkId": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "document": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "note": {
+                        "type": "string"
+                      },
+                      "createdBy": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "summary": {
+                        "type": "object",
+                        "properties": {
+                          "statements": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "tags": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "groups": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "hosts": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "strictTags": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "statements",
+                          "tags",
+                          "groups",
+                          "hosts",
+                          "strictTags"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "networkId",
+                      "version",
+                      "document",
+                      "note",
+                      "createdBy",
+                      "createdAt",
+                      "summary"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/policy/validate": {
+      "post": {
+        "operationId": "validateNetworkPolicy",
+        "tags": [
+          "policy"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "document": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000000
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "devices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "deviceId": {
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          },
+                          "inboundRules": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "outboundRules": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "forwardRules": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "declaredGroups": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "hash": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "deviceId",
+                          "hostname",
+                          "inboundRules",
+                          "outboundRules",
+                          "forwardRules",
+                          "declaredGroups",
+                          "hash"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "statements": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "tags": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "hosts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "strictTags": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "statements",
+                        "tags",
+                        "groups",
+                        "hosts",
+                        "strictTags"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "warnings",
+                    "devices",
+                    "summary"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/policy/preview": {
+      "post": {
+        "operationId": "previewNetworkPolicy",
+        "tags": [
+          "policy"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "document": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  },
+                  "srcDeviceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "dstDeviceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "dstCidr": {
+                    "type": "string",
+                    "maxLength": 32
+                  },
+                  "port": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 65535
+                  },
+                  "protocol": {
+                    "default": "tcp",
+                    "type": "string",
+                    "enum": [
+                      "tcp",
+                      "udp",
+                      "icmp"
+                    ]
+                  }
+                },
+                "required": [
+                  "srcDeviceId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "devices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "deviceId": {
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          },
+                          "inboundRules": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "outboundRules": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "forwardRules": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "declaredGroups": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "hash": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "deviceId",
+                          "hostname",
+                          "inboundRules",
+                          "outboundRules",
+                          "forwardRules",
+                          "declaredGroups",
+                          "hash"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "reachability": {
+                      "type": "object",
+                      "properties": {
+                        "allowed": {
+                          "type": "boolean"
+                        },
+                        "egress": {
+                          "type": "object",
+                          "properties": {
+                            "action": {
+                              "type": "string"
+                            },
+                            "matchedRule": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "action",
+                            "matchedRule"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "ingress": {
+                          "type": "object",
+                          "properties": {
+                            "action": {
+                              "type": "string"
+                            },
+                            "matchedRule": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "action",
+                            "matchedRule"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "explanation": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "allowed",
+                        "egress",
+                        "ingress",
+                        "explanation"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "warnings",
+                    "devices",
+                    "reachability"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/policy/test": {
+      "post": {
+        "operationId": "testNetworkReachability",
+        "tags": [
+          "policy"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "srcDeviceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "dstDeviceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "dstCidr": {
+                    "type": "string",
+                    "maxLength": 32
+                  },
+                  "port": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 65535
+                  },
+                  "protocol": {
+                    "default": "tcp",
+                    "type": "string",
+                    "enum": [
+                      "tcp",
+                      "udp",
+                      "icmp"
+                    ]
+                  }
+                },
+                "required": [
+                  "srcDeviceId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "devices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "deviceId": {
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          },
+                          "inboundRules": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "outboundRules": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "forwardRules": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "declaredGroups": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "hash": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "deviceId",
+                          "hostname",
+                          "inboundRules",
+                          "outboundRules",
+                          "forwardRules",
+                          "declaredGroups",
+                          "hash"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "reachability": {
+                      "type": "object",
+                      "properties": {
+                        "allowed": {
+                          "type": "boolean"
+                        },
+                        "egress": {
+                          "type": "object",
+                          "properties": {
+                            "action": {
+                              "type": "string"
+                            },
+                            "matchedRule": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "action",
+                            "matchedRule"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "ingress": {
+                          "type": "object",
+                          "properties": {
+                            "action": {
+                              "type": "string"
+                            },
+                            "matchedRule": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "action",
+                            "matchedRule"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "explanation": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "allowed",
+                        "egress",
+                        "ingress",
+                        "explanation"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "policyVersion": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "warnings",
+                    "devices",
+                    "reachability",
+                    "policyVersion"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/dns": {
+      "get": {
+        "operationId": "listMagicDnsNames",
+        "tags": [
+          "dns"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "zone": {
+                      "type": "string"
+                    },
+                    "clientFlag": {
+                      "type": "string"
+                    },
+                    "defaultZone": {
+                      "type": "string"
+                    },
+                    "names": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "deviceId": {
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          },
+                          "zone": {
+                            "type": "string"
+                          },
+                          "fqdn": {
+                            "type": "string"
+                          },
+                          "ipv4": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "approved",
+                              "blocked"
+                            ]
+                          },
+                          "reportedHostname": {
+                            "type": "string"
+                          },
+                          "renamed": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "deviceId",
+                          "hostname",
+                          "zone",
+                          "fqdn",
+                          "ipv4",
+                          "state",
+                          "reportedHostname",
+                          "renamed"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "zone",
+                    "clientFlag",
+                    "defaultZone",
+                    "names"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{deviceId}/hostname": {
+      "put": {
+        "operationId": "renameDevice",
+        "tags": [
+          "dns"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dnsName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 63
+                  }
+                },
+                "required": [
+                  "dnsName"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "networkName": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "blocked"
+                      ]
+                    },
+                    "online": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "offline"
+                      ]
+                    },
+                    "sync": {
+                      "type": "string",
+                      "enum": [
+                        "not-applicable",
+                        "in-sync",
+                        "stale",
+                        "error"
+                      ]
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "machineId": {
+                      "type": "string"
+                    },
+                    "hostname": {
+                      "type": "string"
+                    },
+                    "dnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsZone": {
+                      "type": "string"
+                    },
+                    "magicDnsEnabled": {
+                      "type": "boolean"
+                    },
+                    "easytierVersion": {
+                      "type": "string"
+                    },
+                    "os": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "distribution": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "version",
+                        "distribution"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "sourceIp": {
+                      "type": "string"
+                    },
+                    "virtualIpv4": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "inviteId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "reportedState": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "reportedStateAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "desiredRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "policyVersion": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastSeenAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "approvedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "blockedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "networkName",
+                    "state",
+                    "online",
+                    "sync",
+                    "label",
+                    "machineId",
+                    "hostname",
+                    "dnsName",
+                    "magicDnsName",
+                    "magicDnsZone",
+                    "magicDnsEnabled",
+                    "easytierVersion",
+                    "os",
+                    "sourceIp",
+                    "virtualIpv4",
+                    "inviteId",
+                    "ownerUserId",
+                    "tags",
+                    "reportedState",
+                    "reportedStateAt",
+                    "desiredRevision",
+                    "appliedRevision",
+                    "policyVersion",
+                    "appliedAt",
+                    "lastPushAt",
+                    "lastPushError",
+                    "lastSeenAt",
+                    "approvedAt",
+                    "blockedAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tags": {
+      "get": {
+        "operationId": "listTags",
+        "tags": [
+          "policy"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "color": {
+                        "type": "string"
+                      },
+                      "deviceCount": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "color",
+                      "deviceCount"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createTag",
+        "tags": [
+          "policy"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "color": {
+                    "type": "string",
+                    "maxLength": 32
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "color": {
+                      "type": "string"
+                    },
+                    "deviceCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "color",
+                    "deviceCount"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{deviceId}/tags": {
+      "put": {
+        "operationId": "setDeviceTags",
+        "tags": [
+          "policy"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tags": {
+                    "maxItems": 64,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120
+                    }
+                  }
+                },
+                "required": [
+                  "tags"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "networkName": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "blocked"
+                      ]
+                    },
+                    "online": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "offline"
+                      ]
+                    },
+                    "sync": {
+                      "type": "string",
+                      "enum": [
+                        "not-applicable",
+                        "in-sync",
+                        "stale",
+                        "error"
+                      ]
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "machineId": {
+                      "type": "string"
+                    },
+                    "hostname": {
+                      "type": "string"
+                    },
+                    "dnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsZone": {
+                      "type": "string"
+                    },
+                    "magicDnsEnabled": {
+                      "type": "boolean"
+                    },
+                    "easytierVersion": {
+                      "type": "string"
+                    },
+                    "os": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "distribution": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "version",
+                        "distribution"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "sourceIp": {
+                      "type": "string"
+                    },
+                    "virtualIpv4": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "inviteId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "reportedState": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "reportedStateAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "desiredRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "policyVersion": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastSeenAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "approvedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "blockedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "networkName",
+                    "state",
+                    "online",
+                    "sync",
+                    "label",
+                    "machineId",
+                    "hostname",
+                    "dnsName",
+                    "magicDnsName",
+                    "magicDnsZone",
+                    "magicDnsEnabled",
+                    "easytierVersion",
+                    "os",
+                    "sourceIp",
+                    "virtualIpv4",
+                    "inviteId",
+                    "ownerUserId",
+                    "tags",
+                    "reportedState",
+                    "reportedStateAt",
+                    "desiredRevision",
+                    "appliedRevision",
+                    "policyVersion",
+                    "appliedAt",
+                    "lastPushAt",
+                    "lastPushError",
+                    "lastSeenAt",
+                    "approvedAt",
+                    "blockedAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{deviceId}/owner": {
+      "put": {
+        "operationId": "setDeviceOwner",
+        "tags": [
+          "policy"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "nullable": true,
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "userId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "networkName": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "blocked"
+                      ]
+                    },
+                    "online": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "offline"
+                      ]
+                    },
+                    "sync": {
+                      "type": "string",
+                      "enum": [
+                        "not-applicable",
+                        "in-sync",
+                        "stale",
+                        "error"
+                      ]
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "machineId": {
+                      "type": "string"
+                    },
+                    "hostname": {
+                      "type": "string"
+                    },
+                    "dnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsZone": {
+                      "type": "string"
+                    },
+                    "magicDnsEnabled": {
+                      "type": "boolean"
+                    },
+                    "easytierVersion": {
+                      "type": "string"
+                    },
+                    "os": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "distribution": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "version",
+                        "distribution"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "sourceIp": {
+                      "type": "string"
+                    },
+                    "virtualIpv4": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "inviteId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "reportedState": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "reportedStateAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "desiredRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "policyVersion": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastSeenAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "approvedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "blockedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "networkName",
+                    "state",
+                    "online",
+                    "sync",
+                    "label",
+                    "machineId",
+                    "hostname",
+                    "dnsName",
+                    "magicDnsName",
+                    "magicDnsZone",
+                    "magicDnsEnabled",
+                    "easytierVersion",
+                    "os",
+                    "sourceIp",
+                    "virtualIpv4",
+                    "inviteId",
+                    "ownerUserId",
+                    "tags",
+                    "reportedState",
+                    "reportedStateAt",
+                    "desiredRevision",
+                    "appliedRevision",
+                    "policyVersion",
+                    "appliedAt",
+                    "lastPushAt",
+                    "lastPushError",
+                    "lastSeenAt",
+                    "approvedAt",
+                    "blockedAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/dns/zone/check": {
+      "post": {
+        "operationId": "checkDnsZone",
+        "tags": [
+          "dns"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "zone": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "zone"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "zone": {
+                      "type": "string"
+                    },
+                    "valid": {
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "zone",
+                    "valid",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/dns/repush": {
+      "post": {
+        "operationId": "repushMagicDns",
+        "tags": [
+          "dns"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/routes": {
+      "get": {
+        "operationId": "listNetworkRoutes",
+        "tags": [
+          "routes"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "routes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "networkId": {
+                            "type": "string"
+                          },
+                          "deviceId": {
+                            "type": "string"
+                          },
+                          "deviceHostname": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "subnet",
+                              "exit_node"
+                            ]
+                          },
+                          "cidr": {
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "approved",
+                              "rejected"
+                            ]
+                          },
+                          "note": {
+                            "type": "string"
+                          },
+                          "requestedBy": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "decidedBy": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "decidedAt": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "networkId",
+                          "deviceId",
+                          "deviceHostname",
+                          "kind",
+                          "cidr",
+                          "state",
+                          "note",
+                          "requestedBy",
+                          "decidedBy",
+                          "decidedAt",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "reports": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "deviceId": {
+                            "type": "string"
+                          },
+                          "deviceHostname": {
+                            "type": "string"
+                          },
+                          "report": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "approvedCidrs": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "reportedCidrs": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "unapprovedCidrs": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "missingCidrs": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "reportedExitNode": {
+                                "type": "boolean"
+                              },
+                              "unmanagedInstances": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "instanceId": {
+                                      "type": "string"
+                                    },
+                                    "networkName": {
+                                      "type": "string"
+                                    },
+                                    "hostname": {
+                                      "type": "string"
+                                    },
+                                    "proxyCidrs": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "exitNode": {
+                                      "type": "boolean"
+                                    },
+                                    "unmanaged": {
+                                      "type": "boolean"
+                                    },
+                                    "removable": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "instanceId",
+                                    "networkName",
+                                    "hostname",
+                                    "proxyCidrs",
+                                    "exitNode",
+                                    "unmanaged",
+                                    "removable"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "approvedCidrs",
+                              "reportedCidrs",
+                              "unapprovedCidrs",
+                              "missingCidrs",
+                              "reportedExitNode",
+                              "unmanagedInstances"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "collectedAt": {
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "deviceId",
+                          "deviceHostname",
+                          "report",
+                          "collectedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "routes",
+                    "reports"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{deviceId}/routes": {
+      "get": {
+        "operationId": "listDeviceRoutes",
+        "tags": [
+          "routes"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "networkId": {
+                        "type": "string"
+                      },
+                      "deviceId": {
+                        "type": "string"
+                      },
+                      "deviceHostname": {
+                        "type": "string"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "subnet",
+                          "exit_node"
+                        ]
+                      },
+                      "cidr": {
+                        "type": "string"
+                      },
+                      "state": {
+                        "type": "string",
+                        "enum": [
+                          "pending",
+                          "approved",
+                          "rejected"
+                        ]
+                      },
+                      "note": {
+                        "type": "string"
+                      },
+                      "requestedBy": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "decidedBy": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "decidedAt": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "updatedAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "networkId",
+                      "deviceId",
+                      "deviceHostname",
+                      "kind",
+                      "cidr",
+                      "state",
+                      "note",
+                      "requestedBy",
+                      "decidedBy",
+                      "decidedAt",
+                      "createdAt",
+                      "updatedAt"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "requestDeviceRoute",
+        "tags": [
+          "routes"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "subnet",
+                      "exit_node"
+                    ]
+                  },
+                  "cidr": {
+                    "type": "string",
+                    "maxLength": 32
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "deviceId": {
+                      "type": "string"
+                    },
+                    "deviceHostname": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "subnet",
+                        "exit_node"
+                      ]
+                    },
+                    "cidr": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "rejected"
+                      ]
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "requestedBy": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "decidedBy": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "decidedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "deviceId",
+                    "deviceHostname",
+                    "kind",
+                    "cidr",
+                    "state",
+                    "note",
+                    "requestedBy",
+                    "decidedBy",
+                    "decidedAt",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/routes/{routeId}/decision": {
+      "post": {
+        "operationId": "decideDeviceRoute",
+        "tags": [
+          "routes"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "approved",
+                      "rejected"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "state"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "routeId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "deviceId": {
+                      "type": "string"
+                    },
+                    "deviceHostname": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "subnet",
+                        "exit_node"
+                      ]
+                    },
+                    "cidr": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "rejected"
+                      ]
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "requestedBy": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "decidedBy": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "decidedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "deviceId",
+                    "deviceHostname",
+                    "kind",
+                    "cidr",
+                    "state",
+                    "note",
+                    "requestedBy",
+                    "decidedBy",
+                    "decidedAt",
+                    "createdAt",
+                    "updatedAt"
                   ],
                   "additionalProperties": false
                 }
@@ -3065,6 +6084,15 @@
     },
     {
       "name": "config"
+    },
+    {
+      "name": "policy"
+    },
+    {
+      "name": "dns"
+    },
+    {
+      "name": "routes"
     },
     {
       "name": "audit"
