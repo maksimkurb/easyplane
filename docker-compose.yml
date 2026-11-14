@@ -52,9 +52,9 @@ services:
       # container, set EASYPLANE_WSS_PORT/EASYPLANE_TLS_CERT/EASYPLANE_TLS_KEY
       # and publish that port here.
       # - "22024:22024"
-    volumes:
-      # Optional: TLS certificates for the built-in wss listener.
-      # - ./certs:/certs:ro
+    # Optional: mount TLS certificates for the built-in wss listener:
+    # volumes:
+    #   - ./certs:/certs:ro
 
 volumes:
   pgdata:
