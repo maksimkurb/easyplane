@@ -354,6 +354,45 @@ describe("networks, invites, devices, desired state and audit", () => {
     ]);
   });
 
+  it("records a push error and recovers on the next revision", async () => {
+    const remote = activeFake.client.remote as unknown as {
+      runNetworkInstance: ReturnType<typeof vi.fn>;
+    };
+    remote.runNetworkInstance.mockRejectedValueOnce(
+      new Error("simulated config error"),
+    );
+
+    const failed = await test.app.inject({
+      method: "POST",
+      url: `/api/devices/${deviceId}/revisions`,
+      headers: headers(),
+      payload: { config: { hostname: "broken" }, note: "force failure" },
+    });
+    expect(failed.statusCode).toBe(201);
+
+    const errored = await waitFor(
+      getDevice,
+      (value) => (value.lastPushError ?? "").includes("simulated config error"),
+    );
+    expect(errored).toMatchObject({
+      desiredRevision: 4,
+      sync: "error",
+    });
+
+    const recovered = await test.app.inject({
+      method: "POST",
+      url: `/api/devices/${deviceId}/push`,
+      headers: headers(),
+    });
+    expect(recovered.statusCode).toBe(200);
+
+    const healthy = await waitFor(
+      getDevice,
+      (value) => value.appliedRevision === 4 && value.lastPushError === null,
+    );
+    expect(healthy.sync).toBe("in-sync");
+  });
+
   it("blocks a device and refuses its heartbeat", async () => {
     // A reconnect replaces the registry entry; block must close the live one.
     const active = await heartbeat(inviteToken);
