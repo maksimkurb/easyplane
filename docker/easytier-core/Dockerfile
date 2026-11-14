@@ -3,6 +3,8 @@
 #
 # The binary is produced on the host and copied in because the brief forbids
 # vendoring Rust sources into this repo; the Dockerfile is only a thin runtime.
+# trixie (glibc 2.41) is required: the current toolchain links against
+# GLIBC_2.39, which bookworm (2.36) does not provide.
 FROM debian:trixie-slim
 
 RUN apt-get update \

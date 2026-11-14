@@ -49,9 +49,6 @@ jobs:
         with:
           node-version: 22
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: "/tmp/easyplane-easytier-ref/easytier-ref -> target"
       - run: bun install --frozen-lockfile
       - name: Build the pinned conformance client (real easytier-core)
         run: scripts/build-test-client.sh
