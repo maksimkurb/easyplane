@@ -38,6 +38,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const onAuthRequired = () => {
+      // Only react when a previously authenticated session expired. The login
+      // page's initial /me probe also returns 401; invalidating then would loop.
+      if (queryClient.getQueryData(getGetMeQueryKey()) === undefined) return
+      queryClient.setQueryData(getGetMeQueryKey(), undefined)
       void queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() })
     }
     window.addEventListener(AUTH_REQUIRED_EVENT, onAuthRequired)

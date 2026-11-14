@@ -14,7 +14,11 @@ export function readCookie(name: string): string | null {
   for (const part of document.cookie.split(";")) {
     const trimmed = part.trim()
     if (trimmed.startsWith(prefix)) {
-      return decodeURIComponent(trimmed.slice(prefix.length))
+      try {
+        return decodeURIComponent(trimmed.slice(prefix.length))
+      } catch {
+        return trimmed.slice(prefix.length)
+      }
     }
   }
   return null

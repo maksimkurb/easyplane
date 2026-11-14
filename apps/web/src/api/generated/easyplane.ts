@@ -437,17 +437,17 @@ export function useListLoginProviders<TData = Awaited<ReturnType<typeof listLogi
 
 
 
-export type startOidcLoginResponse302 = {
-  data: unknown
-  status: 302
+export type startOidcLoginResponse200 = {
+  data: void
+  status: 200
 }
 
-;
-export type startOidcLoginResponseError = (startOidcLoginResponse302) & {
+export type startOidcLoginResponseSuccess = (startOidcLoginResponse200) & {
   headers: Headers;
 };
+;
 
-export type startOidcLoginResponse = (startOidcLoginResponseError)
+export type startOidcLoginResponse = (startOidcLoginResponseSuccess)
 
 export const getStartOidcLoginUrl = (provider: string,
     params?: StartOidcLoginParams,) => {
@@ -558,17 +558,17 @@ export function useStartOidcLogin<TData = Awaited<ReturnType<typeof startOidcLog
 
 
 
-export type finishOidcLoginResponse302 = {
-  data: unknown
-  status: 302
+export type finishOidcLoginResponse200 = {
+  data: void
+  status: 200
 }
 
-;
-export type finishOidcLoginResponseError = (finishOidcLoginResponse302) & {
+export type finishOidcLoginResponseSuccess = (finishOidcLoginResponse200) & {
   headers: Headers;
 };
+;
 
-export type finishOidcLoginResponse = (finishOidcLoginResponseError)
+export type finishOidcLoginResponse = (finishOidcLoginResponseSuccess)
 
 export const getFinishOidcLoginUrl = (provider: string,
     params?: FinishOidcLoginParams,) => {
