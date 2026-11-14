@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
-    "typecheck": "tsc -b tsconfig.build.json --pretty && tsc -p tsconfig.test.json",
+    "typecheck": "tsc -b tsconfig.build.json --pretty && tsc -p tsconfig.test.json && bun run --cwd apps/web typecheck",
     "test": "vitest run --project unit",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
@@ -25,7 +25,12 @@
     "openapi:generate": "tsx apps/server/src/openapi.ts",
     "protos:sync": "scripts/sync-protos.sh",
     "protos:check": "scripts/check-protos.sh",
-    "test-client:build": "scripts/build-test-client.sh"
+    "test-client:build": "scripts/build-test-client.sh",
+    "lint": "bun run --cwd apps/web lint",
+    "test:web": "bun run --cwd apps/web test",
+    "web:dev": "bun run --cwd apps/web dev",
+    "web:build": "bun run --cwd apps/web build",
+    "build:all": "bun run build && bun run web:build"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
