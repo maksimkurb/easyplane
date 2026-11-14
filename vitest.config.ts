@@ -24,6 +24,17 @@ export default defineConfig({
       {
         resolve: { alias },
         test: {
+          name: "integration",
+          environment: "node",
+          include: ["test/integration/**/*.test.ts"],
+          testTimeout: 60_000,
+          hookTimeout: 180_000,
+          fileParallelism: false,
+        },
+      },
+      {
+        resolve: { alias },
+        test: {
           name: "conformance",
           environment: "node",
           include: ["test/conformance/**/*.test.ts"],
