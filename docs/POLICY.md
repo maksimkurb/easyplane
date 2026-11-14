@@ -294,7 +294,7 @@ managed process advertising `172.31.0.0/16`; the panel flags it as
 | `POST /api/networks/:id/policy/validate` | admin | validate a document/text, warnings + compiled summary per device |
 | `PUT /api/networks/:id/policy` | admin | save `{document}` or `{text}` (HuJSON), creates revisions |
 | `DELETE /api/networks/:id/policy` | admin | disable the policy (ACL filter off) |
-| `POST /api/networks/:id/policy/preview` | member/admin | "can A reach B on port P" for an unsaved document |
+| `POST /api/networks/:id/policy/preview` | member/admin | "can A reach B on port P" for an unsaved document (`document` or HuJSON `text`) |
 | `POST /api/networks/:id/policy/test` | member/admin | same against the saved policy |
 | `GET /api/networks/:id/dns` | any | switch, zone, resolved names/IPs |
 | `PUT /api/devices/:id/hostname` | member/admin | rename (unique per network) |

@@ -179,10 +179,12 @@ export function registerPolicyRoutes(
     },
     async (request) => {
       const auth = requireRole(request, ["admin", "member"]);
-      const document = request.body.document
-        ? normalizePolicyDocument(request.body.document)
-        : (await context.policies.getActive(request.params.networkId)).policy
-            ?.document;
+      const document = request.body.text
+        ? parsePolicyText(request.body.text)
+        : request.body.document
+          ? normalizePolicyDocument(request.body.document)
+          : (await context.policies.getActive(request.params.networkId)).policy
+              ?.document;
       if (!document) {
         throw new AppError(
           409,

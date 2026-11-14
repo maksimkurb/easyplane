@@ -308,6 +308,8 @@ export const savePolicyTextSchema = z
 export const previewInputSchema = z
   .object({
     document: z.record(z.string(), z.unknown()).optional(),
+    /** HuJSON text of an unsaved document (advanced editor). */
+    text: z.string().min(1).max(1_000_000).optional(),
     srcDeviceId: z.string().uuid(),
     dstDeviceId: z.string().uuid().optional(),
     dstCidr: z.string().max(32).optional(),

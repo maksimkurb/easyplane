@@ -100,7 +100,6 @@ export function resolvePolicy(
   const warnings: string[] = [];
   const knownTags = new Set(input.knownTags);
   const approved = input.devices.filter((device) => device.virtualIpv4 !== "");
-  const byId = new Map(approved.map((device) => [device.id, device]));
   const usersById = new Map(input.users.map((user) => [user.id, user]));
   const document = input.document;
 
@@ -324,8 +323,6 @@ export function resolvePolicy(
   if (options.strict && issues.length > 0) {
     throw new SubjectResolutionError(issues);
   }
-  // Unused lookups keep the intent explicit for future subject kinds.
-  void byId;
   return { statements, warnings, referencedTags: [...referencedTags].sort() };
 }
 

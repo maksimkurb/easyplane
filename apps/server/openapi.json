@@ -3955,6 +3955,11 @@
                     "type": "object",
                     "additionalProperties": {}
                   },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000000
+                  },
                   "srcDeviceId": {
                     "type": "string",
                     "format": "uuid",

@@ -196,7 +196,7 @@ export function PolicyPage() {
     preview.mutate({
       networkId: id,
       data: {
-        ...(mode === "json" ? {} : { document: currentDocument ?? {} }),
+        ...(mode === "json" ? { text } : { document: currentDocument ?? {} }),
         srcDeviceId: target.src,
         ...(target.dst ? { dstDeviceId: target.dst } : {}),
         ...(target.cidr ? { dstCidr: target.cidr } : {}),
