@@ -24,15 +24,22 @@ export interface ControlPlaneOptions {
    */
   supportEncryption?: boolean;
   /**
-   * Accepted config-server tokens (HeartbeatRequest.user_token). An empty list
-   * accepts any token; M0 only logs what it sees, M1 will map tokens to
-   * invites/devices. Unknown tokens get an RPC error, which makes the client
-   * reconnect every second.
+   * Accepted config-server tokens (HeartbeatRequest.user_token). Kept for the
+   * M0 conformance harness; M1 resolves tokens through `onHeartbeat`.
    */
   allowedTokens?: string[];
   logger?: Logger;
-  /** Reject/ignore heartbeats older than this? (reserved for M1 liveness) */
-  heartbeatGraceMs?: number;
+  /**
+   * M1 hook: resolves an invite/device from the heartbeat. Throwing rejects the
+   * RPC (the client logs and reconnects in 1 s).
+   */
+  onHeartbeat?: (
+    client: ManagedClient,
+    request: web.HeartbeatRequest,
+    snapshot: HeartbeatSnapshot,
+  ) => Promise<void> | void;
+  /** M1 hook: session closed (device is offline once heartbeats stop). */
+  onClientClosed?: (client: ManagedClient) => void;
 }
 
 export interface ControlPlaneAddresses {
@@ -137,7 +144,8 @@ export class ControlPlaneServer extends EventEmitter<ControlPlaneEvents> {
 
     registerWebServerService(session, {
       supportEncryption: this.options.supportEncryption ?? true,
-      onHeartbeat: (request, rpcSession) => this.onHeartbeat(client, request, rpcSession),
+      onHeartbeat: (request, rpcSession) =>
+        this.onHeartbeat(client, request, rpcSession),
     });
 
     session.on("request", (descriptor) => {
@@ -175,16 +183,37 @@ export class ControlPlaneServer extends EventEmitter<ControlPlaneEvents> {
           error: session.lastError?.message,
         });
         this.emit("client-disconnected", client);
+        try {
+          this.options.onClientClosed?.(client);
+        } catch (error) {
+          this.logger.warn("onClientClosed hook failed", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       });
     this.sessionTasks.add(task);
     void task.finally(() => this.sessionTasks.delete(task));
   }
 
-  private onHeartbeat(
+  private async onHeartbeat(
     client: ManagedClient,
     request: web.HeartbeatRequest,
     session: RpcSession,
-  ): void {
+  ): Promise<void> {
+    if (this.options.onHeartbeat) {
+      const snapshot = client.recordHeartbeat(request);
+      this.logger.debug("heartbeat", {
+        session: session.id,
+        machineId: snapshot.machineId,
+        hostname: snapshot.hostname,
+        version: snapshot.easytierVersion,
+        instances: snapshot.runningNetworkInstances.length,
+      });
+      await this.options.onHeartbeat(client, request, snapshot);
+      this.emit("heartbeat", client, snapshot);
+      return;
+    }
+
     const allowed = this.options.allowedTokens ?? [];
     if (allowed.length > 0 && !allowed.includes(request.userToken)) {
       throw new Error(`unknown config-server token`);

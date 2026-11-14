@@ -1,71 +1,67 @@
+import { pruneOidcLoginStates, pruneSessions } from "./db/repositories.js";
+import { createDatabase } from "./db/client.js";
+import { runMigrations } from "./db/migrate.js";
+import { readEnv } from "./env.js";
 import { createLogger } from "./logger.js";
-import { ControlPlaneServer } from "./control/control-plane.js";
-
-function parsePort(value: string | undefined, fallback: number | null): number | null {
-  if (value === undefined || value === "") return fallback;
-  if (value === "off" || value === "false") return null;
-  const port = Number(value);
-  if (!Number.isInteger(port) || port < 0 || port > 65535) {
-    throw new Error(`invalid port: ${value}`);
-  }
-  return port;
-}
+import { buildApp } from "./app/build-app.js";
+import { createAppContext } from "./app/context.js";
 
 async function main(): Promise<void> {
-  const logger = createLogger({ level: (process.env.EASYPLANE_LOG_LEVEL as "info" | undefined) ?? "info" });
-  const tokens = (process.env.EASYPLANE_TOKENS ?? "")
-    .split(",")
-    .map((token) => token.trim())
-    .filter((token) => token.length > 0);
+  const env = readEnv();
+  const logger = createLogger({
+    level: env.logLevel as "debug" | "info" | "warn" | "error",
+  });
 
-  const secureSetting = (process.env.EASYPLANE_SECURE ?? "on").toLowerCase();
-  if (tokens.length === 0) {
+  if (env.encryptionKey === "") {
     logger.warn(
-      "EASYPLANE_TOKENS is empty: every config-server token is accepted (M0 lab mode only)",
+      "EASYPLANE_ENCRYPTION_KEY is empty: using an insecure development key. Set a 32-byte key before storing real networks.",
+    );
+  }
+  if (env.oidcProviders.length === 0) {
+    logger.warn(
+      "no OIDC providers configured (EASYPLANE_OIDC_PROVIDERS): only the break-glass bootstrap token can sign in",
     );
   }
 
-  const wssPort = parsePort(process.env.EASYPLANE_WSS_PORT, null);
-  const certFile = process.env.EASYPLANE_TLS_CERT;
-  const keyFile = process.env.EASYPLANE_TLS_KEY;
-  if (wssPort !== null && (!certFile || !keyFile)) {
-    throw new Error("EASYPLANE_WSS_PORT requires EASYPLANE_TLS_CERT and EASYPLANE_TLS_KEY");
-  }
-
-  const server = new ControlPlaneServer({
-    host: process.env.EASYPLANE_HOST ?? "0.0.0.0",
-    tcpPort: parsePort(process.env.EASYPLANE_TCP_PORT, 22020),
-    wsPort: parsePort(process.env.EASYPLANE_WS_PORT, 22023),
-    wss: wssPort !== null && certFile && keyFile ? { port: wssPort, certFile, keyFile } : null,
-    supportEncryption: secureSetting !== "off",
-    allowedTokens: tokens,
+  const database = createDatabase(env.databaseUrl);
+  await runMigrations(database.db);
+  const context = await createAppContext({
+    env,
+    db: database.db,
+    pool: database.pool,
     logger,
   });
+  const app = await buildApp(context);
 
-  server.on("client-connected", (client) => {
-    logger.info("client session opened", { id: client.id, transport: client.transportKind });
-  });
-  server.on("client-disconnected", (client) => {
-    logger.info("client session closed", { id: client.id, heartbeats: client.heartbeatCount });
-  });
-  server.on("heartbeat", (client, heartbeat) => {
-    if (client.heartbeatCount === 1) {
-      logger.info("first heartbeat", {
-        id: client.id,
-        machineId: heartbeat.machineId,
-        hostname: heartbeat.hostname,
-        version: heartbeat.easytierVersion,
-        os: heartbeat.deviceOs,
-      });
-    }
+  const addresses = await context.controlPlane.start();
+  await app.listen({ host: env.host, port: env.httpPort });
+  context.push.start(env.reconcileIntervalMs);
+
+  const housekeeping = setInterval(() => {
+    const now = new Date();
+    void pruneSessions(database.db, now).catch(() => undefined);
+    void pruneOidcLoginStates(database.db, now).catch(() => undefined);
+  }, 3_600_000);
+  housekeeping.unref?.();
+
+  logger.info("easyplane listening", {
+    http: env.httpPort,
+    ws: addresses.wsPort,
+    tcp: addresses.tcpPort,
+    wss: addresses.wssPort,
+    organisation: context.organisation.slug,
   });
 
-  const addresses = await server.start();
-  logger.info("easyplane control plane listening", { ...addresses });
-
+  let stopping = false;
   const shutdown = async (signal: string): Promise<void> => {
+    if (stopping) return;
+    stopping = true;
     logger.info("shutting down", { signal });
-    await server.stop();
+    clearInterval(housekeeping);
+    await context.push.stop();
+    await app.close();
+    await context.controlPlane.stop();
+    await database.close();
     process.exit(0);
   };
   process.on("SIGINT", () => void shutdown("SIGINT"));

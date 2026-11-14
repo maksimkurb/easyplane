@@ -24,6 +24,7 @@ export class RemoteWebClient {
     config: manage.NetworkConfig;
     overwrite?: boolean;
     source?: manage.ConfigSource;
+    timeoutMs?: number;
   }): Promise<manage.RunNetworkInstanceResponse> {
     const response = await this.session.call({
       descriptor: { ...WEB_CLIENT_SERVICE, methodIndex: WebClientMethod.RunNetworkInstance },
@@ -33,6 +34,7 @@ export class RemoteWebClient {
         overwrite: request.overwrite ?? false,
         source: request.source ?? manage.ConfigSource.ConfigSourceWeb,
       }).finish(),
+      timeoutMs: request.timeoutMs ?? 15_000,
     });
     return manage.RunNetworkInstanceResponse.decode(response);
   }
