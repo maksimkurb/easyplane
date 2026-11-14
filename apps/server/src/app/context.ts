@@ -97,6 +97,7 @@ export async function createAppContext(
     logger,
   });
 
+  let controlPlane: ControlPlaneServer | undefined;
   const devices = new DeviceService({
     db,
     audit,
@@ -107,9 +108,10 @@ export async function createAppContext(
     onlineTimeoutMs: env.deviceOnlineTimeoutMs,
     maxPendingPerNetwork: env.maxPendingDevicesPerNetwork,
     unknownTokenLimitPerMinute: env.unknownTokenLimitPerMinute,
+    listClients: () => controlPlane?.listClients() ?? [],
   });
 
-  const controlPlane = new ControlPlaneServer({
+  controlPlane = new ControlPlaneServer({
     host: env.host,
     tcpPort: env.tcpPort,
     wsPort: env.wsPort,

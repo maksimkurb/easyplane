@@ -290,7 +290,10 @@ describe("M1 conformance: invite -> pending -> approve -> config -> status -> bl
     );
 
     core.start();
-    await test.context.controlPlane.waitForClient({ timeoutMs: 60_000 });
+    const reconnected = await test.context.controlPlane.waitForClient({
+      timeoutMs: 60_000,
+    });
+    await reconnected.waitForHeartbeats(2, 30_000);
     device = await poll(
       "device online",
       getDevice,
@@ -361,6 +364,7 @@ describe("M1 conformance: invite -> pending -> approve -> config -> status -> bl
     expect(auditDump).toContain("device.approved");
     expect(auditDump).toContain("device.config.pushed");
     expect(auditDump).toContain("device.blocked");
+    expect(auditDump).toContain('"instanceStopped":true');
     expect(auditDump).not.toContain(secret);
     expect(auditDump).not.toContain(inviteToken);
   }, 180_000);

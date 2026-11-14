@@ -1,7 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
+import { devices } from "../db/schema.js";
 import { requireRole } from "../app/auth-hooks.js";
 import type { AppContext } from "../app/context.js";
 import {
@@ -111,6 +113,13 @@ export function registerNetworkRoutes(
     },
     async (request) => {
       const auth = requireRole(request, ["admin"]);
+      const affected = await context.db
+        .select({ id: devices.id })
+        .from(devices)
+        .where(eq(devices.networkId, request.params.networkId));
+      for (const device of affected) {
+        context.deviceSessions.get(device.id)?.close("network deleted");
+      }
       await context.networks.delete(
         auth.organisation.id,
         auth.user.id,
@@ -158,6 +167,19 @@ export function registerNetworkRoutes(
         auth.user.id,
         request.params.networkId,
       );
+      // Existing approved devices are re-pushed with the new secret.
+      const approved = await context.db
+        .select({ id: devices.id })
+        .from(devices)
+        .where(
+          and(
+            eq(devices.networkId, request.params.networkId),
+            eq(devices.state, "approved"),
+          ),
+        );
+      for (const device of approved) {
+        context.push.schedule(device.id, "network secret rotated");
+      }
       return { secret };
     },
   );

@@ -25,10 +25,15 @@ interface FakeClient {
   client: ManagedClient;
   close: ReturnType<typeof vi.fn>;
   lastRun: FakeRunRequest | null;
+  deleteCalls: number;
 }
 
 function fakeClient(id = "session-1"): FakeClient {
-  const state = { closed: false, lastRun: null as FakeRunRequest | null };
+  const state = {
+    closed: false,
+    lastRun: null as FakeRunRequest | null,
+    deleteCalls: 0,
+  };
   const remote = {
     runNetworkInstance: vi.fn(async (request: FakeRunRequest) => {
       state.lastRun = request;
@@ -46,6 +51,10 @@ function fakeClient(id = "session-1"): FakeClient {
       config: state.lastRun?.config,
       source: manage.ConfigSource.ConfigSourceWeb,
     })),
+    deleteNetworkInstance: vi.fn(async () => {
+      state.deleteCalls += 1;
+      return { remainInstIds: [] };
+    }),
   };
   const close = vi.fn(() => {
     state.closed = true;
@@ -68,6 +77,9 @@ function fakeClient(id = "session-1"): FakeClient {
     close,
     get lastRun() {
       return state.lastRun;
+    },
+    get deleteCalls() {
+      return state.deleteCalls;
     },
   };
 }
@@ -357,6 +369,7 @@ describe("networks, invites, devices, desired state and audit", () => {
       online: "offline",
       sync: "not-applicable",
     });
+    expect(active.deleteCalls).toBe(1);
     expect(active.close).toHaveBeenCalled();
 
     const reconnect = fakeClient("blocked-session");

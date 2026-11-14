@@ -32,7 +32,7 @@ import type { AuditService } from "./audit.js";
 import type { DeviceSessionRegistry } from "./device-sessions.js";
 import { AppError, conflict, invalid, notFound } from "./errors.js";
 import type { InviteService } from "./invite-service.js";
-import type { PushService } from "./push-service.js";
+import { instanceIdFor, type PushService } from "./push-service.js";
 
 export interface RequestActor {
   orgId: string;
@@ -125,6 +125,8 @@ export interface DeviceServiceOptions {
   onlineTimeoutMs: number;
   maxPendingPerNetwork: number;
   unknownTokenLimitPerMinute: number;
+  /** Fallback lookup by machine id for reconnects that raced the registry. */
+  listClients?: () => ManagedClient[];
 }
 
 export class DeviceService {
@@ -441,9 +443,54 @@ export class DeviceService {
     return this.toDto(updated, network.name);
   }
 
+  /**
+   * Stops the EasyTier instance on a connected device before dropping its
+   * session. Blocking is enforced by refusing heartbeats; deleting the instance
+   * also stops the running network instead of leaving it up until restart.
+   */
+  /**
+   * Finds the live session for a device. The registry is authoritative, but a
+   * reconnect can briefly race the heartbeat that binds it; the control plane's
+   * session list still knows the machine id.
+   */
+  private findClient(device: Device): ManagedClient | undefined {
+    const bound = this.options.sessions.get(device.id);
+    if (bound) return bound;
+    return this.options
+      .listClients?.()
+      .find(
+        (client) =>
+          !client.isClosed &&
+          client.latestHeartbeat?.machineId === device.machineId,
+      );
+  }
+
+  private async stopInstance(
+    client: ManagedClient,
+    device: Device,
+  ): Promise<"deleted" | "failed" | "offline"> {
+    if (client.isClosed) return "offline";
+    try {
+      await client.remote.deleteNetworkInstance([
+        instanceIdFor(device.networkId, device.id),
+      ]);
+      return "deleted";
+    } catch (error) {
+      this.options.logger.warn("failed to delete the device network instance", {
+        deviceId: device.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return "failed";
+    }
+  }
+
   async block(actor: RequestActor, deviceId: string): Promise<DeviceDto> {
     const device = await getDevice(this.options.db, actor.orgId, deviceId);
     if (!device) notFound("device not found");
+    const client = this.findClient(device);
+    const instanceCleanup = client
+      ? await this.stopInstance(client, device)
+      : "offline";
     const now = new Date();
     const updated = await updateDevice(this.options.db, deviceId, {
       state: "blocked",
@@ -451,14 +498,19 @@ export class DeviceService {
       blockedBy: actor.userId,
     });
     if (!updated) throw new AppError(500, "failed to block device");
-    this.options.sessions.get(deviceId)?.close("device was blocked");
+    client?.close("device was blocked");
     await this.options.audit.record({
       orgId: actor.orgId,
       actorUserId: actor.userId,
       action: "device.blocked",
       targetType: "device",
       targetId: deviceId,
-      metadata: { networkId: device.networkId, hostname: device.hostname },
+      metadata: {
+        networkId: device.networkId,
+        hostname: device.hostname,
+        instanceStopped: instanceCleanup === "deleted",
+        instanceCleanup,
+      },
     });
     const network = await getNetworkById(this.options.db, device.networkId);
     return this.toDto(updated, network?.name ?? "");
@@ -467,7 +519,9 @@ export class DeviceService {
   async remove(actor: RequestActor, deviceId: string): Promise<void> {
     const device = await getDevice(this.options.db, actor.orgId, deviceId);
     if (!device) notFound("device not found");
-    this.options.sessions.get(deviceId)?.close("device was deleted");
+    const client = this.findClient(device);
+    if (client) await this.stopInstance(client, device);
+    client?.close("device was deleted");
     await deleteDevice(this.options.db, deviceId);
     await this.options.audit.record({
       orgId: actor.orgId,

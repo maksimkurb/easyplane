@@ -65,7 +65,12 @@ export async function buildApp(
 
   await app.register(cookie);
   await app.register(rateLimit, {
-    global: false,
+    // Blanket protection for the HTTP API; auth endpoints add stricter limits
+    // via their route config. The config-server listeners have their own
+    // unknown-token limiter in the device service.
+    global: true,
+    max: 600,
+    timeWindow: "1 minute",
     errorResponseBuilder: (_request, limit) => ({
       error: "too many requests",
       code: "rate_limited",

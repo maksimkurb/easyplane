@@ -132,12 +132,14 @@ export function registerSystemRoutes(
   typed.get(
     "/api/auth/login/:provider",
     {
+      config: {
+        rateLimit: { max: 30, timeWindow: "1 minute" },
+      },
       schema: {
         operationId: "startOidcLogin",
         tags: ["auth"],
         params: paramsProviderSchema,
         querystring: loginQuerySchema,
-        response: { 302: z.void() },
       },
     },
     async (request, reply) => {
@@ -153,12 +155,14 @@ export function registerSystemRoutes(
   typed.get(
     "/api/auth/callback/:provider",
     {
+      config: {
+        rateLimit: { max: 30, timeWindow: "1 minute" },
+      },
       schema: {
         operationId: "finishOidcLogin",
         tags: ["auth"],
         params: paramsProviderSchema,
         querystring: callbackQuerySchema,
-        response: { 302: z.void() },
       },
     },
     async (request, reply) => {

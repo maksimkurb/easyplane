@@ -254,13 +254,8 @@
           }
         ],
         "responses": {
-          "302": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
+          "200": {
+            "description": "Default Response"
           }
         }
       }
@@ -315,13 +310,8 @@
           }
         ],
         "responses": {
-          "302": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
+          "200": {
+            "description": "Default Response"
           }
         }
       }
