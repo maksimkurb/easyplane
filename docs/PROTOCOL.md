@@ -280,7 +280,7 @@ its own `BidirectRpcManager` whenever a tunnel is up.
 | 3 | `RetainNetworkInstance` | implemented, not required by M0 |
 | 4 | `CollectNetworkInfo` | used |
 | 5 | `ListNetworkInstance` | used |
-| 6 | `DeleteNetworkInstance` | implemented, not required by M0 |
+| 6 | `DeleteNetworkInstance` | used by M1 block/delete (§10.2) |
 | 7 | `GetNetworkInstanceConfig` | used |
 | 8 | `ListNetworkInstanceMeta` | used |
 
