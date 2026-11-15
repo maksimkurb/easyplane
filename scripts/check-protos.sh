@@ -33,11 +33,13 @@ if ! "$ROOT_DIR/scripts/sync-protos.sh" "$REF" >"$TMP_DIR/sync.log" 2>&1; then
   exit 1
 fi
 
-DRIFT="$(git -C "$ROOT_DIR" status --porcelain -- proto/easytier packages/proto/src/generated)"
+# google/protobuf/* is generated from protoc's bundled well-known types, whose
+# comments vary by protoc version, so it is excluded from the drift comparison.
+DRIFT="$(git -C "$ROOT_DIR" status --porcelain -- proto/easytier packages/proto/src/generated ':(exclude)packages/proto/src/generated/google')"
 if [[ -n "$DRIFT" ]]; then
   echo "error: proto definitions or generated bindings are out of date:" >&2
   echo "$DRIFT" >&2
-  git -C "$ROOT_DIR" diff --stat -- proto/easytier packages/proto/src/generated >&2
+  git -C "$ROOT_DIR" diff --stat -- proto/easytier packages/proto/src/generated ':(exclude)packages/proto/src/generated/google' >&2
   echo "run scripts/sync-protos.sh $REF and commit the result" >&2
   exit 1
 fi

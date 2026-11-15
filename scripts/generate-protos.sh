@@ -48,4 +48,8 @@ protoc \
   --ts_proto_opt=outputServices=false \
   "${PROTOS[@]}"
 
+# The header embeds the local protoc version, which differs between machines
+# and CI images; drop it so output is reproducible.
+find "$OUT_DIR" -name '*.ts' -exec sed -i '/^\/\/   protoc  *v/d' {} +
+
 echo "generated $(ls -1 "$OUT_DIR" | wc -l) files in packages/proto/src/generated"

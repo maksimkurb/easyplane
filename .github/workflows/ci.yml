@@ -103,6 +103,8 @@ jobs:
         with:
           node-version: 22
       - uses: dtolnay/rust-toolchain@stable
+      - name: Install protoc (needed by prost-wkt-types when building easytier-core)
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
       - run: bun install --frozen-lockfile
       - name: Build the pinned conformance client (real easytier-core)
         run: scripts/build-test-client.sh
