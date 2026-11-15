@@ -40,12 +40,15 @@ import type {
   CreateInviteBody,
   CreateNetwork201,
   CreateNetworkBody,
+  CreateNetworkPeer201,
+  CreateNetworkPeerBody,
   CreateTag201,
   CreateTagBody,
   DecideDeviceRoute200,
   DecideDeviceRouteBody,
   DeleteDevice200,
   DeleteNetwork200,
+  DeleteNetworkPeer200,
   DeleteNetworkPolicy200,
   ExportNetworkConfig200,
   ExportNetworkConfigParams,
@@ -62,6 +65,8 @@ import type {
   GetOrganisation200,
   Health200,
   Health503,
+  LinkNetworkPeer200,
+  LinkNetworkPeerBody,
   ListAdoptableInstances200Item,
   ListAuditLog200Item,
   ListAuditLogParams,
@@ -72,6 +77,7 @@ import type {
   ListInvites200Item,
   ListLoginProviders200,
   ListMagicDnsNames200,
+  ListNetworkPeers200,
   ListNetworkPolicyVersions200Item,
   ListNetworkRoutes200,
   ListNetworks200Item,
@@ -101,6 +107,10 @@ import type {
   StartOidcLoginParams,
   TestNetworkReachability200,
   TestNetworkReachabilityBody,
+  UpdateDeviceEndpoints200,
+  UpdateDeviceEndpointsBody,
+  UpdateDeviceHub200,
+  UpdateDeviceHubBody,
   UpdateNetwork200,
   UpdateNetworkBody,
   ValidateNetworkPolicy200,
@@ -1705,6 +1715,358 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getRotateNetworkSecretMutationOptions(options), queryClient);
     }
 
+export type listNetworkPeersResponse200 = {
+  data: ListNetworkPeers200
+  status: 200
+}
+
+export type listNetworkPeersResponseSuccess = (listNetworkPeersResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listNetworkPeersResponse = (listNetworkPeersResponseSuccess)
+
+export const getListNetworkPeersUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/peers`
+}
+
+export const listNetworkPeers = async (networkId: string, options?: Parameters<typeof apiFetch>[1]): Promise<listNetworkPeersResponse> => {
+
+  return apiFetch<listNetworkPeersResponse>(getListNetworkPeersUrl(networkId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNetworkPeersQueryKey = (networkId: string,) => {
+    return [
+    `/api/networks/${networkId}/peers`
+    ] as const;
+    }
+
+
+export const getListNetworkPeersQueryOptions = <TData = Awaited<ReturnType<typeof listNetworkPeers>>, TError = unknown>(networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNetworkPeers>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNetworkPeersQueryKey(networkId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNetworkPeers>>> = ({ signal }) => listNetworkPeers(networkId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: networkId !== null && networkId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNetworkPeers>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListNetworkPeersQueryResult = NonNullable<Awaited<ReturnType<typeof listNetworkPeers>>>
+export type ListNetworkPeersQueryError = unknown
+
+
+export function useListNetworkPeers<TData = Awaited<ReturnType<typeof listNetworkPeers>>, TError = unknown>(
+ networkId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNetworkPeers>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listNetworkPeers>>,
+          TError,
+          Awaited<ReturnType<typeof listNetworkPeers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListNetworkPeers<TData = Awaited<ReturnType<typeof listNetworkPeers>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNetworkPeers>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listNetworkPeers>>,
+          TError,
+          Awaited<ReturnType<typeof listNetworkPeers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListNetworkPeers<TData = Awaited<ReturnType<typeof listNetworkPeers>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNetworkPeers>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListNetworkPeers<TData = Awaited<ReturnType<typeof listNetworkPeers>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNetworkPeers>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListNetworkPeersQueryOptions(networkId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type createNetworkPeerResponse201 = {
+  data: CreateNetworkPeer201
+  status: 201
+}
+
+export type createNetworkPeerResponseSuccess = (createNetworkPeerResponse201) & {
+  headers: Headers;
+};
+;
+
+export type createNetworkPeerResponse = (createNetworkPeerResponseSuccess)
+
+export const getCreateNetworkPeerUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/peers`
+}
+
+export const createNetworkPeer = async (networkId: string,
+    createNetworkPeerBody: CreateNetworkPeerBody, options?: Parameters<typeof apiFetch>[1]): Promise<createNetworkPeerResponse> => {
+
+  return apiFetch<createNetworkPeerResponse>(getCreateNetworkPeerUrl(networkId),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(createNetworkPeerBody)
+  }
+);}
+
+
+
+
+
+export const getCreateNetworkPeerMutationKey = () => ['createNetworkPeer'] as const;
+
+export const getCreateNetworkPeerMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createNetworkPeer>>, TError,CreateNetworkPeerMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createNetworkPeer>>, TError,CreateNetworkPeerMutationVariables, TContext> => {
+
+const mutationKey = getCreateNetworkPeerMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createNetworkPeer>>, CreateNetworkPeerMutationVariables> = (props) => {
+          const {networkId,data} = props ?? {};
+
+          return  createNetworkPeer(networkId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateNetworkPeerMutationResult = NonNullable<Awaited<ReturnType<typeof createNetworkPeer>>>
+    export type CreateNetworkPeerMutationBody = CreateNetworkPeerBody
+    export type CreateNetworkPeerMutationError = unknown
+    export type CreateNetworkPeerMutationVariables = {networkId: string;data: CreateNetworkPeerBody}
+
+    export const useCreateNetworkPeer = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createNetworkPeer>>, TError,CreateNetworkPeerMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createNetworkPeer>>,
+        TError,
+        CreateNetworkPeerMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateNetworkPeerMutationOptions(options), queryClient);
+    }
+
+export type linkNetworkPeerResponse200 = {
+  data: LinkNetworkPeer200
+  status: 200
+}
+
+export type linkNetworkPeerResponseSuccess = (linkNetworkPeerResponse200) & {
+  headers: Headers;
+};
+;
+
+export type linkNetworkPeerResponse = (linkNetworkPeerResponseSuccess)
+
+export const getLinkNetworkPeerUrl = (networkId: string,
+    peerId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/peers/${peerId}/link`
+}
+
+export const linkNetworkPeer = async (networkId: string,
+    peerId: string,
+    linkNetworkPeerBody: LinkNetworkPeerBody, options?: Parameters<typeof apiFetch>[1]): Promise<linkNetworkPeerResponse> => {
+
+  return apiFetch<linkNetworkPeerResponse>(getLinkNetworkPeerUrl(networkId,peerId),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(linkNetworkPeerBody)
+  }
+);}
+
+
+
+
+
+export const getLinkNetworkPeerMutationKey = () => ['linkNetworkPeer'] as const;
+
+export const getLinkNetworkPeerMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkNetworkPeer>>, TError,LinkNetworkPeerMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof linkNetworkPeer>>, TError,LinkNetworkPeerMutationVariables, TContext> => {
+
+const mutationKey = getLinkNetworkPeerMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof linkNetworkPeer>>, LinkNetworkPeerMutationVariables> = (props) => {
+          const {networkId,peerId,data} = props ?? {};
+
+          return  linkNetworkPeer(networkId,peerId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LinkNetworkPeerMutationResult = NonNullable<Awaited<ReturnType<typeof linkNetworkPeer>>>
+    export type LinkNetworkPeerMutationBody = LinkNetworkPeerBody
+    export type LinkNetworkPeerMutationError = unknown
+    export type LinkNetworkPeerMutationVariables = {networkId: string;peerId: string;data: LinkNetworkPeerBody}
+
+    export const useLinkNetworkPeer = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkNetworkPeer>>, TError,LinkNetworkPeerMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof linkNetworkPeer>>,
+        TError,
+        LinkNetworkPeerMutationVariables,
+        TContext
+      > => {
+      return useMutation(getLinkNetworkPeerMutationOptions(options), queryClient);
+    }
+
+export type deleteNetworkPeerResponse200 = {
+  data: DeleteNetworkPeer200
+  status: 200
+}
+
+export type deleteNetworkPeerResponseSuccess = (deleteNetworkPeerResponse200) & {
+  headers: Headers;
+};
+;
+
+export type deleteNetworkPeerResponse = (deleteNetworkPeerResponseSuccess)
+
+export const getDeleteNetworkPeerUrl = (networkId: string,
+    peerId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/peers/${peerId}`
+}
+
+export const deleteNetworkPeer = async (networkId: string,
+    peerId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteNetworkPeerResponse> => {
+
+  return apiFetch<deleteNetworkPeerResponse>(getDeleteNetworkPeerUrl(networkId,peerId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteNetworkPeerMutationKey = () => ['deleteNetworkPeer'] as const;
+
+export const getDeleteNetworkPeerMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNetworkPeer>>, TError,DeleteNetworkPeerMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteNetworkPeer>>, TError,DeleteNetworkPeerMutationVariables, TContext> => {
+
+const mutationKey = getDeleteNetworkPeerMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteNetworkPeer>>, DeleteNetworkPeerMutationVariables> = (props) => {
+          const {networkId,peerId} = props ?? {};
+
+          return  deleteNetworkPeer(networkId,peerId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteNetworkPeerMutationResult = NonNullable<Awaited<ReturnType<typeof deleteNetworkPeer>>>
+
+    export type DeleteNetworkPeerMutationError = unknown
+    export type DeleteNetworkPeerMutationVariables = {networkId: string;peerId: string}
+
+    export const useDeleteNetworkPeer = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNetworkPeer>>, TError,DeleteNetworkPeerMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteNetworkPeer>>,
+        TError,
+        DeleteNetworkPeerMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteNetworkPeerMutationOptions(options), queryClient);
+    }
+
 export type listInvitesResponse200 = {
   data: ListInvites200Item[]
   status: 200
@@ -3004,6 +3366,168 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getPushDeviceConfigMutationOptions(options), queryClient);
+    }
+
+export type updateDeviceEndpointsResponse200 = {
+  data: UpdateDeviceEndpoints200
+  status: 200
+}
+
+export type updateDeviceEndpointsResponseSuccess = (updateDeviceEndpointsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type updateDeviceEndpointsResponse = (updateDeviceEndpointsResponseSuccess)
+
+export const getUpdateDeviceEndpointsUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/devices/${deviceId}/endpoints`
+}
+
+export const updateDeviceEndpoints = async (deviceId: string,
+    updateDeviceEndpointsBody: UpdateDeviceEndpointsBody, options?: Parameters<typeof apiFetch>[1]): Promise<updateDeviceEndpointsResponse> => {
+
+  return apiFetch<updateDeviceEndpointsResponse>(getUpdateDeviceEndpointsUrl(deviceId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(updateDeviceEndpointsBody)
+  }
+);}
+
+
+
+
+
+export const getUpdateDeviceEndpointsMutationKey = () => ['updateDeviceEndpoints'] as const;
+
+export const getUpdateDeviceEndpointsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDeviceEndpoints>>, TError,UpdateDeviceEndpointsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDeviceEndpoints>>, TError,UpdateDeviceEndpointsMutationVariables, TContext> => {
+
+const mutationKey = getUpdateDeviceEndpointsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDeviceEndpoints>>, UpdateDeviceEndpointsMutationVariables> = (props) => {
+          const {deviceId,data} = props ?? {};
+
+          return  updateDeviceEndpoints(deviceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDeviceEndpointsMutationResult = NonNullable<Awaited<ReturnType<typeof updateDeviceEndpoints>>>
+    export type UpdateDeviceEndpointsMutationBody = UpdateDeviceEndpointsBody
+    export type UpdateDeviceEndpointsMutationError = unknown
+    export type UpdateDeviceEndpointsMutationVariables = {deviceId: string;data: UpdateDeviceEndpointsBody}
+
+    export const useUpdateDeviceEndpoints = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDeviceEndpoints>>, TError,UpdateDeviceEndpointsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateDeviceEndpoints>>,
+        TError,
+        UpdateDeviceEndpointsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateDeviceEndpointsMutationOptions(options), queryClient);
+    }
+
+export type updateDeviceHubResponse200 = {
+  data: UpdateDeviceHub200
+  status: 200
+}
+
+export type updateDeviceHubResponseSuccess = (updateDeviceHubResponse200) & {
+  headers: Headers;
+};
+;
+
+export type updateDeviceHubResponse = (updateDeviceHubResponseSuccess)
+
+export const getUpdateDeviceHubUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/devices/${deviceId}/hub`
+}
+
+export const updateDeviceHub = async (deviceId: string,
+    updateDeviceHubBody: UpdateDeviceHubBody, options?: Parameters<typeof apiFetch>[1]): Promise<updateDeviceHubResponse> => {
+
+  return apiFetch<updateDeviceHubResponse>(getUpdateDeviceHubUrl(deviceId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(updateDeviceHubBody)
+  }
+);}
+
+
+
+
+
+export const getUpdateDeviceHubMutationKey = () => ['updateDeviceHub'] as const;
+
+export const getUpdateDeviceHubMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDeviceHub>>, TError,UpdateDeviceHubMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDeviceHub>>, TError,UpdateDeviceHubMutationVariables, TContext> => {
+
+const mutationKey = getUpdateDeviceHubMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDeviceHub>>, UpdateDeviceHubMutationVariables> = (props) => {
+          const {deviceId,data} = props ?? {};
+
+          return  updateDeviceHub(deviceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDeviceHubMutationResult = NonNullable<Awaited<ReturnType<typeof updateDeviceHub>>>
+    export type UpdateDeviceHubMutationBody = UpdateDeviceHubBody
+    export type UpdateDeviceHubMutationError = unknown
+    export type UpdateDeviceHubMutationVariables = {deviceId: string;data: UpdateDeviceHubBody}
+
+    export const useUpdateDeviceHub = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDeviceHub>>, TError,UpdateDeviceHubMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateDeviceHub>>,
+        TError,
+        UpdateDeviceHubMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateDeviceHubMutationOptions(options), queryClient);
     }
 
 export type listDeviceRevisionsResponse200 = {

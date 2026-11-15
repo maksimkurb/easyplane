@@ -36,6 +36,8 @@ export type ListDevices200Item = {
   inviteId: string | null;
   /** @nullable */
   ownerUserId: string | null;
+  advertisedEndpoints: string[];
+  isHub: boolean;
   tags: string[];
   reportedState: ListDevices200ItemReportedState;
   /** @nullable */

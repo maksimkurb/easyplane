@@ -36,6 +36,8 @@ export type SetDeviceOwner200 = {
   inviteId: string | null;
   /** @nullable */
   ownerUserId: string | null;
+  advertisedEndpoints: string[];
+  isHub: boolean;
   tags: string[];
   reportedState: SetDeviceOwner200ReportedState;
   /** @nullable */

@@ -36,6 +36,8 @@ export type CreateDeviceRevision201Device = {
   inviteId: string | null;
   /** @nullable */
   ownerUserId: string | null;
+  advertisedEndpoints: string[];
+  isHub: boolean;
   tags: string[];
   reportedState: CreateDeviceRevision201DeviceReportedState;
   /** @nullable */

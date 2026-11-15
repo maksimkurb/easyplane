@@ -36,6 +36,8 @@ export type ApproveDevice200 = {
   inviteId: string | null;
   /** @nullable */
   ownerUserId: string | null;
+  advertisedEndpoints: string[];
+  isHub: boolean;
   tags: string[];
   reportedState: ApproveDevice200ReportedState;
   /** @nullable */

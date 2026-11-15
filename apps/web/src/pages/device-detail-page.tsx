@@ -21,16 +21,16 @@ import {
   useRollbackDeviceRevision,
 } from "@/api/generated/easyplane"
 import { useAuth } from "@/auth/auth-context"
+import { DevicePeersCard } from "@/components/device-peers-card"
 import { DevicePolicyCard } from "@/components/device-policy-card"
 import { DeviceStatusBadges } from "@/components/device-status"
 import { PageHeader } from "@/components/shared/page-header"
 import { SectionCard } from "@/components/shared/section-card"
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/shared/field"
+import { Field, FieldGroup, FieldLabel } from "@/components/shared/field"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Table,
   TableBody,
@@ -145,6 +145,8 @@ export function DeviceDetailPage() {
           ) : null}
         </SectionCard>
 
+        <DevicePeersCard device={device} />
+
         <DevicePolicyCard deviceId={device.id} />
 
         {canManage && device.state === "approved" ? (
@@ -255,9 +257,6 @@ function RevisionForm({
   const { t } = useTranslation()
   const [noTun, setNoTun] = useState(initial?.noTun === true)
   const [acceptRoutes, setAcceptRoutes] = useState(initial?.acceptRoutes === true)
-  const [peerUrls, setPeerUrls] = useState(
-    Array.isArray(initial?.peerUrls) ? (initial.peerUrls as string[]).join("\n") : ""
-  )
   const [note, setNote] = useState("")
 
   const createRevision = useCreateDeviceRevision({
@@ -282,10 +281,6 @@ function RevisionForm({
             config: {
               noTun,
               acceptRoutes,
-              peerUrls: peerUrls
-                .split("\n")
-                .map((entry) => entry.trim())
-                .filter(Boolean),
             },
             note: note || undefined,
           },
@@ -300,18 +295,6 @@ function RevisionForm({
             onChange={(event) => setNote(event.target.value)}
             value={note}
           />
-        </Field>
-        <Field className="gap-2">
-          <FieldLabel htmlFor="revision-peers">
-            {t("devices.detail.peerUrls")}
-          </FieldLabel>
-          <Textarea
-            id="revision-peers"
-            onChange={(event) => setPeerUrls(event.target.value)}
-            rows={3}
-            value={peerUrls}
-          />
-          <FieldDescription>{t("devices.detail.editHint")}</FieldDescription>
         </Field>
         <div className="flex flex-wrap gap-6">
           <label className="flex items-center gap-2 text-sm">

@@ -56,6 +56,8 @@ export const enTranslation = {
     copied: "Copied",
     copyFailed: "Unable to copy",
     create: "Create",
+    add: "Add",
+    remove: "Remove",
     delete: "Delete",
     approve: "Approve",
     block: "Block",
@@ -157,10 +159,54 @@ export const enTranslation = {
       current: "Current",
       incoming: "Imported",
       peers: "Peer URLs",
+      peerKeepTitle: "Peer URLs kept as raw entries",
+      peerRawBadge: "raw",
+      peerLinkSuggestion: "exactly matches {{name}} — link it after the import",
+      peerKeepHint:
+        "Raw entries are pushed to every device. After importing, link each one to its device on the network page so that device stops dialling its own URL.",
       listeners: "Listeners",
       routes: "Routes",
       networkName: "EasyTier network name",
       committed: "Network imported",
+    },
+    peers: {
+      title: "Peers",
+      description:
+        "What every device in this network dials. Device entries use the device's advertised endpoints and are never sent back to that device, so a hub cannot dial itself. External URLs are pushed verbatim.",
+      empty:
+        "No peers yet. Mark a device as a hub on its page, or add an external peer URL.",
+      peer: "Peer",
+      kind: "Kind",
+      kindValue: {
+        device: "Device",
+        external: "External",
+      },
+      endpoints: "Advertised endpoints",
+      noEndpoints:
+        "No advertised endpoints yet — open the device and add them, otherwise nothing is dialled.",
+      hub: "Hub",
+      notHub: "Not a hub",
+      deviceHint: "Advertised endpoints of an approved hub.",
+      externalHint: "Raw URL pushed unchanged to every device.",
+      suggestion: "Exactly matches the endpoint of {{name}}.",
+      linkTo: "Link to device",
+      noLinkDevices: "No approved devices to link.",
+      addDevice: "Add a hub",
+      addHub: "Add hub",
+      device: "Device",
+      devicePlaceholder: "Choose a device",
+      noDevices: "Every device is already in the peer list.",
+      addDeviceHint:
+        "A hub is dialled by every other device; it receives no peer URLs of its own.",
+      addExternal: "Add an external peer",
+      url: "Peer URL",
+      addExternalHint:
+        "tcp/udp/ws/wss/quic/wg/ring and the other schemes the pinned core accepts.",
+      added: "Peer added",
+      removed: "Peer removed",
+      linked: "Peer linked to the device",
+      removeConfirm:
+        "Remove this peer? Device entries also clear the device's hub flag.",
     },
   },
   invites: {
@@ -246,7 +292,22 @@ export const enTranslation = {
       identityHint: "DNS name, tags (policy subjects) and route requests for this device.",
       owner: "Owner (policy groups)",
       noOwner: "No owner",
-      peerUrls: "Peer URLs (one per line)",
+      endpoints: {
+        title: "Advertised endpoints",
+        hint:
+          "Peer URLs other devices dial to reach this one, one per line. This is network state: changing it repushes the devices that dial it and creates no revision.",
+        placeholder: "tcp://node-a.example.com:11010",
+        save: "Save endpoints",
+        saved: "Advertised endpoints saved",
+      },
+      hub: {
+        title: "Use as hub",
+        hint:
+          "A hub is dialled by every other device. The hub itself receives none of its own endpoints, so it cannot dial its own public address and loop.",
+        enabled: "Device is now a hub",
+        disabled: "Device is no longer a hub",
+        badge: "Hub",
+      },
       rollback: "Roll back",
       rollbackConfirm: "Restore revision {{revision}} as a new revision?",
       revisionCreated: "Revision created",

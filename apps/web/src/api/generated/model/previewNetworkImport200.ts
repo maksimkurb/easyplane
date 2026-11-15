@@ -7,6 +7,7 @@
  */
 import type { PreviewNetworkImport200DiffItem } from './previewNetworkImport200DiffItem';
 import type { PreviewNetworkImport200Network } from './previewNetworkImport200Network';
+import type { PreviewNetworkImport200PeerLinksItem } from './previewNetworkImport200PeerLinksItem';
 import type { PreviewNetworkImport200Secret } from './previewNetworkImport200Secret';
 import type { PreviewNetworkImport200Source } from './previewNetworkImport200Source';
 import type { PreviewNetworkImport200Summary } from './previewNetworkImport200Summary';
@@ -24,4 +25,5 @@ export type PreviewNetworkImport200 = {
   /** @nullable */
   existingNetworkId: string | null;
   networkNameTaken: boolean;
+  peerLinks: PreviewNetworkImport200PeerLinksItem[];
 };

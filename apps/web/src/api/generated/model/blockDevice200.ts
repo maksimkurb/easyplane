@@ -36,6 +36,8 @@ export type BlockDevice200 = {
   inviteId: string | null;
   /** @nullable */
   ownerUserId: string | null;
+  advertisedEndpoints: string[];
+  isHub: boolean;
   tags: string[];
   reportedState: BlockDevice200ReportedState;
   /** @nullable */

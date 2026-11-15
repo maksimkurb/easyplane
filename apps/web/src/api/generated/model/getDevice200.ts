@@ -36,6 +36,8 @@ export type GetDevice200 = {
   inviteId: string | null;
   /** @nullable */
   ownerUserId: string | null;
+  advertisedEndpoints: string[];
+  isHub: boolean;
   tags: string[];
   reportedState: GetDevice200ReportedState;
   /** @nullable */

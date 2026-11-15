@@ -554,6 +554,41 @@ export function NetworkImportPage() {
                 </div>
               </dl>
 
+              {preview.summary.peerUrls.length > 0 ? (
+                <div className="rounded-lg border bg-muted/30 p-3 text-xs">
+                  <p className="mb-1 font-medium">
+                    {t("networks.import.peerKeepTitle")}
+                  </p>
+                  <ul className="space-y-1">
+                    {preview.summary.peerUrls.map((url) => {
+                      const link = preview.peerLinks.find(
+                        (entry) => entry.url === url
+                      )
+                      return (
+                        <li className="flex flex-wrap items-center gap-2" key={url}>
+                          <code className="rounded bg-muted px-1.5 py-0.5">
+                            {url}
+                          </code>
+                          <Badge variant="outline">
+                            {t("networks.import.peerRawBadge")}
+                          </Badge>
+                          {link ? (
+                            <span className="text-muted-foreground">
+                              {t("networks.import.peerLinkSuggestion", {
+                                name: link.hostname,
+                              })}
+                            </span>
+                          ) : null}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                  <p className="mt-2 text-muted-foreground">
+                    {t("networks.import.peerKeepHint")}
+                  </p>
+                </div>
+              ) : null}
+
               <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-3">
                 <Button
                   render={<Link href="/networks" />}

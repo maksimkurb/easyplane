@@ -36,6 +36,8 @@ export type RollbackDeviceRevision201Device = {
   inviteId: string | null;
   /** @nullable */
   ownerUserId: string | null;
+  advertisedEndpoints: string[];
+  isHub: boolean;
   tags: string[];
   reportedState: RollbackDeviceRevision201DeviceReportedState;
   /** @nullable */
