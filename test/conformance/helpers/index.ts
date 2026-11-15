@@ -34,6 +34,8 @@ export const PORTS = {
   udp: 22089,
   /** M4 import/adoption. */
   m4: 22091,
+  /** Hub/leaf topology: the hub must never dial itself. */
+  hub: 22092,
 } as const;
 
 export function dockerCompose(

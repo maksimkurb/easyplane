@@ -278,13 +278,24 @@ describe("M2 conformance: ACL enforcement, MagicDNS and routes on real easytier-
   });
 
   it("meshes the three clients and serves traffic before any policy exists", async () => {
-    // Peer URLs use the compose service names, which resolve inside the bridge
-    // network; listeners bind inside each container's namespace.
-    const peerUrls: Record<"a" | "b" | "c", string[]> = {
-      a: [`tcp://core-m2-b:${LISTENERS.b}`, `tcp://core-m2-c:${LISTENERS.c}`],
-      b: [`tcp://core-m2-a:${LISTENERS.a}`, `tcp://core-m2-c:${LISTENERS.c}`],
-      c: [`tcp://core-m2-a:${LISTENERS.a}`, `tcp://core-m2-b:${LISTENERS.b}`],
-    };
+    // Peer URLs are network state now: device A is the hub and advertises the
+    // compose service name it listens on. The compiler hands that endpoint to
+    // B and C, and never back to A (a hub must not dial itself).
+    const hub = await test.app.inject({
+      method: "PUT",
+      url: `/api/devices/${devices.a!.id}/endpoints`,
+      headers: headers(),
+      payload: { endpoints: [`tcp://core-m2-a:${LISTENERS.a}`] },
+    });
+    expect(hub.statusCode).toBe(200);
+    const flagged = await test.app.inject({
+      method: "PUT",
+      url: `/api/devices/${devices.a!.id}/hub`,
+      headers: headers(),
+      payload: { isHub: true },
+    });
+    expect(flagged.statusCode).toBe(200);
+
     for (const letter of ["a", "b", "c"] as const) {
       const response = await test.app.inject({
         method: "POST",
@@ -293,7 +304,6 @@ describe("M2 conformance: ACL enforcement, MagicDNS and routes on real easytier-
         payload: {
           config: {
             listenerUrls: [`tcp://0.0.0.0:${LISTENERS[letter]}`],
-            peerUrls: peerUrls[letter],
           },
           note: "conformance mesh",
         },
@@ -307,6 +317,15 @@ describe("M2 conformance: ACL enforcement, MagicDNS and routes on real easytier-
         (device) => device.appliedRevision === 2 && device.lastPushError === null,
       );
     }
+
+    // The hub is a listener only; the leaves dial it. The client appends a
+    // trailing slash to peer URLs, so compare normalised forms.
+    const normalizePeers = (values: readonly string[] = []) =>
+      values.map((value) => value.replace(/\/+$/, ""));
+    expect(normalizePeers((await pushedConfig("a"))?.peerUrls)).toEqual([]);
+    expect(normalizePeers((await pushedConfig("b"))?.peerUrls)).toEqual([
+      `tcp://core-m2-a:${LISTENERS.a}`,
+    ]);
 
     await poll(
       "b sees a as a peer",

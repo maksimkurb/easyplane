@@ -321,25 +321,34 @@ describe("M3 conformance: topology map and SSE on real easytier-core", () => {
       devices[letter] = approved.json() as DeviceDto;
     }
 
-    // Hub dials both leaves, leaves dial only the hub and must not use p2p, so
+    // Hub B/C dial A; A itself dials nobody (its own endpoint is excluded), so
     // B<->C traffic can only be relayed by A.
+    const hubEndpoints = await test.app.inject({
+      method: "PUT",
+      url: `/api/devices/${devices.a!.id}/endpoints`,
+      headers: headers(),
+      payload: { endpoints: [`tcp://core-m2-a:${LISTENERS.a}`] },
+    });
+    expect(hubEndpoints.statusCode).toBe(200);
+    const hubFlag = await test.app.inject({
+      method: "PUT",
+      url: `/api/devices/${devices.a!.id}/hub`,
+      headers: headers(),
+      payload: { isHub: true },
+    });
+    expect(hubFlag.statusCode).toBe(200);
+
     const configs = {
       a: {
         listenerUrls: [`tcp://0.0.0.0:${LISTENERS.a}`],
-        peerUrls: [
-          `tcp://core-m2-b:${LISTENERS.b}`,
-          `tcp://core-m2-c:${LISTENERS.c}`,
-        ],
         disableP2p: false,
       },
       b: {
         listenerUrls: [`tcp://0.0.0.0:${LISTENERS.b}`],
-        peerUrls: [`tcp://core-m2-a:${LISTENERS.a}`],
         disableP2p: true,
       },
       c: {
         listenerUrls: [`tcp://0.0.0.0:${LISTENERS.c}`],
-        peerUrls: [`tcp://core-m2-a:${LISTENERS.a}`],
         disableP2p: true,
       },
     } as const;
