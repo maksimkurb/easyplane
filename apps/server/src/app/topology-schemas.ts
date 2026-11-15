@@ -60,6 +60,7 @@ export const topologyLinkEvidenceSchema = z.object({
   remoteAddr: z.string().nullable(),
   rxBytes: z.string().nullable(),
   txBytes: z.string().nullable(),
+  protocolIsFirstHop: z.boolean(),
   peerId: z.number().int(),
 });
 
@@ -79,6 +80,7 @@ export const topologyLinkSchema = z.object({
   direction: z.enum(["dialer", "acceptor", "unknown"]),
   localAddr: z.string().nullable(),
   remoteAddr: z.string().nullable(),
+  protocolIsFirstHop: z.boolean(),
   asymmetric: z.boolean(),
   observedBy: z.array(z.string()),
   evidence: z.array(topologyLinkEvidenceSchema),

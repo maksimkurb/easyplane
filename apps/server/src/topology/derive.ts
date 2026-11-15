@@ -83,6 +83,8 @@ export interface TopologyLinkEvidence {
   remoteAddr: string | null;
   rxBytes: string | null;
   txBytes: string | null;
+  /** True when the protocol comes from the first hop of a relayed path. */
+  protocolIsFirstHop: boolean;
   peerId: number;
 }
 
@@ -103,6 +105,8 @@ export interface TopologyLink {
   direction: LinkDirection;
   localAddr: string | null;
   remoteAddr: string | null;
+  /** True when the protocol comes from the first hop of a relayed path. */
+  protocolIsFirstHop: boolean;
   /** Views disagree (one side direct, the other relayed). */
   asymmetric: boolean;
   observedBy: string[];
@@ -491,14 +495,24 @@ export function deriveTopology(
         node.hostname = route.hostname;
       }
 
-      const conn = selectConnection(peer);
-      const { protocol, raw } = normalizeTunnelProtocol(conn?.tunnel?.tunnelType);
       const direct =
         (peer?.directlyConnectedConns.length ?? 0) > 0 || route?.cost === 1;
       const viaKey =
         !direct && route && route.nextHopPeerId !== 0
           ? (peerKeyById.get(route.nextHopPeerId) ?? null)
           : null;
+      // A relayed peer has no direct connection, so the only transport this
+      // observer can name is the first hop's tunnel to the relay node.
+      const directConn = selectConnection(peer);
+      const relayPeer =
+        !direct && route
+          ? (input.info.peers ?? []).find(
+              (candidate) => candidate.peerId === route.nextHopPeerId,
+            )
+          : undefined;
+      const conn = directConn ?? selectConnection(relayPeer);
+      const { protocol, raw } = normalizeTunnelProtocol(conn?.tunnel?.tunnelType);
+      const protocolIsFirstHop = !direct && directConn === undefined && conn !== undefined;
 
       const evidence: TopologyLinkEvidence = {
         observedBy: input.deviceId,
@@ -523,6 +537,7 @@ export function deriveTopology(
           null,
         rxBytes: conn?.stats ? conn.stats.rxBytes.toString() : null,
         txBytes: conn?.stats ? conn.stats.txBytes.toString() : null,
+        protocolIsFirstHop,
         peerId,
       };
 
@@ -537,7 +552,9 @@ export function deriveTopology(
   for (const link of collectLinks(linkMap)) {
     if (link.kind !== "relayed" || !link.via) continue;
     const relay = nodes.get(link.via);
-    if (relay) relay.relaysFor = union(relay.relaysFor, [link.target]).sort();
+    if (relay) {
+      relay.relaysFor = union(relay.relaysFor, [link.source, link.target]).sort();
+    }
   }
 
   for (const node of nodes.values()) {
@@ -731,6 +748,7 @@ function mergeLink(
       direction: evidence.direction,
       localAddr: evidence.localAddr,
       remoteAddr: evidence.remoteAddr,
+      protocolIsFirstHop: evidence.protocolIsFirstHop,
       asymmetric: false,
       observedBy: [evidence.observedBy],
       evidence: [evidence],
@@ -753,6 +771,7 @@ function mergeLink(
     existing.direction = evidence.direction;
     existing.localAddr = evidence.localAddr;
     existing.remoteAddr = evidence.remoteAddr;
+    existing.protocolIsFirstHop = false;
     existing.via = null;
     existing.viaHostname = null;
   } else if (!existing.asymmetric) {

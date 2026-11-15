@@ -28,6 +28,8 @@ export const PORTS = {
   m1: 22086,
   /** M2 three-node mesh (bridge network, host.docker.internal). */
   m2: 22087,
+  /** M3 relay-only topology + SSE (same containers as M2, separate server). */
+  m3: 22088,
 } as const;
 
 export function dockerCompose(
