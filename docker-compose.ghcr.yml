@@ -1,0 +1,60 @@
+# EasyPlane deployment from the published image (no local build).
+#
+#   cp .env.example .env     # same .env as docker-compose.yml
+#   docker compose -f docker-compose.ghcr.yml up -d --pull always
+#
+# Pin a release with EASYPLANE_IMAGE_TAG (default: latest):
+#
+#   EASYPLANE_IMAGE_TAG=1.2.3 docker compose -f docker-compose.ghcr.yml up -d
+#
+# Tags: releases publish X.Y.Z, X.Y, X and latest; main publishes edge and
+# sha-<short>. The package must be public, or run `docker login ghcr.io` once.
+# This file is an alternative to docker-compose.yml (which builds from source),
+# not an addition to it: use one or the other.
+#
+# EASYPLANE_IMAGE_TAG/EASYPLANE_IMAGE_OWNER may also live in .env: compose
+# reads that file for interpolation before starting anything.
+
+name: easyplane
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-easyplane}
+      POSTGRES_USER: ${POSTGRES_USER:-easyplane}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-easyplane} -d ${POSTGRES_DB:-easyplane}
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  server:
+    image: ghcr.io/${EASYPLANE_IMAGE_OWNER:-maksimkurb}/easyplane:${EASYPLANE_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      EASYPLANE_DATABASE_URL: postgres://${POSTGRES_USER:-easyplane}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-easyplane}
+      EASYPLANE_HOST: 0.0.0.0
+      EASYPLANE_HTTP_PORT: "8080"
+      EASYPLANE_WEB_DIR: /app/apps/web/dist
+    ports:
+      - "${EASYPLANE_HTTP_BIND:-0.0.0.0:8080}:8080"
+      # EasyTier config-server listeners (place a TLS proxy in front for wss).
+      - "${EASYPLANE_TCP_BIND:-0.0.0.0:22020}:22020"
+      - "${EASYPLANE_WS_BIND:-0.0.0.0:22023}:22023"
+      # UDP config-server (M4). Also set EASYPLANE_UDP_PORT=22021 in .env.
+      # - "${EASYPLANE_UDP_BIND:-0.0.0.0:22021}:22021/udp"
+
+volumes:
+  pgdata:

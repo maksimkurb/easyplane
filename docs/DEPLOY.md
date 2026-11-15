@@ -30,6 +30,87 @@ Open the panel, use **Break-glass bootstrap** once with the token and an admin
 email, then sign in through OIDC. After an admin exists the token is refused
 unless `EASYPLANE_BOOTSTRAP_REENABLE=true`; re-disable it afterwards.
 
+Prefer a released image over a local build? See §1b — it is the same stack
+with `image:` instead of `build:`.
+
+## 1b. Published images and releases
+
+CI publishes the server image to GitHub Container Registry. A fork publishes
+into its own namespace (`ghcr.io/<owner>/<repo>`, lowercased).
+
+| tag | produced by | meaning |
+| --- | --- | --- |
+| `edge` | every green push to `main` | last commit whose proto, unit, integration, conformance and image gates passed |
+| `sha-<short>` | every publish | immutable pointer to the commit |
+| `X.Y.Z`, `X.Y`, `X` | a release | the tagged release; `X.Y`/`X` move with newer releases |
+| `latest` | a release | alias of the newest release |
+
+Nothing is published from pull requests (CI only builds the image there).
+
+**Run a published image (no local build):**
+
+```bash
+cp .env.example .env      # edit it exactly as in §1
+docker compose -f docker-compose.ghcr.yml up -d --pull always
+```
+
+`docker-compose.ghcr.yml` is an alternative to `docker-compose.yml`, not an
+addition: use one or the other. Pin a release with `EASYPLANE_IMAGE_TAG`
+(in the environment or in `.env`, which compose reads for interpolation), and
+pull explicitly when a moving tag like `latest` or `edge` should be refreshed:
+
+```bash
+EASYPLANE_IMAGE_TAG=1.2.3 docker compose -f docker-compose.ghcr.yml pull
+EASYPLANE_IMAGE_TAG=1.2.3 docker compose -f docker-compose.ghcr.yml up -d
+```
+
+A bare `docker pull ghcr.io/maksimkurb/easyplane:1.2.3` works too. The image
+reports the version it was built from at `GET /health` (`"version": "1.2.3"`,
+or `"edge"` on main); it is baked in as `EASYPLANE_VERSION` at build time.
+
+**Cutting a release.** Run the `release` workflow (Actions → release → Run
+workflow) on `main`:
+
+1. Pick `bump` (`patch` default, or `minor`/`major`), or set `version` to an
+   explicit `X.Y.Z` — the explicit value wins.
+2. The workflow requires a successful `ci` run on the selected commit; it then
+   computes the next version from the newest `v*` tag (the first release is
+   `v0.1.0`), creates the annotated tag, publishes a GitHub Release with
+   generated notes, and builds/pushes `X.Y.Z`, `X.Y`, `X`, `latest` and
+   `sha-<short>` for `linux/amd64` and `linux/arm64`.
+3. Deploy it: run
+   `EASYPLANE_IMAGE_TAG=X.Y.Z docker compose -f docker-compose.ghcr.yml pull`,
+   then the same command with `up -d`.
+
+For a fork, also set `EASYPLANE_IMAGE_OWNER=<owner>` (it defaults to the
+upstream namespace).
+
+Re-running is safe: a tag that already exists on the same commit is reused and
+an existing release is left unchanged; choosing a version that is tagged on a
+different commit fails instead of moving the tag.
+
+**Tag push.** Pushing a `v*` tag by hand
+(`git tag -a v1.2.3 -m "EasyPlane v1.2.3" && git push origin v1.2.3`) publishes
+the same image set for that commit without creating a release and without
+re-tagging. Note that a tag pushed by the workflow's `GITHUB_TOKEN` does not
+trigger other workflow runs, so the release workflow publishes its own image;
+the hand-push path is for rebuilding or re-publishing an existing tag.
+
+**Package visibility (manual, once).** New ghcr packages are private by
+default. To let anyone pull without credentials: repository → **Packages** →
+`easyplane` → **Package settings** → **Change visibility** → **Public**. For a
+private package, log in first with a PAT that has `read:packages`:
+
+```bash
+echo "$GHCR_PAT" | docker login ghcr.io -u <github-user> --password-stdin
+```
+
+**Permissions.** The workflows use the built-in `GITHUB_TOKEN` only and declare
+what they need (`packages: write`, and `contents: write` for the release job);
+no repository setting has to change for a personal repository. An organisation
+that enforces restricted workflow permissions must allow those scopes, and
+publishing requires that Actions can create packages in the org.
+
 ## 2. TLS and reverse proxy
 
 Two supported shapes:
@@ -313,8 +394,9 @@ old network (the draft keeps the secret) and commit the draft.
 
 ## 5. Operations
 
-- `GET /health` returns database and client counts; the container healthcheck
-  uses it.
+- `GET /health` returns database and client counts plus the version (from
+  `EASYPLANE_VERSION`, which published images set to the image tag); the
+  container healthcheck uses it.
 - Logs are structured JSON (pino for HTTP, a small JSON logger for the control
   plane). Cookies, authorization headers, CSRF headers, secrets and tokens are
   never logged; a unit test scans every logger call for secret-looking fields.

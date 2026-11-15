@@ -92,6 +92,10 @@ cp .env.example .env     # set POSTGRES_PASSWORD, EASYPLANE_ENCRYPTION_KEY,
 docker compose up -d --build
 ```
 
+To run a published release instead of building from source, use
+`docker compose -f docker-compose.ghcr.yml up -d` (tags, `EASYPLANE_IMAGE_TAG`,
+release procedure and package visibility: [docs/DEPLOY.md](docs/DEPLOY.md) §1b).
+
 Open `http://localhost:8080`, bootstrap the first admin with the token, then
 sign in through OIDC. TLS, reverse proxies (nginx + Caddy), IdP examples and
 the optional UDP port are covered in [docs/DEPLOY.md](docs/DEPLOY.md).
@@ -303,5 +307,11 @@ unavailable.
 
 CI (`.github/workflows/ci.yml`) runs proto drift, typecheck/lint/unit/web build,
 integration (PostgreSQL service), the dockerised real-client conformance suite
-and a server image build. A manual `workflow_dispatch` load job runs the
+and a server image build. A push to `main` that passes every gate additionally
+publishes `edge` and `sha-<short>` images to `ghcr.io`
+(`.github/workflows/_image.yml`, multi-arch `linux/amd64`/`linux/arm64`); pull
+requests only build. Releases are cut with the manual `release` workflow, which
+tags `vX.Y.Z`, publishes a GitHub release and pushes the versioned image — see
+[docs/DEPLOY.md](docs/DEPLOY.md) §1b. A `v*` tag push publishes the image for
+that tag without re-tagging. A manual `workflow_dispatch` load job runs the
 simulated load test.
