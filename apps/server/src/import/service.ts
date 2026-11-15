@@ -229,7 +229,8 @@ export class ImportService {
     let detail: string;
     let suggestedName = options.name;
 
-    switch (source.type) {
+    try {
+      switch (source.type) {
       case "toml": {
         if (source.text.trim() === "") invalid("paste an EasyTier TOML config first");
         if (source.text.length > 512 * 1024) invalid("TOML config is too large (512 KiB max)");
@@ -276,6 +277,10 @@ export class ImportService {
         detail = `device ${adopted.device.hostname || adopted.device.id} instance ${adopted.instanceId}`;
         break;
       }
+      }
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      invalid(error instanceof Error ? error.message : "invalid import source");
     }
 
     if (credentialMode) {
@@ -287,7 +292,12 @@ export class ImportService {
       );
     }
 
-    const described = describeNetworkConfig(config, { suggestedName });
+    let described;
+    try {
+      described = describeNetworkConfig(config, { suggestedName });
+    } catch (error) {
+      invalid(error instanceof Error ? error.message : "invalid network config");
+    }
     warnings = [...warnings, ...described.warnings];
     // `describeConfig` reports workflow-owned fields; merge without duplicates.
     unsupported = [...new Set([...unsupported, ...described.unsupported])];
@@ -449,7 +459,15 @@ export class ImportService {
     const device = await this.requireDevice(orgId, deviceId);
     const client = this.options.sessions.get(device.id);
     if (!client) throw conflict("device is offline");
-    const instanceIds = await client.remote.listNetworkInstance();
+    const instanceIds = await client.remote
+      .listNetworkInstance()
+      .catch((error: unknown) => {
+        this.options.logger?.debug("listDeviceInstances RPC failed", {
+          deviceId: device.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        throw conflict("the device did not answer ListNetworkInstance");
+      });
     const managedId = instanceIdFor(device.networkId, device.id);
     return instanceIds.map((instanceId) => ({
       instanceId,
@@ -475,7 +493,15 @@ export class ImportService {
         "device is offline; a device must be connected to read its running config",
       );
     }
-    const instanceIds = await client.remote.listNetworkInstance();
+    const instanceIds = await client.remote
+      .listNetworkInstance()
+      .catch((error: unknown) => {
+        this.options.logger?.debug("adopt ListNetworkInstance RPC failed", {
+          deviceId: device.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        throw conflict("the device did not answer ListNetworkInstance");
+      });
     if (instanceIds.length === 0) {
       throw conflict("the device is connected but runs no EasyTier instance");
     }
@@ -498,7 +524,15 @@ export class ImportService {
       );
     }
 
-    const response = await client.remote.getNetworkInstanceConfig(instanceId);
+    const response = await client.remote
+      .getNetworkInstanceConfig(instanceId)
+      .catch((error: unknown) => {
+        this.options.logger?.debug("adopt GetNetworkInstanceConfig RPC failed", {
+          deviceId: device.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        throw conflict("the device did not return its running config");
+      });
     if (!response.config) {
       throw conflict("the device returned no config for that instance");
     }

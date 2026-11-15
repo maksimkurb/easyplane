@@ -108,7 +108,7 @@ jobs:
         run: scripts/build-test-client.sh
       - name: Build the conformance image
         run: docker compose -f docker-compose.test.yml --profile test build
-      - name: Conformance (real easytier-core: M0, M1 invite flow, M2 policy/DNS/routes, M3 topology/SSE)
+      - name: "Conformance (real easytier-core: M0/M1/M2/M3/M4 incl. UDP and imports)"
         env:
           EASYPLANE_TEST_DATABASE_URL: postgres://easyplane:easyplane@127.0.0.1:22090/easyplane
         run: bun run test:conformance

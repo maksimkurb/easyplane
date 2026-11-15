@@ -37,6 +37,7 @@ interface PendingPieces {
   transactionId: bigint;
   totalPieces: number;
   pieces: Array<Uint8Array | null>;
+  bytes: number;
   descriptor?: common.RpcDescriptor | undefined;
   compressionInfo?: common.RpcCompressionInfo | undefined;
   traceId: number;
@@ -58,6 +59,14 @@ export interface RpcSessionEvents {
 
 const DEFAULT_TIMEOUT_MS = 5000;
 const PIECE_IDLE_TIMEOUT_MS = 10_000;
+/**
+ * Reassembly is unauthenticated until the first heartbeat, so bound what one
+ * tunnel can make the server remember: max pieces per message, max bytes per
+ * message and max concurrent partial messages.
+ */
+const MAX_PIECES_PER_MESSAGE = 1_024;
+const MAX_ASSEMBLY_BYTES = 4 * 1024 * 1024;
+const MAX_PENDING_ASSEMBLIES = 32;
 
 /**
  * Encoded RpcPacket budget for outbound requests. Upstream's TCP tunnel reader
@@ -178,7 +187,7 @@ export class RpcSession extends EventEmitter<RpcSessionEvents> {
     const total = packet.totalPieces;
     const idx = packet.pieceIdx;
     if (total === 0 && idx === 0) return packet;
-    if (total <= 0 || total > 32 * 1024) {
+    if (total <= 0 || total > MAX_PIECES_PER_MESSAGE) {
       throw new Error(`malformed rpc packet: total_pieces=${total}`);
     }
     if (idx >= total) {
@@ -188,6 +197,13 @@ export class RpcSession extends EventEmitter<RpcSessionEvents> {
     const key = `${packet.isRequest ? "req" : "resp"}:${packet.fromPeer}:${packet.transactionId}`;
     let entry = this.pieces.get(key);
     if (!entry || entry.totalPieces !== total) {
+      if (this.pieces.size >= MAX_PENDING_ASSEMBLIES) {
+        // Evict the oldest partial message instead of growing without bound.
+        const oldest = [...this.pieces.entries()].sort(
+          ([, left], [, right]) => left.updatedAt - right.updatedAt,
+        )[0];
+        if (oldest) this.pieces.delete(oldest[0]);
+      }
       entry = {
         isRequest: packet.isRequest,
         fromPeer: packet.fromPeer,
@@ -195,6 +211,7 @@ export class RpcSession extends EventEmitter<RpcSessionEvents> {
         transactionId: packet.transactionId,
         totalPieces: total,
         pieces: new Array<Uint8Array | null>(total).fill(null),
+        bytes: 0,
         traceId: packet.traceId,
         updatedAt: Date.now(),
       };
@@ -204,6 +221,11 @@ export class RpcSession extends EventEmitter<RpcSessionEvents> {
     if (idx === 0) {
       entry.descriptor = packet.descriptor;
       entry.compressionInfo = packet.compressionInfo;
+    }
+    if (entry.pieces[idx] === null) entry.bytes += packet.body.length;
+    if (entry.bytes > MAX_ASSEMBLY_BYTES) {
+      this.pieces.delete(key);
+      throw new Error(`malformed rpc packet: assembly exceeds ${MAX_ASSEMBLY_BYTES} bytes`);
     }
     entry.pieces[idx] = packet.body;
 

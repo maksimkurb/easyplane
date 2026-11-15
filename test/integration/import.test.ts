@@ -168,6 +168,21 @@ describe("M4 import flows", () => {
     expect(anonymous.statusCode).toBe(401);
   });
 
+  it("rejects malformed sources with 400, not 500", async () => {
+    const badToml = await preview({
+      source: { type: "toml", text: "[network_identity\nnetwork_name = 1" },
+    });
+    expect(badToml.statusCode).toBe(400);
+    const badLink = await preview({
+      source: { type: "shareLink", link: "https://easytier.cn/comp_cfg?cfg=!!!" },
+    });
+    expect(badLink.statusCode).toBe(400);
+    const missingIdentity = await preview({
+      source: { type: "toml", text: 'ipv4 = "10.0.0.2/24"' },
+    });
+    expect(missingIdentity.statusCode).toBe(400);
+  });
+
   it("requires CSRF on the preview", async () => {
     const response = await test.app.inject({
       method: "POST",

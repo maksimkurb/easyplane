@@ -369,6 +369,44 @@ counts. No network/device names, tokens or secrets are exposed.
   `EASYPLANE_TOPOLOGY_MAX_DEVICES` (500) caps one cycle and a failed probe marks
   the snapshot `partial` in the UI. See [REALTIME.md](REALTIME.md) §5.
 
+### M4 security review (what was checked and fixed)
+
+Reviewed in M4: OIDC login, sessions/CSRF, role checks on every route, SSE
+authentication/limits, the config-server admission path, import parsing, secret
+handling in logs/audit/API responses, and the unauthenticated RPC surface.
+
+Fixed findings:
+
+- `returnTo` after login accepted `//host`-style protocol-relative paths (and
+  browser-normalised backslashes) — an open redirect. It is now resolved
+  against a fixed origin and only same-origin paths survive.
+- The public-route bypass in the auth hook used the raw URL; a crafted path
+  could inherit it. It now uses the matched route pattern (with a traversal
+  guard for unknown routes).
+- The rate limiter's structured payload reached the global error handler as a
+  non-`Error`, turning a 429 into a 500. It is surfaced as `code=rate_limited`.
+- RPC piece reassembly was bounded per piece but not in aggregate; an
+  unauthenticated tunnel could make the server allocate up to 32k pieces of
+  state. It now caps pieces per message (1024), bytes per message (4 MiB),
+  concurrent partial messages (32) and still evicts stale entries.
+- Heartbeat writes to a single invite row let a large fleet exhaust the DB pool
+  (a DoS-ish availability bug, found by the load test): throttled to 1/min.
+- Concurrent approvals could collide on the address/DNS unique indexes: they
+  are now queued per network.
+- Import parsing errors were 500s; malformed TOML/links now return 400 with the
+  parser message, and device RPC failures return 409.
+
+Still accepted/known:
+
+- `machine_id` is self-reported; approval is the security boundary.
+- `X-Forwarded-*` is trusted only with `EASYPLANE_TRUST_PROXY=true`; do not
+  enable it when the server is directly reachable.
+- One organisation per deployment; roles are deployment-wide.
+- EasyTier ACLs are destination-only and source IPs are spoofable unless
+  `strictTags` is on (POLICY.md §6).
+- The browser stream is same-origin and cookie-authenticated; there is no
+  per-network read permission because a single deployment has one organisation.
+
 Backups: `pg_dump` covers everything, **plus** `EASYPLANE_ENCRYPTION_KEY` —
 without it the stored EasyTier network secrets cannot be decrypted. Rotating
 that key is not implemented in M1.

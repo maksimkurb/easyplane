@@ -77,10 +77,15 @@ export async function ensureTestPostgres(): Promise<void> {
 }
 
 export function testDatabaseUrl(database: string): string {
-  return (
-    process.env.EASYPLANE_TEST_DATABASE_URL ??
-    `postgres://easyplane:easyplane@127.0.0.1:${TEST_PG_PORT}/${database}`
-  );
+  const provided = process.env.EASYPLANE_TEST_DATABASE_URL;
+  if (!provided) {
+    return `postgres://easyplane:easyplane@127.0.0.1:${TEST_PG_PORT}/${database}`;
+  }
+  // CI provides one server URL; every test file still gets its own database so
+  // suites cannot see each other's admins/devices. Keep the credentials.
+  const url = new URL(provided);
+  url.pathname = `/${database}`;
+  return url.toString();
 }
 
 export interface TestDatabase {

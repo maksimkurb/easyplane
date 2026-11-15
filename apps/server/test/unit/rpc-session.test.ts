@@ -192,3 +192,51 @@ describe("RPC session (easytier-core/src/rpc/*)", () => {
     expect(WebClientMethod.GetNetworkInstanceConfig).toBe(7);
   });
 });
+
+describe("RPC reassembly bounds", () => {
+  it("rejects an absurd piece count and an oversized assembly", async () => {
+    const [link] = MemoryLink.pair();
+    const session = new RpcSession(link);
+    const errors: Error[] = [];
+    session.on("error", (error) => errors.push(error));
+    void session.run();
+
+    const push = (packet: common.RpcPacket) => {
+      link.queue.push(
+        buildTunnelPayload(common.RpcPacket.encode(packet).finish(), {
+          fromPeerId: 1,
+          toPeerId: 1,
+          packetType: PacketType.RpcReq,
+        }),
+      );
+    };
+
+    push({
+      fromPeer: 1,
+      toPeer: 1,
+      transactionId: 1n,
+      descriptor: { ...TEST_SERVICE, methodIndex: 1 },
+      body: Buffer.alloc(8),
+      isRequest: true,
+      totalPieces: 99_999,
+      pieceIdx: 0,
+      traceId: 0,
+    });
+    push({
+      fromPeer: 1,
+      toPeer: 1,
+      transactionId: 2n,
+      descriptor: { ...TEST_SERVICE, methodIndex: 1 },
+      body: Buffer.alloc(4 * 1024 * 1024 + 1),
+      isRequest: true,
+      totalPieces: 2,
+      pieceIdx: 0,
+      traceId: 0,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(errors.some((error) => /total_pieces/.test(error.message))).toBe(true);
+    expect(errors.some((error) => /assembly exceeds/.test(error.message))).toBe(true);
+    session.close();
+  });
+});
