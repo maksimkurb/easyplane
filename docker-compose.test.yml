@@ -39,6 +39,30 @@ x-m2-core: &m2-core
     RUST_LOG: ${EASYPLANE_CORE_LOG:-info}
     ET_LOG: ${EASYPLANE_CORE_LOG:-info}
 
+# Rendezvous conformance: a real pinned easytier-core public node plus leaf
+# containers. The node needs no TUN/capabilities; leaves do (overlay traffic).
+x-rv-node: &rv-node
+  build:
+    context: ./docker/easytier-core
+  image: easyplane/easytier-core-test:2.6.4-81487c36
+  profiles: ["test"]
+  restart: "no"
+  environment:
+    RUST_LOG: ${EASYPLANE_CORE_LOG:-info}
+    ET_LOG: ${EASYPLANE_CORE_LOG:-info}
+
+x-rv-leaf: &rv-leaf
+  build:
+    context: ./docker/easytier-core
+  image: easyplane/easytier-core-test:2.6.4-81487c36
+  profiles: ["test"]
+  cap_add: ["NET_ADMIN"]
+  devices: ["/dev/net/tun:/dev/net/tun"]
+  restart: "no"
+  environment:
+    RUST_LOG: ${EASYPLANE_CORE_LOG:-info}
+    ET_LOG: ${EASYPLANE_CORE_LOG:-info}
+
 
 services:
   core-ws:
@@ -186,6 +210,131 @@ services:
       - --tld-dns-zone
       - ${EASYPLANE_M2_DNS_ZONE:-ep.test.}
 
+  # --- Rendezvous conformance ------------------------------------------------
+  # The public node is attached to three isolated data networks; each leaf sees
+  # only one of them, so leaf-to-leaf reachability is controlled by the test.
+  # A separate control network per leaf carries only the config-server tunnel
+  # (plus the relay), so leaves never share a network when they must not.
+  rendezvous:
+    <<: *rv-node
+    container_name: easyplane-rendezvous
+    entrypoint: ["/bin/sh", "/opt/rendezvous/entrypoint.sh"]
+    volumes:
+      - ./docker/rendezvous/entrypoint.sh:/opt/rendezvous/entrypoint.sh:ro
+    environment:
+      RUST_LOG: ${EASYPLANE_CORE_LOG:-info}
+      ET_LOG: ${EASYPLANE_CORE_LOG:-info}
+      RENDEZVOUS_NETWORK_NAME: ${EASYPLANE_RV_NETWORK_NAME:-rv-node-net}
+      RENDEZVOUS_NETWORK_SECRET: ${EASYPLANE_RV_SECRET:-rv-conformance-secret}
+      RENDEZVOUS_RELAY_DATA: ${EASYPLANE_RV_RELAY_DATA:-false}
+      RENDEZVOUS_PRIVATE_MODE: ${EASYPLANE_RV_PRIVATE_MODE:-true}
+      RENDEZVOUS_NETWORK_WHITELIST: ${EASYPLANE_RV_WHITELIST:-*}
+      RENDEZVOUS_RELAY_ALL_PEER_RPC: ${EASYPLANE_RV_RELAY_ALL_PEER_RPC:-false}
+      RENDEZVOUS_LISTENERS: tcp://0.0.0.0:11010
+      RENDEZVOUS_HOSTNAME: rv-node
+    networks:
+      rv-direct:
+        ipv4_address: 172.29.0.10
+      rv-a:
+        ipv4_address: 172.29.1.10
+      rv-b:
+        ipv4_address: 172.29.2.10
+
+  rv-relay:
+    image: easyplane/easytier-core-test:2.6.4-81487c36
+    profiles: ["test"]
+    container_name: easyplane-rv-relay
+    entrypoint: ["python3", "/relay.py"]
+    volumes:
+      - ./test/conformance/relay/relay.py:/relay.py:ro
+    environment:
+      EASYPLANE_RELAY_PAIRS: 23021:23031,23022:23032,23023:23033,23024:23034
+    networks:
+      rv-ctl-a:
+        ipv4_address: 172.32.1.10
+      rv-ctl-b:
+        ipv4_address: 172.32.2.10
+      rv-ctl-c:
+        ipv4_address: 172.32.3.10
+      rv-ctl-d:
+        ipv4_address: 172.32.4.10
+
+  core-rv-direct-a:
+    <<: *rv-leaf
+    container_name: easyplane-core-rv-direct-a
+    networks:
+      rv-direct:
+        ipv4_address: 172.29.0.11
+      rv-ctl-a:
+        ipv4_address: 172.32.1.11
+    command:
+      - --config-server
+      - ${EASYPLANE_RV_DIRECT_A_URL:-ws://172.32.1.10:23021/token-rv-direct-a}
+      - --machine-id
+      - 1a1a1a1a-1111-4111-8111-111111111111
+      - --hostname
+      - core-rv-direct-a
+
+  core-rv-direct-b:
+    <<: *rv-leaf
+    container_name: easyplane-core-rv-direct-b
+    networks:
+      rv-direct:
+        ipv4_address: 172.29.0.12
+      rv-ctl-b:
+        ipv4_address: 172.32.2.11
+    command:
+      - --config-server
+      - ${EASYPLANE_RV_DIRECT_B_URL:-ws://172.32.2.10:23022/token-rv-direct-b}
+      - --machine-id
+      - 1b1b1b1b-2222-4222-8222-222222222222
+      - --hostname
+      - core-rv-direct-b
+
+  core-rv-iso-a:
+    <<: *rv-leaf
+    container_name: easyplane-core-rv-iso-a
+    networks:
+      rv-a:
+        ipv4_address: 172.29.1.11
+      rv-ctl-c:
+        ipv4_address: 172.32.3.11
+    command:
+      - --config-server
+      - ${EASYPLANE_RV_ISO_A_URL:-ws://172.32.3.10:23023/token-rv-iso-a}
+      - --machine-id
+      - 2a2a2a2a-3333-4333-8333-333333333333
+      - --hostname
+      - core-rv-iso-a
+
+  core-rv-iso-b:
+    <<: *rv-leaf
+    container_name: easyplane-core-rv-iso-b
+    networks:
+      rv-b:
+        ipv4_address: 172.29.2.11
+      rv-ctl-d:
+        ipv4_address: 172.32.4.11
+    command:
+      - --config-server
+      - ${EASYPLANE_RV_ISO_B_URL:-ws://172.32.4.10:23024/token-rv-iso-b}
+      - --machine-id
+      - 2b2b2b2b-4444-4444-8444-444444444444
+      - --hostname
+      - core-rv-iso-b
+
+  # A plain, non-managed leaf with a DIFFERENT network secret. Private mode must
+  # reject it; no TUN is needed because it should never become a peer.
+  core-rv-wrong-secret:
+    <<: *rv-node
+    container_name: easyplane-core-rv-wrong-secret
+    networks:
+      rv-direct:
+        ipv4_address: 172.29.0.13
+    volumes:
+      - ./test/conformance/rendezvous/wrong-secret.toml:/cfg.toml:ro
+    command: ["-c", "/cfg.toml", "--secure-mode", "true"]
+
 networks:
   m2:
     name: easyplane-conformance-m2
@@ -193,3 +342,45 @@ networks:
       config:
         - subnet: 172.28.0.0/24
           gateway: 172.28.0.1
+  rv-direct:
+    name: easyplane-conformance-rv-direct
+    ipam:
+      config:
+        - subnet: 172.29.0.0/24
+          gateway: 172.29.0.1
+  rv-a:
+    name: easyplane-conformance-rv-a
+    ipam:
+      config:
+        - subnet: 172.29.1.0/24
+          gateway: 172.29.1.1
+  rv-b:
+    name: easyplane-conformance-rv-b
+    ipam:
+      config:
+        - subnet: 172.29.2.0/24
+          gateway: 172.29.2.1
+  rv-ctl-a:
+    name: easyplane-conformance-rv-ctl-a
+    ipam:
+      config:
+        - subnet: 172.32.1.0/24
+          gateway: 172.32.1.1
+  rv-ctl-b:
+    name: easyplane-conformance-rv-ctl-b
+    ipam:
+      config:
+        - subnet: 172.32.2.0/24
+          gateway: 172.32.2.1
+  rv-ctl-c:
+    name: easyplane-conformance-rv-ctl-c
+    ipam:
+      config:
+        - subnet: 172.32.3.0/24
+          gateway: 172.32.3.1
+  rv-ctl-d:
+    name: easyplane-conformance-rv-ctl-d
+    ipam:
+      config:
+        - subnet: 172.32.4.0/24
+          gateway: 172.32.4.1

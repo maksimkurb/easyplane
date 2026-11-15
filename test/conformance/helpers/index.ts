@@ -1,8 +1,9 @@
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFile, execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { connect, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { promisify } from "node:util";
 
 import { manage } from "@easyplane/proto";
 import { protoToUuid } from "@easyplane/shared";
@@ -36,6 +37,31 @@ export const PORTS = {
   m4: 22091,
   /** Hub/leaf topology: the hub must never dial itself. */
   hub: 22092,
+  /** Rendezvous node conformance (public node, relay off/on, private mode). */
+  rendezvous: 22093,
+} as const;
+
+/** Fixed addresses of the rendezvous conformance topology (docker-compose.test.yml). */
+export const RENDEZVOUS_TOPOLOGY = {
+  /** The node's address on each of its three data networks. */
+  node: {
+    direct: "172.29.0.10",
+    a: "172.29.1.10",
+    b: "172.29.2.10",
+  },
+  /** Relay address on the per-leaf control networks (config-server tunnels). */
+  relay: {
+    a: "172.32.1.10",
+    b: "172.32.2.10",
+    c: "172.32.3.10",
+    d: "172.32.4.10",
+  },
+  /** Relay client ports inside each control network. */
+  clientPort: { a: 23021, b: 23022, c: 23023, d: 23024 },
+  /** Relay host-pool ports the vitest process dials. */
+  hostPort: { a: 23031, b: 23032, c: 23033, d: 23034 },
+  secret: "rv-conformance-secret",
+  networkName: "rv-node-net",
 } as const;
 
 export function dockerCompose(
@@ -59,6 +85,43 @@ export function dockerCompose(
     );
   }
   return result.stdout ?? "";
+}
+
+const execFileAsync = promisify(execFile);
+
+/**
+ * Async docker compose. The synchronous variant above blocks the Node event
+ * loop, which makes a co-hosted control plane miss config-server heartbeats.
+ * Tests that talk to a live app must use this one.
+ */
+export async function dockerComposeAsync(
+  args: string[],
+  env: Record<string, string> = {},
+): Promise<string> {
+  try {
+    const { stdout } = await execFileAsync(
+      "docker",
+      ["compose", "-f", COMPOSE_FILE, "--profile", "test", ...args],
+      {
+        env: { ...process.env, ...env },
+        encoding: "utf8",
+        timeout: 180_000,
+        maxBuffer: 16 * 1024 * 1024,
+      },
+    );
+    return stdout ?? "";
+  } catch (error) {
+    const failure = error as {
+      stdout?: string;
+      stderr?: string;
+      code?: number | string;
+      message?: string;
+    };
+    throw new Error(
+      `docker compose ${args.join(" ")} failed (exit ${String(failure.code)}): ` +
+        `${failure.message ?? ""}\nstdout:\n${failure.stdout ?? ""}\nstderr:\n${failure.stderr ?? ""}`,
+    );
+  }
 }
 
 export function requireDockerConformanceEnvironment(): void {
@@ -128,6 +191,14 @@ function composeUrlEnv(service: string): string {
       return "EASYPLANE_M2_C_URL";
     case "core-m4":
       return "EASYPLANE_M4_URL";
+    case "core-rv-direct-a":
+      return "EASYPLANE_RV_DIRECT_A_URL";
+    case "core-rv-direct-b":
+      return "EASYPLANE_RV_DIRECT_B_URL";
+    case "core-rv-iso-a":
+      return "EASYPLANE_RV_ISO_A_URL";
+    case "core-rv-iso-b":
+      return "EASYPLANE_RV_ISO_B_URL";
     default:
       throw new Error(`unknown compose service: ${service}`);
   }
@@ -159,14 +230,28 @@ export async function openM2RelayPool(
   count = 8,
 ): Promise<Socket[]> {
   const hostPort = M2_HOST_PORTS[["a", "b", "c"].indexOf(letter)]!;
+  return openRelayPool(M2_RELAY_IP, hostPort, serverPort, count);
+}
+
+/**
+ * Opens the host side of one relay tunnel at an explicit relay address. Used
+ * by the rendezvous topology, where every leaf has its own control network and
+ * therefore its own relay IP.
+ */
+export async function openRelayPool(
+  relayIp: string,
+  hostPort: number,
+  serverPort: number,
+  count = 8,
+): Promise<Socket[]> {
   // The relay container may still be starting its Python entrypoint.
   const deadline = Date.now() + 20_000;
   const connectOnce = (): Promise<Socket> =>
     new Promise<Socket>((resolveSocket, reject) => {
-      const candidate = connect({ host: M2_RELAY_IP, port: hostPort });
+      const candidate = connect({ host: relayIp, port: hostPort });
       const timer = setTimeout(() => {
         candidate.destroy();
-        reject(new Error(`relay host port ${hostPort} did not accept a connection`));
+        reject(new Error(`relay host port ${relayIp}:${hostPort} did not accept a connection`));
       }, 5_000);
       candidate.once("connect", () => {
         clearTimeout(timer);
@@ -211,6 +296,84 @@ export async function openM2RelayPool(
   return sockets;
 }
 
+/** Starts the test-only relay that carries the rendezvous config-server tunnels. */
+export async function startRendezvousRelay(): Promise<void> {
+  await dockerComposeAsync(["up", "-d", "--force-recreate", "rv-relay"]);
+}
+
+export interface RendezvousHandle {
+  readonly service: string;
+  logs(): Promise<string>;
+  stop(): Promise<void>;
+}
+
+/**
+ * Starts the real pinned easytier-core rendezvous node. `env` overrides the
+ * compose interpolation of the node's RENDEZVOUS_* variables (relay on/off,
+ * private mode, whitelist). The node is recreated, so a restart applies them.
+ *
+ * Async on purpose: these tests host the control plane in this process, and a
+ * blocking docker call would make the panel miss config-server heartbeats.
+ */
+export async function startRendezvous(
+  env: Record<string, string> = {},
+): Promise<RendezvousHandle> {
+  const values = {
+    EASYPLANE_RV_SECRET: RENDEZVOUS_TOPOLOGY.secret,
+    EASYPLANE_RV_NETWORK_NAME: RENDEZVOUS_TOPOLOGY.networkName,
+    ...env,
+  };
+  await dockerComposeAsync(
+    ["up", "-d", "--force-recreate", "rendezvous"],
+    values,
+  );
+  return {
+    service: "rendezvous",
+    logs: () =>
+      dockerComposeAsync(
+        ["logs", "--no-color", "--no-log-prefix", "rendezvous"],
+        values,
+      ),
+    stop: async () => {
+      await dockerComposeAsync(["stop", "rendezvous"], values);
+    },
+  };
+}
+
+/** Stops the rendezvous node without removing its container. */
+export async function stopRendezvous(
+  env: Record<string, string> = {},
+): Promise<void> {
+  await dockerComposeAsync(["stop", "rendezvous"], {
+    EASYPLANE_RV_SECRET: RENDEZVOUS_TOPOLOGY.secret,
+    ...env,
+  });
+}
+
+/** Starts one real pinned easytier-core leaf service from the test profile. */
+export async function startRvCore(
+  service: string,
+  url: string,
+): Promise<CoreHandle> {
+  const envKey = composeUrlEnv(service);
+  const handle: CoreHandle = {
+    service,
+    url,
+    logs: () => dockerCompose(["logs", "--no-color", "--no-log-prefix", service]),
+    stop: () => dockerCompose(["stop", service], { [envKey]: url }),
+    start: () => dockerCompose(["start", service], { [envKey]: url }),
+  };
+  await dockerComposeAsync(["up", "-d", "--force-recreate", service], {
+    [envKey]: url,
+  });
+  return handle;
+}
+
+/** Stops one rendezvous conformance service. */
+export function stopService(service: string): void {
+  dockerCompose(["stop", service]);
+}
+
 /** Runs a command inside a running conformance container and returns stdout. */
 export function execIn(
   service: string,
@@ -238,6 +401,68 @@ export function execIn(
     stdout: result.stdout ?? "",
     stderr: result.stderr ?? "",
   };
+}
+
+/** Async `execIn` for tests with a live control plane (does not block heartbeats). */
+export async function execInAsync(
+  service: string,
+  command: string[],
+  options: { timeoutMs?: number; allowFailure?: boolean } = {},
+): Promise<{ status: number; stdout: string; stderr: string }> {
+  try {
+    const { stdout, stderr } = await execFileAsync(
+      "docker",
+      [
+        "compose",
+        "-f",
+        COMPOSE_FILE,
+        "--profile",
+        "test",
+        "exec",
+        "-T",
+        service,
+        ...command,
+      ],
+      {
+        env: process.env,
+        encoding: "utf8",
+        timeout: options.timeoutMs ?? 30_000,
+        maxBuffer: 16 * 1024 * 1024,
+      },
+    );
+    return { status: 0, stdout: stdout ?? "", stderr: stderr ?? "" };
+  } catch (error) {
+    const failure = error as {
+      stdout?: string;
+      stderr?: string;
+      code?: number | string;
+    };
+    if (options.allowFailure) {
+      return {
+        status: typeof failure.code === "number" ? failure.code : -1,
+        stdout: failure.stdout ?? "",
+        stderr: failure.stderr ?? "",
+      };
+    }
+    throw new Error(
+      `docker compose exec ${service} ${command.join(" ")} failed (exit ${String(failure.code)})\n` +
+        `stdout:\n${failure.stdout ?? ""}\nstderr:\n${failure.stderr ?? ""}`,
+    );
+  }
+}
+
+/** Async `execDetached` for tests with a live control plane. */
+export async function execDetachedAsync(
+  service: string,
+  command: string[],
+): Promise<void> {
+  await dockerComposeAsync([
+    "exec",
+    "-d",
+    "-T",
+    service,
+    ...command,
+  ]);
 }
 
 /** Starts a detached command inside a container (e.g. an HTTP server). */
