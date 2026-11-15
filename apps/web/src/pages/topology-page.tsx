@@ -380,6 +380,14 @@ function LinkDetails({
           value={link.viaHostname ?? t("common.none")}
         />
         <Detail
+          label={t("topology.direction")}
+          value={
+            link.direction === "unknown"
+              ? t("common.none")
+              : t(`topology.${link.direction}`)
+          }
+        />
+        <Detail
           label={t("topology.observedBy")}
           value={link.observedBy
             .map((id) => byId.get(id)?.hostname ?? id)
