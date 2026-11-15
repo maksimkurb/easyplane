@@ -32,6 +32,8 @@ export const PORTS = {
   m3: 22088,
   /** UDP session layer (SYN/SACK/DATA/FIN). */
   udp: 22089,
+  /** M4 import/adoption. */
+  m4: 22091,
 } as const;
 
 export function dockerCompose(
@@ -122,6 +124,8 @@ function composeUrlEnv(service: string): string {
       return "EASYPLANE_M2_B_URL";
     case "core-m2-c":
       return "EASYPLANE_M2_C_URL";
+    case "core-m4":
+      return "EASYPLANE_M4_URL";
     default:
       throw new Error(`unknown compose service: ${service}`);
   }

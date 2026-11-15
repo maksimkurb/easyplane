@@ -119,6 +119,17 @@ services:
       - --hostname
       - core-bad-token
 
+  core-m4:
+    <<: *core
+    container_name: easyplane-core-m4
+    command:
+      - --config-server
+      - ${EASYPLANE_M4_URL:-ws://127.0.0.1:22091/token-m4}
+      - --machine-id
+      - 88888888-8888-4888-8888-888888888888
+      - --hostname
+      - core-m4
+
   # Test-only byte pump between the clients and the vitest-hosted control
   # plane (see test/conformance/relay/relay.py).
   m2-relay:
