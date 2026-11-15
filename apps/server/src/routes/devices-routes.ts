@@ -15,6 +15,8 @@ import {
   paramsRevisionSchema,
   pushResultSchema,
   revisionSchema,
+  updateDeviceEndpointsSchema,
+  updateDeviceHubSchema,
 } from "../app/schemas.js";
 
 const listQuerySchema = z.object({
@@ -165,6 +167,57 @@ export function registerDeviceRoutes(
           role: auth.user.role,
         },
         request.params.deviceId,
+      );
+    },
+  );
+
+  typed.put(
+    "/api/devices/:deviceId/endpoints",
+    {
+      schema: {
+        operationId: "updateDeviceEndpoints",
+        tags: ["devices"],
+        params: paramsDeviceSchema,
+        body: updateDeviceEndpointsSchema,
+        response: { 200: deviceSchema },
+      },
+    },
+    async (request) => {
+      const auth = requireRole(request, ["admin", "member"]);
+      return context.devices.setAdvertisedEndpoints(
+        {
+          orgId: auth.organisation.id,
+          userId: auth.user.id,
+          role: auth.user.role,
+        },
+        request.params.deviceId,
+        request.body.endpoints,
+      );
+    },
+  );
+
+  typed.put(
+    "/api/devices/:deviceId/hub",
+    {
+      schema: {
+        operationId: "updateDeviceHub",
+        tags: ["devices"],
+        params: paramsDeviceSchema,
+        body: updateDeviceHubSchema,
+        response: { 200: deviceSchema },
+      },
+    },
+    async (request) => {
+      // The hub flag adds/removes a network peer entry, so it is admin-only.
+      const auth = requireRole(request, ["admin"]);
+      return context.devices.setHub(
+        {
+          orgId: auth.organisation.id,
+          userId: auth.user.id,
+          role: auth.user.role,
+        },
+        request.params.deviceId,
+        request.body.isHub,
       );
     },
   );

@@ -320,7 +320,9 @@ describe("networks, invites, devices, desired state and audit", () => {
       sync: "in-sync",
     });
     expect(activeFake.lastRun?.config?.noTun).toBe(true);
-    expect(activeFake.lastRun?.config?.peerUrls).toEqual(["tcp://peer.example:11010"]);
+    // Revision-content peer URLs are deprecated: the peer list is compiled from
+    // the network's peer entries at push time (this network has none).
+    expect(activeFake.lastRun?.config?.peerUrls).toEqual([]);
 
     // The hostname is device identity, not revision content: renaming uses its
     // own endpoint and repushes without creating a revision.

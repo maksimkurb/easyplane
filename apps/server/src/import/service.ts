@@ -2,7 +2,11 @@ import { manage } from "@easyplane/proto";
 
 import type { Database } from "../db/client.js";
 import type { Device, Network } from "../db/schema.js";
-import { getDeviceById, getNetworkById } from "../db/repositories.js";
+import {
+  getDeviceById,
+  getNetworkById,
+  listDevicesInNetwork,
+} from "../db/repositories.js";
 import type { DesiredConfig } from "../domain/desired-config.js";
 import type { Logger } from "../logger.js";
 import type { MetricsRegistry } from "../observability/metrics.js";
@@ -44,6 +48,18 @@ export interface ImportDiffEntry {
   changed: boolean;
 }
 
+/**
+ * A raw peer URL of the imported config that exactly equals the advertised
+ * endpoint of a device in the source network. The imported network keeps the
+ * URL as a raw entry; linking it turns it device-backed and stops that device
+ * from dialling itself. Suggestions are never applied automatically.
+ */
+export interface ImportPeerLink {
+  url: string;
+  deviceId: string;
+  hostname: string;
+}
+
 export interface ImportPreview {
   draftId: string;
   expiresAt: string;
@@ -63,6 +79,8 @@ export interface ImportPreview {
   existingNetworkId: string | null;
   /** True when network_name already exists anywhere in this deployment. */
   networkNameTaken: boolean;
+  /** Exact URL -> device matches worth linking after the import. */
+  peerLinks: ImportPeerLink[];
 }
 
 export interface CommitImportInput {
@@ -228,6 +246,7 @@ export class ImportService {
     let credentialMode = false;
     let detail: string;
     let suggestedName = options.name;
+    let adoptedNetworkId: string | null = null;
 
     try {
       switch (source.type) {
@@ -274,6 +293,7 @@ export class ImportService {
           secret === "" &&
           Boolean(adopted.config.secureMode?.localPrivateKey);
         suggestedName = suggestedName ?? adopted.device.hostname;
+        adoptedNetworkId = adopted.device.networkId;
         detail = `device ${adopted.device.hostname || adopted.device.id} instance ${adopted.instanceId}`;
         break;
       }
@@ -329,6 +349,23 @@ export class ImportService {
     const secretSameAsExisting = existing
       ? existingSecret === secret
       : null;
+
+    // Adopting from a device only *proposes* links: a raw peer URL that is
+    // byte-identical to another device's advertised endpoint is very likely
+    // that device, but the control plane never guesses from DNS or IPs.
+    const peerLinks = adoptedNetworkId
+      ? await this.suggestPeerLinks(
+          orgId,
+          adoptedNetworkId,
+          described.spec.defaultConfig.peerUrls,
+        )
+      : [];
+    if (peerLinks.length > 0) {
+      warnings.push(
+        `${peerLinks.length} peer URL(s) exactly match a device's advertised endpoint; ` +
+          "link them to those devices on the network page so the device stops dialling itself",
+      );
+    }
 
     const diff: ImportDiffEntry[] = existing
       ? [
@@ -422,6 +459,7 @@ export class ImportService {
       unsupported,
       existingNetworkId: existing?.id ?? null,
       networkNameTaken,
+      peerLinks,
     };
   }
 
@@ -561,6 +599,37 @@ export class ImportService {
     const device = await getDeviceById(this.options.db, deviceId);
     if (!device || device.orgId !== orgId) notFound("device not found");
     return device;
+  }
+
+  /** Exact string matches only; no DNS resolution and no IP comparison. */
+  private async suggestPeerLinks(
+    orgId: string,
+    networkId: string,
+    urls: readonly string[],
+  ): Promise<ImportPeerLink[]> {
+    if (urls.length === 0) return [];
+    const devices = (await listDevicesInNetwork(this.options.db, networkId)).filter(
+      (device) => device.orgId === orgId && device.state === "approved",
+    );
+    const byEndpoint = new Map<string, Device>();
+    for (const device of devices) {
+      for (const endpoint of device.advertisedEndpoints) {
+        if (!byEndpoint.has(endpoint)) byEndpoint.set(endpoint, device);
+      }
+    }
+    const links: ImportPeerLink[] = [];
+    const seen = new Set<string>();
+    for (const url of urls) {
+      const device = byEndpoint.get(url);
+      if (!device || seen.has(url)) continue;
+      seen.add(url);
+      links.push({
+        url,
+        deviceId: device.id,
+        hostname: device.dnsName ?? device.hostname,
+      });
+    }
+    return links;
   }
 
   private async revealSecretForCompare(network: Network): Promise<string | null> {

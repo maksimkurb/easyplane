@@ -7,6 +7,7 @@ import {
   approvedRoutesForNetwork,
   getDeviceById,
   getNetworkById,
+  listNetworkPeerRecords,
   listRevisions,
   updateDevice,
 } from "../db/repositories.js";
@@ -18,6 +19,7 @@ import {
   normalizeDesiredConfig,
 } from "../domain/desired-config.js";
 import { formatIpv4, parseIpv4 } from "../domain/ip.js";
+import { compilePeerUrls } from "../domain/peers.js";
 import {
   acceptedRoutesFor,
   approvedExitNode,
@@ -258,10 +260,31 @@ export class PushService {
     rawConfig: Record<string, unknown>,
     policyVersion: number | null,
   ): Promise<manage.NetworkConfig> {
-    const [approvedRoutes, compiledAcl] = await Promise.all([
+    const [approvedRoutes, compiledAcl, peerRecords] = await Promise.all([
       approvedRoutesForNetwork(this.options.db, network.id),
       this.aclFor(network, device, policyVersion),
+      listNetworkPeerRecords(this.options.db, network.id),
     ]);
+    // Peer URLs are network state compiled per device: the target's own hub
+    // entry is excluded by device id (and machine id), so a hub is a listener
+    // and never dials its own advertised endpoint.
+    const peerUrls = compilePeerUrls({
+      targetDeviceId: device.id,
+      targetMachineId: device.machineId,
+      entries: peerRecords.map(({ peer, device: peerDevice }) => ({
+        deviceId: peer.deviceId,
+        url: peer.url,
+        device: peerDevice
+          ? {
+              id: peerDevice.id,
+              machineId: peerDevice.machineId,
+              state: peerDevice.state,
+              isHub: peerDevice.isHub,
+              advertisedEndpoints: peerDevice.advertisedEndpoints,
+            }
+          : null,
+      })),
+    });
     return this.buildConfig(
       device,
       network,
@@ -269,6 +292,7 @@ export class PushService {
       policyVersion,
       approvedRoutes,
       compiledAcl,
+      peerUrls,
     );
   }
 
@@ -279,6 +303,7 @@ export class PushService {
     policyVersion: number | null,
     approvedRoutes: Awaited<ReturnType<typeof approvedRoutesForNetwork>>,
     compiledAcl: acl.Acl | undefined,
+    peerUrls: string[],
   ): manage.NetworkConfig {
     const stored = normalizeDesiredConfig(rawConfig);
     return buildNetworkConfig({
@@ -289,6 +314,7 @@ export class PushService {
       networkName: network.networkName,
       networkSecret: this.options.secretBox.decrypt(network.secretCiphertext),
       stored,
+      peerUrls,
       assignedIpv4: device.virtualIpv4,
       ipv4Cidr: network.ipv4Cidr,
       magicDnsEnabled: network.magicDnsEnabled,

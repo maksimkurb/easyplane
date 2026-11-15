@@ -1,6 +1,9 @@
 import type { Database } from "../db/client.js";
 import {
+  compactNetworkPeerPositions,
   deleteDevice,
+  deleteDeviceBackedPeers,
+  findDeviceBackedPeer,
   findDeviceByDnsName,
   findDeviceInNetwork,
   findUserById,
@@ -10,12 +13,15 @@ import {
   getRevision,
   incrementInviteUses,
   insertDevice,
+  insertNetworkPeer,
   insertRevision,
+  listApprovedDevicesInNetwork,
   listDeviceTags,
   listDevices,
   listRevisions,
   listRevisionsWithAuthor,
   listTags,
+  nextNetworkPeerPosition,
   pendingDeviceCount,
   setDeviceTags,
   takenDnsNames,
@@ -40,6 +46,7 @@ import {
   toDnsLabel,
 } from "../domain/magic-dns.js";
 import { nextRevisionNumber, planRollback } from "../domain/revisions.js";
+import { dedupePeerUrls } from "../domain/peers.js";
 import type { ManagedClient } from "../control/managed-client.js";
 import type { Logger } from "../logger.js";
 import type { RealtimeHub } from "../realtime/hub.js";
@@ -75,6 +82,10 @@ export interface DeviceDto extends DeviceStatus {
   virtualIpv4: string | null;
   inviteId: string | null;
   ownerUserId: string | null;
+  /** Peer URLs other devices dial to reach this one. */
+  advertisedEndpoints: string[];
+  /** `true` when this device is a hub in its network's peer list. */
+  isHub: boolean;
   tags: string[];
   /** Last route report (proxy CIDRs / unmanaged instances), if any. */
   reportedState: Record<string, unknown>;
@@ -333,6 +344,8 @@ export class DeviceService {
       virtualIpv4: device.virtualIpv4,
       inviteId: device.inviteId,
       ownerUserId: device.ownerUserId,
+      advertisedEndpoints: device.advertisedEndpoints,
+      isHub: device.isHub,
       tags,
       reportedState: device.reportedState,
       reportedStateAt: device.reportedStateAt?.toISOString() ?? null,
@@ -702,6 +715,9 @@ export class DeviceService {
       },
     });
     this.options.push.schedule(device.id, "approved");
+    // Other devices must stop dialling this one if it is blocked later, and
+    // must receive a newly approved hub's endpoints.
+    await this.repushNetwork(network.id, "device approved");
     this.publishDevice(updated, "approved");
     const tags = await this.tagsByDevice(actor.orgId, device.id);
     return this.toDto(updated, network, tags.get(device.id) ?? []);
@@ -778,6 +794,8 @@ export class DeviceService {
     });
     const network = await getNetworkById(this.options.db, device.networkId);
     this.publishDevice(updated, "blocked", { online: "offline" });
+    // A blocked hub no longer contributes endpoints to the other devices.
+    await this.repushNetwork(device.networkId, "device blocked");
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
     return this.toDto(updated, network, tags.get(deviceId) ?? []);
   }
@@ -802,6 +820,7 @@ export class DeviceService {
         hostname: device.hostname,
       },
     });
+    await this.repushNetwork(device.networkId, "device deleted");
   }
 
   /** Manual push ("retry now"). */
@@ -1053,6 +1072,133 @@ export class DeviceService {
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
     this.publishDevice(updated, "owner-updated");
     return this.toDto(updated, network, tags.get(deviceId) ?? []);
+  }
+
+  /**
+   * Replaces the peer URLs other devices dial to reach this one. Endpoints are
+   * validated against the schemes the pinned easytier-core accepts. Because the
+   * compiled peer list is network state, every approved device is re-evaluated
+   * (the push service skips devices that are already in sync).
+   */
+  async setAdvertisedEndpoints(
+    actor: RequestActor,
+    deviceId: string,
+    endpoints: readonly string[],
+  ): Promise<DeviceDto> {
+    const device = await getDevice(this.options.db, actor.orgId, deviceId);
+    if (!device) notFound("device not found");
+    const network = await getNetworkById(this.options.db, device.networkId);
+    if (!network) notFound("network not found");
+    let normalized: string[];
+    try {
+      normalized = dedupePeerUrls(
+        endpoints.map((endpoint) => endpoint.trim()).filter(Boolean),
+      );
+    } catch (error) {
+      invalid(error instanceof Error ? error.message : "invalid endpoint URL");
+    }
+    if (normalized.length > 16) {
+      invalid("a device can advertise at most 16 endpoints");
+    }
+    const updated = await updateDevice(this.options.db, deviceId, {
+      advertisedEndpoints: normalized,
+    });
+    if (!updated) throw new AppError(500, "failed to update advertised endpoints");
+    await this.options.audit.record({
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: "device.endpoints_updated",
+      targetType: "device",
+      targetId: deviceId,
+      metadata: {
+        networkId: network.id,
+        previous: device.advertisedEndpoints,
+        endpoints: normalized,
+      },
+    });
+    await this.repushNetwork(network.id, "peer endpoints updated");
+    this.options.realtime?.publish({
+      type: "network.updated",
+      orgId: actor.orgId,
+      networkId: network.id,
+      data: { networkId: network.id, reason: "peer-endpoints-updated" },
+    });
+    this.publishDevice(updated, "endpoints-updated");
+    const tags = await this.tagsByDevice(actor.orgId, deviceId);
+    return this.toDto(updated, network, tags.get(deviceId) ?? []);
+  }
+
+  /**
+   * Marks a device as a hub: it is added to the network's ordered peer list as
+   * a device-backed entry, so every other device dials its advertised
+   * endpoints. Clearing the flag removes that entry (raw URLs linked to the
+   * device are left alone).
+   */
+  async setHub(
+    actor: RequestActor,
+    deviceId: string,
+    isHub: boolean,
+  ): Promise<DeviceDto> {
+    const device = await getDevice(this.options.db, actor.orgId, deviceId);
+    if (!device) notFound("device not found");
+    const network = await getNetworkById(this.options.db, device.networkId);
+    if (!network) notFound("network not found");
+    const updated = await updateDevice(this.options.db, deviceId, { isHub });
+    if (!updated) throw new AppError(500, "failed to update the hub flag");
+    if (isHub) {
+      const existing = await findDeviceBackedPeer(
+        this.options.db,
+        network.id,
+        deviceId,
+      );
+      if (!existing) {
+        await insertNetworkPeer(this.options.db, {
+          orgId: actor.orgId,
+          networkId: network.id,
+          deviceId,
+          url: null,
+          position: await nextNetworkPeerPosition(this.options.db, network.id),
+          createdBy: actor.userId,
+        });
+      }
+    } else {
+      await deleteDeviceBackedPeers(this.options.db, network.id, deviceId);
+      await compactNetworkPeerPositions(this.options.db, network.id);
+    }
+    await this.options.audit.record({
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: isHub ? "device.hub_enabled" : "device.hub_disabled",
+      targetType: "device",
+      targetId: deviceId,
+      metadata: {
+        networkId: network.id,
+        endpoints: device.advertisedEndpoints,
+      },
+    });
+    await this.repushNetwork(network.id, isHub ? "hub enabled" : "hub disabled");
+    this.options.realtime?.publish({
+      type: "network.updated",
+      orgId: actor.orgId,
+      networkId: network.id,
+      data: { networkId: network.id, reason: "hub-updated" },
+    });
+    this.publishDevice(updated, "hub-updated");
+    const tags = await this.tagsByDevice(actor.orgId, deviceId);
+    return this.toDto(updated, network, tags.get(deviceId) ?? []);
+  }
+
+  /**
+   * Re-schedules every approved device of a network after network-level peer
+   * state changed (hub endpoint, hub approval/block/removal). `ensure` verifies
+   * the reported config first, so an unchanged device is not actually
+   * repushed.
+   */
+  private async repushNetwork(networkId: string, reason: string): Promise<void> {
+    const devices = await listApprovedDevicesInNetwork(this.options.db, networkId);
+    for (const device of devices) {
+      this.options.push.schedule(device.id, reason);
+    }
   }
 
   /**

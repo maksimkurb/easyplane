@@ -99,8 +99,11 @@ export interface TestDatabase {
 
 let counter = 0;
 
-/** Creates an isolated, migrated database for one test file. */
-export async function createTestDatabase(): Promise<TestDatabase> {
+/**
+ * Creates an isolated database **without** running migrations. Migration tests
+ * use it to apply earlier SQL files, seed legacy rows, then apply the new one.
+ */
+export async function createEmptyTestDatabase(): Promise<TestDatabase> {
   await ensureTestPostgres();
   counter += 1;
   const database = `easyplane_test_${process.pid}_${counter}_${randomBytes(2).toString("hex")}`;
@@ -113,7 +116,6 @@ export async function createTestDatabase(): Promise<TestDatabase> {
   }
   const url = testDatabaseUrl(database);
   const handle = createDatabase(url);
-  await runMigrations(handle.db);
   return {
     url,
     database,
@@ -130,4 +132,11 @@ export async function createTestDatabase(): Promise<TestDatabase> {
       }
     },
   };
+}
+
+/** Creates an isolated, migrated database for one test file. */
+export async function createTestDatabase(): Promise<TestDatabase> {
+  const database = await createEmptyTestDatabase();
+  await runMigrations(database.db);
+  return database;
 }

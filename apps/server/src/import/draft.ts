@@ -6,6 +6,7 @@ import {
   type DesiredConfig,
 } from "../domain/desired-config.js";
 import { formatIpv4, parseIpv4 } from "../domain/ip.js";
+import { validatePeerUrl } from "../domain/peers.js";
 
 /** Everything EasyPlane needs to create a network from an imported config. */
 export interface ImportedNetworkSpec {
@@ -112,17 +113,21 @@ export function describeNetworkConfig(
   }
   for (const peer of peers) {
     try {
-      new URL(peer.uri);
-    } catch {
-      throw new Error(`peer URL "${peer.uri}" is not a valid URL`);
+      validatePeerUrl(peer.uri);
+    } catch (error) {
+      throw new Error(
+        error instanceof Error ? error.message : `peer URL "${peer.uri}" is invalid`,
+      );
     }
   }
   for (const peerUrl of config.peerUrls ?? []) {
     if (peerUrl.trim() === "") continue;
     try {
-      new URL(peerUrl);
-    } catch {
-      throw new Error(`peer URL "${peerUrl}" is not a valid URL`);
+      validatePeerUrl(peerUrl);
+    } catch (error) {
+      throw new Error(
+        error instanceof Error ? error.message : `peer URL "${peerUrl}" is invalid`,
+      );
     }
   }
 

@@ -98,6 +98,13 @@ const previewSchema = z.object({
   unsupported: z.array(z.string()),
   existingNetworkId: z.string().nullable(),
   networkNameTaken: z.boolean(),
+  peerLinks: z.array(
+    z.object({
+      url: z.string(),
+      deviceId: z.string(),
+      hostname: z.string(),
+    }),
+  ),
 });
 
 const draftParamsSchema = z.object({

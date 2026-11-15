@@ -9,12 +9,17 @@ import type { AppContext } from "../app/context.js";
 import {
   createInviteResponseSchema,
   createInviteSchema,
+  createNetworkPeerSchema,
   createNetworkSchema,
   inviteSchema,
+  linkNetworkPeerSchema,
+  networkPeersSchema,
+  networkPeerSchema,
   networkSchema,
   okSchema,
   paramsInviteSchema,
   paramsNetworkSchema,
+  paramsPeerSchema,
   patchNetworkSchema,
 } from "../app/schemas.js";
 import { requireAuth } from "../app/auth-hooks.js";
@@ -201,6 +206,114 @@ export function registerNetworkRoutes(
         context.push.schedule(device.id, "network secret rotated");
       }
       return { secret };
+    },
+  );
+
+  typed.get(
+    "/api/networks/:networkId/peers",
+    {
+      schema: {
+        operationId: "listNetworkPeers",
+        tags: ["networks"],
+        params: paramsNetworkSchema,
+        response: { 200: networkPeersSchema },
+      },
+    },
+    async (request) => {
+      const auth = requireAuth(request);
+      const peers = await context.networks.listPeers(
+        auth.organisation.id,
+        request.params.networkId,
+      );
+      return { peers };
+    },
+  );
+
+  typed.post(
+    "/api/networks/:networkId/peers",
+    {
+      schema: {
+        operationId: "createNetworkPeer",
+        tags: ["networks"],
+        params: paramsNetworkSchema,
+        body: createNetworkPeerSchema,
+        response: { 201: networkPeerSchema },
+      },
+    },
+    async (request, reply) => {
+      // Peer entries are network topology: admins only, like the network row.
+      const auth = requireRole(request, ["admin"]);
+      const peer = await context.networks.addPeer(
+        auth.organisation.id,
+        auth.user.id,
+        request.params.networkId,
+        request.body,
+      );
+      await pushNetworkDevices(
+        context.db,
+        context.push,
+        request.params.networkId,
+        "network peer added",
+      );
+      return reply.code(201).send(peer);
+    },
+  );
+
+  typed.post(
+    "/api/networks/:networkId/peers/:peerId/link",
+    {
+      schema: {
+        operationId: "linkNetworkPeer",
+        tags: ["networks"],
+        params: paramsPeerSchema,
+        body: linkNetworkPeerSchema,
+        response: { 200: networkPeerSchema },
+      },
+    },
+    async (request) => {
+      const auth = requireRole(request, ["admin"]);
+      const peer = await context.networks.linkPeer(
+        auth.organisation.id,
+        auth.user.id,
+        request.params.networkId,
+        request.params.peerId,
+        request.body.deviceId,
+      );
+      await pushNetworkDevices(
+        context.db,
+        context.push,
+        request.params.networkId,
+        "network peer linked",
+      );
+      return peer;
+    },
+  );
+
+  typed.delete(
+    "/api/networks/:networkId/peers/:peerId",
+    {
+      schema: {
+        operationId: "deleteNetworkPeer",
+        tags: ["networks"],
+        params: paramsPeerSchema,
+        response: { 200: okSchema },
+      },
+    },
+    async (request) => {
+      const auth = requireRole(request, ["admin"]);
+      await context.networks.removePeer(
+        auth.organisation.id,
+        auth.user.id,
+        request.params.networkId,
+        request.params.peerId,
+      );
+      await pushNetworkDevices(
+        context.db,
+        context.push,
+        request.params.networkId,
+        "network peer removed",
+      );
+      return { status: "ok" as const };
     },
   );
 

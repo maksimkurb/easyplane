@@ -2,19 +2,33 @@ import { randomBytes } from "node:crypto";
 
 import type { DbExecutor } from "../db/repositories.js";
 import {
+  compactNetworkPeerPositions,
   deleteNetwork,
+  deleteNetworkPeer,
+  getDevice,
   getNetwork,
+  getNetworkPeer,
   insertNetwork,
+  insertNetworkPeer,
   listDevicesInNetwork,
+  listNetworkPeerRecords,
   listNetworks,
   networkDeviceCounts,
+  nextNetworkPeerPosition,
+  updateDevice,
   updateNetwork,
+  updateNetworkPeer,
   usedVirtualIps,
 } from "../db/repositories.js";
-import type { Network } from "../db/schema.js";
+import type { Device, Network, NetworkPeer } from "../db/schema.js";
 import { parseCidr } from "../domain/ip.js";
 import { normalizeDnsZone } from "../domain/magic-dns.js";
 import { normalizeDesiredConfig } from "../domain/desired-config.js";
+import {
+  dedupePeerUrls,
+  peerUrlKey,
+  validatePeerUrl,
+} from "../domain/peers.js";
 import {
   generateNetworkSecret,
   slugify,
@@ -38,6 +52,33 @@ export interface NetworkDto {
   deviceCounts: { pending: number; approved: number; blocked: number };
 }
 
+/**
+ * One entry of a network's ordered peer list. `kind` says whether the entry is
+ * a device reference (its advertised endpoints are compiled in) or a raw
+ * external URL. `suggestedDeviceId` is set for a raw URL that exactly equals a
+ * known device's advertised endpoint — the UI offers to link it, which turns
+ * the entry into a device-backed one and stops that device from dialling
+ * itself.
+ */
+export interface NetworkPeerDto {
+  id: string;
+  networkId: string;
+  position: number;
+  kind: "device" | "external";
+  url: string | null;
+  deviceId: string | null;
+  deviceHostname: string | null;
+  deviceDnsName: string | null;
+  deviceMachineId: string | null;
+  deviceState: Device["state"] | null;
+  deviceIsHub: boolean;
+  /** Advertised endpoints of the referenced (or linked) device. */
+  endpoints: string[];
+  suggestedDeviceId: string | null;
+  suggestedDeviceHostname: string | null;
+  createdAt: string;
+}
+
 function toDto(
   network: Network,
   counts: { pending: number; approved: number; blocked: number },
@@ -54,6 +95,31 @@ function toDto(
     createdAt: network.createdAt.toISOString(),
     updatedAt: network.updatedAt.toISOString(),
     deviceCounts: counts,
+  };
+}
+
+function toPeerDto(
+  peer: NetworkPeer,
+  device: Device | null,
+  suggested: Device | null,
+): NetworkPeerDto {
+  return {
+    id: peer.id,
+    networkId: peer.networkId,
+    position: peer.position,
+    kind: peer.url === null ? "device" : "external",
+    url: peer.url,
+    deviceId: peer.deviceId,
+    deviceHostname: device?.hostname ?? null,
+    deviceDnsName: device?.dnsName ?? null,
+    deviceMachineId: device?.machineId ?? null,
+    deviceState: device?.state ?? null,
+    deviceIsHub: device?.isHub ?? false,
+    endpoints: device?.advertisedEndpoints ?? [],
+    suggestedDeviceId: suggested?.id ?? null,
+    suggestedDeviceHostname:
+      suggested?.dnsName ?? suggested?.hostname ?? null,
+    createdAt: peer.createdAt.toISOString(),
   };
 }
 
@@ -82,6 +148,7 @@ export class NetworkService {
       invalid(error instanceof Error ? error.message : "invalid CIDR");
     }
     const defaults = normalizeDesiredConfig(input.defaultConfig ?? {});
+    const peerUrls = this.validatedPeerUrls(defaults.peerUrls);
     const base = slugify(name) || "network";
     const networkName = `${base}-${randomBytes(3).toString("hex")}`;
     const secret = generateNetworkSecret();
@@ -94,6 +161,7 @@ export class NetworkService {
       defaultConfig: defaults,
       createdBy: input.userId,
     });
+    await this.seedRawPeers(network.id, input.orgId, input.userId, peerUrls);
     await this.audit.record({
       orgId: input.orgId,
       actorUserId: input.userId,
@@ -140,6 +208,7 @@ export class NetworkService {
       invalid(error instanceof Error ? error.message : "invalid CIDR");
     }
     const defaults = normalizeDesiredConfig(input.defaultConfig);
+    const peerUrls = this.validatedPeerUrls(defaults.peerUrls);
     const duplicate = await this.db.query.networks.findFirst({
       where: (table, { eq }) => eq(table.networkName, networkName),
     });
@@ -157,6 +226,7 @@ export class NetworkService {
       defaultConfig: defaults,
       createdBy: input.userId,
     });
+    await this.seedRawPeers(network.id, input.orgId, input.userId, peerUrls);
     if (input.magicDnsEnabled) {
       await updateNetwork(this.db, network.id, { magicDnsEnabled: true });
       network.magicDnsEnabled = true;
@@ -203,6 +273,287 @@ export class NetworkService {
     const network = await getNetwork(this.db, orgId, id);
     if (!network) notFound("network not found");
     return network;
+  }
+
+  // -------------------------------------------------------------------------
+  // Peer list (device-backed hubs + raw external URLs)
+  // -------------------------------------------------------------------------
+
+  async listPeers(orgId: string, networkId: string): Promise<NetworkPeerDto[]> {
+    await this.requireNetwork(orgId, networkId);
+    return this.peersFor(networkId);
+  }
+
+  private async peersFor(networkId: string): Promise<NetworkPeerDto[]> {
+    const [records, devices] = await Promise.all([
+      listNetworkPeerRecords(this.db, networkId),
+      listDevicesInNetwork(this.db, networkId),
+    ]);
+    // Exact string match only: never resolve DNS or compare IPs. A raw URL can
+    // therefore be linked to the device that advertised exactly that URL.
+    const suggestions = new Map<string, Device>();
+    for (const device of devices) {
+      if (device.state !== "approved") continue;
+      for (const endpoint of device.advertisedEndpoints) {
+        if (!suggestions.has(endpoint)) suggestions.set(endpoint, device);
+      }
+    }
+    return records.map(({ peer, device }) =>
+      toPeerDto(peer, device, peer.url ? (suggestions.get(peer.url) ?? null) : null),
+    );
+  }
+
+  /** Admin action: adds a device-backed hub entry or a raw external URL. */
+  async addPeer(
+    orgId: string,
+    userId: string,
+    networkId: string,
+    input: { deviceId?: string; url?: string; linkedDeviceId?: string },
+  ): Promise<NetworkPeerDto> {
+    await this.requireNetwork(orgId, networkId);
+    if ((input.url === undefined) === (input.deviceId === undefined)) {
+      invalid("provide exactly one of deviceId (device-backed) or url (external)");
+    }
+    const records = await listNetworkPeerRecords(this.db, networkId);
+    const position = await nextNetworkPeerPosition(this.db, networkId);
+    let created: NetworkPeerDto | undefined;
+
+    if (input.url !== undefined) {
+      const url = this.validatedPeerUrl(input.url);
+      const linked = input.linkedDeviceId
+        ? await this.requireDeviceInNetwork(orgId, networkId, input.linkedDeviceId)
+        : null;
+      const duplicate = records.find(
+        ({ peer }) => peer.url !== null && peerUrlKey(peer.url) === peerUrlKey(url),
+      );
+      if (duplicate) conflict("this peer URL is already in the network peer list");
+      const peer = await insertNetworkPeer(this.db, {
+        orgId,
+        networkId,
+        deviceId: linked?.id ?? null,
+        url,
+        position,
+        createdBy: userId,
+      });
+      created = toPeerDto(peer, linked, null);
+      await this.audit.record({
+        orgId,
+        actorUserId: userId,
+        action: "network.peer_added",
+        targetType: "network",
+        targetId: networkId,
+        metadata: {
+          peerId: peer.id,
+          kind: "external",
+          url,
+          linkedDeviceId: linked?.id ?? null,
+        },
+      });
+    } else {
+      const device = await this.requireDeviceInNetwork(
+        orgId,
+        networkId,
+        input.deviceId!,
+      );
+      const duplicate = records.find(
+        ({ peer }) => peer.url === null && peer.deviceId === device.id,
+      );
+      if (duplicate) {
+        conflict("this device is already a network peer; edit it instead");
+      }
+      const peer = await insertNetworkPeer(this.db, {
+        orgId,
+        networkId,
+        deviceId: device.id,
+        url: null,
+        position,
+        createdBy: userId,
+      });
+      created = toPeerDto(peer, device, null);
+      await this.audit.record({
+        orgId,
+        actorUserId: userId,
+        action: "network.peer_added",
+        targetType: "network",
+        targetId: networkId,
+        metadata: {
+          peerId: peer.id,
+          kind: "device",
+          deviceId: device.id,
+          endpoints: device.advertisedEndpoints,
+        },
+      });
+    }
+
+    this.realtime?.publish({
+      type: "network.updated",
+      orgId,
+      networkId,
+      data: { networkId, reason: "peer-added" },
+    });
+    return created;
+  }
+
+  /**
+   * Converts a raw external entry into a device-backed one. The URL is added to
+   * the device's advertised endpoints when it is missing, so the endpoint stays
+   * reachable for other devices while the owning device stops receiving it.
+   * If the device already has a device-backed entry the two rows are merged.
+   */
+  async linkPeer(
+    orgId: string,
+    userId: string,
+    networkId: string,
+    peerId: string,
+    deviceId: string,
+  ): Promise<NetworkPeerDto> {
+    await this.requireNetwork(orgId, networkId);
+    const peer = await getNetworkPeer(this.db, orgId, networkId, peerId);
+    if (!peer) notFound("peer not found");
+    if (peer.url === null) invalid("this peer is already device-backed");
+    const device = await this.requireDeviceInNetwork(orgId, networkId, deviceId);
+    const url = peer.url;
+    const endpoints = device.advertisedEndpoints.some(
+      (endpoint) => peerUrlKey(endpoint) === peerUrlKey(url),
+    )
+      ? device.advertisedEndpoints
+      : dedupePeerUrls([...device.advertisedEndpoints, url]);
+    const updatedDevice = await updateDevice(this.db, device.id, {
+      advertisedEndpoints: endpoints,
+      // A linked device must stay in the compiled list for every other
+      // device; without the hub flag the converted entry would contribute
+      // nothing and the endpoint would silently disappear.
+      isHub: true,
+    });
+    if (!updatedDevice) throw new AppError(500, "failed to update the device");
+
+    const records = await listNetworkPeerRecords(this.db, networkId);
+    const existing = records.find(
+      (record) =>
+        record.peer.id !== peer.id &&
+        record.peer.url === null &&
+        record.peer.deviceId === device.id,
+    );
+    let linked;
+    if (existing) {
+      await deleteNetworkPeer(this.db, peer.id);
+      await compactNetworkPeerPositions(this.db, networkId);
+      linked = existing.peer;
+    } else {
+      const updated = await updateNetworkPeer(this.db, peer.id, {
+        url: null,
+        deviceId: device.id,
+      });
+      if (!updated) throw new AppError(500, "failed to link the peer");
+      linked = updated;
+    }
+    await this.audit.record({
+      orgId,
+      actorUserId: userId,
+      action: "network.peer_linked",
+      targetType: "network",
+      targetId: networkId,
+      metadata: {
+        peerId: linked.id,
+        previousUrl: url,
+        deviceId: device.id,
+        endpoints,
+        hubEnabled: true,
+        mergedIntoExisting: Boolean(existing),
+      },
+    });
+    this.realtime?.publish({
+      type: "network.updated",
+      orgId,
+      networkId,
+      data: { networkId, reason: "peer-linked" },
+    });
+    return toPeerDto(linked, updatedDevice, null);
+  }
+
+  async removePeer(
+    orgId: string,
+    userId: string,
+    networkId: string,
+    peerId: string,
+  ): Promise<void> {
+    await this.requireNetwork(orgId, networkId);
+    const peer = await getNetworkPeer(this.db, orgId, networkId, peerId);
+    if (!peer) notFound("peer not found");
+    await deleteNetworkPeer(this.db, peer.id);
+    if (peer.url === null && peer.deviceId) {
+      // Keep device-backed entries and the hub flag in sync.
+      await updateDevice(this.db, peer.deviceId, { isHub: false });
+    }
+    await compactNetworkPeerPositions(this.db, networkId);
+    await this.audit.record({
+      orgId,
+      actorUserId: userId,
+      action: "network.peer_removed",
+      targetType: "network",
+      targetId: networkId,
+      metadata: {
+        peerId: peer.id,
+        deviceId: peer.deviceId,
+        url: peer.url,
+      },
+    });
+    this.realtime?.publish({
+      type: "network.updated",
+      orgId,
+      networkId,
+      data: { networkId, reason: "peer-removed" },
+    });
+  }
+
+  private async requireDeviceInNetwork(
+    orgId: string,
+    networkId: string,
+    deviceId: string,
+  ): Promise<Device> {
+    const device = await getDevice(this.db, orgId, deviceId);
+    if (!device || device.networkId !== networkId) notFound("device not found");
+    return device;
+  }
+
+  private validatedPeerUrl(value: string): string {
+    try {
+      return validatePeerUrl(value);
+    } catch (error) {
+      invalid(error instanceof Error ? error.message : "invalid peer URL");
+    }
+  }
+
+  private validatedPeerUrls(values: readonly string[]): string[] {
+    const seen = new Set<string>();
+    const urls: string[] = [];
+    for (const value of values) {
+      const url = this.validatedPeerUrl(value);
+      const key = peerUrlKey(url);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      urls.push(url);
+    }
+    return urls;
+  }
+
+  /** Raw entries for legacy/imported peer URLs, in their original order. */
+  private async seedRawPeers(
+    networkId: string,
+    orgId: string,
+    userId: string | null,
+    urls: readonly string[],
+  ): Promise<void> {
+    for (let position = 0; position < urls.length; position += 1) {
+      await insertNetworkPeer(this.db, {
+        orgId,
+        networkId,
+        deviceId: null,
+        url: urls[position]!,
+        position,
+        createdBy: userId,
+      });
+    }
   }
 
   /** Admin-only: returns the plaintext secret and records the reveal. */

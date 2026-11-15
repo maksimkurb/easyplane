@@ -244,6 +244,21 @@ export const devices = pgTable(
       onDelete: "set null",
     }),
     /**
+     * Peer URLs other devices may dial to reach this one (`tcp://host:11010`,
+     * `udp://`, `ws://`, `wss://`, `quic://`, `wg://`, `ring://`, ...).
+     * Advertised explicitly instead of being guessed from an IP or hostname.
+     */
+    advertisedEndpoints: text("advertised_endpoints")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    /**
+     * A hub is a device other devices dial. Only approved hubs contribute
+     * endpoints to a network's compiled peer list, and a hub never receives
+     * its own endpoints (so it cannot dial itself).
+     */
+    isHub: boolean("is_hub").notNull().default(false),
+    /**
      * Last route report collected from the client: instances it runs, proxy
      * CIDRs it advertises, and which of those were not approved here.
      */
@@ -290,6 +305,49 @@ export const devices = pgTable(
     ),
     index("devices_state_idx").on(table.state),
     index("devices_org_idx").on(table.orgId),
+  ],
+);
+
+/**
+ * A network's ordered peer list. An entry is either a reference to a panel
+ * device (device-backed, `url` is null) whose advertised endpoints are dialled
+ * by every *other* device, or a raw external peer URL (`url` set). A raw URL
+ * may carry an optional `device_id` link: it is still pushed to everyone else
+ * but skipped for that device, so a legacy per-device URL cannot make the owner
+ * dial itself.
+ */
+export const networkPeers = pgTable(
+  "network_peers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organisations.id, { onDelete: "cascade" }),
+    networkId: uuid("network_id")
+      .notNull()
+      .references(() => networks.id, { onDelete: "cascade" }),
+    /** Device-backed entry (and optional link for a raw URL). */
+    deviceId: uuid("device_id").references(() => devices.id, {
+      onDelete: "cascade",
+    }),
+    /** Raw external peer URL; null when the entry is device-backed. */
+    url: text("url"),
+    /** Ordering inside the peer list; compacted by the service on writes. */
+    position: integer("position").notNull(),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex("network_peers_position_uq").on(table.networkId, table.position),
+    uniqueIndex("network_peers_device_uq")
+      .on(table.networkId, table.deviceId)
+      .where(sql`${table.url} IS NULL`),
+    uniqueIndex("network_peers_raw_uq")
+      .on(table.networkId, table.url)
+      .where(sql`${table.url} IS NOT NULL`),
+    index("network_peers_network_idx").on(table.networkId),
   ],
 );
 
@@ -484,6 +542,7 @@ export const networksRelations = relations(networks, ({ one, many }) => ({
   }),
   devices: many(devices),
   invites: many(invites),
+  peers: many(networkPeers),
 }));
 
 export const devicesRelations = relations(devices, ({ one, many }) => ({
@@ -496,6 +555,18 @@ export const devicesRelations = relations(devices, ({ one, many }) => ({
     references: [invites.id],
   }),
   revisions: many(configRevisions),
+  peers: many(networkPeers),
+}));
+
+export const networkPeersRelations = relations(networkPeers, ({ one }) => ({
+  network: one(networks, {
+    fields: [networkPeers.networkId],
+    references: [networks.id],
+  }),
+  device: one(devices, {
+    fields: [networkPeers.deviceId],
+    references: [devices.id],
+  }),
 }));
 
 export type Organisation = typeof organisations.$inferSelect;
@@ -511,3 +582,4 @@ export type NetworkPolicy = typeof networkPolicies.$inferSelect;
 export type DeviceRoute = typeof deviceRoutes.$inferSelect;
 export type DeviceRouteKind = DeviceRoute["kind"];
 export type DeviceRouteState = DeviceRoute["state"];
+export type NetworkPeer = typeof networkPeers.$inferSelect;

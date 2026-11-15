@@ -85,6 +85,8 @@ export const deviceSchema = z.object({
   virtualIpv4: z.string().nullable(),
   inviteId: z.string().nullable(),
   ownerUserId: z.string().nullable(),
+  advertisedEndpoints: z.array(z.string()),
+  isHub: z.boolean(),
   tags: z.array(z.string()),
   reportedState: z.record(z.string(), z.unknown()),
   reportedStateAt: z.string().nullable(),
@@ -99,6 +101,57 @@ export const deviceSchema = z.object({
   blockedAt: z.string().nullable(),
   createdAt: z.string(),
 });
+
+export const networkPeerSchema = z.object({
+  id: z.string(),
+  networkId: z.string(),
+  position: z.number().int(),
+  kind: z.enum(["device", "external"]),
+  url: z.string().nullable(),
+  deviceId: z.string().nullable(),
+  deviceHostname: z.string().nullable(),
+  deviceDnsName: z.string().nullable(),
+  deviceMachineId: z.string().nullable(),
+  deviceState: deviceStateSchema.nullable(),
+  deviceIsHub: z.boolean(),
+  endpoints: z.array(z.string()),
+  suggestedDeviceId: z.string().nullable(),
+  suggestedDeviceHostname: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+export const networkPeersSchema = z.object({
+  peers: z.array(networkPeerSchema),
+});
+
+export const createNetworkPeerSchema = z
+  .object({
+    /** Device-backed entry: every approved hub endpoint is dialled. */
+    deviceId: z.string().uuid().optional(),
+    /** Raw external URL, pushed verbatim to every other device. */
+    url: z.string().min(1).max(512).optional(),
+    /** Optional link on a raw URL: skip it for this device. */
+    linkedDeviceId: z.string().uuid().optional(),
+  })
+  .strict()
+  .refine(
+    (value) => (value.url === undefined) !== (value.deviceId === undefined),
+    "provide exactly one of deviceId or url",
+  )
+  .refine(
+    (value) => value.linkedDeviceId === undefined || value.url !== undefined,
+    "linkedDeviceId is only valid together with url",
+  );
+
+export const linkNetworkPeerSchema = z
+  .object({ deviceId: z.string().uuid() })
+  .strict();
+
+export const updateDeviceEndpointsSchema = z
+  .object({ endpoints: z.array(z.string().min(1).max(512)).max(16) })
+  .strict();
+
+export const updateDeviceHubSchema = z.object({ isHub: z.boolean() }).strict();
 
 export const revisionSchema = z.object({
   id: z.string(),
@@ -219,6 +272,10 @@ export const paramsIdSchema = z.object({ id: z.string().uuid() });
 export const paramsNetworkSchema = z.object({ networkId: z.string().uuid() });
 export const paramsDeviceSchema = z.object({ deviceId: z.string().uuid() });
 export const paramsInviteSchema = z.object({ inviteId: z.string().uuid() });
+export const paramsPeerSchema = z.object({
+  networkId: z.string().uuid(),
+  peerId: z.string().uuid(),
+});
 export const paramsRevisionSchema = z.object({
   deviceId: z.string().uuid(),
   revision: z.coerce.number().int().positive(),

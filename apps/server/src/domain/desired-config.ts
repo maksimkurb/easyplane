@@ -32,6 +32,13 @@ export const desiredConfigSchema = z
      * so one switch keeps names and records consistent.
      */
     enableMagicDns: z.boolean().default(false),
+    /**
+     * Deprecated as revision content: the peer list is compiled at push time
+     * from the network's peer entries (see `domain/peers.ts`) so a device can
+     * never receive its own advertised endpoint. Kept in the schema so older
+     * revisions and imports still parse; `buildNetworkConfig` only falls back to
+     * it when no compiled list is supplied.
+     */
     peerUrls: z.array(z.string().min(1).max(512)).max(64).default([]),
     publicServerUrl: z.string().max(512).default(""),
     listenerUrls: z.array(z.string().min(1).max(512)).max(64).default([]),
@@ -80,6 +87,12 @@ export interface BuildNetworkConfigOptions {
   /** Unique DNS name of the device; becomes the EasyTier hostname. */
   hostname: string;
   stored: DesiredConfig;
+  /**
+   * Peer URLs resolved for this device at compile time from the network's peer
+   * list. When omitted, the legacy `stored.peerUrls` value is used (kept for
+   * conformance/unit callers and for configs compiled outside a network).
+   */
+  peerUrls?: string[];
   assignedIpv4: string | null;
   ipv4Cidr: string;
   /** Network-level MagicDNS switch (authoritative). */
@@ -101,9 +114,9 @@ export function buildNetworkConfig(
   // `gen_config` (api_input.rs) only applies peer URLs for PublicServer and
   // Manual; a Standalone instance silently ignores them. Ask for Manual when
   // the config lists peers, otherwise the mesh would never form.
+  const peerUrls = options.peerUrls ?? options.stored.peerUrls;
   const networkingMethod =
-    options.stored.networkingMethod === "standalone" &&
-    options.stored.peerUrls.length > 0
+    options.stored.networkingMethod === "standalone" && peerUrls.length > 0
       ? "manual"
       : options.stored.networkingMethod;
   const base = buildMinimalNetworkConfig({
@@ -117,7 +130,7 @@ export function buildNetworkConfig(
     networkLength:
       options.stored.networkLength ?? cidrPrefix(options.ipv4Cidr),
     publicServerUrl: options.stored.publicServerUrl,
-    peerUrls: options.stored.peerUrls,
+    peerUrls,
     listenerUrls: options.stored.listenerUrls,
     noTun: options.stored.noTun,
     enableMagicDns: options.magicDnsEnabled ?? false,

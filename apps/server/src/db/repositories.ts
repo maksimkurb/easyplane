@@ -8,6 +8,7 @@ import {
   deviceTags,
   devices,
   invites,
+  networkPeers,
   networkPolicies,
   networks,
   oidcLoginStates,
@@ -21,6 +22,7 @@ import {
   type DeviceRouteKind,
   type DeviceRouteState,
   type DeviceState,
+  type NetworkPeer,
   type User,
   type UserRole,
 } from "./schema.js";
@@ -984,4 +986,154 @@ export async function findDeviceByDnsName(
     )
     .limit(1);
   return rows[0];
+}
+
+// ---------------------------------------------------------------------------
+// Network peers (hub endpoints + raw external URLs)
+// ---------------------------------------------------------------------------
+
+export async function listNetworkPeers(
+  db: DbExecutor,
+  networkId: string,
+): Promise<NetworkPeer[]> {
+  return db
+    .select()
+    .from(networkPeers)
+    .where(eq(networkPeers.networkId, networkId))
+    .orderBy(asc(networkPeers.position));
+}
+
+export interface NetworkPeerRecord {
+  peer: NetworkPeer;
+  /** Referenced device, when the entry is device-backed or linked. */
+  device: Device | null;
+}
+
+/**
+ * The network's ordered peer list with each entry's device resolved in one
+ * round-trip. This is exactly the input of the push compiler.
+ */
+export async function listNetworkPeerRecords(
+  db: DbExecutor,
+  networkId: string,
+): Promise<NetworkPeerRecord[]> {
+  return db
+    .select({ peer: networkPeers, device: devices })
+    .from(networkPeers)
+    .leftJoin(devices, eq(devices.id, networkPeers.deviceId))
+    .where(eq(networkPeers.networkId, networkId))
+    .orderBy(asc(networkPeers.position));
+}
+
+export async function getNetworkPeer(
+  db: DbExecutor,
+  orgId: string,
+  networkId: string,
+  id: string,
+): Promise<NetworkPeer | undefined> {
+  const rows = await db
+    .select()
+    .from(networkPeers)
+    .where(
+      and(
+        eq(networkPeers.orgId, orgId),
+        eq(networkPeers.networkId, networkId),
+        eq(networkPeers.id, id),
+      ),
+    )
+    .limit(1);
+  return rows[0];
+}
+
+export async function nextNetworkPeerPosition(
+  db: DbExecutor,
+  networkId: string,
+): Promise<number> {
+  const rows = await db
+    .select({ position: networkPeers.position })
+    .from(networkPeers)
+    .where(eq(networkPeers.networkId, networkId))
+    .orderBy(desc(networkPeers.position))
+    .limit(1);
+  return (rows[0]?.position ?? -1) + 1;
+}
+
+export async function insertNetworkPeer(
+  db: DbExecutor,
+  values: typeof networkPeers.$inferInsert,
+): Promise<NetworkPeer> {
+  const rows = await db.insert(networkPeers).values(values).returning();
+  if (!rows[0]) throw new Error("failed to insert network peer");
+  return rows[0];
+}
+
+export async function updateNetworkPeer(
+  db: DbExecutor,
+  id: string,
+  values: Partial<typeof networkPeers.$inferInsert>,
+): Promise<NetworkPeer | undefined> {
+  const rows = await db
+    .update(networkPeers)
+    .set(values)
+    .where(eq(networkPeers.id, id))
+    .returning();
+  return rows[0];
+}
+
+export async function deleteNetworkPeer(db: DbExecutor, id: string): Promise<void> {
+  await db.delete(networkPeers).where(eq(networkPeers.id, id));
+}
+
+export async function findDeviceBackedPeer(
+  db: DbExecutor,
+  networkId: string,
+  deviceId: string,
+): Promise<NetworkPeer | undefined> {
+  const rows = await db
+    .select()
+    .from(networkPeers)
+    .where(
+      and(
+        eq(networkPeers.networkId, networkId),
+        eq(networkPeers.deviceId, deviceId),
+        isNull(networkPeers.url),
+      ),
+    )
+    .limit(1);
+  return rows[0];
+}
+
+export async function deleteDeviceBackedPeers(
+  db: DbExecutor,
+  networkId: string,
+  deviceId: string,
+): Promise<void> {
+  await db
+    .delete(networkPeers)
+    .where(
+      and(
+        eq(networkPeers.networkId, networkId),
+        eq(networkPeers.deviceId, deviceId),
+        isNull(networkPeers.url),
+      ),
+    );
+}
+
+/**
+ * Rewrites positions to 0..n-1 after a removal. Positions are updated in
+ * ascending order, so a row only ever moves into a slot that was just vacated.
+ */
+export async function compactNetworkPeerPositions(
+  db: DbExecutor,
+  networkId: string,
+): Promise<void> {
+  const rows = await listNetworkPeers(db, networkId);
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index]!;
+    if (row.position === index) continue;
+    await db
+      .update(networkPeers)
+      .set({ position: index })
+      .where(eq(networkPeers.id, row.id));
+  }
 }

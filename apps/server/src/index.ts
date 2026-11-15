@@ -100,6 +100,20 @@ export {
   type RevisionRecord,
   type RollbackPlan,
 } from "./domain/revisions.js";
+export {
+  PEER_URL_MAX_LENGTH,
+  PEER_URL_SCHEMES,
+  compilePeerUrls,
+  dedupePeerUrls,
+  isValidPeerUrl,
+  peerUrlKey,
+  peerUrlSchema,
+  validatePeerUrl,
+  type CompilePeerUrlsInput,
+  type PeerCompilerDevice,
+  type PeerCompilerEntry,
+  type PeerUrlScheme,
+} from "./domain/peers.js";
 export { allocateIpv4, parseCidr, parseIpv4, formatIpv4 } from "./domain/ip.js";
 export {
   SecretBox,
@@ -120,7 +134,7 @@ export {
 } from "./services/device-service.js";
 export { DeviceSessionRegistry } from "./services/device-sessions.js";
 export { InviteService, type InviteDto } from "./services/invite-service.js";
-export { NetworkService, type NetworkDto } from "./services/network-service.js";
+export { NetworkService, type NetworkDto, type NetworkPeerDto } from "./services/network-service.js";
 export {
   instanceIdFor,
   PushService,

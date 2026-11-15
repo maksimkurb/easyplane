@@ -1219,6 +1219,486 @@
         }
       }
     },
+    "/api/networks/{networkId}/peers": {
+      "get": {
+        "operationId": "listNetworkPeers",
+        "tags": [
+          "networks"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "peers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "networkId": {
+                            "type": "string"
+                          },
+                          "position": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "device",
+                              "external"
+                            ]
+                          },
+                          "url": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "deviceId": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "deviceHostname": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "deviceDnsName": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "deviceMachineId": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "deviceState": {
+                            "nullable": true,
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "approved",
+                              "blocked"
+                            ]
+                          },
+                          "deviceIsHub": {
+                            "type": "boolean"
+                          },
+                          "endpoints": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "suggestedDeviceId": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "suggestedDeviceHostname": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "networkId",
+                          "position",
+                          "kind",
+                          "url",
+                          "deviceId",
+                          "deviceHostname",
+                          "deviceDnsName",
+                          "deviceMachineId",
+                          "deviceState",
+                          "deviceIsHub",
+                          "endpoints",
+                          "suggestedDeviceId",
+                          "suggestedDeviceHostname",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "peers"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createNetworkPeer",
+        "tags": [
+          "networks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "deviceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "linkedDeviceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "position": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "device",
+                        "external"
+                      ]
+                    },
+                    "url": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "deviceId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "deviceHostname": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "deviceDnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "deviceMachineId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "deviceState": {
+                      "nullable": true,
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "blocked"
+                      ]
+                    },
+                    "deviceIsHub": {
+                      "type": "boolean"
+                    },
+                    "endpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "suggestedDeviceId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "suggestedDeviceHostname": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "position",
+                    "kind",
+                    "url",
+                    "deviceId",
+                    "deviceHostname",
+                    "deviceDnsName",
+                    "deviceMachineId",
+                    "deviceState",
+                    "deviceIsHub",
+                    "endpoints",
+                    "suggestedDeviceId",
+                    "suggestedDeviceHostname",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/peers/{peerId}/link": {
+      "post": {
+        "operationId": "linkNetworkPeer",
+        "tags": [
+          "networks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "deviceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "deviceId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "peerId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "position": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "device",
+                        "external"
+                      ]
+                    },
+                    "url": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "deviceId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "deviceHostname": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "deviceDnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "deviceMachineId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "deviceState": {
+                      "nullable": true,
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "blocked"
+                      ]
+                    },
+                    "deviceIsHub": {
+                      "type": "boolean"
+                    },
+                    "endpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "suggestedDeviceId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "suggestedDeviceHostname": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "position",
+                    "kind",
+                    "url",
+                    "deviceId",
+                    "deviceHostname",
+                    "deviceDnsName",
+                    "deviceMachineId",
+                    "deviceState",
+                    "deviceIsHub",
+                    "endpoints",
+                    "suggestedDeviceId",
+                    "suggestedDeviceHostname",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/peers/{peerId}": {
+      "delete": {
+        "operationId": "deleteNetworkPeer",
+        "tags": [
+          "networks"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "peerId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/networks/{networkId}/invites": {
       "get": {
         "operationId": "listInvites",
@@ -1936,6 +2416,29 @@
                     },
                     "networkNameTaken": {
                       "type": "boolean"
+                    },
+                    "peerLinks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "type": "string"
+                          },
+                          "deviceId": {
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "url",
+                          "deviceId",
+                          "hostname"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [
@@ -1949,7 +2452,8 @@
                     "warnings",
                     "unsupported",
                     "existingNetworkId",
-                    "networkNameTaken"
+                    "networkNameTaken",
+                    "peerLinks"
                   ],
                   "additionalProperties": false
                 }
@@ -2341,6 +2845,15 @@
                         "nullable": true,
                         "type": "string"
                       },
+                      "advertisedEndpoints": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "isHub": {
+                        "type": "boolean"
+                      },
                       "tags": {
                         "type": "array",
                         "items": {
@@ -2420,6 +2933,8 @@
                       "virtualIpv4",
                       "inviteId",
                       "ownerUserId",
+                      "advertisedEndpoints",
+                      "isHub",
                       "tags",
                       "reportedState",
                       "reportedStateAt",
@@ -2563,6 +3078,15 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "advertisedEndpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "isHub": {
+                      "type": "boolean"
+                    },
                     "tags": {
                       "type": "array",
                       "items": {
@@ -2642,6 +3166,8 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "advertisedEndpoints",
+                    "isHub",
                     "tags",
                     "reportedState",
                     "reportedStateAt",
@@ -2842,6 +3368,15 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "advertisedEndpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "isHub": {
+                      "type": "boolean"
+                    },
                     "tags": {
                       "type": "array",
                       "items": {
@@ -2921,6 +3456,8 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "advertisedEndpoints",
+                    "isHub",
                     "tags",
                     "reportedState",
                     "reportedStateAt",
@@ -3063,6 +3600,15 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "advertisedEndpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "isHub": {
+                      "type": "boolean"
+                    },
                     "tags": {
                       "type": "array",
                       "items": {
@@ -3142,6 +3688,8 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "advertisedEndpoints",
+                    "isHub",
                     "tags",
                     "reportedState",
                     "reportedStateAt",
@@ -3204,6 +3752,514 @@
                   },
                   "required": [
                     "status"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{deviceId}/endpoints": {
+      "put": {
+        "operationId": "updateDeviceEndpoints",
+        "tags": [
+          "devices"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "endpoints": {
+                    "maxItems": 16,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 512
+                    }
+                  }
+                },
+                "required": [
+                  "endpoints"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "networkName": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "blocked"
+                      ]
+                    },
+                    "online": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "offline"
+                      ]
+                    },
+                    "sync": {
+                      "type": "string",
+                      "enum": [
+                        "not-applicable",
+                        "in-sync",
+                        "stale",
+                        "error"
+                      ]
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "machineId": {
+                      "type": "string"
+                    },
+                    "hostname": {
+                      "type": "string"
+                    },
+                    "dnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsZone": {
+                      "type": "string"
+                    },
+                    "magicDnsEnabled": {
+                      "type": "boolean"
+                    },
+                    "easytierVersion": {
+                      "type": "string"
+                    },
+                    "os": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "distribution": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "version",
+                        "distribution"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "sourceIp": {
+                      "type": "string"
+                    },
+                    "virtualIpv4": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "inviteId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "advertisedEndpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "isHub": {
+                      "type": "boolean"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "reportedState": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "reportedStateAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "desiredRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "policyVersion": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastSeenAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "approvedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "blockedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "networkName",
+                    "state",
+                    "online",
+                    "sync",
+                    "label",
+                    "machineId",
+                    "hostname",
+                    "dnsName",
+                    "magicDnsName",
+                    "magicDnsZone",
+                    "magicDnsEnabled",
+                    "easytierVersion",
+                    "os",
+                    "sourceIp",
+                    "virtualIpv4",
+                    "inviteId",
+                    "ownerUserId",
+                    "advertisedEndpoints",
+                    "isHub",
+                    "tags",
+                    "reportedState",
+                    "reportedStateAt",
+                    "desiredRevision",
+                    "appliedRevision",
+                    "policyVersion",
+                    "appliedAt",
+                    "lastPushAt",
+                    "lastPushError",
+                    "lastSeenAt",
+                    "approvedAt",
+                    "blockedAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{deviceId}/hub": {
+      "put": {
+        "operationId": "updateDeviceHub",
+        "tags": [
+          "devices"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "isHub": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "isHub"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "networkName": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "blocked"
+                      ]
+                    },
+                    "online": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "offline"
+                      ]
+                    },
+                    "sync": {
+                      "type": "string",
+                      "enum": [
+                        "not-applicable",
+                        "in-sync",
+                        "stale",
+                        "error"
+                      ]
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "machineId": {
+                      "type": "string"
+                    },
+                    "hostname": {
+                      "type": "string"
+                    },
+                    "dnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsZone": {
+                      "type": "string"
+                    },
+                    "magicDnsEnabled": {
+                      "type": "boolean"
+                    },
+                    "easytierVersion": {
+                      "type": "string"
+                    },
+                    "os": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "distribution": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "version",
+                        "distribution"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "sourceIp": {
+                      "type": "string"
+                    },
+                    "virtualIpv4": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "inviteId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "advertisedEndpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "isHub": {
+                      "type": "boolean"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "reportedState": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "reportedStateAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "desiredRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "policyVersion": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastSeenAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "approvedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "blockedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "networkName",
+                    "state",
+                    "online",
+                    "sync",
+                    "label",
+                    "machineId",
+                    "hostname",
+                    "dnsName",
+                    "magicDnsName",
+                    "magicDnsZone",
+                    "magicDnsEnabled",
+                    "easytierVersion",
+                    "os",
+                    "sourceIp",
+                    "virtualIpv4",
+                    "inviteId",
+                    "ownerUserId",
+                    "advertisedEndpoints",
+                    "isHub",
+                    "tags",
+                    "reportedState",
+                    "reportedStateAt",
+                    "desiredRevision",
+                    "appliedRevision",
+                    "policyVersion",
+                    "appliedAt",
+                    "lastPushAt",
+                    "lastPushError",
+                    "lastSeenAt",
+                    "approvedAt",
+                    "blockedAt",
+                    "createdAt"
                   ],
                   "additionalProperties": false
                 }
@@ -3528,6 +4584,15 @@
                           "nullable": true,
                           "type": "string"
                         },
+                        "advertisedEndpoints": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "isHub": {
+                          "type": "boolean"
+                        },
                         "tags": {
                           "type": "array",
                           "items": {
@@ -3607,6 +4672,8 @@
                         "virtualIpv4",
                         "inviteId",
                         "ownerUserId",
+                        "advertisedEndpoints",
+                        "isHub",
                         "tags",
                         "reportedState",
                         "reportedStateAt",
@@ -3839,6 +4906,15 @@
                           "nullable": true,
                           "type": "string"
                         },
+                        "advertisedEndpoints": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "isHub": {
+                          "type": "boolean"
+                        },
                         "tags": {
                           "type": "array",
                           "items": {
@@ -3918,6 +4994,8 @@
                         "virtualIpv4",
                         "inviteId",
                         "ownerUserId",
+                        "advertisedEndpoints",
+                        "isHub",
                         "tags",
                         "reportedState",
                         "reportedStateAt",
@@ -5184,6 +6262,15 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "advertisedEndpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "isHub": {
+                      "type": "boolean"
+                    },
                     "tags": {
                       "type": "array",
                       "items": {
@@ -5263,6 +6350,8 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "advertisedEndpoints",
+                    "isHub",
                     "tags",
                     "reportedState",
                     "reportedStateAt",
@@ -5542,6 +6631,15 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "advertisedEndpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "isHub": {
+                      "type": "boolean"
+                    },
                     "tags": {
                       "type": "array",
                       "items": {
@@ -5621,6 +6719,8 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "advertisedEndpoints",
+                    "isHub",
                     "tags",
                     "reportedState",
                     "reportedStateAt",
@@ -5785,6 +6885,15 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "advertisedEndpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "isHub": {
+                      "type": "boolean"
+                    },
                     "tags": {
                       "type": "array",
                       "items": {
@@ -5864,6 +6973,8 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "advertisedEndpoints",
+                    "isHub",
                     "tags",
                     "reportedState",
                     "reportedStateAt",
