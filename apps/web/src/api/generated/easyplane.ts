@@ -25,6 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AlignNetworkRendezvousSecret200,
   ApproveDevice200,
   ApproveDeviceBody,
   BlockDevice200,
@@ -63,6 +64,7 @@ import type {
   GetNetworkTopology200,
   GetNetworkTopologyParams,
   GetOrganisation200,
+  GetRendezvous200,
   Health200,
   Health503,
   LinkNetworkPeer200,
@@ -1102,6 +1104,112 @@ export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TErr
 
 
 
+export type getRendezvousResponse200 = {
+  data: GetRendezvous200
+  status: 200
+}
+
+export type getRendezvousResponseSuccess = (getRendezvousResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getRendezvousResponse = (getRendezvousResponseSuccess)
+
+export const getGetRendezvousUrl = () => {
+
+
+
+
+  return `/api/rendezvous`
+}
+
+export const getRendezvous = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getRendezvousResponse> => {
+
+  return apiFetch<getRendezvousResponse>(getGetRendezvousUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRendezvousQueryKey = () => {
+    return [
+    `/api/rendezvous`
+    ] as const;
+    }
+
+
+export const getGetRendezvousQueryOptions = <TData = Awaited<ReturnType<typeof getRendezvous>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRendezvous>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRendezvousQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRendezvous>>> = ({ signal }) => getRendezvous({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRendezvous>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetRendezvousQueryResult = NonNullable<Awaited<ReturnType<typeof getRendezvous>>>
+export type GetRendezvousQueryError = unknown
+
+
+export function useGetRendezvous<TData = Awaited<ReturnType<typeof getRendezvous>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRendezvous>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getRendezvous>>,
+          TError,
+          Awaited<ReturnType<typeof getRendezvous>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRendezvous<TData = Awaited<ReturnType<typeof getRendezvous>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRendezvous>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getRendezvous>>,
+          TError,
+          Awaited<ReturnType<typeof getRendezvous>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRendezvous<TData = Awaited<ReturnType<typeof getRendezvous>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRendezvous>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRendezvous<TData = Awaited<ReturnType<typeof getRendezvous>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRendezvous>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetRendezvousQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export type listNetworksResponse200 = {
   data: ListNetworks200Item[]
   status: 200
@@ -1553,6 +1661,86 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getDeleteNetworkMutationOptions(options), queryClient);
+    }
+
+export type alignNetworkRendezvousSecretResponse200 = {
+  data: AlignNetworkRendezvousSecret200
+  status: 200
+}
+
+export type alignNetworkRendezvousSecretResponseSuccess = (alignNetworkRendezvousSecretResponse200) & {
+  headers: Headers;
+};
+;
+
+export type alignNetworkRendezvousSecretResponse = (alignNetworkRendezvousSecretResponseSuccess)
+
+export const getAlignNetworkRendezvousSecretUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/rendezvous/align-secret`
+}
+
+export const alignNetworkRendezvousSecret = async (networkId: string, options?: Parameters<typeof apiFetch>[1]): Promise<alignNetworkRendezvousSecretResponse> => {
+
+  return apiFetch<alignNetworkRendezvousSecretResponse>(getAlignNetworkRendezvousSecretUrl(networkId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAlignNetworkRendezvousSecretMutationKey = () => ['alignNetworkRendezvousSecret'] as const;
+
+export const getAlignNetworkRendezvousSecretMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof alignNetworkRendezvousSecret>>, TError,AlignNetworkRendezvousSecretMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof alignNetworkRendezvousSecret>>, TError,AlignNetworkRendezvousSecretMutationVariables, TContext> => {
+
+const mutationKey = getAlignNetworkRendezvousSecretMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof alignNetworkRendezvousSecret>>, AlignNetworkRendezvousSecretMutationVariables> = (props) => {
+          const {networkId} = props ?? {};
+
+          return  alignNetworkRendezvousSecret(networkId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AlignNetworkRendezvousSecretMutationResult = NonNullable<Awaited<ReturnType<typeof alignNetworkRendezvousSecret>>>
+
+    export type AlignNetworkRendezvousSecretMutationError = unknown
+    export type AlignNetworkRendezvousSecretMutationVariables = {networkId: string}
+
+    export const useAlignNetworkRendezvousSecret = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof alignNetworkRendezvousSecret>>, TError,AlignNetworkRendezvousSecretMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof alignNetworkRendezvousSecret>>,
+        TError,
+        AlignNetworkRendezvousSecretMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAlignNetworkRendezvousSecretMutationOptions(options), queryClient);
     }
 
 export type revealNetworkSecretResponse200 = {

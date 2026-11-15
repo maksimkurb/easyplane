@@ -29,6 +29,7 @@ import { CopyButton } from "@/components/copy-button"
 import { DeviceStatusBadges, InviteStatusBadge } from "@/components/device-status"
 import { NetworkMagicDnsCard } from "@/components/network-magic-dns-card"
 import { NetworkPeersCard } from "@/components/network-peers-card"
+import { NetworkRendezvousCard } from "@/components/network-rendezvous-card"
 import { NetworkRoutesCard } from "@/components/network-routes-card"
 import { PageHeader } from "@/components/shared/page-header"
 import { SectionCard } from "@/components/shared/section-card"
@@ -259,6 +260,8 @@ export function NetworkDetailPage() {
         </SectionCard>
 
         <NetworkMagicDnsCard networkId={network.id} />
+
+        <NetworkRendezvousCard network={network} />
 
         <NetworkPeersCard networkId={network.id} />
 

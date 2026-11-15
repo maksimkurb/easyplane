@@ -23,4 +23,6 @@ export type UpdateNetworkBody = {
      * @maxLength 200
      */
   magicDnsZone?: string;
+  useRendezvous?: boolean;
+  p2pOnly?: boolean;
 };

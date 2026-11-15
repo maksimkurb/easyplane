@@ -7,6 +7,8 @@
  */
 import type { CommitNetworkImport201DefaultConfig } from './commitNetworkImport201DefaultConfig';
 import type { CommitNetworkImport201DeviceCounts } from './commitNetworkImport201DeviceCounts';
+import type { CommitNetworkImport201PeerPlan } from './commitNetworkImport201PeerPlan';
+import type { CommitNetworkImport201Rendezvous } from './commitNetworkImport201Rendezvous';
 
 export type CommitNetworkImport201 = {
   id: string;
@@ -21,6 +23,10 @@ export type CommitNetworkImport201 = {
      * @maximum 9007199254740991
      */
   policyVersion: number;
+  useRendezvous: boolean;
+  p2pOnly: boolean;
+  rendezvous: CommitNetworkImport201Rendezvous;
+  peerPlan: CommitNetworkImport201PeerPlan;
   createdAt: string;
   updatedAt: string;
   deviceCounts: CommitNetworkImport201DeviceCounts;

@@ -7,6 +7,8 @@
  */
 import type { GetNetwork200DefaultConfig } from './getNetwork200DefaultConfig';
 import type { GetNetwork200DeviceCounts } from './getNetwork200DeviceCounts';
+import type { GetNetwork200PeerPlan } from './getNetwork200PeerPlan';
+import type { GetNetwork200Rendezvous } from './getNetwork200Rendezvous';
 
 export type GetNetwork200 = {
   id: string;
@@ -21,6 +23,10 @@ export type GetNetwork200 = {
      * @maximum 9007199254740991
      */
   policyVersion: number;
+  useRendezvous: boolean;
+  p2pOnly: boolean;
+  rendezvous: GetNetwork200Rendezvous;
+  peerPlan: GetNetwork200PeerPlan;
   createdAt: string;
   updatedAt: string;
   deviceCounts: GetNetwork200DeviceCounts;

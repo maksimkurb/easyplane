@@ -7,6 +7,8 @@
  */
 import type { CreateNetwork201DefaultConfig } from './createNetwork201DefaultConfig';
 import type { CreateNetwork201DeviceCounts } from './createNetwork201DeviceCounts';
+import type { CreateNetwork201PeerPlan } from './createNetwork201PeerPlan';
+import type { CreateNetwork201Rendezvous } from './createNetwork201Rendezvous';
 
 export type CreateNetwork201 = {
   id: string;
@@ -21,6 +23,10 @@ export type CreateNetwork201 = {
      * @maximum 9007199254740991
      */
   policyVersion: number;
+  useRendezvous: boolean;
+  p2pOnly: boolean;
+  rendezvous: CreateNetwork201Rendezvous;
+  peerPlan: CreateNetwork201PeerPlan;
   createdAt: string;
   updatedAt: string;
   deviceCounts: CreateNetwork201DeviceCounts;

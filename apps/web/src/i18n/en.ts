@@ -402,6 +402,53 @@ export const enTranslation = {
     renameDescription: "The DNS name is device identity; it is pushed as the EasyTier hostname.",
     label: "DNS name",
   },
+  rendezvous: {
+    title: "Bundled rendezvous node",
+    description:
+      "A stock easytier-core public node that helps devices find each other. It is not a VPN exit and, unless the operator enabled it, it does not carry your data.",
+    notConfigured:
+      "No bundled rendezvous node is configured for this panel. Set EASYPLANE_RENDEZVOUS_ENDPOINTS on the server to show it here.",
+    endpoints: "Peer endpoints",
+    relayData: "Data relay",
+    relayOn: "Relay enabled (opt-in)",
+    relayOff: "No relay (rendezvous only)",
+    privateMode: "Private mode",
+    privateOn: "Shared secret required",
+    privateOff: "Open to any network",
+    nodeNetwork: "Node network name",
+    secretMatch: "Network secret",
+    secretMatches: "Matches the node — devices can use private mode",
+    secretDiffers: "Does not match the node — the node will refuse this network",
+    secretUnknown:
+      "Cannot be checked (EASYPLANE_RENDEZVOUS_SECRET is not set on the panel)",
+    explainRendezvous:
+      "Devices dial this node, learn each other's addresses and try a direct peer-to-peer connection. The node helps with the initial contact and NAT hole punching, but drops forwarded data by default, so traffic goes directly between devices whenever your NAT allows it.",
+    explainRelay:
+      "Devices dial this node and the node also forwards their data. This is the fallback for symmetric NAT and CGNAT, where a direct connection is impossible; it costs the operator bandwidth and exposes traffic metadata (not the end-to-end encrypted payload).",
+    cgnatNote:
+      "Behind CGNAT or a symmetric NAT a direct path may be impossible. Only then does relaying help; enabling p2p_only below makes those devices unable to connect at all.",
+    secretMismatchWarning:
+      "This network's EasyTier secret differs from the node's. The node only admits networks that can prove its secret, so devices will be rejected until the secrets match.",
+    alignSecret: "Align network secret",
+    aligned: "Network secret aligned with the rendezvous node",
+    useBundled: "Use bundled rendezvous node",
+    devicesDial: "{{count}} endpoint(s) added to every device",
+    on: "On",
+    off: "Off",
+    updated: "Network settings updated",
+    noDialTarget:
+      "No dial target: this network has no hub, no external peer URL and does not use the bundled rendezvous node. Devices can only reach each other on the same LAN or when they already know each other's addresses.",
+    p2pOnly: "p2p_only (advanced)",
+    p2pOnlyHint: "Send data only to peers with a direct connection, never through a relay.",
+    p2pOnlyWarning:
+      "With p2p_only, a device behind a symmetric NAT or CGNAT cannot exchange data at all, even when the rendezvous node relays. Use it only when every device can hole-punch.",
+    confirmTitle: "Use the bundled rendezvous node?",
+    confirmBody:
+      "Every device in this network will dial the node. The panel could not verify the network secret.",
+    confirmWarning:
+      "The bundled node is in private mode by default and only admits networks whose EasyTier secret equals the node's. If they differ, devices are refused (the node log says “private mode is turned on, foreign network secret mismatch”). Enabling the toggle also pushes secure mode to devices, which the node's secret proof requires.",
+    confirm: "Enable anyway",
+  },
   routes: {
     title: "Subnet and exit-node routes",
     description: "Requests stay pending until an admin approves them; only approved routes are pushed.",
