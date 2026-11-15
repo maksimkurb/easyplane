@@ -36,10 +36,10 @@ heartbeat sample.
 
 | clients | transport | secure | connect | enroll | approve | converge | pushes | heartbeat p50 / p95 / p99 / max | failures | RSS delta | server CPU |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 200 | ws | Noise | 1.7 s (121/s) | 1.7 s | 5.9 s | 0.27 s | 200 | 12 / 63 / 301 / 579 ms | 0 | +32 MB (0.16/client) | 5.1 s |
-| 300 | ws | Noise | 2.3 s (129/s) | 2.4 s | 11.4 s | 0.26 s | 300 | 67 / 169 / 586 / 1241 ms | 0 | +64 MB (0.21/client) | 9.8 s |
+| 200 | ws | Noise | 1.7 s (115/s) | 1.8 s | 5.9 s | 0.26 s | 200 | 7 / 41 / 407 / 636 ms | 0 | +12 MB (0.06/client) | 4.5 s |
+| 300 | ws | Noise | 2.4 s (127/s) | 2.4 s | 8.7 s | 0.26 s | 300 | 7 / 42 / 588 / 912 ms | 0 | +59 MB (0.20/client) | 8.0 s |
 | 500 | ws | Noise | 4.2 s (119/s) | 4.4 s | 20.1 s | 0.27 s | 500 | 16 / 492 / 1691 / 1980 ms | 0 | +87 MB (0.17/client) | 20.4 s |
-| 200 | udp | Noise | 1.7 s (115/s) | 1.7 s | 7.3 s | 0.26 s | 200 | 125 / 167 / 172 / 179 ms | 0 | −4 MB (flat) | 5.6 s |
+| 200 | udp | Noise | 1.8 s (113/s) | 1.8 s | 6.6 s | 0.26 s | 200 | 44 / 147 / 151 / 153 ms | 0 | flat (GC) | 4.9 s |
 
 Interpretation:
 
