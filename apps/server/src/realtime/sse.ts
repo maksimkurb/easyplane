@@ -73,8 +73,6 @@ export function registerEventRoutes(
       // Every role may read; the check runs before the stream is opened.
       const auth = requireRole(request, ["admin", "member", "viewer"]);
 
-      reply.hijack();
-
       const write = (event: RealtimeEvent): void => {
         if (reply.raw.destroyed || reply.raw.writableEnded) return;
         if (reply.raw.writableLength > SSE_MAX_BUFFERED_BYTES) {
@@ -108,15 +106,16 @@ export function registerEventRoutes(
         );
       } catch (error) {
         if (error instanceof RealtimeLimitError) {
-          reply.raw.writeHead(429, { "content-type": "application/json" });
-          reply.raw.end(
-            JSON.stringify({ error: error.message, code: error.code }),
-          );
-          return reply;
+          return reply
+            .code(error.statusCode)
+            .send({ error: error.message, code: error.code });
         }
         throw error;
       }
 
+      // From here on the response is a raw event stream; Fastify must not try
+      // to serialise or close it.
+      reply.hijack();
       reply.raw.writeHead(200, sseHeaders());
 
       // Base reconnect hint for the browser; the client also applies its own

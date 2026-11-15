@@ -814,7 +814,10 @@ function mergeLink(
   } else if (!existing.asymmetric) {
     if (existing.kind === "relayed" && evidence.kind === "relayed") {
       // Prefer the view with the shorter path (and a named relay).
-      if (
+      if (existing.via === null && evidence.via !== null) {
+        existing.via = evidence.via;
+        existing.viaHostname = nodes.get(evidence.via)?.hostname ?? null;
+      } else if (
         existing.cost !== null &&
         evidence.cost !== null &&
         evidence.cost < existing.cost
