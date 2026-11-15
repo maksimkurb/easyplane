@@ -1,0 +1,131 @@
+# Releases: tag + GitHub release + versioned ghcr.io image.
+#
+#   * workflow_dispatch: bumps the latest vX.Y.Z tag (or takes an explicit
+#     version), requires a green `ci` run on the dispatched commit, creates the
+#     annotated tag, publishes the release with generated notes and pushes the
+#     image (X.Y.Z, X.Y, X, latest, sha-<short>).
+#   * push of a v* tag: publishes the image for that tag only. Useful to
+#     rebuild an image for an existing release.
+#
+# Everything uses the built-in GITHUB_TOKEN; no extra secrets are required.
+# Note that a tag pushed with GITHUB_TOKEN does not trigger further workflow
+# runs, which is why the dispatch path publishes the image itself instead of
+# relying on the tag push.
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version component to bump (ignored when version is set)
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+      version:
+        description: Explicit version X.Y.Z (optional, overrides bump)
+        type: string
+        required: false
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: CI green
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Require a successful ci run on this commit
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: scripts/check-ci.sh "$SHA"
+
+  prepare:
+    name: Version and tag
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Resolve the version
+        id: version
+        env:
+          EVENT: ${{ github.event_name }}
+          TAG_REF: ${{ github.ref_name }}
+          BUMP: ${{ inputs.bump }}
+          REQUESTED: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "push" ]; then
+            version="$(scripts/next-version.sh --tag "$TAG_REF")"
+          else
+            version="$(scripts/next-version.sh --bump "$BUMP" --version "$REQUESTED")"
+            if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+              existing="$(git rev-parse "refs/tags/v$version^{commit}")"
+              if [ "$existing" != "$GITHUB_SHA" ]; then
+                echo "error: v$version is already tagged on $existing; pick another version" >&2
+                exit 1
+              fi
+              echo "v$version already exists on this commit; reusing it"
+            fi
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          echo "resolved v$version"
+
+      - name: Create the tag and the GitHub release
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            echo "tag v$VERSION already exists on this commit"
+          else
+            git tag -a "v$VERSION" -m "EasyPlane v$VERSION"
+            git push origin "refs/tags/v$VERSION"
+          fi
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "release v$VERSION already exists; leaving it unchanged"
+          else
+            gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" \
+              --title "EasyPlane v$VERSION" --generate-notes
+          fi
+
+  image:
+    name: Publish image
+    needs: prepare
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_image.yml
+    with:
+      kind: release
+      version: ${{ needs.prepare.outputs.version }}
+      sha: ${{ github.sha }}
+      push: true
