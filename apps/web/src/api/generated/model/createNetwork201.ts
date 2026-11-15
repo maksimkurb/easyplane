@@ -3,7 +3,7 @@
  * Do not edit manually.
  * EasyPlane API
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
- * OpenAPI spec version: 0.2.0-M2
+ * OpenAPI spec version: 0.3.0-M3
  */
 import type { CreateNetwork201DefaultConfig } from './createNetwork201DefaultConfig';
 import type { CreateNetwork201DeviceCounts } from './createNetwork201DeviceCounts';

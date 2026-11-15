@@ -3,7 +3,7 @@
  * Do not edit manually.
  * EasyPlane API
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
- * OpenAPI spec version: 0.2.0-M2
+ * OpenAPI spec version: 0.3.0-M3
  */
 
 export * from './approveDevice200';
@@ -68,6 +68,23 @@ export * from './getDevice200Os';
 export * from './getDevice200ReportedState';
 export * from './getDevice200State';
 export * from './getDevice200Sync';
+export * from './getDeviceTopology200';
+export * from './getDeviceTopology200LinksItem';
+export * from './getDeviceTopology200LinksItemDirection';
+export * from './getDeviceTopology200LinksItemEvidenceItem';
+export * from './getDeviceTopology200LinksItemEvidenceItemDirection';
+export * from './getDeviceTopology200LinksItemEvidenceItemKind';
+export * from './getDeviceTopology200LinksItemEvidenceItemProtocol';
+export * from './getDeviceTopology200LinksItemKind';
+export * from './getDeviceTopology200LinksItemProtocol';
+export * from './getDeviceTopology200Node';
+export * from './getDeviceTopology200NodeFeatureFlags';
+export * from './getDeviceTopology200Observation';
+export * from './getDeviceTopology200ObservationPeersItem';
+export * from './getDeviceTopology200ObservationPeersItemProtocol';
+export * from './getDeviceTopology200ObservationRoutesItem';
+export * from './getDeviceTopologyParams';
+export * from './getDeviceTopologyRefresh';
 export * from './getMe200';
 export * from './getMe200Organisation';
 export * from './getMe200ProvidersItem';
@@ -80,6 +97,24 @@ export * from './getNetworkPolicy200';
 export * from './getNetworkPolicy200Policy';
 export * from './getNetworkPolicy200PolicyDocument';
 export * from './getNetworkPolicy200PolicySummary';
+export * from './getNetworkTopology200';
+export * from './getNetworkTopology200LinksItem';
+export * from './getNetworkTopology200LinksItemDirection';
+export * from './getNetworkTopology200LinksItemEvidenceItem';
+export * from './getNetworkTopology200LinksItemEvidenceItemDirection';
+export * from './getNetworkTopology200LinksItemEvidenceItemKind';
+export * from './getNetworkTopology200LinksItemEvidenceItemProtocol';
+export * from './getNetworkTopology200LinksItemKind';
+export * from './getNetworkTopology200LinksItemProtocol';
+export * from './getNetworkTopology200NodesItem';
+export * from './getNetworkTopology200NodesItemFeatureFlags';
+export * from './getNetworkTopology200ObservationsItem';
+export * from './getNetworkTopology200ObservationsItemPeersItem';
+export * from './getNetworkTopology200ObservationsItemPeersItemProtocol';
+export * from './getNetworkTopology200ObservationsItemRoutesItem';
+export * from './getNetworkTopology200Stats';
+export * from './getNetworkTopologyParams';
+export * from './getNetworkTopologyRefresh';
 export * from './getOrganisation200';
 export * from './health200';
 export * from './health200Database';

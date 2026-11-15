@@ -3,7 +3,7 @@
  * Do not edit manually.
  * EasyPlane API
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
- * OpenAPI spec version: 0.2.0-M2
+ * OpenAPI spec version: 0.3.0-M3
  */
 import {
   useMutation,
@@ -48,9 +48,13 @@ import type {
   FinishOidcLoginParams,
   GetAppConfig200,
   GetDevice200,
+  GetDeviceTopology200,
+  GetDeviceTopologyParams,
   GetMe200,
   GetNetwork200,
   GetNetworkPolicy200,
+  GetNetworkTopology200,
+  GetNetworkTopologyParams,
   GetOrganisation200,
   Health200,
   Health503,
@@ -4663,6 +4667,248 @@ export function useListAuditLog<TData = Awaited<ReturnType<typeof listAuditLog>>
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListAuditLogQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getNetworkTopologyResponse200 = {
+  data: GetNetworkTopology200
+  status: 200
+}
+
+export type getNetworkTopologyResponseSuccess = (getNetworkTopologyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getNetworkTopologyResponse = (getNetworkTopologyResponseSuccess)
+
+export const getGetNetworkTopologyUrl = (networkId: string,
+    params?: GetNetworkTopologyParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/networks/${networkId}/topology?${stringifiedParams}` : `/api/networks/${networkId}/topology`
+}
+
+export const getNetworkTopology = async (networkId: string,
+    params?: GetNetworkTopologyParams, options?: Parameters<typeof apiFetch>[1]): Promise<getNetworkTopologyResponse> => {
+
+  return apiFetch<getNetworkTopologyResponse>(getGetNetworkTopologyUrl(networkId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNetworkTopologyQueryKey = (networkId: string,
+    params?: GetNetworkTopologyParams,) => {
+    return [
+    `/api/networks/${networkId}/topology`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetNetworkTopologyQueryOptions = <TData = Awaited<ReturnType<typeof getNetworkTopology>>, TError = unknown>(networkId: string,
+    params?: GetNetworkTopologyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNetworkTopology>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNetworkTopologyQueryKey(networkId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNetworkTopology>>> = ({ signal }) => getNetworkTopology(networkId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: networkId !== null && networkId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNetworkTopology>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetNetworkTopologyQueryResult = NonNullable<Awaited<ReturnType<typeof getNetworkTopology>>>
+export type GetNetworkTopologyQueryError = unknown
+
+
+export function useGetNetworkTopology<TData = Awaited<ReturnType<typeof getNetworkTopology>>, TError = unknown>(
+ networkId: string,
+    params: undefined |  GetNetworkTopologyParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNetworkTopology>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getNetworkTopology>>,
+          TError,
+          Awaited<ReturnType<typeof getNetworkTopology>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetNetworkTopology<TData = Awaited<ReturnType<typeof getNetworkTopology>>, TError = unknown>(
+ networkId: string,
+    params?: GetNetworkTopologyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNetworkTopology>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getNetworkTopology>>,
+          TError,
+          Awaited<ReturnType<typeof getNetworkTopology>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetNetworkTopology<TData = Awaited<ReturnType<typeof getNetworkTopology>>, TError = unknown>(
+ networkId: string,
+    params?: GetNetworkTopologyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNetworkTopology>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetNetworkTopology<TData = Awaited<ReturnType<typeof getNetworkTopology>>, TError = unknown>(
+ networkId: string,
+    params?: GetNetworkTopologyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNetworkTopology>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetNetworkTopologyQueryOptions(networkId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getDeviceTopologyResponse200 = {
+  data: GetDeviceTopology200
+  status: 200
+}
+
+export type getDeviceTopologyResponseSuccess = (getDeviceTopologyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getDeviceTopologyResponse = (getDeviceTopologyResponseSuccess)
+
+export const getGetDeviceTopologyUrl = (deviceId: string,
+    params?: GetDeviceTopologyParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/devices/${deviceId}/topology?${stringifiedParams}` : `/api/devices/${deviceId}/topology`
+}
+
+export const getDeviceTopology = async (deviceId: string,
+    params?: GetDeviceTopologyParams, options?: Parameters<typeof apiFetch>[1]): Promise<getDeviceTopologyResponse> => {
+
+  return apiFetch<getDeviceTopologyResponse>(getGetDeviceTopologyUrl(deviceId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDeviceTopologyQueryKey = (deviceId: string,
+    params?: GetDeviceTopologyParams,) => {
+    return [
+    `/api/devices/${deviceId}/topology`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetDeviceTopologyQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceTopology>>, TError = unknown>(deviceId: string,
+    params?: GetDeviceTopologyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceTopology>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDeviceTopologyQueryKey(deviceId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDeviceTopology>>> = ({ signal }) => getDeviceTopology(deviceId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: deviceId !== null && deviceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceTopology>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetDeviceTopologyQueryResult = NonNullable<Awaited<ReturnType<typeof getDeviceTopology>>>
+export type GetDeviceTopologyQueryError = unknown
+
+
+export function useGetDeviceTopology<TData = Awaited<ReturnType<typeof getDeviceTopology>>, TError = unknown>(
+ deviceId: string,
+    params: undefined |  GetDeviceTopologyParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceTopology>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceTopology>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceTopology>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceTopology<TData = Awaited<ReturnType<typeof getDeviceTopology>>, TError = unknown>(
+ deviceId: string,
+    params?: GetDeviceTopologyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceTopology>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceTopology>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceTopology>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceTopology<TData = Awaited<ReturnType<typeof getDeviceTopology>>, TError = unknown>(
+ deviceId: string,
+    params?: GetDeviceTopologyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceTopology>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceTopology<TData = Awaited<ReturnType<typeof getDeviceTopology>>, TError = unknown>(
+ deviceId: string,
+    params?: GetDeviceTopologyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceTopology>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetDeviceTopologyQueryOptions(deviceId,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

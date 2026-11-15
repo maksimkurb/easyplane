@@ -7,12 +7,14 @@ import {
   NetworkIcon,
   ScrollTextIcon,
   UserCheckIcon,
+  WaypointsIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 import { useAuth } from "@/auth/auth-context"
 import { AppBrandHeader } from "@/components/layout/app-brand-header"
 import { LanguageSelector } from "@/components/language-selector"
+import { LiveStatus } from "@/components/live-status"
 import { NavMain } from "@/components/nav-main"
 import { ThemeSelector } from "@/components/theme-selector"
 import { Button } from "@/components/ui/button"
@@ -39,6 +41,11 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
       title: t("nav.items.devices"),
       url: "/devices",
       icon: MonitorSmartphoneIcon,
+    },
+    {
+      title: t("nav.items.topology"),
+      url: "/topology",
+      icon: WaypointsIcon,
     },
     {
       title: t("nav.items.pending"),
@@ -80,6 +87,7 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
               </p>
             </div>
           ) : null}
+          <LiveStatus />
           <LanguageSelector />
           <ThemeSelector />
           <Button

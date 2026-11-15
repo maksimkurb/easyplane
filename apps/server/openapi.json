@@ -3,7 +3,7 @@
   "info": {
     "title": "EasyPlane API",
     "description": "Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.",
-    "version": "0.2.0-M2"
+    "version": "0.3.0-M3"
   },
   "components": {
     "securitySchemes": {
@@ -6103,6 +6103,1443 @@
           }
         }
       }
+    },
+    "/api/networks/{networkId}/topology": {
+      "get": {
+        "operationId": "getNetworkTopology",
+        "tags": [
+          "topology"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1"
+              ]
+            },
+            "in": "query",
+            "name": "refresh",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "generation": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "collectedAt": {
+                      "type": "string"
+                    },
+                    "partial": {
+                      "type": "boolean"
+                    },
+                    "intervalMs": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "nodes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "deviceId": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          },
+                          "virtualIpv4": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "networkLength": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "version": {
+                            "type": "string"
+                          },
+                          "managed": {
+                            "type": "boolean"
+                          },
+                          "online": {
+                            "type": "boolean"
+                          },
+                          "peerId": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "natType": {
+                            "type": "string"
+                          },
+                          "tcpNatType": {
+                            "type": "string"
+                          },
+                          "natFriendly": {
+                            "type": "boolean"
+                          },
+                          "publicIps": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "listeners": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "proxyCidrs": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "featureFlags": {
+                            "type": "object",
+                            "properties": {
+                              "isPublicServer": {
+                                "type": "boolean"
+                              },
+                              "avoidRelayData": {
+                                "type": "boolean"
+                              },
+                              "disableP2p": {
+                                "type": "boolean"
+                              },
+                              "quicInput": {
+                                "type": "boolean"
+                              },
+                              "kcpInput": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "isPublicServer",
+                              "avoidRelayData",
+                              "disableP2p",
+                              "quicInput",
+                              "kcpInput"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "reachable": {
+                            "type": "boolean"
+                          },
+                          "relayCapable": {
+                            "type": "boolean"
+                          },
+                          "capabilityReasons": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "relaysFor": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "observed": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "deviceId",
+                          "hostname",
+                          "virtualIpv4",
+                          "networkLength",
+                          "version",
+                          "managed",
+                          "online",
+                          "peerId",
+                          "natType",
+                          "tcpNatType",
+                          "natFriendly",
+                          "publicIps",
+                          "listeners",
+                          "proxyCidrs",
+                          "featureFlags",
+                          "reachable",
+                          "relayCapable",
+                          "capabilityReasons",
+                          "relaysFor",
+                          "observed"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "links": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "target": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "direct",
+                              "relayed"
+                            ]
+                          },
+                          "via": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "viaHostname": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "protocol": {
+                            "type": "string",
+                            "enum": [
+                              "tcp",
+                              "udp",
+                              "ws",
+                              "wss",
+                              "quic",
+                              "wg",
+                              "other"
+                            ]
+                          },
+                          "rawTunnelType": {
+                            "type": "string"
+                          },
+                          "latencyMs": {
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "lossPercent": {
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "cost": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "pathLatencyMs": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "direction": {
+                            "type": "string",
+                            "enum": [
+                              "dialer",
+                              "acceptor",
+                              "unknown"
+                            ]
+                          },
+                          "localAddr": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "remoteAddr": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "protocolIsFirstHop": {
+                            "type": "boolean"
+                          },
+                          "asymmetric": {
+                            "type": "boolean"
+                          },
+                          "observedBy": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "evidence": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "observedBy": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "direct",
+                                    "relayed"
+                                  ]
+                                },
+                                "via": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "protocol": {
+                                  "type": "string",
+                                  "enum": [
+                                    "tcp",
+                                    "udp",
+                                    "ws",
+                                    "wss",
+                                    "quic",
+                                    "wg",
+                                    "other"
+                                  ]
+                                },
+                                "rawTunnelType": {
+                                  "type": "string"
+                                },
+                                "latencyMs": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "lossPercent": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "cost": {
+                                  "nullable": true,
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "pathLatencyMs": {
+                                  "nullable": true,
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "direction": {
+                                  "type": "string",
+                                  "enum": [
+                                    "dialer",
+                                    "acceptor",
+                                    "unknown"
+                                  ]
+                                },
+                                "localAddr": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "remoteAddr": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "rxBytes": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "txBytes": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "protocolIsFirstHop": {
+                                  "type": "boolean"
+                                },
+                                "peerId": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "observedBy",
+                                "kind",
+                                "via",
+                                "protocol",
+                                "rawTunnelType",
+                                "latencyMs",
+                                "lossPercent",
+                                "cost",
+                                "pathLatencyMs",
+                                "direction",
+                                "localAddr",
+                                "remoteAddr",
+                                "rxBytes",
+                                "txBytes",
+                                "protocolIsFirstHop",
+                                "peerId"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "source",
+                          "target",
+                          "kind",
+                          "via",
+                          "viaHostname",
+                          "protocol",
+                          "rawTunnelType",
+                          "latencyMs",
+                          "lossPercent",
+                          "cost",
+                          "pathLatencyMs",
+                          "direction",
+                          "localAddr",
+                          "remoteAddr",
+                          "protocolIsFirstHop",
+                          "asymmetric",
+                          "observedBy",
+                          "evidence"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "observations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "deviceId": {
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          },
+                          "online": {
+                            "type": "boolean"
+                          },
+                          "collectedAt": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "error": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "peerId": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "virtualIpv4": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "string"
+                          },
+                          "natType": {
+                            "type": "string"
+                          },
+                          "tcpNatType": {
+                            "type": "string"
+                          },
+                          "publicIps": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "listeners": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "events": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "peers": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "peerId": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "connId": {
+                                  "type": "string"
+                                },
+                                "protocol": {
+                                  "type": "string",
+                                  "enum": [
+                                    "tcp",
+                                    "udp",
+                                    "ws",
+                                    "wss",
+                                    "quic",
+                                    "wg",
+                                    "other"
+                                  ]
+                                },
+                                "rawTunnelType": {
+                                  "type": "string"
+                                },
+                                "localAddr": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "remoteAddr": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "latencyMs": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "lossPercent": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "rxBytes": {
+                                  "type": "string"
+                                },
+                                "txBytes": {
+                                  "type": "string"
+                                },
+                                "rxPackets": {
+                                  "type": "string"
+                                },
+                                "txPackets": {
+                                  "type": "string"
+                                },
+                                "isClient": {
+                                  "type": "boolean"
+                                },
+                                "isClosed": {
+                                  "type": "boolean"
+                                },
+                                "direct": {
+                                  "type": "boolean"
+                                },
+                                "networkName": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "peerId",
+                                "connId",
+                                "protocol",
+                                "rawTunnelType",
+                                "localAddr",
+                                "remoteAddr",
+                                "latencyMs",
+                                "lossPercent",
+                                "rxBytes",
+                                "txBytes",
+                                "rxPackets",
+                                "txPackets",
+                                "isClient",
+                                "isClosed",
+                                "direct",
+                                "networkName"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "routes": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "peerId": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "virtualIpv4": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "hostname": {
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "type": "string"
+                                },
+                                "cost": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "pathLatencyMs": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "nextHopPeerId": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "nextHopHostname": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "proxyCidrs": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "natType": {
+                                  "type": "string"
+                                },
+                                "tcpNatType": {
+                                  "type": "string"
+                                },
+                                "isPublicServer": {
+                                  "type": "boolean"
+                                },
+                                "avoidRelayData": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "peerId",
+                                "virtualIpv4",
+                                "hostname",
+                                "version",
+                                "cost",
+                                "pathLatencyMs",
+                                "nextHopPeerId",
+                                "nextHopHostname",
+                                "proxyCidrs",
+                                "natType",
+                                "tcpNatType",
+                                "isPublicServer",
+                                "avoidRelayData"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "deviceId",
+                          "hostname",
+                          "online",
+                          "collectedAt",
+                          "error",
+                          "peerId",
+                          "virtualIpv4",
+                          "version",
+                          "natType",
+                          "tcpNatType",
+                          "publicIps",
+                          "listeners",
+                          "events",
+                          "peers",
+                          "routes"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "stats": {
+                      "type": "object",
+                      "properties": {
+                        "nodes": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "managedNodes": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "links": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "directLinks": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "relayedLinks": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "reachableNodes": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "relayCapableNodes": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "hasReachableNode": {
+                          "type": "boolean"
+                        },
+                        "observations": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "failedObservations": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "nodes",
+                        "managedNodes",
+                        "links",
+                        "directLinks",
+                        "relayedLinks",
+                        "reachableNodes",
+                        "relayCapableNodes",
+                        "hasReachableNode",
+                        "observations",
+                        "failedObservations"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "networkId",
+                    "generation",
+                    "collectedAt",
+                    "partial",
+                    "intervalMs",
+                    "nodes",
+                    "links",
+                    "observations",
+                    "stats"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{deviceId}/topology": {
+      "get": {
+        "operationId": "getDeviceTopology",
+        "tags": [
+          "topology"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1"
+              ]
+            },
+            "in": "query",
+            "name": "refresh",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deviceId": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "collectedAt": {
+                      "type": "string"
+                    },
+                    "generation": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "node": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "deviceId": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "hostname": {
+                          "type": "string"
+                        },
+                        "virtualIpv4": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "networkLength": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "managed": {
+                          "type": "boolean"
+                        },
+                        "online": {
+                          "type": "boolean"
+                        },
+                        "peerId": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "natType": {
+                          "type": "string"
+                        },
+                        "tcpNatType": {
+                          "type": "string"
+                        },
+                        "natFriendly": {
+                          "type": "boolean"
+                        },
+                        "publicIps": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "listeners": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "proxyCidrs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "featureFlags": {
+                          "type": "object",
+                          "properties": {
+                            "isPublicServer": {
+                              "type": "boolean"
+                            },
+                            "avoidRelayData": {
+                              "type": "boolean"
+                            },
+                            "disableP2p": {
+                              "type": "boolean"
+                            },
+                            "quicInput": {
+                              "type": "boolean"
+                            },
+                            "kcpInput": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "isPublicServer",
+                            "avoidRelayData",
+                            "disableP2p",
+                            "quicInput",
+                            "kcpInput"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "reachable": {
+                          "type": "boolean"
+                        },
+                        "relayCapable": {
+                          "type": "boolean"
+                        },
+                        "capabilityReasons": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "relaysFor": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "observed": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "deviceId",
+                        "hostname",
+                        "virtualIpv4",
+                        "networkLength",
+                        "version",
+                        "managed",
+                        "online",
+                        "peerId",
+                        "natType",
+                        "tcpNatType",
+                        "natFriendly",
+                        "publicIps",
+                        "listeners",
+                        "proxyCidrs",
+                        "featureFlags",
+                        "reachable",
+                        "relayCapable",
+                        "capabilityReasons",
+                        "relaysFor",
+                        "observed"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "observation": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "deviceId": {
+                          "type": "string"
+                        },
+                        "hostname": {
+                          "type": "string"
+                        },
+                        "online": {
+                          "type": "boolean"
+                        },
+                        "collectedAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "error": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "peerId": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "virtualIpv4": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "natType": {
+                          "type": "string"
+                        },
+                        "tcpNatType": {
+                          "type": "string"
+                        },
+                        "publicIps": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "listeners": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "events": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "peers": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "peerId": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "connId": {
+                                "type": "string"
+                              },
+                              "protocol": {
+                                "type": "string",
+                                "enum": [
+                                  "tcp",
+                                  "udp",
+                                  "ws",
+                                  "wss",
+                                  "quic",
+                                  "wg",
+                                  "other"
+                                ]
+                              },
+                              "rawTunnelType": {
+                                "type": "string"
+                              },
+                              "localAddr": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "remoteAddr": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "latencyMs": {
+                                "nullable": true,
+                                "type": "number"
+                              },
+                              "lossPercent": {
+                                "nullable": true,
+                                "type": "number"
+                              },
+                              "rxBytes": {
+                                "type": "string"
+                              },
+                              "txBytes": {
+                                "type": "string"
+                              },
+                              "rxPackets": {
+                                "type": "string"
+                              },
+                              "txPackets": {
+                                "type": "string"
+                              },
+                              "isClient": {
+                                "type": "boolean"
+                              },
+                              "isClosed": {
+                                "type": "boolean"
+                              },
+                              "direct": {
+                                "type": "boolean"
+                              },
+                              "networkName": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "peerId",
+                              "connId",
+                              "protocol",
+                              "rawTunnelType",
+                              "localAddr",
+                              "remoteAddr",
+                              "latencyMs",
+                              "lossPercent",
+                              "rxBytes",
+                              "txBytes",
+                              "rxPackets",
+                              "txPackets",
+                              "isClient",
+                              "isClosed",
+                              "direct",
+                              "networkName"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "routes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "peerId": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "virtualIpv4": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "hostname": {
+                                "type": "string"
+                              },
+                              "version": {
+                                "type": "string"
+                              },
+                              "cost": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "pathLatencyMs": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "nextHopPeerId": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "nextHopHostname": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "proxyCidrs": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "natType": {
+                                "type": "string"
+                              },
+                              "tcpNatType": {
+                                "type": "string"
+                              },
+                              "isPublicServer": {
+                                "type": "boolean"
+                              },
+                              "avoidRelayData": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "peerId",
+                              "virtualIpv4",
+                              "hostname",
+                              "version",
+                              "cost",
+                              "pathLatencyMs",
+                              "nextHopPeerId",
+                              "nextHopHostname",
+                              "proxyCidrs",
+                              "natType",
+                              "tcpNatType",
+                              "isPublicServer",
+                              "avoidRelayData"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "deviceId",
+                        "hostname",
+                        "online",
+                        "collectedAt",
+                        "error",
+                        "peerId",
+                        "virtualIpv4",
+                        "version",
+                        "natType",
+                        "tcpNatType",
+                        "publicIps",
+                        "listeners",
+                        "events",
+                        "peers",
+                        "routes"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "links": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "target": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "direct",
+                              "relayed"
+                            ]
+                          },
+                          "via": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "viaHostname": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "protocol": {
+                            "type": "string",
+                            "enum": [
+                              "tcp",
+                              "udp",
+                              "ws",
+                              "wss",
+                              "quic",
+                              "wg",
+                              "other"
+                            ]
+                          },
+                          "rawTunnelType": {
+                            "type": "string"
+                          },
+                          "latencyMs": {
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "lossPercent": {
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "cost": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "pathLatencyMs": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "direction": {
+                            "type": "string",
+                            "enum": [
+                              "dialer",
+                              "acceptor",
+                              "unknown"
+                            ]
+                          },
+                          "localAddr": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "remoteAddr": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "protocolIsFirstHop": {
+                            "type": "boolean"
+                          },
+                          "asymmetric": {
+                            "type": "boolean"
+                          },
+                          "observedBy": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "evidence": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "observedBy": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "direct",
+                                    "relayed"
+                                  ]
+                                },
+                                "via": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "protocol": {
+                                  "type": "string",
+                                  "enum": [
+                                    "tcp",
+                                    "udp",
+                                    "ws",
+                                    "wss",
+                                    "quic",
+                                    "wg",
+                                    "other"
+                                  ]
+                                },
+                                "rawTunnelType": {
+                                  "type": "string"
+                                },
+                                "latencyMs": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "lossPercent": {
+                                  "nullable": true,
+                                  "type": "number"
+                                },
+                                "cost": {
+                                  "nullable": true,
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "pathLatencyMs": {
+                                  "nullable": true,
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "direction": {
+                                  "type": "string",
+                                  "enum": [
+                                    "dialer",
+                                    "acceptor",
+                                    "unknown"
+                                  ]
+                                },
+                                "localAddr": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "remoteAddr": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "rxBytes": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "txBytes": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "protocolIsFirstHop": {
+                                  "type": "boolean"
+                                },
+                                "peerId": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "observedBy",
+                                "kind",
+                                "via",
+                                "protocol",
+                                "rawTunnelType",
+                                "latencyMs",
+                                "lossPercent",
+                                "cost",
+                                "pathLatencyMs",
+                                "direction",
+                                "localAddr",
+                                "remoteAddr",
+                                "rxBytes",
+                                "txBytes",
+                                "protocolIsFirstHop",
+                                "peerId"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "source",
+                          "target",
+                          "kind",
+                          "via",
+                          "viaHostname",
+                          "protocol",
+                          "rawTunnelType",
+                          "latencyMs",
+                          "lossPercent",
+                          "cost",
+                          "pathLatencyMs",
+                          "direction",
+                          "localAddr",
+                          "remoteAddr",
+                          "protocolIsFirstHop",
+                          "asymmetric",
+                          "observedBy",
+                          "evidence"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "deviceId",
+                    "networkId",
+                    "collectedAt",
+                    "generation",
+                    "node",
+                    "observation",
+                    "links"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "servers": [
@@ -6148,6 +7585,9 @@
     },
     {
       "name": "users"
+    },
+    {
+      "name": "topology"
     }
   ]
 }

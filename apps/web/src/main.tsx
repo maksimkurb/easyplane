@@ -6,6 +6,7 @@ import "./index.css"
 import "./i18n"
 import { AuthenticatedRoot } from "./App"
 import { AuthProvider } from "@/auth/auth-context"
+import { RealtimeProvider } from "@/realtime/realtime-provider"
 import { LanguageProvider } from "@/components/language-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
@@ -38,7 +39,9 @@ createRoot(document.getElementById("root")!).render(
         <LanguageProvider>
           <ThemeProvider>
             <AuthProvider>
-              <AuthenticatedRoot />
+              <RealtimeProvider>
+                <AuthenticatedRoot />
+              </RealtimeProvider>
             </AuthProvider>
             <Toaster />
           </ThemeProvider>

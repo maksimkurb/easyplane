@@ -9,6 +9,7 @@ import {
   PlusIcon,
   ShieldIcon,
   Trash2Icon,
+  WaypointsIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -111,6 +112,12 @@ export function NetworkDetailPage() {
       <PageHeader
         actions={
           <div className="flex flex-wrap gap-2">
+            <Link href={`/topology?network=${network.id}`}>
+              <Button variant="outline">
+                <WaypointsIcon className="size-4" />
+                {t("topology.title")}
+              </Button>
+            </Link>
             {isAdmin ? (
               <Button
                 disabled={revealSecret.isPending}
