@@ -61,10 +61,10 @@ elif command -v ld.lld >/dev/null 2>&1; then
 else
   LINKER_FLAG="-C link-arg=-fuse-ld=bfd"
 fi
+command -v protoc >/dev/null || { echo "error: protoc is required to build easytier-core (apt install protobuf-compiler)" >&2; exit 1; }
 
 CARGO_TARGET_DIR="${EASYTIER_CARGO_TARGET_DIR:-$SCRATCH_DIR/target}" \
   RUSTFLAGS="$LINKER_FLAG" \
-  command -v protoc >/dev/null || { echo "error: protoc is required to build easytier-core (apt install protobuf-compiler)" >&2; exit 1; }
   cargo build --release --manifest-path "$REPO/Cargo.toml" -p easytier --bin easytier-core
 
 BIN="${EASYTIER_CARGO_TARGET_DIR:-$SCRATCH_DIR/target}/release/easytier-core"
