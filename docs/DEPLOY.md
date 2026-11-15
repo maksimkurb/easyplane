@@ -370,7 +370,8 @@ token; deleting a device does the same and removes its history.
 
 ## 4c. Importing an existing network
 
-**Networks → Import network** (admin) accepts three sources and always shows a
+**Networks → Import network** (admin) opens the dedicated
+`/networks/import` page and accepts three sources; the page always shows a
 preview + diff before saving:
 
 1. **TOML**: paste or upload the file used by `easytier-core -c`. The network

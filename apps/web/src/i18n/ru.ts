@@ -13,6 +13,7 @@ export const ruTranslation: Translation = {
     },
     items: {
       networks: "Сети",
+      importNetwork: "Импорт сети",
       devices: "Устройства",
       pending: "Ожидают одобрения",
       topology: "Топология",
@@ -105,8 +106,19 @@ export const ruTranslation: Translation = {
     import: {
       open: "Импорт сети",
       title: "Импорт сети",
+      back: "Назад к сетям",
       description:
         "Перенесите существующую сеть EasyTier в EasyPlane из TOML, по ссылке comp_cfg или из конфигурации подключённого устройства. Секрет сети сохраняется и не передаётся в этот браузер; перед сохранением проверьте различия.",
+      sourceTitle: "Источник",
+      sourceDescription:
+        "Выберите, откуда взять описание сети, и постройте предпросмотр.",
+      previewTitle: "Предпросмотр",
+      previewDescription:
+        "Разобранная сеть, предупреждения и различия с существующей сетью.",
+      previewEmptyTitle: "Пока нечего показывать",
+      previewEmptyHint:
+        "Выберите источник слева и нажмите «Предпросмотр импорта». Ничего не сохраняется, пока вы не создадите сеть.",
+      reset: "Начать заново",
       tabs: {
         toml: "TOML-конфигурация",
         shareLink: "Ссылка",
@@ -121,7 +133,9 @@ export const ruTranslation: Translation = {
         "Ссылка https://<host>/comp_cfg?cfg=… (zlib + base64url от NetworkConfig EasyTier, как в GUI EasyTier).",
       deviceLabel: "Подключённое устройство",
       devicePlaceholder: "Выберите устройство в сети",
-      noDevices: "Нет устройств онлайн. Чтобы прочитать работающую конфигурацию, устройство должно быть подключено.",
+      noDevices:
+        "Нет подключённых устройств; чтобы прочитать работающую конфигурацию, устройство должно быть онлайн и одобрено.",
+      openDevices: "Открыть устройства",
       deviceHint:
         "Читает GetNetworkInstanceConfig с устройства. Секрет сохраняется; идентификатор экземпляра и hostname заменяются для каждого устройства.",
       instanceLabel: "Экземпляр",
@@ -129,6 +143,8 @@ export const ruTranslation: Translation = {
       instanceManaged: "управляется EasyPlane",
       compareLabel: "Сравнить с (необязательно)",
       compareNone: "Без сравнения",
+      compareHint:
+        "Показывает, какие поля отличаются от существующей сети. Импортированные значения не применяются автоматически.",
       preview: "Предпросмотр импорта",
       previewAgain: "Обновить предпросмотр",
       commit: "Создать сеть",
@@ -291,7 +307,11 @@ export const ruTranslation: Translation = {
       "Проверка идёт по документу в редакторе (сохранённому или нет). Устройства должны быть одобрены.",
     port: "Порт",
     chooseSource: "Выберите источник",
+    noSourceDevices:
+      "В этой сети пока нет одобренных устройств; устройство нужно одобрить, прежде чем проверять политику.",
     chooseDestination: "Выберите назначение или подсеть",
+    noDestinationOptions:
+      "Пока нет одобренных устройств или подсетей; сначала одобрите устройство или добавьте маршрут.",
     subnetRoute: "Подсеть {{cidr}}",
     runTest: "Проверить",
     allowed: "Разрешено",
@@ -376,6 +396,7 @@ export const ruTranslation: Translation = {
   topology: {
     title: "Топология",
     description: "Живая карта связности: прямые соединения, пути через ретранслятор и узел, который ретранслирует.",
+    noNetworks: "Сетей пока нет; создайте сеть, чтобы посмотреть её топологию.",
     managed: "Управляемый",
     unmanaged: "Неуправляемый",
     direct: "Прямое",

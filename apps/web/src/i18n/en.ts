@@ -11,6 +11,7 @@ export const enTranslation = {
     },
     items: {
       networks: "Networks",
+      importNetwork: "Import network",
       devices: "Devices",
       pending: "Pending approvals",
       topology: "Topology",
@@ -103,8 +104,19 @@ export const enTranslation = {
     import: {
       open: "Import network",
       title: "Import a network",
+      back: "Back to networks",
       description:
         "Bring an existing EasyTier network into EasyPlane from TOML, a comp_cfg share link, or the config a connected device is running. The network secret is preserved and never sent to this browser; review the diff before saving.",
+      sourceTitle: "Source",
+      sourceDescription:
+        "Choose where the network definition comes from, then build a preview.",
+      previewTitle: "Preview",
+      previewDescription:
+        "Parsed network, warnings and the diff against an existing network.",
+      previewEmptyTitle: "Nothing to preview yet",
+      previewEmptyHint:
+        "Pick a source on the left and choose “Preview import”. Nothing is saved until you create the network.",
+      reset: "Start over",
       tabs: {
         toml: "TOML config",
         shareLink: "Share link",
@@ -119,7 +131,9 @@ export const enTranslation = {
         "A https://<host>/comp_cfg?cfg=… link (zlib + base64url of the EasyTier NetworkConfig, as produced by the EasyTier GUI).",
       deviceLabel: "Connected device",
       devicePlaceholder: "Choose an online device",
-      noDevices: "No online devices. A device must be connected to read its running config.",
+      noDevices:
+        "No connected devices; the device must be online and approved to read its running config.",
+      openDevices: "Open devices",
       deviceHint:
         "Reads GetNetworkInstanceConfig from the device. The secret is preserved; the instance id and hostname are replaced per device.",
       instanceLabel: "Instance",
@@ -127,6 +141,8 @@ export const enTranslation = {
       instanceManaged: "managed by EasyPlane",
       compareLabel: "Compare with (optional)",
       compareNone: "Do not compare",
+      compareHint:
+        "Shows which fields differ from an existing network. The imported values are never applied automatically.",
       preview: "Preview import",
       previewAgain: "Preview again",
       commit: "Create network",
@@ -289,7 +305,11 @@ export const enTranslation = {
       "This preview runs against the document currently in the editor (saved or not). Devices must be approved.",
     port: "Port",
     chooseSource: "Choose source",
+    noSourceDevices:
+      "No approved devices in this network yet; a device must be approved before it can be tested.",
     chooseDestination: "Choose destination or subnet",
+    noDestinationOptions:
+      "No approved devices or subnet routes yet; approve a device or add a route first.",
     subnetRoute: "Subnet {{cidr}}",
     runTest: "Run test",
     allowed: "Allowed",
@@ -374,6 +394,7 @@ export const enTranslation = {
   topology: {
     title: "Topology",
     description: "Live connectivity map: direct peer links, relayed paths and the node that relays them.",
+    noNetworks: "No networks yet; create one to inspect its topology.",
     managed: "Managed",
     unmanaged: "Unmanaged",
     direct: "Direct",

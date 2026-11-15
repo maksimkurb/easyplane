@@ -13,7 +13,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { useSidebar } from "@/components/ui/sidebar-context"
-import { matchesNavHref } from "@/lib/nav-active"
+import { findActiveNavHref } from "@/lib/nav-active"
 
 export function NavMain({
   items,
@@ -30,6 +30,10 @@ export function NavMain({
 }) {
   const [location, navigate] = useLocation()
   const { isMobile, setOpenMobile } = useSidebar()
+  const hrefs = items.flatMap(
+    (item) => item.items?.map((subItem) => subItem.url) ?? []
+  )
+  const activeHref = findActiveNavHref(location, hrefs)
 
   return (
     <SidebarGroup>
@@ -48,7 +52,7 @@ export function NavMain({
                 {hasChildren ? (
                   <SidebarMenuSub className="mr-0 ml-4 pr-1">
                     {item.items?.map((subItem) => {
-                      const navActive = matchesNavHref(location, subItem.url)
+                      const navActive = subItem.url === activeHref
 
                       return (
                         <SidebarMenuSubItem key={subItem.title}>

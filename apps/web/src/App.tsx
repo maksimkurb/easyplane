@@ -8,6 +8,7 @@ import { AuditPage } from "@/pages/audit-page"
 import { DeviceDetailPage } from "@/pages/device-detail-page"
 import { DevicesPage } from "@/pages/devices-page"
 import { NetworkDetailPage } from "@/pages/network-detail-page"
+import { NetworkImportPage } from "@/pages/network-import-page"
 import { NetworksPage } from "@/pages/networks-page"
 import { PolicyPage } from "@/pages/policy-page"
 import { useTranslation } from "react-i18next"
@@ -27,6 +28,7 @@ function App() {
           <Redirect to="/networks" />
         </Route>
         <Route component={NetworksPage} path="/networks" />
+        <Route component={NetworkImportPage} path="/networks/import" />
         <Route component={NetworkDetailPage} path="/networks/:id" />
         <Route component={PolicyPage} path="/networks/:id/policy" />
         <Route component={TopologyPage} path="/topology" />

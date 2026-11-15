@@ -179,7 +179,8 @@ bypass; `returnTo` is restricted to same-origin paths.
 
 ## Importing networks (M4)
 
-**Networks → Import network** accepts:
+**Networks → Import network** (a dedicated page at `/networks/import`)
+accepts:
 
 - **EasyTier TOML** (paste or upload) — the same file `easytier-core -c` reads;
 - **share link** — `https://…/comp_cfg?cfg=…` from the EasyTier GUI;
@@ -289,7 +290,7 @@ bun run typecheck            # server + test sources + web
 bun run lint                 # web eslint
 bun run test:unit            # domain rules, crypto, protocol, policy, import goldens
 bun run test:integration     # Postgres + mock OIDC: auth, CSRF, roles, API, imports, metrics
-bun run test:web             # vitest + testing-library (incl. import dialog en/ru)
+bun run test:web             # vitest + testing-library (import page, dialogs, en/ru)
 bun run test:load            # simulated 200 clients (see docs/PERFORMANCE.md)
 
 scripts/build-test-client.sh # real easytier-core from the pinned commit

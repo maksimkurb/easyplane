@@ -6,7 +6,6 @@ import { toast } from "sonner"
 
 import { useCreateNetwork, useListNetworks } from "@/api/generated/easyplane"
 import { useAuth } from "@/auth/auth-context"
-import { NetworkImportDialog } from "@/components/network-import-dialog"
 import { PageHeader } from "@/components/shared/page-header"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/shared/field"
 import { Button } from "@/components/ui/button"
@@ -33,7 +32,6 @@ export function NetworksPage() {
   const { t } = useTranslation()
   const { isAdmin } = useAuth()
   const [open, setOpen] = useState(false)
-  const [importOpen, setImportOpen] = useState(false)
   const [name, setName] = useState("")
   const [cidr, setCidr] = useState("10.144.144.0/24")
 
@@ -59,7 +57,10 @@ export function NetworksPage() {
         actions={
           isAdmin ? (
             <span className="flex gap-2">
-              <Button onClick={() => setImportOpen(true)} variant="outline">
+              <Button
+                render={<Link href="/networks/import" />}
+                variant="outline"
+              >
                 <FileUpIcon className="size-4" />
                 {t("networks.import.open")}
               </Button>
@@ -123,8 +124,6 @@ export function NetworksPage() {
           ))}
         </div>
       )}
-
-      <NetworkImportDialog onOpenChange={setImportOpen} open={importOpen} />
 
       <Dialog onOpenChange={setOpen} open={open}>
         <DialogContent>

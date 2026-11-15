@@ -2,6 +2,7 @@
 
 import type { ComponentProps } from "react"
 import {
+  FileUpIcon,
   LogOutIcon,
   MonitorSmartphoneIcon,
   NetworkIcon,
@@ -37,6 +38,15 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
       url: "/networks",
       icon: NetworkIcon,
     },
+    ...(auth.isAdmin
+      ? [
+          {
+            title: t("nav.items.importNetwork"),
+            url: "/networks/import",
+            icon: FileUpIcon,
+          },
+        ]
+      : []),
     {
       title: t("nav.items.devices"),
       url: "/devices",
