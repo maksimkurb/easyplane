@@ -8,6 +8,8 @@ import {
   WaypointsIcon,
 } from "lucide-react"
 
+import { useQueryClient } from "@tanstack/react-query"
+
 import { useGetNetworkTopology, useListNetworks } from "@/api/generated/easyplane"
 import type {
   GetNetworkTopology200LinksItem as TopologyLink,
@@ -28,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { applyRealtimeEvent } from "@/realtime/apply-event"
 import { useEventStream } from "@/realtime/use-event-stream"
 import { cn } from "@/lib/utils"
 
@@ -43,6 +46,7 @@ import "@xyflow/react/dist/style.css"
  */
 export function TopologyPage() {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const networksQuery = useListNetworks()
   const networks = useMemo(() => networksQuery.data?.data ?? [], [networksQuery.data])
   // Deep link: /topology?network=<uuid>. The first network is the fallback, so
@@ -64,6 +68,9 @@ export function TopologyPage() {
     networkId: networkId || undefined,
     topology: true,
     enabled: Boolean(networkId),
+    // Topology snapshots are delivered only to map streams; everything else
+    // arrives through the shell stream.
+    onEvent: (event) => applyRealtimeEvent(queryClient, event),
   })
 
   const nodes = useMemo(() => snapshot?.nodes ?? [], [snapshot])

@@ -172,6 +172,11 @@ export class RealtimeHub {
 
   private matches(subscriber: RealtimeSubscriber, event: RealtimeEvent): boolean {
     if (event.orgId !== subscriber.identity.orgId) return false;
+    // Snapshot payloads are large; only streams that declared an interest in
+    // the map receive them (the shell stream ignores topology entirely).
+    if (event.type === "topology.updated" && !subscriber.topics.has("topology")) {
+      return false;
+    }
     if (
       subscriber.networkIds &&
       event.networkId !== undefined &&

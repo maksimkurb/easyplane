@@ -122,6 +122,27 @@ describe("realtime hub", () => {
     expect(hub.subscribe(ADMIN, {}, () => undefined).resync).toBe(false);
   });
 
+  it("delivers topology snapshots only to declared map watchers", () => {
+    const hub = new RealtimeHub();
+    const shellSeen: string[] = [];
+    const mapSeen: string[] = [];
+    hub.subscribe(ADMIN, {}, (event) => shellSeen.push(event.type));
+    hub.subscribe(ADMIN, { topics: ["topology"], networkIds: ["net-1"] }, (event) =>
+      mapSeen.push(event.type),
+    );
+    hub.publish({
+      type: "topology.updated",
+      orgId: ADMIN.orgId,
+      networkId: "net-1",
+      data: { networkId: "net-1", collectedAt: "now", nodes: [], links: [] },
+    });
+    hub.publish(deviceEvent());
+    expect(shellSeen).toEqual(["device.updated"]);
+    // A map stream also receives ordinary events; it only *additionally* gets
+    // the heavy snapshots.
+    expect(mapSeen).toEqual(["topology.updated", "device.updated"]);
+  });
+
   it("counts topology watchers per network for adaptive polling", () => {
     const hub = new RealtimeHub();
     hub.subscribe(ADMIN, { topics: ["topology"], networkIds: ["net-1"] }, () => undefined);

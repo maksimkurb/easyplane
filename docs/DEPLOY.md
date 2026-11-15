@@ -1,4 +1,4 @@
-# Deploying EasyPlane (M2)
+# Deploying EasyPlane (M3)
 
 EasyPlane is one Node process plus PostgreSQL. The process serves the web UI,
 the HTTP API and the EasyTier config-server listeners (`ws`, `wss`, `tcp`).
@@ -48,6 +48,19 @@ server {
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
   }
+
+  # Server-sent events: one long-lived response per tab. Buffering must be
+  # off or the browser sees nothing until the connection closes.
+  location = /api/events {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header Connection "";
+    proxy_buffering off;
+    proxy_cache off;
+    gzip off;
+    proxy_read_timeout 3600s;
+  }
 }
 
 # EasyTier config server: the invite token is the last path segment.
@@ -68,6 +81,14 @@ server {
 Set `EASYPLANE_PUBLIC_CONFIG_SERVER_URL=wss://vpn.example.com` so invite
 commands get the right URL. `EASYPLANE_TRUST_PROXY=true` makes Fastify honour
 `X-Forwarded-*` for the OIDC redirect URI and client IP rate limiting.
+
+The server already sends `X-Accel-Buffering: no` and a 15 s keep-alive comment,
+which is enough for nginx/Caddy/Traefik as long as the `/api/events` route
+disables response buffering and the read timeout is longer than the keep-alive.
+If the panel shows "Reconnecting…" while the rest of the UI works, check the
+proxy's buffering settings first. SSE connections count against the per-user cap
+(`EASYPLANE_SSE_MAX_PER_USER`, default 4); a tab uses one, plus one while the
+topology map is open.
 
 **B. The server terminates TLS itself.** Mount a certificate and set:
 
@@ -172,6 +193,15 @@ token; deleting a device does the same and removes its history.
 - Unknown config-server tokens are rate-limited per source IP
   (`EASYPLANE_UNKNOWN_TOKEN_LIMIT_PER_MINUTE`) and pending devices are capped
   per network (`EASYPLANE_MAX_PENDING_DEVICES_PER_NETWORK`).
+- Browser updates are pushed over SSE (`GET /api/events`, session cookie,
+  role-checked, bounded per user). No polling interval needs tuning.
+- The topology map probes each online device with `CollectNetworkInfo`. Its cost
+  is bounded by `EASYPLANE_TOPOLOGY_CONCURRENCY` (default 4 parallel RPCs) and
+  runs every `EASYPLANE_TOPOLOGY_IDLE_INTERVAL_MS` (30 s) when nobody is
+  watching, `EASYPLANE_TOPOLOGY_ACTIVE_INTERVAL_MS` (5 s) while a map is open,
+  with ±`EASYPLANE_TOPOLOGY_JITTER` (20 %) spread.
+  `EASYPLANE_TOPOLOGY_MAX_DEVICES` (500) caps one cycle and a failed probe marks
+  the snapshot `partial` in the UI. See [REALTIME.md](REALTIME.md) §5.
 
 Backups: `pg_dump` covers everything, **plus** `EASYPLANE_ENCRYPTION_KEY` —
 without it the stored EasyTier network secrets cannot be decrypted. Rotating
@@ -181,12 +211,19 @@ that key is not implemented in M1.
 docker compose exec postgres pg_dump -U easyplane easyplane | gzip > easyplane.sql.gz
 ```
 
-## 6. M1/M2 limitations and risks
+## 6. Limitations and risks (M1–M3)
 
 - **Run one server instance.** The device-session registry, unknown-token
-  limiter and reconcile timer are in-process. A second replica could not push
-  to devices connected to the first, and rate limits would be per replica.
-  Horizontal scaling needs sticky config-server sessions or a shared registry.
+  limiter, reconcile timer, SSE event hub and topology snapshots are in-process.
+  A second replica could not push to devices connected to the first, browser
+  events would only reach clients of the publishing replica, rate limits would
+  be per replica and each replica would probe every device. Horizontal scaling
+  needs sticky config-server sessions plus a shared event bus; see
+  [REALTIME.md](REALTIME.md) §7.
+- The topology map is memory-only: after a restart it is empty until the first
+  collection (seconds when a map is open, up to the idle interval otherwise),
+  and there is no history. Only the managed instance of each device is probed;
+  a second local `easytier-core` process is not on the map.
 - Blocking a device stops its instance via `DeleteNetworkInstance` only while
   it is connected. An offline blocked device cannot be reached; its EasyTier
   network keeps running locally until the process restarts, and its next
@@ -199,7 +236,10 @@ docker compose exec postgres pg_dump -U easyplane easyplane | gzip > easyplane.s
 - `machine_id` is self-reported by the client. Anyone holding a valid invite
   can claim a machine id; approval is the security boundary. Rotate/revoke
   invites if one leaks.
-- No SSE/WebSocket browser updates: pages poll via TanStack Query refetch.
+- The map's "reachable/relay-capable" badge is derived from the client's STUN
+  NAT type and observed relaying; it is not a reachability probe. A node behind
+  NAT can still relay for peers that reach it, which is why the map also
+  highlights observed relays.
 - Policy is enforced at the destination only. EasyTier has no outbound
   connection tracking, so the outbound chain is default-allow (docs/POLICY.md
   §6). A hostile member can spoof source IPs in data packets unless

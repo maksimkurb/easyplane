@@ -1,10 +1,12 @@
 import { useTranslation } from "react-i18next"
 
+import { useGetDevice } from "@/api/generated/easyplane"
 import type {
   GetNetworkTopology200LinksItem as TopologyLink,
   GetNetworkTopology200NodesItem as TopologyNode,
   GetNetworkTopology200ObservationsItem as TopologyObservation,
 } from "@/api/generated/model"
+import { DeviceStatusBadges } from "@/components/device-status"
 import { Badge } from "@/components/ui/badge"
 import {
   Sheet,
@@ -47,6 +49,12 @@ export function DeviceDrawer({
 }: DeviceDrawerProps) {
   const { t } = useTranslation()
   const byId = new Map(nodes.map((entry) => [entry.id, entry]))
+  // Status fields that live on the device row (OS, last seen, revisions) are
+  // not part of the topology snapshot, so the drawer reads them from the API.
+  const deviceQuery = useGetDevice(node?.deviceId ?? "", {
+    query: { enabled: Boolean(node?.deviceId) },
+  })
+  const device = deviceQuery.data?.data
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
@@ -70,6 +78,46 @@ export function DeviceDrawer({
 
         {node ? (
           <div className="space-y-5 px-4 pb-6">
+            {device ? (
+              <div className="space-y-2">
+                <DeviceStatusBadges
+                  online={device.online}
+                  state={device.state}
+                  sync={device.sync}
+                />
+                <dl className="grid grid-cols-2 gap-3 text-sm">
+                  <Info
+                    label={t("devices.os")}
+                    value={
+                      `${device.os.distribution || device.os.type} ${device.os.version}`.trim() ||
+                      null
+                    }
+                  />
+                  <Info label={t("devices.machineId")} mono value={device.machineId} />
+                  <Info
+                    label={t("devices.lastSeen")}
+                    value={
+                      device.lastSeenAt
+                        ? new Date(device.lastSeenAt).toLocaleString()
+                        : null
+                    }
+                  />
+                  <Info
+                    label={t("devices.appliedRevision")}
+                    value={
+                      device.appliedRevision !== null
+                        ? `${device.appliedRevision} / ${device.desiredRevision ?? "—"}`
+                        : null
+                    }
+                  />
+                </dl>
+                {device.lastPushError ? (
+                  <p className="rounded border border-red-500/30 bg-red-500/5 p-2 text-xs text-red-700 dark:text-red-300">
+                    {t("devices.pushError")}: {device.lastPushError}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             <dl className="grid grid-cols-2 gap-3 text-sm">
               <Info label={t("devices.virtualIp")} mono value={node.virtualIpv4} />
               <Info label={t("topology.natType")} value={node.natType} />

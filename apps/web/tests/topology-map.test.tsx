@@ -52,6 +52,33 @@ vi.mock("@xyflow/react", () => ({
   MarkerType: { ArrowClosed: "arrow" },
 }))
 
+vi.mock("@/api/generated/easyplane", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/api/generated/easyplane")>()
+  return {
+    ...actual,
+    useGetDevice: () => ({
+      data: {
+        data: {
+          id: "dev-b",
+          state: "approved",
+          online: "online",
+          sync: "in-sync",
+          machineId: "bbbbbbbb-2222-4222-8222-222222222222",
+          hostname: "core-b",
+          dnsName: "core-b",
+          easytierVersion: "2.6.4-81487c36",
+          os: { type: "linux", version: "6.8", distribution: "debian" },
+          lastSeenAt: "2026-01-01T00:00:00.000Z",
+          desiredRevision: 2,
+          appliedRevision: 2,
+          lastPushError: null,
+        },
+      },
+      isLoading: false,
+    }),
+  }
+})
+
 import { TopologyMap, TopologyNodeCard } from "@/components/topology/topology-map"
 
 function node(overrides: Partial<TopologyNode> = {}): TopologyNode {

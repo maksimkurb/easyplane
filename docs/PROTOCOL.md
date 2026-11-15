@@ -525,3 +525,84 @@ with its own TUN):
 The containers reach the vitest-hosted listener through a test-only TCP relay
 because this host drops traffic from Docker bridges to host ports; the
 WebSocket, Noise upgrade and RPCs are end-to-end. See the test header.
+
+## 12. M3: topology and live status (no new RPC)
+
+M3 adds no method and no message on the config-server channel. The map is built
+from the same `CollectNetworkInfo` response M2 already uses, read field by
+field. This section records which fields are authoritative, because several are
+easy to misread.
+
+### 12.1 What is probed
+
+- One `CollectNetworkInfo([inst_id])` per approved, **online** device, for the
+  deterministic instance id (§10.3). Offline devices are nodes with
+  `online: false` and no edges; they are not probed.
+- Collection is adaptive and bounded (`EASYPLANE_TOPOLOGY_*`, see
+  [docs/REALTIME.md](REALTIME.md) §5), independent of the route-report interval.
+- The response is not persisted. The latest snapshot per network lives in
+  memory and is replaced atomically.
+
+### 12.2 Authoritative fields
+
+| fact | field | note |
+| --- | --- | --- |
+| direct vs relayed | `routes[].cost`; `peers[].directly_connected_conns` | `cost == 1` is what EasyTier's CLI prints as `DIRECT` (`easytier/src/easytier-cli.rs`); a peer with a direct connection is direct even before the route table catches up. |
+| relay node | `routes[].next_hop_peer_id` | Resolve it within the *same* response; peer ids are per instance. |
+| tunnel protocol | `peers[].conns[].tunnel.tunnel_type` | Raw values include `tcp`, `tcp6`, `udp`, `ws`, `wss`, `quic`, `wg`, composite prefixes like `txt-tcp` and, occasionally, a full URL (`display_tunnel_type` in `easytier-proto/src/common.rs`). |
+| RTT | `conns[].stats.latency_us` (µs) | Prefer the default connection (`peers[].default_conn_id`), then the minimum; same rule as `PeerRoutePair::get_latency_ms`. |
+| loss | `conns[].loss_rate` (0..1) | Set by the liveness ping (`loss_rate_stats / 100.0`); only known for a direct connection. |
+| direction | `conns[].is_client` | `true` when this side dialled (`do_handshake_as_client`), so the map shows dialler/acceptor, not a guess. |
+| public endpoint | `conns[].tunnel.{remote_addr,resolved_remote_addr}` | The observed underlay address. |
+| NAT type | `my_node_info.stun_info` / `routes[].stun_info` | Enum names from `common.NatType` (`OpenInternet`, `NoPAT`, `FullCone`, `Restricted`, `PortRestricted`, `Symmetric`, …). |
+| public IPs | `my_node_info.stun_info.public_ip` | **Only** populated for the local node. `routes[].stun_info` carries NAT types but no public IP list (`RoutePeerInfo` has no such field), so peers' public addresses come from their connection endpoints. |
+| listeners, version, proxy CIDRs | `my_node_info.listeners`, `routes[].version`, `routes[].proxy_cidrs` | As reported; not normalised by the control plane. |
+| route path latency | `routes[].path_latency` (ms) | Used for a relayed edge; a relayed path has no per-connection loss. |
+| public-server hint | `routes[].feature_flag.is_public_server` | Upstream sets this flag in foreign-network contexts; it is a hint, not a reliable "this is a public server" marker. |
+
+### 12.3 Derivation rules (implemented, unit-tested from real wire bytes)
+
+- Canonical node id = the overlay IPv4 (`ip:<addr>`), because peer ids are
+  assigned per instance and are not comparable across observers. A peer without
+  a route entry gets `peer:<observer>/<peer_id>` until the route table converges.
+- Direct if `directly_connected_conns` is non-empty or `cost == 1`; otherwise
+  relayed with `via = next_hop_peer_id`.
+- Edges are merged from both sides' reports. A relayed edge's `protocol` is the
+  first hop's tunnel (`protocolIsFirstHop = true`); the path itself can mix
+  transports, and the map says so.
+- If the two sides disagree (one direct, one relayed) the link is
+  `asymmetric`; both observations are kept in `evidence`.
+- `reachable` = open/static NAT (`OpenInternet`/`NoPAT`) or the public-server
+  flag. `relayCapable` = reachable **or** actually used as a next hop by another
+  node. Reasons are returned with the node; no badge without evidence.
+
+### 12.4 Verified against real clients
+
+`test/conformance/m3.test.ts` (three real clients, hub-and-spoke, `disable_p2p`
+on both leaves):
+
+- `core-b`'s own `CollectNetworkInfo` reports `core-c` with `cost = 2` and
+  `next_hop_peer_id = core-a`; the derived snapshot matches (relayed edge via
+  `core-a`, cost 2, first-hop `tcp`, `relaying-for` on the hub).
+- Direct edges report `tcp`, real RTT/loss, dialler/acceptor and the underlay
+  address; NAT type and listeners are the client's STUN/listener data.
+- The map flags no node as reachable in the Docker bridge (NAT is not open) and
+  highlights the hub only because it demonstrably relays.
+- Offline/online transitions reach the browser over SSE; the stream is refused
+  without a session and above the per-user cap.
+- ICMP between the leaves still crosses the relay while collection runs.
+
+The captured protobuf bytes of that run are the unit-test fixture
+(`apps/server/test/fixtures/easytier/collect-network-info-m3.json`), so the
+derivation tests decode exactly what the real client sent.
+
+### 12.5 Not claimed
+
+- No `ListPeer`/`ListRoute` RPC is called: those are exposed on the client's
+  *instance* RPC service (different channel), and `CollectNetworkInfo` already
+  contains the same route/peer data. Nothing here implies the control plane can
+  drive an instance RPC portal.
+- A separate local `easytier-core` process is invisible (same limitation as
+  §11.4/§11.5).
+- The browser stream is a control-plane feature; there is no EasyTier wire
+  change and no new client capability.

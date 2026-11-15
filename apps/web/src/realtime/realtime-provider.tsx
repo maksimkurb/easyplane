@@ -1,6 +1,7 @@
 import { useEffect, useMemo, type ReactNode } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 
+import { useAuth } from "@/auth/auth-context"
 import { applyRealtimeEvent } from "./apply-event"
 import { RealtimeContext } from "./context"
 import { useEventStream } from "./use-event-stream"
@@ -12,8 +13,11 @@ import { useEventStream } from "./use-event-stream"
  */
 export function RealtimeProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
+  const { me } = useAuth()
 
   const { status, lastSeq, resyncToken } = useEventStream({
+    // Do not open a stream on the login screen: there is no session yet.
+    enabled: Boolean(me),
     onEvent: (event) => applyRealtimeEvent(queryClient, event),
   })
 

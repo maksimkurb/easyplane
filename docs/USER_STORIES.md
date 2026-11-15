@@ -30,7 +30,7 @@ Roles: **Admin**, **Member** (manages own devices/invites), **Viewer** (read-onl
 ## Desired state & status (M1, M3)
 - **D1** As an Admin I edit a device's desired config; the server pushes on connect and on every change, idempotently, tracking applied revision and error (desired vs applied).
 - **D2** As a user I see per-device state: pending/approved/blocked × online/offline × in-sync/stale/error, last seen, client version, OS, public/virtual IPs, NAT type. Incompatible client versions show a warning, not a crash.
-- **D3** As a user, the browser updates live (SSE/WS) without refresh.
+- **D3** As a user, the browser updates live over SSE without refresh, with reconnect/backoff and a resync after a server restart.
 - **D4** As an Admin I see an audit log of approvals, policy changes, invites, config pushes (no secrets).
 
 ## Policy (M2, implemented — see docs/POLICY.md for the exact mapping)
@@ -46,7 +46,7 @@ Roles: **Admin**, **Member** (manages own devices/invites), **Viewer** (read-onl
 - **R1** As a Device owner/Admin I request subnet routes / exit node; they stay pending until approved; only approved routes are pushed.
 - **R2** As an Admin I see routes devices actually report (CollectNetworkInfo) that are unapproved, flagged, with an honest note on what can/cannot be revoked remotely (e.g. file-configured instances are read-only).
 
-## Topology (M3)
+## Topology (M3, implemented — see docs/REALTIME.md for the exact mapping and limits)
 - **T1** As a user I see a live graph: devices as nodes, links as edges (direct vs relayed, relay node, protocol, latency, loss, cost). Polling is adaptive (faster only while someone watches), configurable, bounded.
 - **T2** I open a device drawer with raw peer/route/connection info.
 - **T3** The docs and UI make clear at least one node must be reachable for relay/NAT traversal, and the panel highlights it.

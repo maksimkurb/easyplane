@@ -1,7 +1,13 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useParams } from "wouter"
-import { ArrowLeftIcon, HistoryIcon, RefreshCwIcon, RotateCcwIcon } from "lucide-react"
+import {
+  ArrowLeftIcon,
+  HistoryIcon,
+  RefreshCwIcon,
+  RotateCcwIcon,
+  WaypointsIcon,
+} from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
@@ -77,16 +83,24 @@ export function DeviceDetailPage() {
     <>
       <PageHeader
         actions={
-          canManage ? (
-            <Button
-              disabled={push.isPending}
-              onClick={() => push.mutate({ deviceId: device.id })}
-              variant="outline"
-            >
-              <RefreshCwIcon className="size-4" />
-              {t("devices.push")}
-            </Button>
-          ) : null
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/topology?network=${device.networkId}`}>
+              <Button variant="outline">
+                <WaypointsIcon className="size-4" />
+                {t("topology.title")}
+              </Button>
+            </Link>
+            {canManage ? (
+              <Button
+                disabled={push.isPending}
+                onClick={() => push.mutate({ deviceId: device.id })}
+                variant="outline"
+              >
+                <RefreshCwIcon className="size-4" />
+                {t("devices.push")}
+              </Button>
+            ) : null}
+          </div>
         }
         description={device.machineId}
         title={
