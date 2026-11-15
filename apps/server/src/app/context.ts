@@ -23,7 +23,9 @@ import { PushService } from "../services/push-service.js";
 import { RouteService } from "../services/route-service.js";
 import { TopologyService } from "../topology/collector.js";
 
-export const VERSION = "0.3.0-M3";
+// Release images set EASYPLANE_VERSION from the image tag (see
+// .github/workflows/_image.yml); a local run keeps the built-in default.
+export const VERSION = process.env.EASYPLANE_VERSION?.trim() || "0.3.0-M3";
 
 function normalizeIp(value: string): string {
   if (value.startsWith("::ffff:")) return value.slice("::ffff:".length);

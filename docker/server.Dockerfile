@@ -4,6 +4,12 @@
 #
 # The runtime image contains the compiled server, the Drizzle migrations and
 # the built SPA; the server serves both on EASYPLANE_HTTP_PORT (8080).
+#
+# EASYPLANE_VERSION is baked in as a runtime env var and reported by /health.
+# CI passes the release version (or "edge" on main); a local build leaves it
+# empty and the server falls back to its built-in default.
+
+ARG EASYPLANE_VERSION=
 
 FROM oven/bun:1.4 AS deps
 WORKDIR /app
@@ -24,11 +30,13 @@ WORKDIR /app
 RUN bun install --frozen-lockfile --production
 
 FROM node:22-bookworm-slim AS runtime
+ARG EASYPLANE_VERSION
 WORKDIR /app
 ENV NODE_ENV=production \
     EASYPLANE_HOST=0.0.0.0 \
     EASYPLANE_HTTP_PORT=8080 \
-    EASYPLANE_WEB_DIR=/app/apps/web/dist
+    EASYPLANE_WEB_DIR=/app/apps/web/dist \
+    EASYPLANE_VERSION=${EASYPLANE_VERSION}
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=prod-deps /app/apps ./apps
 COPY --from=prod-deps /app/packages ./packages
