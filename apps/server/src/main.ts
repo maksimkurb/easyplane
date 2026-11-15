@@ -65,6 +65,7 @@ async function main(): Promise<void> {
     http: env.httpPort,
     ws: addresses.wsPort,
     tcp: addresses.tcpPort,
+    udp: addresses.udpPort,
     wss: addresses.wssPort,
     organisation: context.organisation.slug,
   });

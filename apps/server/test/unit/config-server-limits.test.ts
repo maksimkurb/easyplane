@@ -78,6 +78,8 @@ async function heartbeat(session: RpcSession): Promise<void> {
       hostname: "limits-test",
       easytierVersion: "2.6.4-81487c36",
       runningNetworkInstances: [],
+      reportTime: new Date().toISOString(),
+      supportConfigSource: true,
     }).finish(),
     timeoutMs: 3_000,
   });

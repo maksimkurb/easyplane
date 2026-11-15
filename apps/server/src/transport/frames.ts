@@ -7,7 +7,7 @@ import {
   TCP_TUNNEL_HEADER_SIZE,
 } from "../protocol/constants.js";
 
-export type TransportKind = "tcp" | "ws" | "wss";
+export type TransportKind = "tcp" | "ws" | "wss" | "udp";
 
 interface Waiter {
   resolve: (value: Buffer | null) => void;

@@ -74,6 +74,17 @@ services:
       - --hostname
       - core-tcp
 
+  core-udp:
+    <<: *core
+    container_name: easyplane-core-udp
+    command:
+      - --config-server
+      - ${EASYPLANE_CORE_UDP_URL:-udp://127.0.0.1:22089/token-udp}
+      - --machine-id
+      - 77777777-7777-4777-8777-777777777777
+      - --hostname
+      - core-udp
+
   core-ws-secure:
     <<: *core
     container_name: easyplane-core-ws-secure

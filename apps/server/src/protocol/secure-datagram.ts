@@ -25,8 +25,8 @@ export const enum SecureDirection {
   BToA = 1,
 }
 
-const ROTATE_AFTER_PACKETS = 1_000_000n;
-const ROTATE_AFTER_MS = 10 * 60 * 1000;
+const ROTATE_AFTER_PACKETS_DEFAULT = 1_000_000n;
+const ROTATE_AFTER_MS_DEFAULT = 10 * 60 * 1000;
 const MAX_ACCEPTED_RX_EPOCH_AHEAD = 3;
 const REPLAY_WINDOW_BITS = 256;
 
@@ -113,11 +113,23 @@ interface EpochState {
   window: ReplayWindow;
 }
 
+export interface SecureSessionOptions {
+  /** Packets per epoch before rotating (default 1,000,000, like upstream). */
+  rotateAfterPackets?: bigint;
+  /** Wall-clock age of an epoch before rotating (default 10 minutes). */
+  rotateAfterMs?: number;
+  /** Injectable clock for the rotation soak test. */
+  now?: () => number;
+}
+
 export class SecureDatagramSession {
   private readonly keyCache = new Map<string, Buffer>();
+  private readonly rotateAfterPackets: bigint;
+  private readonly rotateAfterMs: number;
+  private readonly now: () => number;
   private sendEpoch = 0;
   private sendSeq = 0n;
-  private sendEpochStartedMs = Date.now();
+  private sendEpochStartedMs: number;
   private sendPacketsSinceEpoch = 0n;
   private recvCur: EpochState | null = null;
   private recvPrev: EpochState | null = null;
@@ -126,19 +138,46 @@ export class SecureDatagramSession {
     private readonly rootKey: Buffer,
     private readonly sendDir: SecureDirection,
     private readonly recvDir: SecureDirection,
-  ) {}
+    options: SecureSessionOptions = {},
+  ) {
+    this.rotateAfterPackets = options.rotateAfterPackets ?? ROTATE_AFTER_PACKETS_DEFAULT;
+    this.rotateAfterMs = options.rotateAfterMs ?? ROTATE_AFTER_MS_DEFAULT;
+    this.now = options.now ?? Date.now;
+    this.sendEpochStartedMs = this.now();
+  }
 
   /** Server side of the web-secure tunnel (responder). */
-  static responder(rootKey: Buffer): SecureDatagramSession {
-    return new SecureDatagramSession(rootKey, SecureDirection.BToA, SecureDirection.AToB);
+  static responder(
+    rootKey: Buffer,
+    options: SecureSessionOptions = {},
+  ): SecureDatagramSession {
+    return new SecureDatagramSession(
+      rootKey,
+      SecureDirection.BToA,
+      SecureDirection.AToB,
+      options,
+    );
   }
 
   /**
    * Client side of the tunnel (initiator). EasyTier itself only implements the
-   * responder, so this exists for tests and future client-side tooling.
+   * responder, so this exists for tests and client-side tooling (the load test
+   * and the epoch-rotation soak).
    */
-  static initiator(rootKey: Buffer): SecureDatagramSession {
-    return new SecureDatagramSession(rootKey, SecureDirection.AToB, SecureDirection.BToA);
+  static initiator(
+    rootKey: Buffer,
+    options: SecureSessionOptions = {},
+  ): SecureDatagramSession {
+    return new SecureDatagramSession(
+      rootKey,
+      SecureDirection.AToB,
+      SecureDirection.BToA,
+      options,
+    );
+  }
+
+  get currentSendEpoch(): number {
+    return this.sendEpoch;
   }
 
   private trafficKey(epoch: number, dir: SecureDirection): Buffer {
@@ -154,12 +193,12 @@ export class SecureDatagramSession {
 
   private maybeRotate(): void {
     this.sendPacketsSinceEpoch += 1n;
-    const expired = Date.now() - this.sendEpochStartedMs >= ROTATE_AFTER_MS;
-    if (this.sendPacketsSinceEpoch < ROTATE_AFTER_PACKETS && !expired) return;
+    const expired = this.now() - this.sendEpochStartedMs >= this.rotateAfterMs;
+    if (this.sendPacketsSinceEpoch < this.rotateAfterPackets && !expired) return;
     this.sendEpoch = (this.sendEpoch + 1) >>> 0;
     this.sendSeq = 0n;
     this.sendPacketsSinceEpoch = 0n;
-    this.sendEpochStartedMs = Date.now();
+    this.sendEpochStartedMs = this.now();
   }
 
   /**

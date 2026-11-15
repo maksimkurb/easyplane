@@ -30,6 +30,8 @@ export const PORTS = {
   m2: 22087,
   /** M3 relay-only topology + SSE (same containers as M2, separate server). */
   m3: 22088,
+  /** UDP session layer (SYN/SACK/DATA/FIN). */
+  udp: 22089,
 } as const;
 
 export function dockerCompose(
@@ -108,6 +110,8 @@ function composeUrlEnv(service: string): string {
       return "EASYPLANE_CORE_WSS_URL";
     case "core-tcp":
       return "EASYPLANE_CORE_TCP_URL";
+    case "core-udp":
+      return "EASYPLANE_CORE_UDP_URL";
     case "core-plain":
       return "EASYPLANE_CORE_PLAIN_URL";
     case "core-bad-token":

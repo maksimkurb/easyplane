@@ -48,6 +48,8 @@ const envSchema = z.object({
   EASYPLANE_TCP_PORT: z.coerce.number().int().min(0).max(65535).default(22020),
   EASYPLANE_WS_PORT: z.coerce.number().int().min(0).max(65535).default(22023),
   EASYPLANE_WSS_PORT: z.coerce.number().int().min(0).max(65535).optional(),
+  /** UDP config-server transport; unset/0 disables it. */
+  EASYPLANE_UDP_PORT: z.coerce.number().int().min(0).max(65535).optional(),
   EASYPLANE_TLS_CERT: z.string().optional(),
   EASYPLANE_TLS_KEY: z.string().optional(),
   /** Set to `off` to advertise no web-secure support (debug only). */
@@ -176,6 +178,7 @@ export interface AppEnv {
   httpPort: number;
   tcpPort: number;
   wsPort: number;
+  udpPort: number | null;
   wss: { port: number; certFile: string; keyFile: string } | null;
   supportEncryption: boolean;
   publicUrl: string | undefined;
@@ -259,6 +262,10 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     httpPort: parsed.EASYPLANE_HTTP_PORT,
     tcpPort: parsed.EASYPLANE_TCP_PORT,
     wsPort: parsed.EASYPLANE_WS_PORT,
+    udpPort:
+      parsed.EASYPLANE_UDP_PORT !== undefined && parsed.EASYPLANE_UDP_PORT > 0
+        ? parsed.EASYPLANE_UDP_PORT
+        : null,
     wss:
       wssPort !== undefined && parsed.EASYPLANE_TLS_CERT && parsed.EASYPLANE_TLS_KEY
         ? {

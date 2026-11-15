@@ -179,6 +179,7 @@ export async function createAppContext(
     tcpPort: env.tcpPort,
     wsPort: env.wsPort,
     wss: env.wss,
+    udpPort: env.udpPort,
     supportEncryption: env.supportEncryption,
     logger,
     maxConnections: env.maxClientConnections,

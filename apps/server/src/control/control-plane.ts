@@ -7,6 +7,7 @@ import { METRIC_NAMES } from "../observability/metrics.js";
 import { AcceptRateLimiter, findSilentClients } from "./limits.js";
 import { TcpConfigServerListener } from "../listener/tcp-listener.js";
 import { WsConfigServerListener } from "../listener/ws-listener.js";
+import { UdpConfigServerListener } from "../listener/udp-listener.js";
 import type { RpcSession } from "../rpc/session.js";
 import { RpcSession as RpcSessionImpl } from "../rpc/session.js";
 import type { FrameTransport, TransportKind } from "../transport/frames.js";
@@ -20,6 +21,10 @@ export interface ControlPlaneOptions {
   tcpPort?: number | null;
   wsPort?: number | null;
   wss?: { port: number; certFile: string; keyFile: string } | null;
+  /** UDP config-server transport (`udp://`); disabled unless set. */
+  udpPort?: number | null;
+  /** Idle timeout for one UDP session (no DATA/SYN for this long). */
+  udpSessionIdleTimeoutMs?: number;
   /**
    * Advertised by GetFeature. `true` (default) enables the web-secure Noise
    * tunnel when the client supports it. Set false only for debugging/legacy
@@ -59,6 +64,7 @@ export interface ControlPlaneAddresses {
   tcpPort: number | null;
   wsPort: number | null;
   wssPort: number | null;
+  udpPort: number | null;
 }
 
 export interface ControlPlaneEvents {
@@ -86,6 +92,7 @@ export class ControlPlaneServer extends EventEmitter<ControlPlaneEvents> {
   private tcpListener: TcpConfigServerListener | undefined;
   private wsListener: WsConfigServerListener | undefined;
   private wssListener: WsConfigServerListener | undefined;
+  private udpListener: UdpConfigServerListener | undefined;
   private started = false;
   private readonly acceptLimiter: AcceptRateLimiter;
   private reaper: NodeJS.Timeout | undefined;
@@ -104,6 +111,7 @@ export class ControlPlaneServer extends EventEmitter<ControlPlaneEvents> {
     const tcpPort = this.options.tcpPort === undefined ? null : this.options.tcpPort;
     const wsPort = this.options.wsPort === undefined ? null : this.options.wsPort;
     const wss = this.options.wss ?? null;
+    const udpPort = this.options.udpPort === undefined ? null : this.options.udpPort;
 
     if (tcpPort !== null) {
       this.tcpListener = new TcpConfigServerListener({
@@ -133,6 +141,16 @@ export class ControlPlaneServer extends EventEmitter<ControlPlaneEvents> {
       });
       await this.wssListener.start();
     }
+    if (udpPort !== null) {
+      this.udpListener = new UdpConfigServerListener({
+        host,
+        port: udpPort,
+        logger: this.logger,
+        sessionIdleTimeoutMs: this.options.udpSessionIdleTimeoutMs,
+        onTransport: (transport) => void this.acceptTransport(transport),
+      });
+      await this.udpListener.start();
+    }
 
     const heartbeatTimeoutMs = this.options.heartbeatTimeoutMs ?? 20_000;
     if (heartbeatTimeoutMs > 0) {
@@ -145,6 +163,7 @@ export class ControlPlaneServer extends EventEmitter<ControlPlaneEvents> {
       tcpPort: this.tcpListener?.port ?? null,
       wsPort: this.wsListener?.port ?? null,
       wssPort: this.wssListener?.port ?? null,
+      udpPort: this.udpListener?.port ?? null,
     };
   }
 
@@ -339,10 +358,16 @@ export class ControlPlaneServer extends EventEmitter<ControlPlaneEvents> {
   async stop(): Promise<void> {
     const clients = [...this.clients.values()];
     for (const client of clients) client.close("server shutting down");
-    await Promise.allSettled([this.tcpListener?.stop(), this.wsListener?.stop(), this.wssListener?.stop()]);
+    await Promise.allSettled([
+      this.tcpListener?.stop(),
+      this.wsListener?.stop(),
+      this.wssListener?.stop(),
+      this.udpListener?.stop(),
+    ]);
     this.tcpListener = undefined;
     this.wsListener = undefined;
     this.wssListener = undefined;
+    this.udpListener = undefined;
     if (this.reaper) clearInterval(this.reaper);
     this.reaper = undefined;
     await Promise.allSettled([...this.sessionTasks]);
