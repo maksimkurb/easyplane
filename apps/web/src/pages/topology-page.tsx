@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { Link } from "wouter"
 import {
   AlertTriangleIcon,
   InfoIcon,
@@ -22,18 +23,12 @@ import type {
 } from "@/api/generated/model"
 import { DeviceDrawer } from "@/components/topology/device-drawer"
 import { TopologyMap } from "@/components/topology/topology-map"
+import { OptionSelect } from "@/components/shared/option-select"
 import { PageHeader } from "@/components/shared/page-header"
 import { SectionCard } from "@/components/shared/section-card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { applyRealtimeEvent } from "@/realtime/apply-event"
 import { useEventStream } from "@/realtime/use-event-stream"
@@ -117,27 +112,27 @@ export function TopologyPage() {
       <PageHeader
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Select
-              items={networks.map((entry) => ({ value: entry.id, label: entry.name }))}
+            <OptionSelect
+              aria-label={t("networks.title")}
+              className="w-full sm:w-56"
+              empty={
+                <>
+                  {t("topology.noNetworks")}{" "}
+                  <Link href="/networks">{t("nav.items.networks")}</Link>
+                </>
+              }
               onValueChange={(value) => {
-                if (!value) return
                 setSelectedNetworkId(value)
                 setSelectedNodeId(null)
                 setSelectedLinkId(null)
               }}
+              options={networks.map((entry) => ({
+                value: entry.id,
+                label: entry.name,
+              }))}
+              triggerClassName="sm:max-w-none"
               value={networkId}
-            >
-              <SelectTrigger aria-label={t("networks.title")} className="w-56">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {networks.map((entry) => (
-                  <SelectItem key={entry.id} value={entry.id}>
-                    {entry.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
             <Button
               disabled={!networkId || refreshing}
               onClick={() => {

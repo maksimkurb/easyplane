@@ -30,6 +30,7 @@ import {
 } from "@/lib/policy-document"
 import { useAuth } from "@/auth/auth-context"
 import { PageHeader } from "@/components/shared/page-header"
+import { OptionSelect } from "@/components/shared/option-select"
 import { SectionCard } from "@/components/shared/section-card"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/shared/field"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -106,6 +107,7 @@ export function PolicyPage() {
   }
 
   const devices = devicesQuery.data?.data ?? []
+  const approvedDevices = devices.filter((device) => device.state === "approved")
   const tags = tagsQuery.data?.data ?? []
   const routes = routesQuery.data?.data
   const approvedCidrs = [...new Set((routes?.routes ?? []).filter((route) => route.state === "approved" && route.kind === "subnet").map((route) => route.cidr))]
@@ -514,55 +516,53 @@ export function PolicyPage() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Field className="gap-1">
                 <FieldLabel>{t("policy.source")}</FieldLabel>
-                <Select
-                  onValueChange={(value) => setTarget({ ...target, src: value ?? "" })}
+                <OptionSelect
+                  empty={
+                    <>
+                      {t("policy.noSourceDevices")}{" "}
+                      <Link href="/devices">{t("networks.import.openDevices")}</Link>
+                    </>
+                  }
+                  onValueChange={(value) => setTarget({ ...target, src: value })}
+                  options={approvedDevices.map((device) => ({
+                    value: device.id,
+                    label: device.dnsName ?? device.hostname,
+                  }))}
+                  placeholder={t("policy.chooseSource")}
+                  triggerClassName="sm:max-w-none"
                   value={target.src}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("policy.chooseSource")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {devices
-                      .filter((device) => device.state === "approved")
-                      .map((device) => (
-                        <SelectItem key={device.id} value={device.id}>
-                          {device.dnsName ?? device.hostname}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                />
               </Field>
               <Field className="gap-1">
                 <FieldLabel>{t("policy.destination")}</FieldLabel>
-                <Select
+                <OptionSelect
+                  empty={
+                    <>
+                      {t("policy.noDestinationOptions")}{" "}
+                      <Link href="/devices">{t("networks.import.openDevices")}</Link>
+                    </>
+                  }
                   onValueChange={(value) => {
-                    if (!value) return
                     setTarget({
                       ...target,
                       dst: approvedCidrs.includes(value) ? "" : value,
                       cidr: approvedCidrs.includes(value) ? value : "",
                     })
                   }}
+                  options={[
+                    ...approvedDevices.map((device) => ({
+                      value: device.id,
+                      label: device.dnsName ?? device.hostname,
+                    })),
+                    ...approvedCidrs.map((cidr) => ({
+                      value: cidr,
+                      label: t("policy.subnetRoute", { cidr }),
+                    })),
+                  ]}
+                  placeholder={t("policy.chooseDestination")}
+                  triggerClassName="sm:max-w-none"
                   value={target.cidr || target.dst}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("policy.chooseDestination")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {devices
-                      .filter((device) => device.state === "approved")
-                      .map((device) => (
-                        <SelectItem key={device.id} value={device.id}>
-                          {device.dnsName ?? device.hostname}
-                        </SelectItem>
-                      ))}
-                    {approvedCidrs.map((cidr) => (
-                      <SelectItem key={cidr} value={cidr}>
-                        {t("policy.subnetRoute", { cidr })}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               </Field>
               <Field className="gap-1">
                 <FieldLabel htmlFor="policy-port">{t("policy.port")}</FieldLabel>
