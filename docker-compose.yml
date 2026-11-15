@@ -4,6 +4,13 @@
 #   docker compose up -d --build
 #
 # The server runs drizzle migrations automatically on startup.
+#
+# The optional bundled rendezvous node (a public easytier-core that helps
+# devices find each other; no data relay by default) is in the `rendezvous`
+# profile:
+#
+#   docker compose --profile rendezvous up -d --build
+#   # or, on a separate VPS: docker compose -f docker-compose.rendezvous.yml up -d
 
 name: easyplane
 
@@ -57,6 +64,51 @@ services:
     # Optional: mount TLS certificates for the built-in wss listener:
     # volumes:
     #   - ./certs:/certs:ro
+
+  # Bundled rendezvous node: a stock easytier-core public server that helps
+  # devices find each other and coordinates NAT hole punching. It does NOT
+  # forward user data unless RENDEZVOUS_RELAY_DATA=true (CGNAT fallback).
+  #
+  # Opt-in profile, because it publishes public ports and has abuse/privacy
+  # implications:  docker compose --profile rendezvous up -d
+  #
+  # It needs no TUN device and no capabilities: only TCP/UDP listeners.
+  rendezvous:
+    profiles: ["rendezvous"]
+    image: ${RENDEZVOUS_IMAGE:-easytier/easytier:v2.7.0}
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/opt/rendezvous/entrypoint.sh"]
+    environment:
+      RENDEZVOUS_NETWORK_NAME: ${RENDEZVOUS_NETWORK_NAME:-easyplane-rendezvous}
+      RENDEZVOUS_NETWORK_SECRET: ${RENDEZVOUS_NETWORK_SECRET:-}
+      RENDEZVOUS_RELAY_DATA: ${RENDEZVOUS_RELAY_DATA:-false}
+      RENDEZVOUS_PRIVATE_MODE: ${RENDEZVOUS_PRIVATE_MODE:-true}
+      RENDEZVOUS_SECURE_MODE: ${RENDEZVOUS_SECURE_MODE:-true}
+      RENDEZVOUS_NETWORK_WHITELIST: ${RENDEZVOUS_NETWORK_WHITELIST:-*}
+      RENDEZVOUS_RELAY_ALL_PEER_RPC: ${RENDEZVOUS_RELAY_ALL_PEER_RPC:-false}
+      RENDEZVOUS_LISTENERS: ${RENDEZVOUS_LISTENERS:-tcp://0.0.0.0:11010,udp://0.0.0.0:11010,ws://0.0.0.0:11011}
+      RENDEZVOUS_HOSTNAME: ${RENDEZVOUS_HOSTNAME:-rendezvous}
+      RENDEZVOUS_FOREIGN_RELAY_BPS_LIMIT: ${RENDEZVOUS_FOREIGN_RELAY_BPS_LIMIT:-}
+      RENDEZVOUS_MAPPED_LISTENERS: ${RENDEZVOUS_MAPPED_LISTENERS:-}
+    volumes:
+      - ./docker/rendezvous/entrypoint.sh:/opt/rendezvous/entrypoint.sh:ro
+    ports:
+      # tcp + udp peer listener; ws peer listener (put a TLS proxy in front for wss).
+      - "${RENDEZVOUS_TCP_BIND:-0.0.0.0:11010}:11010"
+      - "${RENDEZVOUS_UDP_BIND:-0.0.0.0:11010}:11010/udp"
+      - "${RENDEZVOUS_WS_BIND:-0.0.0.0:11011}:11011"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      # easytier-cli talks to the local RPC portal; output is discarded because
+      # it contains the effective config (the secret is only in the container).
+      test: ["CMD-SHELL", "easytier-cli -o json node >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
 
 volumes:
   pgdata:

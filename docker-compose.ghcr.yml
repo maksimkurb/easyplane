@@ -56,5 +56,42 @@ services:
       # UDP config-server (M4). Also set EASYPLANE_UDP_PORT=22021 in .env.
       # - "${EASYPLANE_UDP_BIND:-0.0.0.0:22021}:22021/udp"
 
+  # Bundled rendezvous node, opt-in. Same service as in docker-compose.yml;
+  # the entrypoint script is mounted from the checkout (no local image build).
+  #   docker compose -f docker-compose.ghcr.yml --profile rendezvous up -d
+  rendezvous:
+    profiles: ["rendezvous"]
+    image: ${RENDEZVOUS_IMAGE:-easytier/easytier:v2.7.0}
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/opt/rendezvous/entrypoint.sh"]
+    environment:
+      RENDEZVOUS_NETWORK_NAME: ${RENDEZVOUS_NETWORK_NAME:-easyplane-rendezvous}
+      RENDEZVOUS_NETWORK_SECRET: ${RENDEZVOUS_NETWORK_SECRET:-}
+      RENDEZVOUS_RELAY_DATA: ${RENDEZVOUS_RELAY_DATA:-false}
+      RENDEZVOUS_PRIVATE_MODE: ${RENDEZVOUS_PRIVATE_MODE:-true}
+      RENDEZVOUS_SECURE_MODE: ${RENDEZVOUS_SECURE_MODE:-true}
+      RENDEZVOUS_NETWORK_WHITELIST: ${RENDEZVOUS_NETWORK_WHITELIST:-*}
+      RENDEZVOUS_RELAY_ALL_PEER_RPC: ${RENDEZVOUS_RELAY_ALL_PEER_RPC:-false}
+      RENDEZVOUS_LISTENERS: ${RENDEZVOUS_LISTENERS:-tcp://0.0.0.0:11010,udp://0.0.0.0:11010,ws://0.0.0.0:11011}
+      RENDEZVOUS_HOSTNAME: ${RENDEZVOUS_HOSTNAME:-rendezvous}
+      RENDEZVOUS_FOREIGN_RELAY_BPS_LIMIT: ${RENDEZVOUS_FOREIGN_RELAY_BPS_LIMIT:-}
+      RENDEZVOUS_MAPPED_LISTENERS: ${RENDEZVOUS_MAPPED_LISTENERS:-}
+    volumes:
+      - ./docker/rendezvous/entrypoint.sh:/opt/rendezvous/entrypoint.sh:ro
+    ports:
+      - "${RENDEZVOUS_TCP_BIND:-0.0.0.0:11010}:11010"
+      - "${RENDEZVOUS_UDP_BIND:-0.0.0.0:11010}:11010/udp"
+      - "${RENDEZVOUS_WS_BIND:-0.0.0.0:11011}:11011"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "easytier-cli -o json node >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
 volumes:
   pgdata:
