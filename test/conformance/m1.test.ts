@@ -369,7 +369,12 @@ describe("M1 conformance: invite -> pending -> approve -> config -> status -> bl
     );
     await new Promise((resolve) => setTimeout(resolve, 2000));
     const logs = core.logs();
-    expect(logs).toContain("config-server heartbeat failed");
+    // The server closes the session of a blocked device on its first heartbeat.
+    // Depending on timing the client reports that as a failed heartbeat RPC or
+    // as the peer RPC transport closing first; both are the same rejection.
+    expect(logs).toMatch(
+      /config-server heartbeat failed|peer rpc transport read aborted|recv close message/,
+    );
     const after = await getDevice();
     expect(after.state).toBe("blocked");
     expect(after.appliedRevision).toBe(3);
