@@ -424,7 +424,7 @@ function InviteCreatedDialog({
 
   return (
     <Dialog onOpenChange={(open) => (open ? undefined : onClose())} open>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <KeyRoundIcon className="size-5" />

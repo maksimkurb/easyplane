@@ -64,7 +64,7 @@ function SheetContent({
             data-slot="sheet-close"
             render={
               <IconButtonWithTooltip
-                className="absolute top-3 right-3"
+                className="absolute top-3 right-3 z-20"
                 label="Close panel"
                 size="icon-sm"
                 variant="ghost"

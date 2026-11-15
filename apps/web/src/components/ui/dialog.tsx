@@ -40,12 +40,28 @@ function DialogOverlay({
   )
 }
 
+/**
+ * Dialog widths. The default is deliberately roomy: most dialogs in the panel
+ * hold forms or tables, and the old `sm:max-w-sm` default clipped both. Use
+ * `lg` for diff/preview content and `sm` for one-line confirmations.
+ */
+const dialogSizeClasses = {
+  sm: "sm:max-w-md",
+  md: "sm:max-w-2xl",
+  lg: "sm:max-w-4xl",
+  xl: "sm:max-w-6xl",
+} as const
+
+export type DialogSize = keyof typeof dialogSizeClasses
+
 function DialogContent({
   className,
   children,
+  size = "md",
   showCloseButton = true,
   ...props
 }: DialogPrimitive.Popup.Props & {
+  size?: DialogSize
   showCloseButton?: boolean
 }) {
   return (
@@ -54,18 +70,27 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-background p-4 text-sm ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // The popup itself never scrolls: it is capped to the viewport and
+          // the inner body scrolls, so the close button stays put while long
+          // forms and previews scroll underneath a sticky header/footer.
+          "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-1rem)] w-full max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-background text-sm ring-1 ring-foreground/10 duration-100 outline-none sm:max-h-[90dvh] data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          dialogSizeClasses[size],
           className
         )}
         {...props}
       >
-        {children}
+        <div
+          data-slot="dialog-body"
+          className="flex min-h-0 flex-1 flex-col gap-4 overflow-x-hidden overflow-y-auto overscroll-contain p-4"
+        >
+          {children}
+        </div>
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
             render={
               <IconButtonWithTooltip
-                className="absolute top-2 right-2"
+                className="absolute top-2 right-2 z-20"
                 label="Close dialog"
                 size="icon-sm"
                 variant="ghost"
@@ -84,7 +109,12 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2", className)}
+      className={cn(
+        // Sticky against the scrolling dialog body (negative margins reach the
+        // body padding), so the title stays visible in long dialogs.
+        "sticky -top-4 z-10 -mx-4 -mt-4 flex flex-col gap-2 rounded-t-xl bg-background px-4 pt-4 pr-12 pb-2",
+        className
+      )}
       {...props}
     />
   )
@@ -102,7 +132,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+        "sticky -bottom-4 z-10 -mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 backdrop-blur-sm sm:flex-row sm:justify-end",
         className
       )}
       {...props}

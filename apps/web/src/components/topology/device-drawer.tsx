@@ -58,8 +58,11 @@ export function DeviceDrawer({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent className="overflow-y-auto sm:max-w-xl" side="right">
-        <SheetHeader>
+      <SheetContent
+        className="overflow-y-auto data-[side=right]:w-full sm:max-w-xl"
+        side="right"
+      >
+        <SheetHeader className="sticky top-0 z-10 border-b bg-background">
           <SheetTitle className="flex items-center gap-2">
             {node?.hostname ?? t("topology.deviceDrawer")}
             {node?.relayCapable ? (
