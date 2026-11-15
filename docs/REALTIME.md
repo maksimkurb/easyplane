@@ -304,11 +304,13 @@ Implemented from sources / not exercised end-to-end:
 
 Not done / known gaps:
 
-- The event hub and snapshots are **in-process**. Run one server replica; with
-  several, a browser only sees events published by the replica it is connected
-  to, and each replica probes devices independently. Horizontal scaling needs a
-  shared bus (Postgres `LISTEN/NOTIFY` or Redis) and sticky config-server
-  sessions — tracked for M4.
+- The event hub and snapshots are **in-process**. Run exactly one server
+  replica; with several, a browser only sees events published by the replica it
+  is connected to, and each replica probes devices independently. M4 reviewed
+  this and left it as a documented hard limitation instead of a half-working
+  multi-replica mode (docs/DEPLOY.md §6). Horizontal scaling needs a shared bus
+  (Postgres `LISTEN/NOTIFY` or Redis), sticky config-server sessions, and shared
+  limiter/draft state.
 - Snapshots are memory-only and replaced wholesale: after a restart the map
   shows nothing until the first cycle, and there is no historical timeline.
 - Only the managed instance per device is probed. A second instance inside the
@@ -320,8 +322,8 @@ Not done / known gaps:
 - Peer ids are per instance. Two nodes are identified by their overlay IPv4;
   a peer without a route entry is shown under a synthetic id until the route
   table converges.
-- No per-user stream metrics in Prometheus yet (the hub exposes counts
-  internally; `/health` reports clients, not streams).
+- Prometheus exposes the total `easyplane_sse_streams` gauge but not per-user
+  or per-network stream counts (deliberate cardinality bound).
 
 ## 8. Configuration
 

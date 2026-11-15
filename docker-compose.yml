@@ -48,6 +48,8 @@ services:
       # EasyTier config-server listeners (place a TLS proxy in front for wss).
       - "${EASYPLANE_TCP_BIND:-0.0.0.0:22020}:22020"
       - "${EASYPLANE_WS_BIND:-0.0.0.0:22023}:22023"
+      # UDP config-server (M4). Also set EASYPLANE_UDP_PORT=22021 in .env.
+      # - "${EASYPLANE_UDP_BIND:-0.0.0.0:22021}:22021/udp"
       # If the server terminates TLS itself, mount the cert/key into the
       # container, set EASYPLANE_WSS_PORT/EASYPLANE_TLS_CERT/EASYPLANE_TLS_KEY
       # and publish that port here.

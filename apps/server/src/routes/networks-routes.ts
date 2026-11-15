@@ -150,6 +150,7 @@ export function registerNetworkRoutes(
   typed.post(
     "/api/networks/:networkId/secret/reveal",
     {
+      config: { rateLimit: { max: 30, timeWindow: "1 minute" } },
       schema: {
         operationId: "revealNetworkSecret",
         tags: ["networks"],
@@ -171,6 +172,7 @@ export function registerNetworkRoutes(
   typed.post(
     "/api/networks/:networkId/secret/rotate",
     {
+      config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
       schema: {
         operationId: "rotateNetworkSecret",
         tags: ["networks"],
@@ -225,6 +227,7 @@ export function registerNetworkRoutes(
   typed.post(
     "/api/networks/:networkId/invites",
     {
+      config: { rateLimit: { max: 60, timeWindow: "1 minute" } },
       schema: {
         operationId: "createInvite",
         tags: ["invites"],

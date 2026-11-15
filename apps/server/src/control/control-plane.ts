@@ -192,7 +192,9 @@ export class ControlPlaneServer extends EventEmitter<ControlPlaneEvents> {
   }
 
   private async acceptTransport(transport: FrameTransport): Promise<void> {
-    const remote = transport.remoteAddress || "unknown";
+    // Normalise IPv4-mapped IPv6 so one source cannot bypass the per-IP cap by
+    // connecting over both address families.
+    const remote = (transport.remoteAddress || "unknown").replace(/^::ffff:/, "");
     if (!this.acceptLimiter.allow(remote)) {
       this.logger.warn("config-server connection rate limit exceeded", { remote });
       this.options.metrics?.inc(METRIC_NAMES.clientRejected, { reason: "rate" });

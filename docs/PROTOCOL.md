@@ -36,13 +36,14 @@ Client side: `easytier-core/src/management/full/web_client.rs`
 (`ConfigServerEndpoint::parse`, `web_client_routine`).
 
 - Supported schemes come from `TunnelScheme`: `tcp`, `udp`, `ws`, `wss`,
-  `ring`, `quic`, `wg` … For the control plane only `tcp` and `ws`/`wss` are
-  implemented in M0.
+  `ring`, `quic`, `wg` … The control plane implements `tcp`, `ws`/`wss` and,
+  since M4, `udp` (§13.1).
 - The **token is the last URL path segment**, percent-decoded. An empty token
   is rejected by the client before dialling.
 - For non-websocket schemes the client **clears the URL path** before
-  dialling, so for `tcp://host:port/<token>` the token never appears on the
-  wire; it is only carried in `HeartbeatRequest.user_token`. [verified]
+  dialling, so for `tcp://host:port/<token>` and `udp://host:port/<token>` the
+  token never appears on the wire; it is only carried in
+  `HeartbeatRequest.user_token`. [verified]
 - For `ws`/`wss` the full URL (including the token path) is used for the
   WebSocket handshake. [verified]
 - The client retries every **1 s** on any connection failure
@@ -329,15 +330,12 @@ Observed behaviour with the real client:
 - `ListNetworkInstance` / `ListNetworkInstanceMeta` list the instance; the meta
   carries `networkName`, `instanceName`, `configPermission`, `source`. [verified]
 
-## 8. Not implemented in M0 (and why)
+## 8. Not implemented (and why)
 
-- **UDP tunnel** (`udp://`). Requires the EasyTier UDP session layer
-  (`SYN`/`SACK`/`DATA`/`FIN` with `conn_id` allocation and per-direction
-  connect ids, `udp_tunnel` in `easytier-core/src/socket/udp` + `tunnel/udp.rs`).
-  Deferred: the brief puts udp last, and ws/tcp already cover the CLI and the
-  Android JNI client.
 - **Noise msg3 and Noise transport keys.** EasyTier never uses them; the root
   key from msg2 is the whole contract.
+- **Peer-to-peer data plane / instance RPC portal.** EasyPlane only speaks the
+  config-server control channel; it never joins the overlay as a peer.
 - **Web-secure key rotation on the client side** is handled (we accept up to 3
   epochs ahead and keep a 256-packet replay window); we do not implement the
   `sync_root_key` rekey message because EasyTier's web client never sends one.
@@ -345,6 +343,9 @@ Observed behaviour with the real client:
   callable, but M1 converges devices with `RunNetworkInstance` + verification
   instead (see §10.4) rather than deleting whatever the server does not list.
   `RetainNetworkInstance` remains available for a future "adopt and prune" mode.
+- **Credential-mode networks** (`secure_mode.local_private_key` with no
+  `network_secret`). EasyPlane pushes shared-secret networks; importing a
+  credential-mode config is refused instead of silently breaking the chain.
 - **zstd compression of our own RPC bodies.** We always send uncompressed and
   ask the client not to compress responses. Inbound zstd is supported when the
   Node runtime provides `zlib.zstdDecompressSync`.
@@ -606,3 +607,165 @@ derivation tests decode exactly what the real client sent.
   §11.4/§11.5).
 - The browser stream is a control-plane feature; there is no EasyTier wire
   change and no new client capability.
+
+## 13. M4: UDP transport, imports and hardening
+
+### 13.1 UDP config-server transport [verified]
+
+Sources: `easytier-core/src/packet/mod.rs` (`UDPTunnelHeader`,
+`UdpPacketType`), `easytier-core/src/socket/udp/{packet,layer,session}.rs`,
+`easytier-core/src/connectivity/transport/udp.rs` (client dial).
+
+One UDP datagram carries:
+
+```
++-------------+---------+---------+-------+--------------------------+
+| conn_id u32 | msg u8  | pad u8  | len   | payload (len bytes)      |
+|             |         |         | u16   |                          |
++-------------+---------+---------+-------+--------------------------+
+```
+
+All integers are **little-endian** (`DefaultEndian = LittleEndian`). Messages:
+
+| value | message | payload |
+| --- | --- | --- |
+| 1 | `SYN` | 8 random bytes (`magic`) |
+| 2 | `SACK` | the same 8 bytes |
+| 3 | `DATA` | exactly one tunnel payload: 16-byte peer-manager header + RPC bytes |
+| 4 | `FIN` | empty |
+
+Handshake and session identity:
+
+1. The dialler picks a random `conn_id` and `magic`, sends `SYN`, and resends
+   it every `UDP_SESSION_RESEND_INTERVAL` until it receives a `SACK` with the
+   same conn id and magic (`pending_connects`).
+2. The acceptor replies `SACK` from the listener socket. The session is keyed
+   by `(source address, source port, conn_id)`; **both directions use the
+   dialler's conn id** — there is no reverse id.
+3. `DATA` in both directions is the same payload TCP frames carry after their
+   4-byte length prefix. `FIN` (or a socket error) closes the session.
+4. A retransmitted `SYN` for an existing session is answered with `SACK`
+   again; it never allocates a second session. `DATA` without a session gets
+   `FIN`. Sessions are only created by a valid `SYN`, so random datagrams
+   cannot allocate state.
+
+EasyPlane's listener additionally caps concurrent sessions
+(`EASYPLANE_MAX_CLIENT_CONNECTIONS` still applies at the control-plane layer),
+sweeps sessions with no datagrams for 2 minutes, and the normal heartbeat
+reaper closes a tunnel whose device stops heartbeating.
+
+Verified with real clients: `test/conformance/udp.test.ts` runs
+`easytier-core 2.6.4-81487c36` over `udp://…/token-udp` and asserts the Noise
+upgrade (`secure=true`), heartbeats, `ValidateConfig`, `RunNetworkInstance`,
+`CollectNetworkInfo`, `ListNetworkInstance` and `GetNetworkInstanceConfig`.
+`apps/server/test/unit/udp-listener.test.ts` pins the header/handshake bytes
+independently.
+
+The UDP listener is **opt-in** (`EASYPLANE_UDP_PORT`); `ws`/`wss`/`tcp` remain
+the default deployment.
+
+### 13.2 Import formats [verified by unit goldens + real device adoption]
+
+Three sources produce the same normalised `api.manage.NetworkConfig`:
+
+**EasyTier TOML** (`easytier-core/src/config/toml.rs`, `struct Config`):
+
+```toml
+instance_name = "..."
+instance_id = "..."
+hostname = "..."
+ipv4 = "10.144.144.10/24"      # a bare address defaults to /24 upstream
+dhcp = false
+listeners = ["tcp://0.0.0.0:11010"]
+
+[network_identity]
+network_name = "my-net"
+network_secret = "..."          # must be preserved byte-for-byte
+
+[[peer]]
+uri = "tcp://public.example.com:11010"
+peer_public_key = "..."         # accepted, but not represented in EasyPlane
+
+[[proxy_network]]
+cidr = "10.0.0.0/24"
+mapped_cidr = "192.168.1.0/24"
+allow = ["tcp"]                 # dropped: NetworkConfig has no allow list
+
+[[port_forward]]
+bind_addr = "0.0.0.0:11011"
+dst_addr = "192.168.1.10:11011"
+proto = "tcp"
+
+routes = ["10.1.0.0/16"]
+exit_nodes = ["10.144.144.5"]
+
+[flags]                         # snake_case FlagsInConfig names
+no_tun = true
+accept_dns = true
+mtu = 1300
+relay_network_whitelist = "net-a net-b"
+
+[secure_mode]
+enabled = false
+```
+
+The TOML reader accepts unknown top-level keys (upstream `Config` does too),
+maps the fields above, reports everything it cannot represent (proxy CIDRs,
+exit nodes, ACL, credentials, port forwards, VPN portal, IPv6, custom STUN,
+whitelists) and refuses credential mode. The writer produces a file that the
+upstream loader parses; a golden test round-trips the upstream full example in
+both directions.
+
+**Share link** (`easytier-contrib/easytier-ohrs/src/config/services/share_link_service.rs`):
+
+```
+https://easytier.cn/comp_cfg?cfg=<payload>&name=<display>&only_start=true
+payload = base64url_no_pad( zlib( JSON ) )
+JSON    = pbjson(api.manage.NetworkConfig) with every *top level* key replaced
+          by its proto field number as a decimal string
+```
+
+Details that matter:
+
+- nested messages keep **snake_case** pbjson names (`peer_public_key`,
+  `local_private_key`), enums are names (`"Manual"`), 64-bit integers are
+  strings, `bytes` are base64;
+- only the top level is remapped (`"6"` instead of `"network_name"`); empty
+  arrays and `null` are pruned;
+- upstream only accepts `https://easytier.cn/comp_cfg`, EasyPlane also accepts
+  the same path on another host (documented) and a raw `cfg=` payload;
+- zlib output is bounded to 1 MiB on decode to stop decompression bombs.
+
+`apps/server/test/unit/import-config.test.ts` checks the field-number map
+against the pinned `api_manage.proto`, decodes a hand-built GUI-shaped link and
+round-trips a config with an ACL in both directions.
+
+**Running device** (`WebClientService.GetNetworkInstanceConfig`, §6.2). The
+panel lists the device's instances, calls the RPC and maps the returned
+`NetworkConfig` the same way. The instance id and hostname are device-specific
+and are dropped; the network name, secret and non-secret defaults are kept.
+`test/conformance/m4-import.test.ts` exercises this against a real client.
+
+### 13.3 What import preserves and what it does not
+
+Preserved: `network_name`, `network_secret` (encrypted at rest and never sent
+to the browser during preview), addressing method/prefix, DHCP flag, peer and
+listener URLs, MTU, `no_tun`, P2P/latency flags, manual routes/accept-routes,
+and the MagicDNS switch.
+
+Not imported because EasyPlane owns the value through a workflow: proxy CIDRs
+and exit nodes (route approvals), ACL/credentials (policy document), port
+forwards, VPN portal, mapped listeners, IPv6/STUN/whitelist settings. The
+preview lists every dropped item; nothing is silently discarded.
+
+### 13.4 Hardening on the channel
+
+- Per-IP tunnel admission limiter, simultaneous-connection cap and a heartbeat
+  reaper for half-open/quiet sessions (§2). [verified in unit tests]
+- Unknown-token limiter; pending-device cap per network. [verified]
+- All browser/API rate limits (global + per-route) and CSRF/role checks are
+  enforced server-side; see docs/DEPLOY.md §5.
+- Optional Prometheus `/metrics` (bearer token on the app or an internal-only
+  listener) exposes counts only: sessions, heartbeats, pushes, topology cycles,
+  imports, SSE streams. It never contains a network/device name, token or
+  secret.

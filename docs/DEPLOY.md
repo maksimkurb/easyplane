@@ -1,13 +1,14 @@
-# Deploying EasyPlane (M3)
+# Deploying EasyPlane (M4)
 
 EasyPlane is one Node process plus PostgreSQL. The process serves the web UI,
 the HTTP API and the EasyTier config-server listeners (`ws`, `wss`, `tcp`).
 `docker compose up` builds and runs both.
 
 ```
-browser ──https──▶ reverse proxy ──▶ server:8080  (UI + /api)
+browser ──https──▶ reverse proxy ──▶ server:8080  (UI + /api + /metrics)
 easytier-core ──wss──▶ reverse proxy ──▶ server:22023 (ws config-server)
 easytier-core ──tcp──▶ server:22020
+easytier-core ──udp──▶ server:22021 (optional, EASYPLANE_UDP_PORT)
 server ──▶ postgres:5432
 ```
 
@@ -90,6 +91,25 @@ proxy's buffering settings first. SSE connections count against the per-user cap
 (`EASYPLANE_SSE_MAX_PER_USER`, default 4); a tab uses one, plus one while the
 topology map is open.
 
+**Caddy** (wss + SSE in one file, automatic certificates):
+
+```caddyfile
+easyplane.example.com {
+    # SSE must not be buffered; everything else is a normal reverse proxy.
+    reverse_proxy 127.0.0.1:8080 {
+        flush_interval -1
+    }
+}
+
+vpn.example.com {
+    reverse_proxy 127.0.0.1:22023
+}
+```
+
+`flush_interval -1` is Caddy's equivalent of nginx `proxy_buffering off` and
+covers `/api/events`; `reverse_proxy` handles the WebSocket upgrade for the
+config-server automatically. Set `EASYPLANE_PUBLIC_CONFIG_SERVER_URL=wss://vpn.example.com`.
+
 **B. The server terminates TLS itself.** Mount a certificate and set:
 
 ```
@@ -113,6 +133,91 @@ Register one redirect URI per provider:
 ```
 https://<panel-host>/api/auth/callback/<provider-id>
 ```
+
+Only authorization code + PKCE is used; no passwords are stored. Multiple
+providers can be configured in `EASYPLANE_OIDC_PROVIDERS`; users are matched by
+`(issuer, subject)` and re-login with the same identity keeps the same account.
+A provider can be a public client (no `clientSecret`) — PKCE S256 is always
+sent. `roleClaim` is read from the ID token and, when `useUserinfo` is true,
+merged with userinfo claims (later values win). Group names are matched
+case-sensitively; a user in both admin and member groups is an admin.
+
+### Keycloak
+
+1. Create a confidential client `easyplane` in the realm.
+2. Valid redirect URI: `https://<panel-host>/api/auth/callback/keycloak`.
+3. Add a group membership mapper to the **ID token** (claim `groups`, group
+   full path or name as you prefer), or leave `useUserinfo: true` and add it to
+   userinfo.
+4. Create groups `easyplane-admins` / `easyplane-members`.
+
+```json
+{
+  "id": "keycloak",
+  "label": "Company SSO",
+  "issuer": "https://sso.example.com/realms/main",
+  "clientId": "easyplane",
+  "clientSecret": "...",
+  "scopes": "openid email profile",
+  "roleClaim": "groups",
+  "adminGroups": ["easyplane-admins"],
+  "memberGroups": ["easyplane-members"],
+  "defaultRole": "viewer",
+  "allowedEmailDomains": ["example.com"]
+}
+```
+
+### Authentik
+
+1. Create an OAuth2/OpenID provider (confidential) with redirect URI
+   `https://<panel-host>/api/auth/callback/authentik`.
+2. Scope mapping: include `groups` in the ID token (Authentik's default
+   `profile` scope already exposes groups in userinfo).
+3. Application policy decides who may sign in; EasyPlane maps the groups.
+
+```json
+{
+  "id": "authentik",
+  "label": "Authentik",
+  "issuer": "https://auth.example.com/application/o/easyplane/",
+  "clientId": "...",
+  "clientSecret": "...",
+  "roleClaim": "groups",
+  "adminGroups": ["easyplane-admins"],
+  "memberGroups": ["easyplane-members"],
+  "defaultRole": "viewer"
+}
+```
+
+The issuer must be the exact `iss` value from
+`https://auth.example.com/application/o/easyplane/.well-known/openid-configuration`
+(Authentik includes the trailing slash).
+
+### Google Workspace
+
+Google has no groups claim in the ID token. Use `hd`/domain restrictions and
+assign roles manually (or through a group-claim proxy):
+
+```json
+{
+  "id": "google",
+  "label": "Google",
+  "issuer": "https://accounts.google.com",
+  "clientId": "...apps.googleusercontent.com",
+  "clientSecret": "...",
+  "scopes": "openid email profile",
+  "roleClaim": "groups",
+  "adminGroups": [],
+  "memberGroups": [],
+  "defaultRole": "member",
+  "allowedEmailDomains": ["example.com"]
+}
+```
+
+With no matching groups every user gets `defaultRole`; set it to `viewer` and
+promote the first admin through the break-glass token or a database update.
+`allowedEmailDomains` is enforced **after** token validation and is the only
+tenant boundary in a single-organisation deployment.
 
 `EASYPLANE_OIDC_PROVIDERS` is a JSON array:
 
@@ -182,17 +287,78 @@ token; deleting a device does the same and removes its history.
   audited. A *separate* local `easytier-core` process is invisible to the
   control plane — see docs/POLICY.md §7 for what can and cannot be revoked.
 
+## 4c. Importing an existing network
+
+**Networks → Import network** (admin) accepts three sources and always shows a
+preview + diff before saving:
+
+1. **TOML**: paste or upload the file used by `easytier-core -c`. The network
+   secret is read and preserved; it is never returned to the browser.
+2. **Share link**: `https://…/comp_cfg?cfg=…` from the EasyTier GUI. The same
+   zlib/base64url/pbjson format is used; the secret is preserved.
+3. **From a device**: reads `GetNetworkInstanceConfig` from an online device.
+   This is the migration path from another control plane or a hand-written
+   config file: connect the client once, adopt, then point it at EasyPlane.
+
+The preview lists the resulting `network_name`/CIDR/defaults and every source
+feature EasyPlane does not import (proxy CIDRs/exit nodes are owned by route
+approvals, ACL by the policy document, port forwards/VPN portal/credentials are
+not managed). `network_name` is unique per deployment, so importing a network
+that already exists returns `409`; the migration flow is to preview, delete the
+old network (the draft keeps the secret) and commit the draft.
+
+`GET /api/networks/:id/export?format=toml|share-link` produces the reverse
+(admin only, audited; the output contains the secret by design). See
+[PROTOCOL.md](PROTOCOL.md) §13.2 for the exact formats.
+
 ## 5. Operations
 
 - `GET /health` returns database and client counts; the container healthcheck
   uses it.
 - Logs are structured JSON (pino for HTTP, a small JSON logger for the control
-  plane). Cookies, authorization headers and CSRF headers are redacted.
+  plane). Cookies, authorization headers, CSRF headers, secrets and tokens are
+  never logged; a unit test scans every logger call for secret-looking fields.
 - Session housekeeping runs hourly; expired sessions and OIDC states are
   deleted.
-- Unknown config-server tokens are rate-limited per source IP
-  (`EASYPLANE_UNKNOWN_TOKEN_LIMIT_PER_MINUTE`) and pending devices are capped
-  per network (`EASYPLANE_MAX_PENDING_DEVICES_PER_NETWORK`).
+- **Rate limits**: a global per-IP HTTP limit
+  (`EASYPLANE_API_RATE_LIMIT_PER_MINUTE`, default 600/min), stricter limits on
+  auth (30/min), import preview/commit (20 and 10/min), secret reveal (30/min),
+  rotate (10/min), export (20/min) and invite creation (60/min). Config-server
+  tunnels have a per-IP admission limit
+  (`EASYPLANE_CLIENT_ACCEPT_LIMIT_PER_MINUTE`), a hard connection cap
+  (`EASYPLANE_MAX_CLIENT_CONNECTIONS`) and an unknown-token limiter
+  (`EASYPLANE_UNKNOWN_TOKEN_LIMIT_PER_MINUTE`); pending devices are capped per
+  network (`EASYPLANE_MAX_PENDING_DEVICES_PER_NETWORK`).
+- **Session timeouts**: a config-server tunnel that sends no heartbeat for
+  `EASYPLANE_CLIENT_HEARTBEAT_TIMEOUT_MS` (20 s) is closed — that is how
+  half-open TCP/dead NAT sessions are reclaimed. UDP sessions also have a
+  two-minute datagram idle sweep. Browser sessions have a rolling idle timeout
+  (`EASYPLANE_SESSION_IDLE_MINUTES`, 12 h) and an absolute cap
+  (`EASYPLANE_SESSION_ABSOLUTE_HOURS`, 7 days), stored in PostgreSQL.
+- **Metrics** (optional): set `EASYPLANE_METRICS_TOKEN` and scrape
+  `GET /metrics` with `Authorization: Bearer <token>`, or set
+  `EASYPLANE_METRICS_PORT` to serve `/metrics` + `/health` on an internal-only
+  listener (`EASYPLANE_METRICS_HOST`, default `127.0.0.1`). The endpoint is
+  disabled otherwise.
+
+```yaml
+# prometheus.yml
+scrape_configs:
+  - job_name: easyplane
+    metrics_path: /metrics
+    scheme: http
+    authorization:
+      credentials: <EASYPLANE_METRICS_TOKEN>
+    static_configs:
+      - targets: ["easyplane.internal:8080"]
+```
+
+Exposed: `easyplane_clients_connected`, `_client_sessions_total`,
+`_client_connections_rejected_total`, `_clients_reaped_total`,
+`_heartbeats_total`, `_unknown_config_server_tokens_total`,
+`_config_pushes_total{status}`, `_sse_streams`, `_topology_cycles_total`,
+`_network_imports_total{source}`, `_database_up`, RSS, uptime and HTTP request
+counts. No network/device names, tokens or secrets are exposed.
 - Browser updates are pushed over SSE (`GET /api/events`, session cookie,
   role-checked, bounded per user). No polling interval needs tuning.
 - The topology map probes each online device with `CollectNetworkInfo`. Its cost
@@ -211,15 +377,20 @@ that key is not implemented in M1.
 docker compose exec postgres pg_dump -U easyplane easyplane | gzip > easyplane.sql.gz
 ```
 
-## 6. Limitations and risks (M1–M3)
+## 6. Limitations and risks (M1–M4)
 
-- **Run one server instance.** The device-session registry, unknown-token
-  limiter, reconcile timer, SSE event hub and topology snapshots are in-process.
-  A second replica could not push to devices connected to the first, browser
-  events would only reach clients of the publishing replica, rate limits would
-  be per replica and each replica would probe every device. Horizontal scaling
-  needs sticky config-server sessions plus a shared event bus; see
-  [REALTIME.md](REALTIME.md) §7.
+- **Run exactly one server instance.** This is a hard limitation, not a tuning
+  note. In-process state includes: the device-session registry (a push can only
+  reach a device connected to the same process), the unknown-token and
+  connection limiters, the reconcile timer (every replica would re-push every
+  device), the per-network approval queue (two replicas could allocate the same
+  address), the SSE event hub (events would reach only the publishing replica's
+  browsers), topology snapshots, and import drafts (a commit hitting another
+  replica would fail). The database is shared and safe, but the control plane
+  is not. Horizontal scaling needs sticky config-server sessions, a shared
+  event bus, a distributed limiter/queue and sticky or shared drafts; none of
+  that is implemented. Run one replica behind a plain reverse proxy (it is
+  stateless from the browser's point of view only if it is the only one).
 - The topology map is memory-only: after a restart it is empty until the first
   collection (seconds when a map is open, up to the idle interval otherwise),
   and there is no history. Only the managed instance of each device is probed;
@@ -231,8 +402,14 @@ docker compose exec postgres pg_dump -U easyplane easyplane | gzip > easyplane.s
 - The OIDC client authenticates at the token endpoint with
   `client_secret_post` (or no secret + PKCE). Providers that require
   `client_secret_basic`, mTLS or JWT client assertions are not supported yet.
-- No UDP config-server transport and no encryption-key rotation. Losing
-  `EASYPLANE_ENCRYPTION_KEY` makes stored network secrets unrecoverable.
+- No encryption-key rotation. Losing `EASYPLANE_ENCRYPTION_KEY` makes stored
+  network secrets unrecoverable. Back it up with the database.
+- Import drafts, export, and the optional internal metrics listener are
+  single-process features for the same reason as above. The `/metrics` route on
+  the main app is also per-process.
+- `network_name` is unique per deployment, so an imported network cannot
+  coexist with a network that already uses the same EasyTier identity; migrate
+  by deleting the old network after previewing (the draft keeps the secret).
 - `machine_id` is self-reported by the client. Anyone holding a valid invite
   can claim a machine id; approval is the security boundary. Rotate/revoke
   invites if one leaks.
@@ -250,5 +427,8 @@ docker compose exec postgres pg_dump -U easyplane easyplane | gzip > easyplane.s
 - One organisation per deployment, roles are deployment-wide.
 - No browser E2E suite yet (the UI is covered by unit tests, typecheck, lint
   and a served-build smoke test).
+- The load test is loopback-only and simulated on the client side; see
+  [PERFORMANCE.md](PERFORMANCE.md) for the measured envelope (200–500 clients,
+  p99 heartbeat latency, ~0.2 MB/client) and what it does not cover.
 - No outbound calls except configured OIDC discovery/token/userinfo and
   EasyTier clients.
