@@ -9,6 +9,7 @@ import { OidcClient } from "../auth/oidc.js";
 import { SessionService } from "../auth/session.js";
 import { ControlPlaneServer } from "../control/control-plane.js";
 import { createLogger, type Logger } from "../logger.js";
+import { RealtimeHub } from "../realtime/hub.js";
 import { SecretBox } from "../security/crypto.js";
 import { AuditService } from "../services/audit.js";
 import { DeviceService } from "../services/device-service.js";
@@ -18,8 +19,9 @@ import { NetworkService } from "../services/network-service.js";
 import { PolicyService } from "../services/policy-service.js";
 import { PushService } from "../services/push-service.js";
 import { RouteService } from "../services/route-service.js";
+import { TopologyService } from "../topology/collector.js";
 
-export const VERSION = "0.2.0-M2";
+export const VERSION = "0.3.0-M3";
 
 function normalizeIp(value: string): string {
   if (value.startsWith("::ffff:")) return value.slice("::ffff:".length);
@@ -45,6 +47,8 @@ export interface AppContext {
   policies: PolicyService;
   routes: RouteService;
   controlPlane: ControlPlaneServer;
+  realtime: RealtimeHub;
+  topology: TopologyService;
 }
 
 export interface CreateContextOptions {
@@ -90,13 +94,19 @@ export async function createAppContext(
     bootstrapToken: env.bootstrapAdminToken,
     bootstrapReenable: env.bootstrapReenable,
   });
-  const networks = new NetworkService(db, secretBox, audit);
+  const realtime = new RealtimeHub({
+    maxPerUser: env.sseMaxPerUser,
+    maxTotal: env.sseMaxTotal,
+    bufferSize: env.sseEventBuffer,
+  });
+  const networks = new NetworkService(db, secretBox, audit, realtime);
   const invites = new InviteService(db, audit);
   const deviceSessions = new DeviceSessionRegistry();
   // PolicyService and RouteService are wired after the push service because
   // they need to schedule pushes; the push service only needs callbacks.
   let policies: PolicyService | undefined;
   let routes: RouteService | undefined;
+  let devicesService: DeviceService | undefined;
   const push = new PushService({
     db,
     secretBox,
@@ -104,6 +114,9 @@ export async function createAppContext(
     audit,
     logger,
     reportIntervalMs: env.routeReportIntervalMs,
+    onDeviceUpdated: async (deviceId, reason) => {
+      await devicesService?.notifyDevice(deviceId, reason);
+    },
     compileAcl: async (network, deviceId, policyVersion) => {
       if (!policies) return undefined;
       return policies.compileForVersion(network, deviceId, policyVersion);
@@ -113,8 +126,8 @@ export async function createAppContext(
       await routes.recordReport(device, payload);
     },
   });
-  policies = new PolicyService({ db, secretBox, audit, push });
-  routes = new RouteService({ db, audit, push });
+  policies = new PolicyService({ db, secretBox, audit, push, realtime });
+  routes = new RouteService({ db, audit, push, realtime });
   const policyService = policies;
   const routeService = routes;
 
@@ -125,11 +138,26 @@ export async function createAppContext(
     invites,
     push,
     sessions: deviceSessions,
+    realtime,
     logger,
     onlineTimeoutMs: env.deviceOnlineTimeoutMs,
     maxPendingPerNetwork: env.maxPendingDevicesPerNetwork,
     unknownTokenLimitPerMinute: env.unknownTokenLimitPerMinute,
     listClients: () => controlPlane?.listClients() ?? [],
+  });
+  devicesService = devices;
+
+  const topology = new TopologyService({
+    db,
+    sessions: deviceSessions,
+    realtime,
+    logger,
+    idleIntervalMs: env.topologyIdleIntervalMs,
+    activeIntervalMs: env.topologyActiveIntervalMs,
+    jitterRatio: env.topologyJitterRatio,
+    concurrency: env.topologyConcurrency,
+    deviceTimeoutMs: env.topologyTimeoutMs,
+    maxDevicesPerCycle: env.topologyMaxDevices,
   });
 
   controlPlane = new ControlPlaneServer({
@@ -176,5 +204,7 @@ export async function createAppContext(
     policies: policyService,
     routes: routeService,
     controlPlane,
+    realtime,
+    topology,
   };
 }

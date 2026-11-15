@@ -5,6 +5,7 @@ import {
   findDeviceInNetwork,
   findUserById,
   getDevice,
+  getDeviceById,
   getNetworkById,
   getRevision,
   incrementInviteUses,
@@ -26,6 +27,7 @@ import type { Device, DeviceState, Network, UserRole } from "../db/schema.js";
 import {
   computeDeviceStatus,
   type DeviceStatus,
+  type OnlineState,
 } from "../domain/device-status.js";
 import { normalizeDesiredConfig, type DesiredConfig } from "../domain/desired-config.js";
 import { allocateIpv4, cidrPrefix, parseCidr, parseIpv4 } from "../domain/ip.js";
@@ -40,6 +42,7 @@ import {
 import { nextRevisionNumber, planRollback } from "../domain/revisions.js";
 import type { ManagedClient } from "../control/managed-client.js";
 import type { Logger } from "../logger.js";
+import type { RealtimeHub } from "../realtime/hub.js";
 import { sha256Hex } from "../security/crypto.js";
 import type { AuditService } from "./audit.js";
 import type { DeviceSessionRegistry } from "./device-sessions.js";
@@ -149,6 +152,8 @@ export interface DeviceServiceOptions {
   push: PushService;
   sessions: DeviceSessionRegistry;
   logger: Logger;
+  /** Live browser fan-out; optional so unit tests can omit it. */
+  realtime?: RealtimeHub;
   onlineTimeoutMs: number;
   maxPendingPerNetwork: number;
   unknownTokenLimitPerMinute: number;
@@ -158,11 +163,102 @@ export interface DeviceServiceOptions {
 
 export class DeviceService {
   readonly rateLimiter: UnknownTokenRateLimiter;
+  /** Last realtime event per device, to keep heartbeats from flooding SSE. */
+  private readonly lastEvent = new Map<string, { signature: string; at: number }>();
 
   constructor(private readonly options: DeviceServiceOptions) {
     this.rateLimiter = new UnknownTokenRateLimiter(
       options.unknownTokenLimitPerMinute,
     );
+  }
+
+  /**
+   * Publishes a `device.updated` event. Heartbeats arrive every second, so an
+   * unchanged status is coalesced: a new event is emitted when any status
+   * field changes, or at most every `EVENT_COOLDOWN_MS` (which is what keeps
+   * `lastSeen` moving in the panel). Returns true when an event was published.
+   */
+  async notifyDevice(
+    deviceId: string,
+    reason: string,
+    options: { online?: OnlineState } = {},
+    cooldownMs = 5_000,
+  ): Promise<boolean> {
+    if (!this.options.realtime) return false;
+    const device = await getDeviceById(this.options.db, deviceId);
+    if (!device) return false;
+    return this.publishDevice(device, reason, options, cooldownMs);
+  }
+
+  /** Same as `notifyDevice` for a device row the caller already holds. */
+  publishDevice(
+    device: Device,
+    reason: string,
+    options: { online?: OnlineState } = {},
+    cooldownMs = 5_000,
+  ): boolean {
+    const realtime = this.options.realtime;
+    if (!realtime) return false;
+    const status = computeDeviceStatus({
+      state: device.state,
+      lastSeenAt: device.lastSeenAt,
+      now: new Date(),
+      onlineTimeoutMs: this.options.onlineTimeoutMs,
+      desiredRevision: device.desiredRevision,
+      appliedRevision: device.appliedRevision,
+      lastPushError: device.lastPushError,
+    });
+    const online = options.online ?? status.online;
+    const signature = [
+      status.state,
+      online,
+      status.sync,
+      device.desiredRevision,
+      device.appliedRevision,
+      device.lastPushError,
+      device.state === "blocked" ? "blocked" : "",
+    ].join("|");
+    const now = Date.now();
+    const previous = this.lastEvent.get(device.id);
+    const changed = previous?.signature !== signature;
+    const stale = previous === undefined || now - previous.at >= cooldownMs;
+    if (!changed && !stale) return false;
+    this.lastEvent.set(device.id, { signature, at: now });
+    realtime.publish({
+      type: "device.updated",
+      orgId: device.orgId,
+      networkId: device.networkId,
+      deviceId: device.id,
+      data: {
+        deviceId: device.id,
+        networkId: device.networkId,
+        state: device.state,
+        online,
+        sync: status.sync,
+        hostname: device.dnsName ?? device.hostname,
+        virtualIpv4: device.virtualIpv4,
+        lastSeenAt: device.lastSeenAt?.toISOString() ?? null,
+        desiredRevision: device.desiredRevision,
+        appliedRevision: device.appliedRevision,
+        lastPushError: device.lastPushError,
+        reason,
+      },
+    });
+    // Keep the cache small on a long-lived process.
+    if (this.lastEvent.size > 10_000) this.lastEvent.clear();
+    return true;
+  }
+
+  /** Publishes `device.removed` before the row disappears. */
+  private notifyRemoved(device: Device): void {
+    this.options.realtime?.publish({
+      type: "device.removed",
+      orgId: device.orgId,
+      networkId: device.networkId,
+      deviceId: device.id,
+      data: { deviceId: device.id, networkId: device.networkId },
+    });
+    this.lastEvent.delete(device.id);
   }
 
   private async tagsByDevice(orgId: string, deviceId?: string): Promise<Map<string, string[]>> {
@@ -313,6 +409,7 @@ export class DeviceService {
       ) {
         this.options.push.schedule(device.id, "heartbeat");
       }
+      this.publishDevice(device, "heartbeat");
       return { device, created: false };
     }
 
@@ -371,6 +468,7 @@ export class DeviceService {
       machineId: device.machineId,
       networkId: network.id,
     });
+    this.publishDevice(device, "joined");
     return { device, created: true };
   }
 
@@ -532,6 +630,7 @@ export class DeviceService {
       },
     });
     this.options.push.schedule(deviceId, "approved");
+    this.publishDevice(updated, "approved");
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
     return this.toDto(updated, network, tags.get(deviceId) ?? []);
   }
@@ -606,6 +705,7 @@ export class DeviceService {
       },
     });
     const network = await getNetworkById(this.options.db, device.networkId);
+    this.publishDevice(updated, "blocked", { online: "offline" });
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
     return this.toDto(updated, network, tags.get(deviceId) ?? []);
   }
@@ -616,6 +716,7 @@ export class DeviceService {
     const client = this.findClient(device);
     if (client) await this.stopInstance(client, device);
     client?.close("device was deleted");
+    this.notifyRemoved(device);
     await deleteDevice(this.options.db, deviceId);
     await this.options.audit.record({
       orgId: actor.orgId,
@@ -712,6 +813,7 @@ export class DeviceService {
       },
     });
     this.options.push.schedule(deviceId, "revision created");
+    this.publishDevice(updated, "revision-created");
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
     return {
       revision: this.revisionToDto(revision),
@@ -774,6 +876,7 @@ export class DeviceService {
       },
     });
     this.options.push.schedule(deviceId, "rollback");
+    this.publishDevice(updated, "rollback");
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
     return {
       revision: this.revisionToDto(revision),
@@ -813,6 +916,7 @@ export class DeviceService {
       metadata: { previous, dnsName: label, networkId: network.id },
     });
     this.options.push.schedule(deviceId, "renamed");
+    this.publishDevice(updated, "renamed");
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
     return this.toDto(updated, network, tags.get(deviceId) ?? []);
   }
@@ -846,6 +950,7 @@ export class DeviceService {
     });
     // A tag change changes the compiled ACL of other devices in the network.
     this.options.push.schedule(deviceId, "tags updated");
+    this.publishDevice(updated, "tags-updated");
     return this.toDto(updated, network, normalized);
   }
 
@@ -874,6 +979,7 @@ export class DeviceService {
       metadata: { ownerUserId, previousOwner: device.ownerUserId },
     });
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
+    this.publishDevice(updated, "owner-updated");
     return this.toDto(updated, network, tags.get(deviceId) ?? []);
   }
 
@@ -883,7 +989,11 @@ export class DeviceService {
    * makes the lifecycle explicit and lets tests observe it.
    */
   handleSessionClosed(client: ManagedClient): void {
+    const deviceId = this.options.sessions.deviceForClient(client);
     this.options.sessions.unbindClient(client);
+    if (deviceId) {
+      void this.notifyDevice(deviceId, "session-closed", { online: "offline" });
+    }
   }
 
   /** Hash helper kept here so tests can assert token storage without a DB. */

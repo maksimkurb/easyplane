@@ -79,6 +79,47 @@ const envSchema = z.object({
     .int()
     .nonnegative()
     .default(30_000),
+  /**
+   * M3 topology collection. The idle interval applies when no browser has the
+   * map open; the active interval only while at least one SSE stream watches
+   * the topology. Both get jitter.
+   */
+  EASYPLANE_TOPOLOGY_IDLE_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(30_000),
+  EASYPLANE_TOPOLOGY_ACTIVE_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(5_000),
+  EASYPLANE_TOPOLOGY_JITTER: z.coerce.number().min(0).max(0.9).default(0.2),
+  EASYPLANE_TOPOLOGY_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(64)
+    .default(4),
+  EASYPLANE_TOPOLOGY_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(500)
+    .default(5_000),
+  EASYPLANE_TOPOLOGY_MAX_DEVICES: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(500),
+  /** Bounded concurrent browser event streams. */
+  EASYPLANE_SSE_MAX_PER_USER: z.coerce.number().int().positive().max(32).default(4),
+  EASYPLANE_SSE_MAX_TOTAL: z.coerce.number().int().positive().default(500),
+  EASYPLANE_SSE_EVENT_BUFFER: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(10_000)
+    .default(500),
   EASYPLANE_UNKNOWN_TOKEN_LIMIT_PER_MINUTE: z.coerce
     .number()
     .int()
@@ -120,6 +161,15 @@ export interface AppEnv {
   deviceOnlineTimeoutMs: number;
   reconcileIntervalMs: number;
   routeReportIntervalMs: number;
+  topologyIdleIntervalMs: number;
+  topologyActiveIntervalMs: number;
+  topologyJitterRatio: number;
+  topologyConcurrency: number;
+  topologyTimeoutMs: number;
+  topologyMaxDevices: number;
+  sseMaxPerUser: number;
+  sseMaxTotal: number;
+  sseEventBuffer: number;
   unknownTokenLimitPerMinute: number;
   maxPendingDevicesPerNetwork: number;
   webDir: string | undefined;
@@ -200,6 +250,15 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     deviceOnlineTimeoutMs: parsed.EASYPLANE_DEVICE_ONLINE_TIMEOUT_MS,
     reconcileIntervalMs: parsed.EASYPLANE_RECONCILE_INTERVAL_MS,
     routeReportIntervalMs: parsed.EASYPLANE_ROUTE_REPORT_INTERVAL_MS,
+    topologyIdleIntervalMs: parsed.EASYPLANE_TOPOLOGY_IDLE_INTERVAL_MS,
+    topologyActiveIntervalMs: parsed.EASYPLANE_TOPOLOGY_ACTIVE_INTERVAL_MS,
+    topologyJitterRatio: parsed.EASYPLANE_TOPOLOGY_JITTER,
+    topologyConcurrency: parsed.EASYPLANE_TOPOLOGY_CONCURRENCY,
+    topologyTimeoutMs: parsed.EASYPLANE_TOPOLOGY_TIMEOUT_MS,
+    topologyMaxDevices: parsed.EASYPLANE_TOPOLOGY_MAX_DEVICES,
+    sseMaxPerUser: parsed.EASYPLANE_SSE_MAX_PER_USER,
+    sseMaxTotal: parsed.EASYPLANE_SSE_MAX_TOTAL,
+    sseEventBuffer: parsed.EASYPLANE_SSE_EVENT_BUFFER,
     unknownTokenLimitPerMinute: parsed.EASYPLANE_UNKNOWN_TOKEN_LIMIT_PER_MINUTE,
     maxPendingDevicesPerNetwork:
       parsed.EASYPLANE_MAX_PENDING_DEVICES_PER_NETWORK,

@@ -28,6 +28,8 @@ import { registerNetworkRoutes } from "../routes/networks-routes.js";
 import { registerPolicyRoutes } from "../routes/policy-routes.js";
 import { registerRouteRoutes } from "../routes/route-routes.js";
 import { registerSystemRoutes } from "../routes/system-routes.js";
+import { registerTopologyRoutes } from "../routes/topology-routes.js";
+import { registerEventRoutes } from "../realtime/sse.js";
 
 export interface BuildAppOptions {
   /** Overrides `EASYPLANE_WEB_DIR`. */
@@ -112,6 +114,7 @@ export async function buildApp(
         { name: "routes" },
         { name: "audit" },
         { name: "users" },
+        { name: "topology" },
       ],
     },
     transform: jsonSchemaTransform,
@@ -125,6 +128,8 @@ export async function buildApp(
   registerDnsRoutes(app, context);
   registerRouteRoutes(app, context);
   registerAuditRoutes(app, context);
+  registerTopologyRoutes(app, context);
+  registerEventRoutes(app, context);
 
   app.get(
     "/api/openapi.json",

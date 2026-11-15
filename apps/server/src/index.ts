@@ -159,3 +159,53 @@ export {
   type RouteReportDto,
 } from "./services/route-service.js";
 export { AppError } from "./services/errors.js";
+
+// M3: realtime browser updates and topology
+export {
+  RealtimeHub,
+  RealtimeLimitError,
+  type RealtimeHubOptions,
+  type RealtimeIdentity,
+  type RealtimeSubscription,
+  type RealtimeSubscriptionOptions,
+  type RealtimeSubscriber,
+} from "./realtime/hub.js";
+export {
+  defaultTopics,
+  type RealtimeEvent,
+  type RealtimeEventData,
+  type RealtimeEventInput,
+  type RealtimeEventType,
+  type RealtimeTopic,
+} from "./realtime/events.js";
+export { SSE_HEARTBEAT_SECONDS, serializeSseEvent } from "./realtime/sse.js";
+export {
+  deriveTopology,
+  formatIpv4Inet,
+  natTypeName,
+  normalizeTunnelProtocol,
+  type LinkDirection,
+  type LinkKind,
+  type NetworkTopologySnapshot,
+  type RawPeerConnection,
+  type RawPeerRoute,
+  type TopologyLink,
+  type TopologyLinkEvidence,
+  type TopologyNode,
+  type TopologyObservation,
+  type TopologyObserverInput,
+  type TopologyStats,
+  type TunnelProtocol,
+} from "./topology/derive.js";
+export {
+  TopologyService,
+  type CollectResult,
+  type TopologyServiceOptions,
+} from "./topology/collector.js";
+export {
+  TOPOLOGY_DEFAULT_INTERVALS,
+  mapWithConcurrency,
+  nextTopologyDelay,
+  normalizeTopologyIntervals,
+  type TopologyIntervalOptions,
+} from "./topology/scheduler.js";

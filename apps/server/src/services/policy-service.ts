@@ -40,6 +40,7 @@ import { cidrPrefix } from "../domain/ip.js";
 import { nextRevisionNumber } from "../domain/revisions.js";
 import type { SecretBox } from "../security/crypto.js";
 import { AppError, invalid, notFound } from "./errors.js";
+import type { RealtimeHub } from "../realtime/hub.js";
 import type { AuditService } from "./audit.js";
 import type { PushService } from "./push-service.js";
 import type { RequestActor } from "./device-service.js";
@@ -89,6 +90,8 @@ export interface PolicyServiceOptions {
   secretBox: SecretBox;
   audit: AuditService;
   push: PushService;
+  /** Live browser fan-out; optional so unit tests can omit it. */
+  realtime?: RealtimeHub;
 }
 
 function shortHash(value: string): string {
@@ -414,6 +417,12 @@ export class PolicyService {
         revisionsCreated,
       },
     });
+    this.options.realtime?.publish({
+      type: "policy.updated",
+      orgId: actor.orgId,
+      networkId,
+      data: { networkId, version, revisionsCreated },
+    });
     return { policy: this.toDto(row), revisionsCreated };
   }
 
@@ -472,6 +481,12 @@ export class PolicyService {
       targetType: "network",
       targetId: networkId,
       metadata: { previousVersion: network.policyVersion },
+    });
+    this.options.realtime?.publish({
+      type: "policy.updated",
+      orgId: actor.orgId,
+      networkId,
+      data: { networkId, version: 0, revisionsCreated: approvedDevices.length },
     });
     return { revisionsCreated: approvedDevices.length };
   }

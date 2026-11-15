@@ -66,6 +66,8 @@ export interface PushServiceOptions {
   ) => Promise<void>;
   /** Minimum gap between route reports per device. */
   reportIntervalMs?: number;
+  /** Called after a push changes applied revision or the last error. */
+  onDeviceUpdated?: (deviceId: string, reason: string) => Promise<void>;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -413,6 +415,7 @@ export class PushService {
       revision: latest.revision,
       instanceId,
     });
+    await this.notifyChanged(deviceId, "config-pushed");
     return { status: "pushed", revision: latest.revision };
   }
 
@@ -443,6 +446,19 @@ export class PushService {
       lastPushError: message.slice(0, 2000),
       lastPushAt: new Date(),
     });
+    await this.notifyChanged(device.id, "config-push-failed");
+  }
+
+  private async notifyChanged(deviceId: string, reason: string): Promise<void> {
+    if (!this.options.onDeviceUpdated) return;
+    try {
+      await this.options.onDeviceUpdated(deviceId, reason);
+    } catch (error) {
+      this.options.logger.debug("device update notification failed", {
+        deviceId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   /**

@@ -40,6 +40,11 @@ export class DeviceSessionRegistry {
     if (this.byDevice.get(deviceId) === client) this.byDevice.delete(deviceId);
   }
 
+  /** Device id bound to a session, even if the session is already closed. */
+  deviceForClient(client: ManagedClient): string | undefined {
+    return this.bySession.get(client.id);
+  }
+
   onlineDeviceIds(): string[] {
     return [...this.byDevice.entries()]
       .filter(([, client]) => !client.isClosed)

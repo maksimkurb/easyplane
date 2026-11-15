@@ -22,6 +22,7 @@ import {
   type RouteReport,
 } from "../domain/routes.js";
 import { AppError, conflict, invalid, notFound } from "./errors.js";
+import type { RealtimeHub } from "../realtime/hub.js";
 import type { AuditService } from "./audit.js";
 import type { PushService } from "./push-service.js";
 import type { RequestActor } from "./device-service.js";
@@ -54,6 +55,8 @@ export interface RouteServiceOptions {
   db: DbExecutor;
   audit: AuditService;
   push: PushService;
+  /** Live browser fan-out; optional so unit tests can omit it. */
+  realtime?: RealtimeHub;
 }
 
 const REPORT_KEY = "routeReport";
@@ -219,6 +222,13 @@ export class RouteService {
       targetId: deviceId,
       metadata: { kind: input.kind, cidr, networkId: device.networkId },
     });
+    this.options.realtime?.publish({
+      type: "route.updated",
+      orgId: actor.orgId,
+      networkId: device.networkId,
+      deviceId,
+      data: { networkId: device.networkId, routeId: row.id, deviceId },
+    });
     return toDto(row, device.dnsName ?? device.hostname);
   }
 
@@ -252,6 +262,13 @@ export class RouteService {
     });
     // Only now does the route enter the pushed config.
     this.options.push.schedule(route.deviceId, `route ${input.state}`);
+    this.options.realtime?.publish({
+      type: "route.updated",
+      orgId: actor.orgId,
+      networkId: route.networkId,
+      deviceId: route.deviceId,
+      data: { networkId: route.networkId, routeId, deviceId: route.deviceId },
+    });
     return toDto(updated, device.dnsName ?? device.hostname);
   }
 
@@ -307,6 +324,7 @@ export class RouteService {
 
     // Attribute peer observations to the devices they describe.
     const now = new Date().toISOString();
+    let changed = false;
     for (const observation of payload.peerObservations) {
       const target = byIp.get(observation.ipv4);
       if (!target || target.id === device.id) continue;
@@ -324,6 +342,7 @@ export class RouteService {
       ) {
         continue;
       }
+      changed = true;
       const next: PeerObservationRecord[] = [
         ...existing.filter((entry) => entry.observerDeviceId !== device.id),
         {
@@ -337,6 +356,15 @@ export class RouteService {
       ];
       await updateDevice(this.db, target.id, {
         reportedState: { ...state, advertisedByPeers: next },
+      });
+    }
+    if (changed || JSON.stringify(previous) !== JSON.stringify(report)) {
+      this.options.realtime?.publish({
+        type: "route.updated",
+        orgId: device.orgId,
+        networkId: device.networkId,
+        deviceId: device.id,
+        data: { networkId: device.networkId, deviceId: device.id },
       });
     }
     return report;

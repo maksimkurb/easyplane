@@ -36,6 +36,7 @@ async function main(): Promise<void> {
   const addresses = await context.controlPlane.start();
   await app.listen({ host: env.host, port: env.httpPort });
   context.push.start(env.reconcileIntervalMs);
+  context.topology.start();
 
   const housekeeping = setInterval(() => {
     const now = new Date();
@@ -58,6 +59,7 @@ async function main(): Promise<void> {
     stopping = true;
     logger.info("shutting down", { signal });
     clearInterval(housekeeping);
+    await context.topology.stop();
     await context.push.stop();
     await app.close();
     await context.controlPlane.stop();

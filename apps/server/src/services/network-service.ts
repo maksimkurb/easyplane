@@ -19,6 +19,7 @@ import {
   generateNetworkSecret,
   slugify,
 } from "../security/crypto.js";
+import type { RealtimeHub } from "../realtime/hub.js";
 import type { SecretBox } from "../security/crypto.js";
 import type { AuditService } from "./audit.js";
 import { AppError, conflict, invalid, notFound } from "./errors.js";
@@ -61,6 +62,8 @@ export class NetworkService {
     private readonly db: DbExecutor,
     private readonly secretBox: SecretBox,
     private readonly audit: AuditService,
+    /** Live browser fan-out; optional so unit tests can omit it. */
+    private readonly realtime?: RealtimeHub,
   ) {}
 
   async create(input: {
@@ -98,6 +101,12 @@ export class NetworkService {
       targetType: "network",
       targetId: network.id,
       metadata: { name, networkName, ipv4Cidr },
+    });
+    this.realtime?.publish({
+      type: "network.updated",
+      orgId: input.orgId,
+      networkId: network.id,
+      data: { networkId: network.id, reason: "created" },
     });
     return toDto(network, { pending: 0, approved: 0, blocked: 0 });
   }
@@ -201,6 +210,12 @@ export class NetworkService {
           : {}),
       },
     });
+    this.realtime?.publish({
+      type: "network.updated",
+      orgId,
+      networkId: id,
+      data: { networkId: id, reason: "updated" },
+    });
     return toDto(updated, await networkDeviceCounts(this.db, id));
   }
 
@@ -256,6 +271,12 @@ export class NetworkService {
       targetId: id,
       metadata: { name: network.name },
     });
+    this.realtime?.publish({
+      type: "network.deleted",
+      orgId,
+      networkId: id,
+      data: { networkId: id },
+    });
   }
 
   async regenerateSecret(
@@ -276,6 +297,12 @@ export class NetworkService {
       targetType: "network",
       targetId: id,
       metadata: { networkName: network.networkName },
+    });
+    this.realtime?.publish({
+      type: "network.updated",
+      orgId,
+      networkId: id,
+      data: { networkId: id, reason: "secret-rotated" },
     });
     return secret;
   }
