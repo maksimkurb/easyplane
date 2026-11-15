@@ -156,6 +156,7 @@ export async function createAppContext(
     onlineTimeoutMs: env.deviceOnlineTimeoutMs,
     maxPendingPerNetwork: env.maxPendingDevicesPerNetwork,
     unknownTokenLimitPerMinute: env.unknownTokenLimitPerMinute,
+    heartbeatPersistIntervalMs: env.heartbeatPersistIntervalMs,
     listClients: () => controlPlane?.listClients() ?? [],
   });
   devicesService = devices;

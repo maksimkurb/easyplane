@@ -24,7 +24,7 @@ async function main(): Promise<void> {
     );
   }
 
-  const database = createDatabase(env.databaseUrl);
+  const database = createDatabase(env.databaseUrl, env.databasePoolSize);
   await runMigrations(database.db);
   const context = await createAppContext({
     env,

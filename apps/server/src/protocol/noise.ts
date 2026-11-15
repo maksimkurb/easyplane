@@ -172,6 +172,49 @@ class SymmetricState {
   }
 }
 
+export interface NoiseInitiatorResult {
+  /** Noise msg1 (without the `ET_WEB_NOISE_V1:` magic). */
+  message: Buffer;
+  /**
+   * Consumes msg2 (already stripped of the magic and the peer-manager header)
+   * and returns the root key the responder encrypted in its payload.
+   */
+  complete(msg2: Buffer): { rootKey: Buffer };
+}
+
+/**
+ * Initiator half of the EasyTier web-secure handshake. Used by the simulated
+ * clients in the load/soak tests (real easytier-core is always the initiator,
+ * but those containers cannot be scaled to hundreds in CI).
+ */
+export function noiseInitiate(prologue: Buffer): NoiseInitiatorResult {
+  const symmetric = new SymmetricState(PROTOCOL_NAME, prologue);
+  const { publicKey, privateKey } = generateKeyPairSync("x25519");
+  const initiatorEphemeralPublic = rawPublicKey(publicKey);
+  symmetric.mixHash(initiatorEphemeralPublic);
+  // No key yet: snow writes the empty payload verbatim.
+  const msg1 = Buffer.concat([
+    initiatorEphemeralPublic,
+    symmetric.encryptAndHash(Buffer.alloc(0)),
+  ]);
+  return {
+    message: msg1,
+    complete(msg2: Buffer): { rootKey: Buffer } {
+      if (msg2.length < DHLEN) {
+        throw new Error(`noise: msg2 length ${msg2.length} < ${DHLEN}`);
+      }
+      const responderEphemeralPublic = msg2.subarray(0, DHLEN);
+      symmetric.mixHash(responderEphemeralPublic);
+      symmetric.mixKey(dh(privateKey, publicKeyFromRaw(responderEphemeralPublic)));
+      const rootKey = symmetric.decryptAndHash(msg2.subarray(DHLEN));
+      if (rootKey.length !== 32) {
+        throw new Error(`noise: msg2 payload is ${rootKey.length} bytes, expected 32`);
+      }
+      return { rootKey: Buffer.from(rootKey) };
+    },
+  };
+}
+
 export interface NoiseResponderResult {
   /** Full noise msg2 (without the `ET_WEB_NOISE_V1:` magic). */
   message: Buffer;

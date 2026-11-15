@@ -41,6 +41,8 @@ const envSchema = z.object({
     .string()
     .min(1)
     .default("postgres://easyplane:easyplane@127.0.0.1:5432/easyplane"),
+  /** PostgreSQL pool size; raise it for large fleets (one connection per query). */
+  EASYPLANE_DATABASE_POOL_SIZE: z.coerce.number().int().min(1).max(200).default(10),
   /** 32-byte key, base64 or 64 hex chars. Required in production. */
   EASYPLANE_ENCRYPTION_KEY: z.string().optional(),
   EASYPLANE_HOST: z.string().default("0.0.0.0"),
@@ -75,6 +77,12 @@ const envSchema = z.object({
   EASYPLANE_SESSION_ABSOLUTE_HOURS: z.coerce.number().int().positive().default(168),
   EASYPLANE_DEVICE_ONLINE_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
   EASYPLANE_RECONCILE_INTERVAL_MS: z.coerce.number().int().positive().default(15_000),
+  /** How often a heartbeat persists last_seen/identity (default 2 s). */
+  EASYPLANE_HEARTBEAT_PERSIST_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(2_000),
   /** Minimum gap between route reports per device (CollectNetworkInfo). */
   EASYPLANE_ROUTE_REPORT_INTERVAL_MS: z.coerce
     .number()
@@ -173,6 +181,7 @@ const envSchema = z.object({
 export interface AppEnv {
   nodeEnv: "development" | "test" | "production";
   databaseUrl: string;
+  databasePoolSize: number;
   encryptionKey: string;
   host: string;
   httpPort: number;
@@ -195,6 +204,7 @@ export interface AppEnv {
   sessionAbsoluteMs: number;
   deviceOnlineTimeoutMs: number;
   reconcileIntervalMs: number;
+  heartbeatPersistIntervalMs: number;
   routeReportIntervalMs: number;
   topologyIdleIntervalMs: number;
   topologyActiveIntervalMs: number;
@@ -257,6 +267,7 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
   return {
     nodeEnv: parsed.NODE_ENV,
     databaseUrl: parsed.EASYPLANE_DATABASE_URL,
+    databasePoolSize: parsed.EASYPLANE_DATABASE_POOL_SIZE,
     encryptionKey,
     host: parsed.EASYPLANE_HOST,
     httpPort: parsed.EASYPLANE_HTTP_PORT,
@@ -295,6 +306,7 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     sessionAbsoluteMs: parsed.EASYPLANE_SESSION_ABSOLUTE_HOURS * 3_600_000,
     deviceOnlineTimeoutMs: parsed.EASYPLANE_DEVICE_ONLINE_TIMEOUT_MS,
     reconcileIntervalMs: parsed.EASYPLANE_RECONCILE_INTERVAL_MS,
+    heartbeatPersistIntervalMs: parsed.EASYPLANE_HEARTBEAT_PERSIST_INTERVAL_MS,
     routeReportIntervalMs: parsed.EASYPLANE_ROUTE_REPORT_INTERVAL_MS,
     topologyIdleIntervalMs: parsed.EASYPLANE_TOPOLOGY_IDLE_INTERVAL_MS,
     topologyActiveIntervalMs: parsed.EASYPLANE_TOPOLOGY_ACTIVE_INTERVAL_MS,

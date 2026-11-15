@@ -36,7 +36,7 @@ export {
   SecureDatagramSession,
   SecureDirection,
 } from "./protocol/secure-datagram.js";
-export { noiseRespond } from "./protocol/noise.js";
+export { noiseInitiate, noiseRespond } from "./protocol/noise.js";
 export { acceptLink, type AcceptedLink, type TunnelLink } from "./transport/link.js";
 export { TcpConfigServerListener } from "./listener/tcp-listener.js";
 export { WsConfigServerListener } from "./listener/ws-listener.js";

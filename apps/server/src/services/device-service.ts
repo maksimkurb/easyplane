@@ -157,6 +157,13 @@ export interface DeviceServiceOptions {
   onlineTimeoutMs: number;
   maxPendingPerNetwork: number;
   unknownTokenLimitPerMinute: number;
+  /**
+   * How often a heartbeat rewrites `devices.last_seen_at` (and identity
+   * fields). The client sends 1/s; persisting every one of those is a write
+   * amplification that hurts at a few hundred devices. Status is still
+   * in-memory/live over SSE and the online timeout is well above this.
+   */
+  heartbeatPersistIntervalMs?: number;
   /** Fallback lookup by machine id for reconnects that raced the registry. */
   listClients?: () => ManagedClient[];
 }
@@ -165,6 +172,19 @@ export class DeviceService {
   readonly rateLimiter: UnknownTokenRateLimiter;
   /** Last realtime event per device, to keep heartbeats from flooding SSE. */
   private readonly lastEvent = new Map<string, { signature: string; at: number }>();
+  /**
+   * Per-network approval queue. Address and MagicDNS-name allocation are
+   * read-then-write against unique indexes; two concurrent approvals would
+   * otherwise pick the same free value and one would fail. (Single process, as
+   * documented for replication.)
+   */
+  private readonly networkLocks = new Map<string, Promise<unknown>>();
+  /**
+   * `invites.last_used_at` is telemetry, not state. Writing it on every 1 s
+   * heartbeat serialises a whole fleet on one row (the load test found this at
+   * 200 clients); touching it once a minute is enough.
+   */
+  private readonly lastInviteTouch = new Map<string, number>();
 
   constructor(private readonly options: DeviceServiceOptions) {
     this.rateLimiter = new UnknownTokenRateLimiter(
@@ -389,17 +409,40 @@ export class DeviceService {
         input.client.close("device is blocked");
         throw new Error("device is blocked");
       }
-      const device = await updateDevice(this.options.db, existing.id, {
-        hostname: input.hostname || existing.hostname,
-        easytierVersion: input.easytierVersion,
-        osType: input.osType,
-        osVersion: input.osVersion,
-        osDistribution: input.osDistribution,
-        sourceIp: input.sourceIp,
-        lastSeenAt: now,
-      });
-      if (!device) throw new Error("failed to update device");
-      await touchInvite(this.options.db, invite.id, now);
+      const identityChanged =
+        existing.hostname !== (input.hostname || existing.hostname) ||
+        existing.easytierVersion !== input.easytierVersion ||
+        existing.osType !== input.osType ||
+        existing.osVersion !== input.osVersion ||
+        existing.osDistribution !== input.osDistribution ||
+        existing.sourceIp !== input.sourceIp;
+      const persistIntervalMs = Math.max(
+        250,
+        this.options.heartbeatPersistIntervalMs ?? 2_000,
+      );
+      const lastSeenDue =
+        existing.lastSeenAt === null ||
+        now.getTime() - existing.lastSeenAt.getTime() >= persistIntervalMs;
+      let device = existing;
+      if (identityChanged || lastSeenDue) {
+        const updated = await updateDevice(this.options.db, existing.id, {
+          hostname: input.hostname || existing.hostname,
+          easytierVersion: input.easytierVersion,
+          osType: input.osType,
+          osVersion: input.osVersion,
+          osDistribution: input.osDistribution,
+          sourceIp: input.sourceIp,
+          lastSeenAt: now,
+        });
+        if (!updated) throw new Error("failed to update device");
+        device = updated;
+      }
+      const lastTouch = this.lastInviteTouch.get(invite.id) ?? 0;
+      if (now.getTime() - lastTouch >= 60_000) {
+        this.lastInviteTouch.set(invite.id, now.getTime());
+        if (this.lastInviteTouch.size > 10_000) this.lastInviteTouch.clear();
+        await touchInvite(this.options.db, invite.id, now);
+      }
       this.options.sessions.bind(device.id, input.client);
       if (
         device.state === "approved" &&
@@ -560,6 +603,35 @@ export class DeviceService {
     const network = await getNetworkById(this.options.db, device.networkId);
     if (!network) notFound("network not found");
 
+    return this.withNetworkLock(network.id, async () => {
+      const current = (await getDevice(this.options.db, actor.orgId, deviceId)) ?? device;
+      return this.approveLocked(actor, current, network, request);
+    });
+  }
+
+  private async withNetworkLock<T>(
+    networkId: string,
+    task: () => Promise<T>,
+  ): Promise<T> {
+    const previous = this.networkLocks.get(networkId) ?? Promise.resolve();
+    const run = previous.catch(() => undefined).then(task);
+    const tail = run.catch(() => undefined);
+    this.networkLocks.set(networkId, tail);
+    try {
+      return await run;
+    } finally {
+      if (this.networkLocks.get(networkId) === tail) {
+        this.networkLocks.delete(networkId);
+      }
+    }
+  }
+
+  private async approveLocked(
+    actor: RequestActor,
+    device: Device,
+    network: Network,
+    request: { virtualIpv4?: string },
+  ): Promise<DeviceDto> {
     const used = await usedVirtualIps(this.options.db, network.id);
     const address = request.virtualIpv4
       ? this.validateAddress(network, request.virtualIpv4, used, device.virtualIpv4)
@@ -582,7 +654,7 @@ export class DeviceService {
       );
     }
 
-    const revisions = await listRevisions(this.options.db, deviceId);
+    const revisions = await listRevisions(this.options.db, device.id);
     let desiredRevision = device.desiredRevision;
     if (revisions.length === 0) {
       const defaults: Partial<DesiredConfig> = {
@@ -592,7 +664,7 @@ export class DeviceService {
       const revision = await insertRevision(this.options.db, {
         orgId: actor.orgId,
         networkId: network.id,
-        deviceId,
+        deviceId: device.id,
         revision: 1,
         config,
         note: "initial config on approval",
@@ -604,7 +676,7 @@ export class DeviceService {
     }
 
     const now = new Date();
-    const updated = await updateDevice(this.options.db, deviceId, {
+    const updated = await updateDevice(this.options.db, device.id, {
       state: "approved",
       virtualIpv4: address,
       dnsName,
@@ -621,7 +693,7 @@ export class DeviceService {
       actorUserId: actor.userId,
       action: "device.approved",
       targetType: "device",
-      targetId: deviceId,
+      targetId: device.id,
       metadata: {
         networkId: network.id,
         virtualIpv4: address,
@@ -629,10 +701,10 @@ export class DeviceService {
         desiredRevision,
       },
     });
-    this.options.push.schedule(deviceId, "approved");
+    this.options.push.schedule(device.id, "approved");
     this.publishDevice(updated, "approved");
-    const tags = await this.tagsByDevice(actor.orgId, deviceId);
-    return this.toDto(updated, network, tags.get(deviceId) ?? []);
+    const tags = await this.tagsByDevice(actor.orgId, device.id);
+    return this.toDto(updated, network, tags.get(device.id) ?? []);
   }
 
   /**

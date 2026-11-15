@@ -17,8 +17,11 @@ export interface DatabaseHandle {
  * Creates a Drizzle/Postgres handle. `pg.Pool` connects lazily, so building the
  * app (and generating the OpenAPI document) does not need a live database.
  */
-export function createDatabase(connectionString: string): DatabaseHandle {
-  const pool = new Pool({ connectionString, max: 10 });
+export function createDatabase(
+  connectionString: string,
+  poolSize = 10,
+): DatabaseHandle {
+  const pool = new Pool({ connectionString, max: Math.max(1, poolSize) });
   const db = drizzle(pool, { schema }) as Database;
   return {
     db,

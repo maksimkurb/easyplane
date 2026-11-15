@@ -128,3 +128,14 @@ describe("Noise_NN_25519_ChaChaPoly_SHA256 handshake", () => {
     expect(first.message.equals(second.message)).toBe(false);
   });
 });
+
+describe("noiseInitiate (test/load clients)", () => {
+  it("derives the same root key as noiseRespond", async () => {
+    const { noiseInitiate } = await import("@easyplane/server");
+    const prologue = Buffer.from("easytier-webclient-noise-v1");
+    const initiator = noiseInitiate(prologue);
+    const { message, rootKey } = noiseRespond(initiator.message, prologue);
+    expect(rootKey.length).toBe(32);
+    expect(initiator.complete(message).rootKey).toEqual(rootKey);
+  });
+});
