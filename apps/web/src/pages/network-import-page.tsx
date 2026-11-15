@@ -290,12 +290,14 @@ export function NetworkImportPage() {
                 </FieldLabel>
                 <OptionSelect
                   empty={
-                    <>
-                      {t("networks.import.noDevices")}{" "}
-                      <Link href="/devices">
-                        {t("networks.import.openDevices")}
-                      </Link>
-                    </>
+                    devicesQuery.isLoading ? undefined : (
+                      <>
+                        {t("networks.import.noDevices")}{" "}
+                        <Link href="/devices">
+                          {t("networks.import.openDevices")}
+                        </Link>
+                      </>
+                    )
                   }
                   id="import-device"
                   onValueChange={(value) => {

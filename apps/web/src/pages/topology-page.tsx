@@ -116,10 +116,12 @@ export function TopologyPage() {
               aria-label={t("networks.title")}
               className="w-full sm:w-56"
               empty={
-                <>
-                  {t("topology.noNetworks")}{" "}
-                  <Link href="/networks">{t("nav.items.networks")}</Link>
-                </>
+                networksQuery.isLoading ? undefined : (
+                  <>
+                    {t("topology.noNetworks")}{" "}
+                    <Link href="/networks">{t("nav.items.networks")}</Link>
+                  </>
+                )
               }
               onValueChange={(value) => {
                 setSelectedNetworkId(value)

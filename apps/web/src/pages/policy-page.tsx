@@ -518,10 +518,12 @@ export function PolicyPage() {
                 <FieldLabel>{t("policy.source")}</FieldLabel>
                 <OptionSelect
                   empty={
-                    <>
-                      {t("policy.noSourceDevices")}{" "}
-                      <Link href="/devices">{t("networks.import.openDevices")}</Link>
-                    </>
+                    devicesQuery.isLoading ? undefined : (
+                      <>
+                        {t("policy.noSourceDevices")}{" "}
+                        <Link href="/devices">{t("networks.import.openDevices")}</Link>
+                      </>
+                    )
                   }
                   onValueChange={(value) => setTarget({ ...target, src: value })}
                   options={approvedDevices.map((device) => ({
@@ -537,10 +539,12 @@ export function PolicyPage() {
                 <FieldLabel>{t("policy.destination")}</FieldLabel>
                 <OptionSelect
                   empty={
-                    <>
-                      {t("policy.noDestinationOptions")}{" "}
-                      <Link href="/devices">{t("networks.import.openDevices")}</Link>
-                    </>
+                    devicesQuery.isLoading || routesQuery.isLoading ? undefined : (
+                      <>
+                        {t("policy.noDestinationOptions")}{" "}
+                        <Link href="/devices">{t("networks.import.openDevices")}</Link>
+                      </>
+                    )
                   }
                   onValueChange={(value) => {
                     setTarget({
