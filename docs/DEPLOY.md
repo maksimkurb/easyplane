@@ -393,6 +393,49 @@ old network (the draft keeps the secret) and commit the draft.
 (admin only, audited; the output contains the secret by design). See
 [PROTOCOL.md](PROTOCOL.md) §13.2 for the exact formats.
 
+## 4d. Hubs, peer lists and the self-dial loop
+
+Every device dials the peer URLs in its pushed config. A list that is the same
+for the whole network eventually contains a device's own public URL, so that
+device dials its public address, reaches itself and loops with
+`peer id conflict, are you connecting to yourself?` in the core log. EasyPlane
+therefore builds the peer list **per device at push time**:
+
+- a device's **Advertised endpoints** (device page, member/admin) are the URLs
+  other devices should dial, e.g. `tcp://h-1.node.kurb.me:11010`;
+- **Use as hub** (device page, admin) adds the device to the network's ordered
+  **Peers** list as a device-backed entry (network page);
+- only **approved** hubs contribute endpoints, and the target device's own
+  entry is excluded by `device_id`/`machine_id`; raw external URLs are pushed
+  verbatim unless linked to a device;
+- a device that is the only hub gets an empty list — it listens, it does not
+  dial.
+
+Changing endpoints/hub flags repushes the devices that dial them (no revision,
+audited, SSE `network.updated`). Nothing is inferred from DNS or IPs: a raw URL
+is offered for linking only when it exactly equals a device's advertised
+endpoint, and linking adds the URL to that device's endpoints and converts the
+entry to device-backed.
+
+### Upgrading from broadcast peer URLs
+
+Migration `0002` copies every existing `peerUrls` value — from
+`networks.default_config` and from each `config_revisions.config` — into the
+new peer list as a **raw** entry, deduplicated and ordered (network defaults
+first, then revisions). Nothing is lost and the same URLs are pushed. It cannot
+know which URL belongs to which device, so the self-dial loop persists until an
+operator links them:
+
+1. for each hub, open the device page and add its public endpoint(s) under
+   **Advertised endpoints**;
+2. toggle **Use as hub**;
+3. on the network page, link the raw URL to that device (**Link to device**).
+   The URL becomes device-backed, the device stops receiving it, and it is
+   still pushed to everyone else;
+4. repeat for every hub, then remove raw entries that nothing dials anymore.
+
+The old JSON is left in place, so a downgraded image still sees it.
+
 ## 5. Operations
 
 - `GET /health` returns database and client counts plus the version (from

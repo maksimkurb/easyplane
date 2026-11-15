@@ -482,6 +482,35 @@ EasyPlane compiles `peer_urls` + `Standalone` as `Manual`.
 The client's `new_from_config` reports the peer list as `Url::to_string`, which
 appends a trailing `/` (`tcp://host:11010/`); drift comparison must normalise it.
 
+#### Compiled peer list: hubs, raw URLs and self-dialling [verified]
+
+`peer_urls` is resolved **per device at push time** from the network's ordered
+peer list (`network_peers`), not stored verbatim in the revision. A revision's
+`config.peerUrls` is still accepted and recorded for older clients/rollbacks,
+but the push compiler replaces it:
+
+1. a **device-backed** entry contributes every advertised endpoint of an
+   **approved hub** (`devices.is_hub`), except the target device itself —
+   matched by `device_id` and re-checked by `machine_id`;
+2. a **raw** external entry (`url` set) is pushed verbatim to every device,
+   unless it is linked to the target device (`network_peers.device_id`), in
+   which case only the target skips it;
+3. invalid URLs (scheme outside `tcp/udp/ws/wss/quic/wg/faketcp/ring/txt/srv/
+   unix/http/https`, no host where one is required) are dropped; entries are
+   de-duplicated by URL ignoring trailing slashes and keep peer-list order.
+
+Consequences: a device that is the only hub gets `peer_urls: []` (it is the
+listener); a hub never receives its own public URL and therefore cannot dial
+itself and loop with `peer id conflict, are you connecting to yourself?`. The
+list is network state like routes and MagicDNS: changing an endpoint repushes
+the devices that dial it (no new revision, audited, SSE `network.updated`), and
+rollback does not resurrect a stale peer list.
+
+Advertised endpoints are written explicitly by an operator. Nothing is inferred
+from DNS or IPs; a raw URL is only linked to a device on an **exact string
+match** with one of that device's endpoints, and linking converts it into a
+device-backed entry.
+
 ### 11.3 `tld_dns_zone` cannot be pushed [source, verified in the negative]
 
 `NetworkConfig` has no zone field and `gen_config` builds the instance flags
@@ -713,9 +742,12 @@ enabled = false
 The TOML reader accepts unknown top-level keys (upstream `Config` does too),
 maps the fields above, reports everything it cannot represent (proxy CIDRs,
 exit nodes, ACL, credentials, port forwards, VPN portal, IPv6, custom STUN,
-whitelists) and refuses credential mode. The writer produces a file that the
-upstream loader parses; a golden test round-trips the upstream full example in
-both directions.
+whitelists) and refuses credential mode. `peer_urls` and `[[peer]]` URLs are
+kept as **raw network peer entries** and pushed to every device as before; the
+preview lists them, and adopting from a device proposes an exact-match link to
+any device that already advertises the same endpoint (see §11.2.1). The writer
+produces a file that the upstream loader parses; a golden test round-trips the
+upstream full example in both directions.
 
 **Share link** (`easytier-contrib/easytier-ohrs/src/config/services/share_link_service.rs`):
 

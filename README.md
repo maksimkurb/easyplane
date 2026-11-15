@@ -169,8 +169,8 @@ Concrete Keycloak, Authentik and Google Workspace examples are in
 | --- | --- | --- | --- |
 | read networks, devices, invites, policy, DNS, routes | ✅ | ✅ | ✅ |
 | read audit log, reveal/rotate secrets, export/import networks | — | — | ✅ |
-| create/revoke invites, approve/block/delete devices, edit desired config | — | ✅ | ✅ |
-| create/delete networks, edit policy, approve routes, create tags, toggle MagicDNS | — | — | ✅ |
+| create/revoke invites, approve/block/delete devices, edit desired config, set advertised endpoints | — | ✅ | ✅ |
+| create/delete networks, edit policy, approve routes, create tags, toggle MagicDNS, edit the peer list, mark a device as hub | — | — | ✅ |
 
 All checks are server-side pre-handlers; the UI only hides controls. State
 changing requests need the session-bound CSRF token from the `easyplane_csrf`
@@ -190,11 +190,15 @@ Every source is parsed into the same normalised `NetworkConfig`, shown with a
 diff and a list of fields EasyPlane will not import, then saved only after
 confirmation. The **network secret is preserved byte-for-byte** and is never
 sent to the browser during preview: the preview is stored server-side in a
-short-lived draft. Credential-mode networks (a private key with no shared
-secret) are refused instead of being broken silently. The reverse direction is
-available as an audited admin export (`?format=toml|share-link`). Formats,
-field mapping and golden tests are described in
-[docs/PROTOCOL.md](docs/PROTOCOL.md) §13.2.
+short-lived draft. `peer_urls`/`[[peer]]` entries are kept as **raw peer
+entries** (pushable exactly as before) and shown in the preview; when adopting
+from a device, a raw URL that exactly equals another device's advertised
+endpoint is proposed for linking, which converts it into a device-backed entry
+and stops that device from dialling itself. Credential-mode networks (a private
+key with no shared secret) are refused instead of being broken silently. The
+reverse direction is available as an audited admin export
+(`?format=toml|share-link`). Formats, field mapping and golden tests are
+described in [docs/PROTOCOL.md](docs/PROTOCOL.md) §13.2.
 
 ## Policy, MagicDNS and routes (M2)
 
@@ -213,6 +217,32 @@ field mapping and golden tests are described in
 - [docs/POLICY.md](docs/POLICY.md) lists exactly which Tailscale constructs map
   cleanly, which are approximated and which are unsupported — including the
   EasyTier limits that no control plane can work around.
+
+## Hub peers and self-dialling
+
+EasyTier forms a mesh from the `peer_urls` in each instance's config. A list
+that is broadcast unchanged to every device eventually contains a device's own
+public URL: that node dials itself through its public address and the core
+loops with `peer id conflict, are you connecting to yourself?`.
+
+EasyPlane never compares hostnames or IPs to avoid this. Each device can
+advertise **endpoints** (the peer URLs others should dial, e.g.
+`tcp://h-1.node.kurb.me:11010`) and be marked **hub**. A network has one ordered
+peer list of device-backed entries and raw external URLs; at push time the
+compiler builds the list per device:
+
+- every advertised endpoint of an **approved hub** except the target device,
+  identified by `device_id` (and re-checked by `machine_id`);
+- every **raw** URL, unless it is explicitly linked to the target device;
+- de-duplicated by URL and in a stable order.
+
+A device that is the only hub therefore receives an empty list — it is the
+listener. Members can edit a device's endpoints; admins add/remove peer entries,
+link a raw URL to its device and toggle the hub flag. Links are exact string
+matches against advertised endpoints, never DNS or IP guesses. Endpoint changes
+are audited, broadcast over SSE and repush the devices that dial the hub,
+without creating a revision: the peer list is network state compiled at push
+time, like routes and MagicDNS.
 
 ## Realtime and the topology map (M3)
 
@@ -303,8 +333,9 @@ config running → revision change → rollback → offline/online → block; AC
 enforcement (200 on an allowed port, timeout on a denied one, both directions);
 MagicDNS resolution; approved vs unapproved subnet routes; the M3 hub-and-spoke
 relay map and the SSE stream; the M4 UDP session layer and adoption of a
-running instance. Linux-only; set `EASYPLANE_CONFORMANCE_NO_TUN=1` when TUN is
-unavailable.
+running instance; and a hub whose own endpoint is in the network peer list —
+the real core's log has no `peer id conflict` while a leaf connects. Linux-only;
+set `EASYPLANE_CONFORMANCE_NO_TUN=1` when TUN is unavailable.
 
 CI (`.github/workflows/ci.yml`) runs proto drift, typecheck/lint/unit/web build,
 integration (PostgreSQL service), the dockerised real-client conformance suite
