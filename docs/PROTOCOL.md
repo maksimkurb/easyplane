@@ -343,9 +343,10 @@ Observed behaviour with the real client:
   callable, but M1 converges devices with `RunNetworkInstance` + verification
   instead (see §10.4) rather than deleting whatever the server does not list.
   `RetainNetworkInstance` remains available for a future "adopt and prune" mode.
-- **Credential-mode networks** (`secure_mode.local_private_key` with no
-  `network_secret`). EasyPlane pushes shared-secret networks; importing a
-  credential-mode config is refused instead of silently breaking the chain.
+- **Credential-mode networks** (`secure_mode.local_private_key` or
+  `credential_file` with no `network_secret`). EasyPlane pushes shared-secret
+  networks; importing such a config is refused instead of silently opening the
+  network.
 - **zstd compression of our own RPC bodies.** We always send uncompressed and
   ask the client not to compress responses. Inbound zstd is supported when the
   Node runtime provides `zlib.zstdDecompressSync`.

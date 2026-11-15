@@ -183,6 +183,17 @@ describe("M4 import flows", () => {
     expect(missingIdentity.statusCode).toBe(400);
   });
 
+  it("refuses credential-mode sources", async () => {
+    const toml = await preview({
+      source: {
+        type: "toml",
+        text: `credential_file = "/etc/et/cred.json"\n[network_identity]\nnetwork_name = "cred"\n`,
+      },
+    });
+    expect(toml.statusCode).toBe(422);
+    expect((toml.json() as { code: string }).code).toBe("credential_mode_unsupported");
+  });
+
   it("requires CSRF on the preview", async () => {
     const response = await test.app.inject({
       method: "POST",

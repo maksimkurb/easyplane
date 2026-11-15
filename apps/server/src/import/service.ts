@@ -283,10 +283,15 @@ export class ImportService {
       invalid(error instanceof Error ? error.message : "invalid import source");
     }
 
+    if (secret === "" && config.credentialFile) {
+      // A credential file is the client's identity; copying it as "no secret"
+      // would create an open network that the original peers cannot join.
+      credentialMode = true;
+    }
     if (credentialMode) {
       throw new AppError(
         422,
-        "this is a credential-mode network (secure_mode.local_private_key with no network_secret). " +
+        "this is a credential-mode network (secure_mode.local_private_key or credential_file with no network_secret). " +
           "EasyPlane pushes shared-secret networks; importing it would silently break the credential chain.",
         "credential_mode_unsupported",
       );
