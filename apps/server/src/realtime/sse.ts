@@ -20,6 +20,11 @@ const eventStreamQuerySchema = z.object({
   networkId: z.string().uuid().optional(),
   /** `1` marks the stream as a topology map viewer (drives adaptive polling). */
   topology: z.enum(["0", "1"]).optional(),
+  /**
+   * Reconnect cursor. `EventSource` cannot set headers, so the client passes
+   * the last seen id here; the `Last-Event-ID` header is honoured as well.
+   */
+  lastEventId: z.coerce.number().int().nonnegative().optional(),
 });
 
 function sseHeaders(): Record<string, string> {
@@ -97,7 +102,7 @@ export function registerEventRoutes(
           {
             networkIds: query.networkId ? [query.networkId] : undefined,
             topics: query.topology === "1" ? ["topology"] : undefined,
-            lastEventId: parseLastEventId(request),
+            lastEventId: query.lastEventId ?? parseLastEventId(request),
           },
           write,
         );

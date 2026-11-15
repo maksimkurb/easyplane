@@ -7,7 +7,6 @@ import {
   WEB_CLIENT_SERVICE,
   WebClientMethod,
   instanceIdFor,
-  type RealtimeEvent,
 } from "@easyplane/server";
 
 import {
@@ -20,6 +19,7 @@ import {
   stopAllCores,
   type CoreHandle,
 } from "./helpers/index.js";
+import { openSseStream } from "../support/sse.js";
 import {
   authed,
   bootstrapAdmin,
@@ -47,6 +47,7 @@ import {
  *  - a device going offline/online is visible on the SSE stream
  *  - SSE is authenticated, role checked and bounded per user
  *  - the collector switches to the active interval while a browser watches
+ *  - ICMP between the leaves still crosses the relay
  *
  * Set EASYPLANE_CAPTURE_TOPOLOGY_FIXTURE=1 to refresh the unit-test fixture in
  * apps/server/test/fixtures/easytier/ from this run (real wire bytes).
@@ -150,108 +151,6 @@ async function poll<T>(
   throw new Error(
     `${label}: condition not met within ${timeoutMs}ms; last=${JSON.stringify(last)}`,
   );
-}
-
-interface SseStream {
-  events: RealtimeEvent[];
-  waitFor: (
-    predicate: (event: RealtimeEvent) => boolean,
-    timeoutMs?: number,
-  ) => Promise<RealtimeEvent>;
-  close: () => void;
-}
-
-/** Opens a real SSE stream and parses frames into events. */
-async function openSse(
-  baseUrl: string,
-  path: string,
-  cookie?: string,
-): Promise<{ status: number; stream: SseStream }> {
-  const controller = new AbortController();
-  const response = await fetch(`${baseUrl}${path}`, {
-    headers: cookie ? { cookie } : {},
-    signal: controller.signal,
-  });
-  const events: RealtimeEvent[] = [];
-  if (!response.ok || !response.body) {
-    const body = await response.text().catch(() => "");
-    controller.abort();
-    return {
-      status: response.status,
-      stream: {
-        events,
-        waitFor: async () => {
-          throw new Error(`stream failed (${response.status}): ${body}`);
-        },
-        close: () => controller.abort(),
-      },
-    };
-  }
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let closed = false;
-  const pump = (async () => {
-    try {
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) return;
-        buffer += decoder.decode(value, { stream: true });
-        let index = buffer.indexOf("\n\n");
-        while (index >= 0) {
-          const frame = buffer.slice(0, index);
-          buffer = buffer.slice(index + 2);
-          index = buffer.indexOf("\n\n");
-          const data = frame
-            .split("\n")
-            .filter((line) => line.startsWith("data: "))
-            .map((line) => line.slice("data: ".length))
-            .join("\n");
-          if (!data) continue;
-          try {
-            events.push(JSON.parse(data) as RealtimeEvent);
-          } catch {
-            // Heartbeat comments and unknown frames are ignored.
-          }
-        }
-      }
-    } catch {
-      // Aborted by close().
-    }
-  })();
-  void pump;
-
-  const waitFor = async (
-    predicate: (event: RealtimeEvent) => boolean,
-    timeoutMs = 30_000,
-  ): Promise<RealtimeEvent> => {
-    const deadline = Date.now() + timeoutMs;
-    for (;;) {
-      const index = events.findIndex(predicate);
-      if (index >= 0) return events[index]!;
-      if (Date.now() >= deadline) {
-        throw new Error(
-          `SSE condition not met within ${timeoutMs}ms; events=${JSON.stringify(
-            events.map((event) => event.type),
-          )}`,
-        );
-      }
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-  };
-
-  return {
-    status: response.status,
-    stream: {
-      events,
-      waitFor,
-      close: () => {
-        if (closed) return;
-        closed = true;
-        controller.abort();
-      },
-    },
-  };
 }
 
 function writeFixture(
@@ -476,12 +375,17 @@ describe("M3 conformance: topology map and SSE on real easytier-core", () => {
         ]);
         const running = info.info?.map[instanceIdFor(network.id, devices.b!.id)];
         const cIp = devices.c!.virtualIpv4;
-        const route = running?.routes?.find(
-          (entry) =>
-            entry.ipv4Addr?.address &&
-            `${((entry.ipv4Addr.address.addr >>> 24) & 0xff)}.${((entry.ipv4Addr.address.addr >>> 16) & 0xff)}.${((entry.ipv4Addr.address.addr >>> 8) & 0xff)}.${entry.ipv4Addr.address.addr & 0xff}` ===
-              cIp,
-        );
+        const route = running?.routes?.find((entry) => {
+          const address = entry.ipv4Addr?.address?.addr;
+          if (address === undefined || !cIp) return false;
+          const octets = [
+            (address >>> 24) & 0xff,
+            (address >>> 16) & 0xff,
+            (address >>> 8) & 0xff,
+            address & 0xff,
+          ].join(".");
+          return octets === cIp;
+        });
         if (!route || route.cost <= 1) return null;
         const hop = running?.routes?.find(
           (entry) => entry.peerId === route.nextHopPeerId,
@@ -591,14 +495,13 @@ describe("M3 conformance: topology map and SSE on real easytier-core", () => {
   });
 
   it("switches to the active interval while a browser watches the map", async () => {
-    const { status, stream } = await openSse(
-      baseUrl,
-      `/api/events?topology=1&networkId=${network.id}`,
-      sessionCookie(admin),
+    const stream = await openSseStream(
+      `${baseUrl}/api/events?topology=1&networkId=${network.id}`,
+      { cookie: sessionCookie(admin) },
     );
-    expect(status).toBe(200);
+    expect(stream.status).toBe(200);
     try {
-      await stream.waitFor((event) => event.type === "hello", 10_000);
+      await stream.waitFor((frame) => frame.type === "hello", 10_000);
       await poll(
         "topology watcher is registered",
         async () => test.context.realtime.topologyWatchers(network.id),
@@ -624,27 +527,24 @@ describe("M3 conformance: topology map and SSE on real easytier-core", () => {
   });
 
   it("streams real offline and online transitions", async () => {
-    const { status, stream } = await openSse(
-      baseUrl,
-      `/api/events?networkId=${network.id}`,
-      sessionCookie(admin),
+    const stream = await openSseStream(
+      `${baseUrl}/api/events?networkId=${network.id}`,
+      { cookie: sessionCookie(admin) },
     );
-    expect(status).toBe(200);
+    expect(stream.status).toBe(200);
     try {
-      await stream.waitFor((event) => event.type === "hello", 10_000);
+      await stream.waitFor((frame) => frame.type === "hello", 10_000);
 
       cores.c!.stop();
       const offline = await stream.waitFor(
-        (event) =>
-          event.type === "device.updated" &&
-          (event as RealtimeEvent<"device.updated">).data.deviceId ===
-            devices.c!.id &&
-          (event as RealtimeEvent<"device.updated">).data.online === "offline",
+        (frame) =>
+          frame.type === "device.updated" &&
+          frame.data.deviceId === devices.c!.id &&
+          frame.data.online === "offline",
         60_000,
       );
-      const offlineData = (offline as RealtimeEvent<"device.updated">).data;
-      expect(offlineData.state).toBe("approved");
-      expect(offlineData.reason).toBe("session-closed");
+      expect(offline.data.state).toBe("approved");
+      expect(offline.data.reason).toBe("session-closed");
 
       // The REST view converges too (the online flag is lastSeen-based).
       await poll(
@@ -656,39 +556,39 @@ describe("M3 conformance: topology map and SSE on real easytier-core", () => {
 
       cores.c!.start();
       const online = await stream.waitFor(
-        (event) =>
-          event.type === "device.updated" &&
-          (event as RealtimeEvent<"device.updated">).data.deviceId ===
-            devices.c!.id &&
-          (event as RealtimeEvent<"device.updated">).data.online === "online",
+        (frame) =>
+          frame.type === "device.updated" &&
+          frame.data.deviceId === devices.c!.id &&
+          frame.data.online === "online",
         90_000,
       );
-      const onlineData = (online as RealtimeEvent<"device.updated">).data;
-      expect(onlineData.reason).toBe("heartbeat");
-      expect(onlineData.online).toBe("online");
+      expect(online.data.reason).toBe("heartbeat");
     } finally {
       stream.close();
     }
   });
 
-  it("authenticates, role-checks and bounds SSE connections", async () => {
-    const anonymous = await openSse(baseUrl, "/api/events", undefined);
+  it("authenticates and bounds SSE connections", async () => {
+    const anonymous = await openSseStream(`${baseUrl}/api/events`);
     expect(anonymous.status).toBe(401);
-    anonymous.stream.close();
+    anonymous.close();
 
-    // Role enforcement (viewer/member) is covered by the integration suite,
-    // which has an OIDC provider; here the cookie itself is the check.
     // The per-user cap is 2 in this run: the third stream is refused.
-    const first = await openSse(baseUrl, "/api/events", sessionCookie(admin));
-    const second = await openSse(baseUrl, "/api/events", sessionCookie(admin));
+    const first = await openSseStream(`${baseUrl}/api/events`, {
+      cookie: sessionCookie(admin),
+    });
+    const second = await openSseStream(`${baseUrl}/api/events`, {
+      cookie: sessionCookie(admin),
+    });
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
-    const third = await openSse(baseUrl, "/api/events", sessionCookie(admin));
+    const third = await openSseStream(`${baseUrl}/api/events`, {
+      cookie: sessionCookie(admin),
+    });
     expect(third.status).toBe(429);
-    expect(third.stream.events).toHaveLength(0);
-    first.stream.close();
-    second.stream.close();
-    third.stream.close();
+    first.close();
+    second.close();
+    third.close();
 
     await poll(
       "stream limit released",
