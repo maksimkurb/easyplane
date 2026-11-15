@@ -52,6 +52,7 @@ export function applyRealtimeEvent(
         collectedAt?: string
         nodes?: unknown[]
         links?: unknown[]
+        stats?: unknown
       }
       if (!data.networkId) return
       const prefix = `/api/networks/${data.networkId}/topology`
@@ -66,6 +67,7 @@ export function applyRealtimeEvent(
               collectedAt: data.collectedAt ?? previous.data.collectedAt,
               nodes: data.nodes ?? previous.data.nodes,
               links: data.links ?? previous.data.links,
+              stats: data.stats ?? previous.data.stats,
             },
           }
         }

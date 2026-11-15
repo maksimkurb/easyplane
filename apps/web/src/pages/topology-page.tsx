@@ -10,7 +10,12 @@ import {
 
 import { useQueryClient } from "@tanstack/react-query"
 
-import { useGetNetworkTopology, useListNetworks } from "@/api/generated/easyplane"
+import {
+  getGetNetworkTopologyQueryKey,
+  getNetworkTopology,
+  useGetNetworkTopology,
+  useListNetworks,
+} from "@/api/generated/easyplane"
 import type {
   GetNetworkTopology200LinksItem as TopologyLink,
   GetNetworkTopology200NodesItem as TopologyNode,
@@ -58,6 +63,7 @@ export function TopologyPage() {
   const networkId = selectedNetworkId ?? requestedNetworkId ?? networks[0]?.id ?? ""
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
   const now = useNow(15_000)
 
   const topologyQuery = useGetNetworkTopology(networkId || "", undefined, {
@@ -133,10 +139,20 @@ export function TopologyPage() {
               </SelectContent>
             </Select>
             <Button
-              disabled={!networkId || topologyQuery.isFetching}
+              disabled={!networkId || refreshing}
               onClick={() => {
-                if (!networkId) return
-                void topologyQuery.refetch()
+                if (!networkId || refreshing) return
+                // Force a real probe instead of reusing the cached snapshot.
+                setRefreshing(true)
+                void getNetworkTopology(networkId, { refresh: "1" })
+                  .then((response) => {
+                    queryClient.setQueryData(
+                      getGetNetworkTopologyQueryKey(networkId),
+                      response
+                    )
+                  })
+                  .catch(() => undefined)
+                  .finally(() => setRefreshing(false))
               }}
               size="sm"
               variant="outline"
@@ -198,6 +214,7 @@ export function TopologyPage() {
             ) : (
               <div className="grid gap-3">
                 <TopologyMap
+                  key={networkId}
                   links={links}
                   nodes={nodes}
                   onSelectLink={setSelectedLinkId}

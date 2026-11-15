@@ -308,6 +308,7 @@ export class TopologyService {
         collectedAt: snapshot.collectedAt,
         nodes: snapshot.nodes,
         links: snapshot.links,
+        stats: snapshot.stats,
       },
     });
     this.options.logger.debug("topology collected", {

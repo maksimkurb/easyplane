@@ -215,6 +215,18 @@ export interface DeriveTopologyOptions {
   intervalMs?: number;
 }
 
+/**
+ * Hard caps that keep one snapshot bounded even when an approved client
+ * reports an unreasonable peer/route table. Hitting a cap marks the snapshot
+ * `partial`, so the UI never pretends the graph is complete.
+ */
+export const TOPOLOGY_LIMITS = {
+  nodes: 5_000,
+  links: 20_000,
+  rawPeers: 1_000,
+  rawRoutes: 1_000,
+} as const;
+
 const IPV4_NAT_OPEN = new Set([
   common.NatType.OpenInternet,
   common.NatType.NoPAT,
@@ -324,6 +336,11 @@ export function deriveTopology(
   const nodes = new Map<string, TopologyNode>();
   const linkMap = new Map<string, TopologyLink>();
   const observations: TopologyObservation[] = [];
+  let truncated = inputs.some(
+    (input) =>
+      (input.info?.peers.length ?? 0) > TOPOLOGY_LIMITS.rawPeers ||
+      (input.info?.routes.length ?? 0) > TOPOLOGY_LIMITS.rawRoutes,
+  );
   /** ipv4 -> deviceId for devices the control plane manages. */
   const managedByIp = new Map<string, string>();
   const deviceIds = new Set(inputs.map((input) => input.deviceId));
@@ -373,7 +390,9 @@ export function deriveTopology(
       publicIps: node.publicIps,
       listeners: node.listeners,
       events: [...(input.info?.events ?? [])],
-      peers: (input.info?.peers ?? []).flatMap((peer) =>
+      peers: (input.info?.peers ?? [])
+        .slice(0, TOPOLOGY_LIMITS.rawPeers)
+        .flatMap((peer) =>
         peer.conns.map((conn) => {
           const { protocol, raw } = normalizeTunnelProtocol(conn.tunnel?.tunnelType);
           const tunnel = conn.tunnel;
@@ -399,7 +418,9 @@ export function deriveTopology(
           };
         }),
       ),
-      routes: (input.info?.routes ?? []).map((route) => ({
+      routes: (input.info?.routes ?? [])
+        .slice(0, TOPOLOGY_LIMITS.rawRoutes)
+        .map((route) => ({
         peerId: route.peerId,
         virtualIpv4: formatIpv4Inet(route.ipv4Addr),
         hostname: route.hostname,
@@ -453,6 +474,10 @@ export function deriveTopology(
 
     for (const [peerId, key] of peerKeyById) {
       if (key === observerKey) continue;
+      if (!nodes.has(key) && nodes.size >= TOPOLOGY_LIMITS.nodes) {
+        truncated = true;
+        continue;
+      }
       const peer = (input.info.peers ?? []).find(
         (candidate) => candidate.peerId === peerId,
       );
@@ -544,6 +569,13 @@ export function deriveTopology(
       if (!node.online && !node.managed) node.online = true;
       if (!node.hostname) node.hostname = `peer ${peerId}`;
 
+      if (
+        !linkMap.has(linkId(observerKey, key)) &&
+        linkMap.size >= TOPOLOGY_LIMITS.links
+      ) {
+        truncated = true;
+        continue;
+      }
       mergeLink(nodes, linkMap, observerKey, key, evidence);
     }
   }
@@ -598,7 +630,7 @@ export function deriveTopology(
     networkId: options.networkId,
     generation,
     collectedAt: new Date(collectedAt).toISOString(),
-    partial: observations.some((observation) => observation.error !== null),
+    partial: truncated || observations.some((observation) => observation.error !== null),
     intervalMs: options.intervalMs ?? 0,
     nodes: nodeList,
     links,
@@ -721,6 +753,11 @@ function uuidFromProto(uuid: {
 }
 
 /** Links live in a side map keyed by the unordered node pair. */
+function linkId(source: string, target: string): string {
+  const [left, right] = source <= target ? [source, target] : [target, source];
+  return `${left}--${right}`;
+}
+
 function mergeLink(
   nodes: Map<string, TopologyNode>,
   links: Map<string, TopologyLink>,
@@ -728,8 +765,8 @@ function mergeLink(
   target: string,
   evidence: TopologyLinkEvidence,
 ): void {
+  const id = linkId(source, target);
   const [left, right] = source <= target ? [source, target] : [target, source];
-  const id = `${left}--${right}`;
   const existing = links.get(id);
   if (!existing) {
     links.set(id, {

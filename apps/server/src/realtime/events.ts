@@ -39,6 +39,7 @@ export interface RealtimeEventData {
     collectedAt: string;
     nodes: unknown[];
     links: unknown[];
+    stats: unknown;
   };
   resync: { reason: string };
   hello: {

@@ -202,8 +202,13 @@ export class RealtimeHub {
       data: input.data,
     } as RealtimeEvent<K>;
 
-    this.buffer.push(event as RealtimeEvent);
-    if (this.buffer.length > this.bufferSize) this.buffer.shift();
+    // Snapshots can be large and are worthless as history: a reconnecting map
+    // refetches the current one (or receives a resync). Keeping them out of the
+    // replay ring bounds hub memory regardless of fleet size.
+    if (input.type !== "topology.updated") {
+      this.buffer.push(event as RealtimeEvent);
+      if (this.buffer.length > this.bufferSize) this.buffer.shift();
+    }
 
     for (const { subscriber, sink } of this.subscribers.values()) {
       if (!this.matches(subscriber, event as RealtimeEvent)) continue;

@@ -134,13 +134,36 @@ describe("realtime hub", () => {
       type: "topology.updated",
       orgId: ADMIN.orgId,
       networkId: "net-1",
-      data: { networkId: "net-1", collectedAt: "now", nodes: [], links: [] },
+      data: {
+        networkId: "net-1",
+        collectedAt: "now",
+        nodes: [],
+        links: [],
+        stats: {},
+      },
     });
     hub.publish(deviceEvent());
     expect(shellSeen).toEqual(["device.updated"]);
     // A map stream also receives ordinary events; it only *additionally* gets
     // the heavy snapshots.
     expect(mapSeen).toEqual(["topology.updated", "device.updated"]);
+  });
+
+  it("keeps topology snapshots out of the replay ring", () => {
+    const hub = new RealtimeHub();
+    hub.publish(deviceEvent()); // seq 1
+    const snapshot = hub.publish({
+      type: "topology.updated",
+      orgId: ADMIN.orgId,
+      networkId: "net-1",
+      data: { networkId: "net-1", collectedAt: "now", nodes: [], links: [], stats: {} },
+    });
+    hub.publish(deviceEvent()); // seq 3
+    expect(snapshot.seq).toBe(2);
+    const subscription = hub.subscribe(ADMIN, { lastEventId: 1 }, () => undefined);
+    // The reconnect gets the missed device event but no snapshot; the map
+    // refetches the current snapshot, which is authoritative.
+    expect(subscription.replay.map((event) => event.seq)).toEqual([3]);
   });
 
   it("counts topology watchers per network for adaptive polling", () => {

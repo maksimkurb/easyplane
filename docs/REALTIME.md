@@ -124,7 +124,9 @@ The panel's `useEventStream` opens one `EventSource` per subscription and, on
    with `?lastEventId=<last seq>`.
 
 The hub keeps the last `EASYPLANE_SSE_EVENT_BUFFER` events (default 500) in a
-ring. A reconnect with an id still in the ring gets the missed events; an id
+ring. Topology snapshots are never buffered (they are large and a reconnecting
+map refetches the current one), which keeps hub memory independent of the fleet
+size. A reconnect with an id still in the ring gets the missed events; an id
 outside it (or from a previous process, e.g. after a restart) gets an explicit
 `resync` event, and the provider invalidates every query. This makes server
 restarts safe: the panel always converges, either by replay or by refetching.
@@ -138,6 +140,9 @@ networks; no history is stored).
 
 - Only online devices (live config-server session) are probed; offline devices
   still appear as nodes with `online: false` so the map matches the device list.
+- One snapshot is bounded: at most 5000 nodes, 20000 links and 1000 raw
+  peer/route rows per observation (`TOPOLOGY_LIMITS`). Hitting a cap marks the
+  snapshot `partial`; nothing is silently dropped from the JSON contract.
 - `EASYPLANE_TOPOLOGY_CONCURRENCY` (default 4) bounds parallel RPCs;
   `EASYPLANE_TOPOLOGY_TIMEOUT_MS` (default 5 s) bounds one slow client;
   `EASYPLANE_TOPOLOGY_MAX_DEVICES` (default 500) bounds a cycle. A cycle with
