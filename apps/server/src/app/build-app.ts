@@ -75,9 +75,10 @@ export async function buildApp(
     // via their route config. The config-server listeners have their own
     // unknown-token limiter in the device service.
     global: true,
-    max: 600,
+    max: env.apiRateLimitPerMinute,
     timeWindow: "1 minute",
     errorResponseBuilder: (_request, limit) => ({
+      statusCode: 429,
       error: "too many requests",
       code: "rate_limited",
       retryAfter: limit.after,
@@ -159,6 +160,21 @@ export async function buildApp(
   });
 
   app.setErrorHandler((error: FastifyError, request, reply) => {
+    // @fastify/rate-limit hands its errorResponseBuilder payload to this handler
+    // (not a real Error), so surface the structured 429 instead of a 500.
+    const rateLimit = error as unknown as {
+      statusCode?: number;
+      error?: string;
+      code?: string;
+      retryAfter?: string;
+    };
+    if (rateLimit.code === "rate_limited") {
+      return reply.code(429).send({
+        error: rateLimit.error ?? "too many requests",
+        code: "rate_limited",
+        retryAfter: rateLimit.retryAfter ?? null,
+      });
+    }
     if (error instanceof AppError || error instanceof AuthError) {
       return reply.code(error.statusCode).send({
         error: error.message,

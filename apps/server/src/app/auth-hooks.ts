@@ -76,9 +76,17 @@ export function registerAuthHooks(app: import("fastify").FastifyInstance, contex
   app.decorateRequest("auth", null);
 
   app.addHook("preHandler", async (request: FastifyRequest, reply: FastifyReply) => {
-    const path = request.url.split("?")[0] ?? request.url;
-    if (!path.startsWith("/api/")) return;
-    if (isPublicRoute(request.method, path)) return;
+    // Use the *matched route pattern*, not the raw URL: a crafted path such as
+    // `/api/auth/login/../networks` must not inherit the public-route bypass.
+    const rawPath = request.url.split("?")[0] ?? request.url;
+    const routeUrl = request.routeOptions?.url || rawPath;
+    if (!routeUrl.startsWith("/api/")) return;
+    // Defensive: unknown routes with traversal segments get no public bypass.
+    if (!request.routeOptions?.url && /(^|\/)\.\.?(\/|$)/.test(rawPath)) {
+      await reply.code(404).send({ error: "not found", code: "not_found" });
+      return reply;
+    }
+    if (isPublicRoute(request.method, routeUrl)) return;
 
     const auth = await authenticate(context, request);
     if (!auth) {

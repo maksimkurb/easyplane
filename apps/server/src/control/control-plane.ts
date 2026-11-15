@@ -2,6 +2,9 @@ import { EventEmitter } from "node:events";
 import { web } from "@easyplane/proto";
 
 import { createLogger, type Logger } from "../logger.js";
+import type { MetricsRegistry } from "../observability/metrics.js";
+import { METRIC_NAMES } from "../observability/metrics.js";
+import { AcceptRateLimiter, findSilentClients } from "./limits.js";
 import { TcpConfigServerListener } from "../listener/tcp-listener.js";
 import { WsConfigServerListener } from "../listener/ws-listener.js";
 import type { RpcSession } from "../rpc/session.js";
@@ -40,6 +43,16 @@ export interface ControlPlaneOptions {
   ) => Promise<void> | void;
   /** M1 hook: session closed (device is offline once heartbeats stop). */
   onClientClosed?: (client: ManagedClient) => void;
+  /** Hard cap on simultaneous config-server tunnels. */
+  maxConnections?: number;
+  /** Per-IP tunnel admission limit (fixed one-minute window, 0 disables). */
+  acceptLimitPerMinute?: number;
+  /**
+   * Close a tunnel that has not sent a heartbeat for this long. The real
+   * client heartbeats every second, so this only catches half-open/dead links.
+   */
+  heartbeatTimeoutMs?: number;
+  metrics?: MetricsRegistry;
 }
 
 export interface ControlPlaneAddresses {
@@ -74,10 +87,13 @@ export class ControlPlaneServer extends EventEmitter<ControlPlaneEvents> {
   private wsListener: WsConfigServerListener | undefined;
   private wssListener: WsConfigServerListener | undefined;
   private started = false;
+  private readonly acceptLimiter: AcceptRateLimiter;
+  private reaper: NodeJS.Timeout | undefined;
 
   constructor(private readonly options: ControlPlaneOptions = {}) {
     super();
     this.logger = options.logger ?? createLogger();
+    this.acceptLimiter = new AcceptRateLimiter(options.acceptLimitPerMinute ?? 600);
   }
 
   async start(): Promise<ControlPlaneAddresses> {
@@ -118,6 +134,13 @@ export class ControlPlaneServer extends EventEmitter<ControlPlaneEvents> {
       await this.wssListener.start();
     }
 
+    const heartbeatTimeoutMs = this.options.heartbeatTimeoutMs ?? 20_000;
+    if (heartbeatTimeoutMs > 0) {
+      const interval = Math.max(250, Math.min(5_000, Math.floor(heartbeatTimeoutMs / 3)));
+      this.reaper = setInterval(() => this.reapSilentClients(), interval);
+      this.reaper.unref?.();
+    }
+
     return {
       tcpPort: this.tcpListener?.port ?? null,
       wsPort: this.wsListener?.port ?? null,
@@ -125,7 +148,48 @@ export class ControlPlaneServer extends EventEmitter<ControlPlaneEvents> {
     };
   }
 
+  /**
+   * Closes tunnels that stopped heartbeating. A half-open connection cannot be
+   * detected from the socket alone (the kernel keeps it "open" for a long
+   * time), so application-level liveness is the practical signal.
+   */
+  reapSilentClients(now = Date.now()): number {
+    const timeoutMs = this.options.heartbeatTimeoutMs ?? 20_000;
+    const silent = findSilentClients(
+      [...this.clients.values()],
+      now,
+      timeoutMs,
+    );
+    for (const client of silent) {
+      this.logger.info("closing a silent config-server tunnel", {
+        session: client.id,
+        lastHeartbeatAt: client.lastHeartbeatAt,
+        timeoutMs,
+      });
+      this.options.metrics?.inc(METRIC_NAMES.clientsReaped);
+      client.close("heartbeat timeout");
+    }
+    return silent.length;
+  }
+
   private async acceptTransport(transport: FrameTransport): Promise<void> {
+    const remote = transport.remoteAddress || "unknown";
+    if (!this.acceptLimiter.allow(remote)) {
+      this.logger.warn("config-server connection rate limit exceeded", { remote });
+      this.options.metrics?.inc(METRIC_NAMES.clientRejected, { reason: "rate" });
+      transport.close();
+      return;
+    }
+    const maxConnections = this.options.maxConnections ?? 2_000;
+    if (this.clients.size >= maxConnections) {
+      this.logger.warn("config-server connection cap reached", {
+        clients: this.clients.size,
+        maxConnections,
+      });
+      this.options.metrics?.inc(METRIC_NAMES.clientRejected, { reason: "cap" });
+      transport.close();
+      return;
+    }
     let link;
     try {
       link = await acceptLink(transport);
@@ -165,6 +229,7 @@ export class ControlPlaneServer extends EventEmitter<ControlPlaneEvents> {
       secure: session.secure,
       remote: session.label,
     });
+    this.options.metrics?.inc(METRIC_NAMES.clientSessions);
     this.emit("client-connected", client);
 
     const task = session
@@ -209,6 +274,7 @@ export class ControlPlaneServer extends EventEmitter<ControlPlaneEvents> {
         version: snapshot.easytierVersion,
         instances: snapshot.runningNetworkInstances.length,
       });
+      this.options.metrics?.inc(METRIC_NAMES.heartbeats);
       await this.options.onHeartbeat(client, request, snapshot);
       this.emit("heartbeat", client, snapshot);
       return;
@@ -226,6 +292,7 @@ export class ControlPlaneServer extends EventEmitter<ControlPlaneEvents> {
       version: snapshot.easytierVersion,
       instances: snapshot.runningNetworkInstances.length,
     });
+    this.options.metrics?.inc(METRIC_NAMES.heartbeats);
     this.emit("heartbeat", client, snapshot);
   }
 
@@ -276,6 +343,8 @@ export class ControlPlaneServer extends EventEmitter<ControlPlaneEvents> {
     this.tcpListener = undefined;
     this.wsListener = undefined;
     this.wssListener = undefined;
+    if (this.reaper) clearInterval(this.reaper);
+    this.reaper = undefined;
     await Promise.allSettled([...this.sessionTasks]);
     this.started = false;
   }

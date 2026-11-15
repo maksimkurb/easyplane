@@ -5,6 +5,7 @@ import { readEnv } from "./env.js";
 import { createLogger } from "./logger.js";
 import { buildApp } from "./app/build-app.js";
 import { createAppContext } from "./app/context.js";
+import { startInternalMetricsServer } from "./observability/metrics-server.js";
 
 async function main(): Promise<void> {
   const env = readEnv();
@@ -37,6 +38,21 @@ async function main(): Promise<void> {
   await app.listen({ host: env.host, port: env.httpPort });
   context.push.start(env.reconcileIntervalMs);
   context.topology.start();
+  const metricsServer =
+    env.metricsPort !== undefined && env.metricsPort > 0
+      ? await startInternalMetricsServer(context, env.metricsHost, env.metricsPort)
+      : null;
+  if (env.metricsPort !== undefined && env.metricsPort > 0) {
+    logger.info("internal metrics listener started", {
+      host: env.metricsHost,
+      port: env.metricsPort,
+    });
+  }
+  if (!env.metricsToken && !metricsServer) {
+    logger.info("metrics endpoint disabled", {
+      hint: "set EASYPLANE_METRICS_TOKEN or EASYPLANE_METRICS_PORT to enable",
+    });
+  }
 
   const housekeeping = setInterval(() => {
     const now = new Date();
@@ -59,6 +75,7 @@ async function main(): Promise<void> {
     stopping = true;
     logger.info("shutting down", { signal });
     clearInterval(housekeeping);
+    if (metricsServer) await metricsServer.close();
     await context.topology.stop();
     await context.push.stop();
     await app.close();

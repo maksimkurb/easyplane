@@ -60,7 +60,12 @@ export {
 } from "./auth/claims.js";
 export { OidcClient, createPkcePair, codeChallenge } from "./auth/oidc.js";
 export { SessionService, SESSION_COOKIE, CSRF_COOKIE } from "./auth/session.js";
-export { AuthService, AuthError, type CompletedLogin } from "./auth/service.js";
+export {
+  AuthService,
+  AuthError,
+  sanitizeReturnTo,
+  type CompletedLogin,
+} from "./auth/service.js";
 export {
   evaluateInvite,
   type InviteEvaluation,
@@ -162,6 +167,10 @@ export { AppError } from "./services/errors.js";
 
 // M4: import flows, hardening and observability
 export * from "./import/index.js";
+export { AcceptRateLimiter, findSilentClients, type LivenessClient } from "./control/limits.js";
+export { MetricsRegistry, METRIC_NAMES } from "./observability/metrics.js";
+export { collectMetrics } from "./observability/scrape.js";
+export { startInternalMetricsServer } from "./observability/metrics-server.js";
 
 // M3: realtime browser updates and topology
 export {

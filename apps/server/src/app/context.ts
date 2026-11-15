@@ -10,6 +10,7 @@ import { SessionService } from "../auth/session.js";
 import { ControlPlaneServer } from "../control/control-plane.js";
 import { createLogger, type Logger } from "../logger.js";
 import { ImportService } from "../import/service.js";
+import { MetricsRegistry } from "../observability/metrics.js";
 import { RealtimeHub } from "../realtime/hub.js";
 import { SecretBox } from "../security/crypto.js";
 import { AuditService } from "../services/audit.js";
@@ -51,6 +52,7 @@ export interface AppContext {
   controlPlane: ControlPlaneServer;
   realtime: RealtimeHub;
   topology: TopologyService;
+  metrics: MetricsRegistry;
 }
 
 export interface CreateContextOptions {
@@ -70,6 +72,7 @@ export async function createAppContext(
 ): Promise<AppContext> {
   const { env, db, pool } = options;
   const logger = options.logger ?? createLogger({ level: env.logLevel as "info" });
+  const metrics = new MetricsRegistry();
   const organisation =
     options.organisation ??
     (await ensureOrganisation(db, { slug: env.orgSlug, name: env.orgName }));
@@ -109,6 +112,7 @@ export async function createAppContext(
     networks,
     sessions: deviceSessions,
     logger,
+    metrics,
   });
   // PolicyService and RouteService are wired after the push service because
   // they need to schedule pushes; the push service only needs callbacks.
@@ -122,6 +126,7 @@ export async function createAppContext(
     audit,
     logger,
     reportIntervalMs: env.routeReportIntervalMs,
+    metrics,
     onDeviceUpdated: async (deviceId, reason) => {
       await devicesService?.notifyDevice(deviceId, reason);
     },
@@ -166,6 +171,7 @@ export async function createAppContext(
     concurrency: env.topologyConcurrency,
     deviceTimeoutMs: env.topologyTimeoutMs,
     maxDevicesPerCycle: env.topologyMaxDevices,
+    metrics,
   });
 
   controlPlane = new ControlPlaneServer({
@@ -175,6 +181,10 @@ export async function createAppContext(
     wss: env.wss,
     supportEncryption: env.supportEncryption,
     logger,
+    maxConnections: env.maxClientConnections,
+    acceptLimitPerMinute: env.clientAcceptLimitPerMinute,
+    heartbeatTimeoutMs: env.clientHeartbeatTimeoutMs,
+    metrics,
     onHeartbeat: async (client, request, snapshot) => {
       await devices.handleHeartbeat({
         token: request.userToken,
@@ -215,5 +225,6 @@ export async function createAppContext(
     controlPlane,
     realtime,
     topology,
+    metrics,
   };
 }

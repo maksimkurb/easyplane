@@ -3,6 +3,8 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 
 import { SESSION_COOKIE } from "../auth/session.js";
+import { collectMetrics } from "../observability/scrape.js";
+import { constantTimeEqual } from "../security/crypto.js";
 import { AppError } from "../services/errors.js";
 import { requireAuth, requireRole } from "../app/auth-hooks.js";
 import {
@@ -87,6 +89,38 @@ export function registerSystemRoutes(
         database,
         clients: context.controlPlane.listClients().length,
       };
+    },
+  );
+
+  /**
+   * Prometheus scrape endpoint. Disabled unless `EASYPLANE_METRICS_TOKEN` is
+   * set; the bearer token is compared in constant time. The response never
+   * contains network names, secrets, tokens or device identifiers.
+   */
+  app.get(
+    "/metrics",
+    { schema: { hide: true } },
+    async (request, reply) => {
+      const expected = context.env.metricsToken;
+      if (!expected) {
+        return reply.code(404).send({ error: "not found", code: "not_found" });
+      }
+      const header = request.headers.authorization;
+      const token =
+        typeof header === "string" && header.startsWith("Bearer ")
+          ? header.slice("Bearer ".length).trim()
+          : "";
+      if (!token || !constantTimeEqual(expected, token)) {
+        return reply
+          .code(401)
+          .header("www-authenticate", "Bearer")
+          .send({ error: "authentication required", code: "unauthenticated" });
+      }
+
+      const text = await collectMetrics(context);
+      return reply
+        .type("text/plain; version=0.0.4; charset=utf-8")
+        .send(text);
     },
   );
 

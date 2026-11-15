@@ -5,6 +5,8 @@ import type { Device, Network } from "../db/schema.js";
 import { getDeviceById, getNetworkById } from "../db/repositories.js";
 import type { DesiredConfig } from "../domain/desired-config.js";
 import type { Logger } from "../logger.js";
+import type { MetricsRegistry } from "../observability/metrics.js";
+import { METRIC_NAMES } from "../observability/metrics.js";
 import { randomToken } from "../security/crypto.js";
 import type { DeviceSessionRegistry } from "../services/device-sessions.js";
 import { AppError, conflict, invalid, notFound } from "../services/errors.js";
@@ -152,6 +154,7 @@ export interface ImportServiceOptions {
   sessions: DeviceSessionRegistry;
   drafts?: ImportDraftStore;
   logger?: Logger;
+  metrics?: MetricsRegistry;
 }
 
 function maskValue(value: unknown): string | null {
@@ -427,6 +430,7 @@ export class ImportService {
       magicDnsEnabled: draft.spec.magicDnsEnabled,
       source: draft.source.type,
     });
+    this.options.metrics?.inc(METRIC_NAMES.imports, { source: draft.source.type });
     this.options.logger?.info("network imported", {
       userId,
       networkId: network.id,

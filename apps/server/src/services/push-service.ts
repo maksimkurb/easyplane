@@ -27,6 +27,8 @@ import {
 import { deterministicUuid } from "../security/crypto.js";
 import type { SecretBox } from "../security/crypto.js";
 import type { Logger } from "../logger.js";
+import type { MetricsRegistry } from "../observability/metrics.js";
+import { METRIC_NAMES } from "../observability/metrics.js";
 import type { AuditService } from "./audit.js";
 import type { DeviceSessionRegistry } from "./device-sessions.js";
 
@@ -68,6 +70,7 @@ export interface PushServiceOptions {
   reportIntervalMs?: number;
   /** Called after a push changes applied revision or the last error. */
   onDeviceUpdated?: (deviceId: string, reason: string) => Promise<void>;
+  metrics?: MetricsRegistry;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -227,6 +230,7 @@ export class PushService {
             );
             if (configMatchesDesired(reported.config, desired)) {
               await this.collectReport(device, client);
+              this.options.metrics?.inc(METRIC_NAMES.pushes, { status: "in-sync" });
               return {
                 status: "already-in-sync",
                 revision: latest.revision,
@@ -415,6 +419,7 @@ export class PushService {
       revision: latest.revision,
       instanceId,
     });
+    this.options.metrics?.inc(METRIC_NAMES.pushes, { status: "pushed" });
     await this.notifyChanged(deviceId, "config-pushed");
     return { status: "pushed", revision: latest.revision };
   }
@@ -442,6 +447,7 @@ export class PushService {
   }
 
   private async recordFailure(device: Device, message: string): Promise<void> {
+    this.options.metrics?.inc(METRIC_NAMES.pushes, { status: "failed" });
     await updateDevice(this.options.db, device.id, {
       lastPushError: message.slice(0, 2000),
       lastPushAt: new Date(),

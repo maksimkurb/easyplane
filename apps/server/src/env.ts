@@ -125,6 +125,38 @@ const envSchema = z.object({
     .int()
     .positive()
     .default(30),
+  /** Hard cap on simultaneous config-server tunnels (0 disables the cap). */
+  EASYPLANE_MAX_CLIENT_CONNECTIONS: z.coerce
+    .number()
+    .int()
+    .nonnegative()
+    .default(2_000),
+  /** Per-IP tunnel admission limit per minute (0 disables). */
+  EASYPLANE_CLIENT_ACCEPT_LIMIT_PER_MINUTE: z.coerce
+    .number()
+    .int()
+    .nonnegative()
+    .default(600),
+  /** Close a tunnel that sent no heartbeat for this long (0 disables). */
+  EASYPLANE_CLIENT_HEARTBEAT_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .nonnegative()
+    .default(20_000),
+  /** Blanket HTTP API rate limit per client IP; auth/import add stricter ones. */
+  EASYPLANE_API_RATE_LIMIT_PER_MINUTE: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(600),
+  /**
+   * Optional Prometheus scrape token. `/metrics` is disabled unless set; the
+   * token is compared in constant time and no secret is ever exposed there.
+   */
+  EASYPLANE_METRICS_TOKEN: z.string().min(16).optional(),
+  /** Optional internal-only metrics listener (no auth); 0/undefined disables. */
+  EASYPLANE_METRICS_PORT: z.coerce.number().int().min(0).max(65535).optional(),
+  EASYPLANE_METRICS_HOST: z.string().default("127.0.0.1"),
   EASYPLANE_MAX_PENDING_DEVICES_PER_NETWORK: z.coerce
     .number()
     .int()
@@ -171,6 +203,13 @@ export interface AppEnv {
   sseMaxTotal: number;
   sseEventBuffer: number;
   unknownTokenLimitPerMinute: number;
+  maxClientConnections: number;
+  clientAcceptLimitPerMinute: number;
+  clientHeartbeatTimeoutMs: number;
+  apiRateLimitPerMinute: number;
+  metricsToken: string | undefined;
+  metricsPort: number | undefined;
+  metricsHost: string;
   maxPendingDevicesPerNetwork: number;
   webDir: string | undefined;
   logLevel: string;
@@ -260,6 +299,13 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     sseMaxTotal: parsed.EASYPLANE_SSE_MAX_TOTAL,
     sseEventBuffer: parsed.EASYPLANE_SSE_EVENT_BUFFER,
     unknownTokenLimitPerMinute: parsed.EASYPLANE_UNKNOWN_TOKEN_LIMIT_PER_MINUTE,
+    maxClientConnections: parsed.EASYPLANE_MAX_CLIENT_CONNECTIONS,
+    clientAcceptLimitPerMinute: parsed.EASYPLANE_CLIENT_ACCEPT_LIMIT_PER_MINUTE,
+    clientHeartbeatTimeoutMs: parsed.EASYPLANE_CLIENT_HEARTBEAT_TIMEOUT_MS,
+    apiRateLimitPerMinute: parsed.EASYPLANE_API_RATE_LIMIT_PER_MINUTE,
+    metricsToken: parsed.EASYPLANE_METRICS_TOKEN,
+    metricsPort: parsed.EASYPLANE_METRICS_PORT,
+    metricsHost: parsed.EASYPLANE_METRICS_HOST,
     maxPendingDevicesPerNetwork:
       parsed.EASYPLANE_MAX_PENDING_DEVICES_PER_NETWORK,
     webDir: parsed.EASYPLANE_WEB_DIR,

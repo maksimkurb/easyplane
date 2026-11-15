@@ -75,6 +75,11 @@ export class ManagedClient extends EventEmitter<ManagedClientEvents> {
     return this.heartbeats.length;
   }
 
+  /** Wall-clock timestamp of the newest heartbeat, or null before the first. */
+  get lastHeartbeatAt(): number | null {
+    return this.heartbeats.at(-1)?.receivedAt ?? null;
+  }
+
   get latestHeartbeat(): HeartbeatSnapshot | undefined {
     return this.heartbeats[this.heartbeats.length - 1];
   }

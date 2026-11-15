@@ -2,6 +2,8 @@ import { getNetworkById, listDevicesInNetwork } from "../db/repositories.js";
 import type { DbExecutor } from "../db/repositories.js";
 import type { Device } from "../db/schema.js";
 import type { Logger } from "../logger.js";
+import type { MetricsRegistry } from "../observability/metrics.js";
+import { METRIC_NAMES } from "../observability/metrics.js";
 import type { RealtimeHub } from "../realtime/hub.js";
 import type { DeviceSessionRegistry } from "../services/device-sessions.js";
 import { instanceIdFor } from "../services/push-service.js";
@@ -33,6 +35,7 @@ export interface TopologyServiceOptions extends TopologyIntervalOptions {
   discoveryIntervalMs?: number;
   random?: () => number;
   now?: () => number;
+  metrics?: MetricsRegistry;
 }
 
 export interface CollectResult {
@@ -190,6 +193,7 @@ export class TopologyService {
     reason: string,
   ): Promise<CollectResult> {
     const startedAt = this.now();
+    this.options.metrics?.inc(METRIC_NAMES.topologyCycles, { reason });
     const network = await getNetworkById(this.options.db, networkId);
     if (!network) {
       throw new Error(`network ${networkId} not found`);

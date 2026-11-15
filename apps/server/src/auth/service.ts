@@ -51,10 +51,23 @@ export interface CompletedLogin {
   returnTo: string;
 }
 
-function sanitizeReturnTo(value: string | undefined): string {
+/**
+ * Only same-origin relative paths are allowed. Resolving against a fake origin
+ * rejects absolute URLs and the `//host` / `/\host` protocol-relative tricks
+ * that browsers normalise into cross-origin redirects.
+ */
+export function sanitizeReturnTo(value: string | undefined): string {
   if (!value) return "/";
-  if (!value.startsWith("/") || value.startsWith("//")) return "/";
-  return value;
+  if (/[\u0000-\u001f\\]/.test(value)) return "/";
+  let parsed: URL;
+  try {
+    parsed = new URL(value, "https://easyplane.invalid");
+  } catch {
+    return "/";
+  }
+  if (parsed.origin !== "https://easyplane.invalid") return "/";
+  if (!parsed.pathname.startsWith("/")) return "/";
+  return `${parsed.pathname}${parsed.search}${parsed.hash}`;
 }
 
 export class AuthService {
