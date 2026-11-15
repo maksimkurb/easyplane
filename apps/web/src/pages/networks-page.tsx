@@ -1,11 +1,12 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "wouter"
-import { NetworkIcon, PlusIcon } from "lucide-react"
+import { FileUpIcon, NetworkIcon, PlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { useCreateNetwork, useListNetworks } from "@/api/generated/easyplane"
 import { useAuth } from "@/auth/auth-context"
+import { NetworkImportDialog } from "@/components/network-import-dialog"
 import { PageHeader } from "@/components/shared/page-header"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/shared/field"
 import { Button } from "@/components/ui/button"
@@ -32,6 +33,7 @@ export function NetworksPage() {
   const { t } = useTranslation()
   const { isAdmin } = useAuth()
   const [open, setOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [name, setName] = useState("")
   const [cidr, setCidr] = useState("10.144.144.0/24")
 
@@ -56,10 +58,16 @@ export function NetworksPage() {
       <PageHeader
         actions={
           isAdmin ? (
-            <Button onClick={() => setOpen(true)}>
-              <PlusIcon className="size-4" />
-              {t("networks.create")}
-            </Button>
+            <span className="flex gap-2">
+              <Button onClick={() => setImportOpen(true)} variant="outline">
+                <FileUpIcon className="size-4" />
+                {t("networks.import.open")}
+              </Button>
+              <Button onClick={() => setOpen(true)}>
+                <PlusIcon className="size-4" />
+                {t("networks.create")}
+              </Button>
+            </span>
           ) : null
         }
         description={t("networks.description")}
@@ -115,6 +123,8 @@ export function NetworksPage() {
           ))}
         </div>
       )}
+
+      <NetworkImportDialog onOpenChange={setImportOpen} open={importOpen} />
 
       <Dialog onOpenChange={setOpen} open={open}>
         <DialogContent>

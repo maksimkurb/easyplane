@@ -32,6 +32,8 @@ import type {
   BootstrapAdminBody,
   CheckDnsZone200,
   CheckDnsZoneBody,
+  CommitNetworkImport201,
+  CommitNetworkImportBody,
   CreateDeviceRevision201,
   CreateDeviceRevisionBody,
   CreateInvite201,
@@ -45,6 +47,8 @@ import type {
   DeleteDevice200,
   DeleteNetwork200,
   DeleteNetworkPolicy200,
+  ExportNetworkConfig200,
+  ExportNetworkConfigParams,
   FinishOidcLoginParams,
   GetAppConfig200,
   GetDevice200,
@@ -58,6 +62,7 @@ import type {
   GetOrganisation200,
   Health200,
   Health503,
+  ListAdoptableInstances200Item,
   ListAuditLog200Item,
   ListAuditLogParams,
   ListDeviceRevisions200Item,
@@ -73,6 +78,8 @@ import type {
   ListTags200Item,
   ListUsers200Item,
   Logout200,
+  PreviewNetworkImport200,
+  PreviewNetworkImportBody,
   PreviewNetworkPolicy200,
   PreviewNetworkPolicyBody,
   PushDeviceConfig200,
@@ -2059,6 +2066,394 @@ export function useGetOrganisation<TData = Awaited<ReturnType<typeof getOrganisa
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetOrganisationQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type previewNetworkImportResponse200 = {
+  data: PreviewNetworkImport200
+  status: 200
+}
+
+export type previewNetworkImportResponseSuccess = (previewNetworkImportResponse200) & {
+  headers: Headers;
+};
+;
+
+export type previewNetworkImportResponse = (previewNetworkImportResponseSuccess)
+
+export const getPreviewNetworkImportUrl = () => {
+
+
+
+
+  return `/api/networks/import/preview`
+}
+
+export const previewNetworkImport = async (previewNetworkImportBody: PreviewNetworkImportBody, options?: Parameters<typeof apiFetch>[1]): Promise<previewNetworkImportResponse> => {
+
+  return apiFetch<previewNetworkImportResponse>(getPreviewNetworkImportUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(previewNetworkImportBody)
+  }
+);}
+
+
+
+
+
+export const getPreviewNetworkImportMutationKey = () => ['previewNetworkImport'] as const;
+
+export const getPreviewNetworkImportMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewNetworkImport>>, TError,PreviewNetworkImportMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewNetworkImport>>, TError,PreviewNetworkImportMutationVariables, TContext> => {
+
+const mutationKey = getPreviewNetworkImportMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewNetworkImport>>, PreviewNetworkImportMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewNetworkImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewNetworkImportMutationResult = NonNullable<Awaited<ReturnType<typeof previewNetworkImport>>>
+    export type PreviewNetworkImportMutationBody = PreviewNetworkImportBody
+    export type PreviewNetworkImportMutationError = unknown
+    export type PreviewNetworkImportMutationVariables = {data: PreviewNetworkImportBody}
+
+    export const usePreviewNetworkImport = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewNetworkImport>>, TError,PreviewNetworkImportMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof previewNetworkImport>>,
+        TError,
+        PreviewNetworkImportMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPreviewNetworkImportMutationOptions(options), queryClient);
+    }
+
+export type commitNetworkImportResponse201 = {
+  data: CommitNetworkImport201
+  status: 201
+}
+
+export type commitNetworkImportResponseSuccess = (commitNetworkImportResponse201) & {
+  headers: Headers;
+};
+;
+
+export type commitNetworkImportResponse = (commitNetworkImportResponseSuccess)
+
+export const getCommitNetworkImportUrl = (draftId: string,) => {
+
+
+
+
+  return `/api/networks/import/${draftId}/commit`
+}
+
+export const commitNetworkImport = async (draftId: string,
+    commitNetworkImportBody: CommitNetworkImportBody, options?: Parameters<typeof apiFetch>[1]): Promise<commitNetworkImportResponse> => {
+
+  return apiFetch<commitNetworkImportResponse>(getCommitNetworkImportUrl(draftId),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(commitNetworkImportBody)
+  }
+);}
+
+
+
+
+
+export const getCommitNetworkImportMutationKey = () => ['commitNetworkImport'] as const;
+
+export const getCommitNetworkImportMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitNetworkImport>>, TError,CommitNetworkImportMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof commitNetworkImport>>, TError,CommitNetworkImportMutationVariables, TContext> => {
+
+const mutationKey = getCommitNetworkImportMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof commitNetworkImport>>, CommitNetworkImportMutationVariables> = (props) => {
+          const {draftId,data} = props ?? {};
+
+          return  commitNetworkImport(draftId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CommitNetworkImportMutationResult = NonNullable<Awaited<ReturnType<typeof commitNetworkImport>>>
+    export type CommitNetworkImportMutationBody = CommitNetworkImportBody
+    export type CommitNetworkImportMutationError = unknown
+    export type CommitNetworkImportMutationVariables = {draftId: string;data: CommitNetworkImportBody}
+
+    export const useCommitNetworkImport = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitNetworkImport>>, TError,CommitNetworkImportMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof commitNetworkImport>>,
+        TError,
+        CommitNetworkImportMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCommitNetworkImportMutationOptions(options), queryClient);
+    }
+
+export type listAdoptableInstancesResponse200 = {
+  data: ListAdoptableInstances200Item[]
+  status: 200
+}
+
+export type listAdoptableInstancesResponseSuccess = (listAdoptableInstancesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listAdoptableInstancesResponse = (listAdoptableInstancesResponseSuccess)
+
+export const getListAdoptableInstancesUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/devices/${deviceId}/import/instances`
+}
+
+export const listAdoptableInstances = async (deviceId: string, options?: Parameters<typeof apiFetch>[1]): Promise<listAdoptableInstancesResponse> => {
+
+  return apiFetch<listAdoptableInstancesResponse>(getListAdoptableInstancesUrl(deviceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdoptableInstancesQueryKey = (deviceId: string,) => {
+    return [
+    `/api/devices/${deviceId}/import/instances`
+    ] as const;
+    }
+
+
+export const getListAdoptableInstancesQueryOptions = <TData = Awaited<ReturnType<typeof listAdoptableInstances>>, TError = unknown>(deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdoptableInstances>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdoptableInstancesQueryKey(deviceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdoptableInstances>>> = ({ signal }) => listAdoptableInstances(deviceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: deviceId !== null && deviceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdoptableInstances>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListAdoptableInstancesQueryResult = NonNullable<Awaited<ReturnType<typeof listAdoptableInstances>>>
+export type ListAdoptableInstancesQueryError = unknown
+
+
+export function useListAdoptableInstances<TData = Awaited<ReturnType<typeof listAdoptableInstances>>, TError = unknown>(
+ deviceId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdoptableInstances>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAdoptableInstances>>,
+          TError,
+          Awaited<ReturnType<typeof listAdoptableInstances>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAdoptableInstances<TData = Awaited<ReturnType<typeof listAdoptableInstances>>, TError = unknown>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdoptableInstances>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAdoptableInstances>>,
+          TError,
+          Awaited<ReturnType<typeof listAdoptableInstances>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAdoptableInstances<TData = Awaited<ReturnType<typeof listAdoptableInstances>>, TError = unknown>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdoptableInstances>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAdoptableInstances<TData = Awaited<ReturnType<typeof listAdoptableInstances>>, TError = unknown>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAdoptableInstances>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListAdoptableInstancesQueryOptions(deviceId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type exportNetworkConfigResponse200 = {
+  data: ExportNetworkConfig200
+  status: 200
+}
+
+export type exportNetworkConfigResponseSuccess = (exportNetworkConfigResponse200) & {
+  headers: Headers;
+};
+;
+
+export type exportNetworkConfigResponse = (exportNetworkConfigResponseSuccess)
+
+export const getExportNetworkConfigUrl = (networkId: string,
+    params?: ExportNetworkConfigParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/networks/${networkId}/export?${stringifiedParams}` : `/api/networks/${networkId}/export`
+}
+
+export const exportNetworkConfig = async (networkId: string,
+    params?: ExportNetworkConfigParams, options?: Parameters<typeof apiFetch>[1]): Promise<exportNetworkConfigResponse> => {
+
+  return apiFetch<exportNetworkConfigResponse>(getExportNetworkConfigUrl(networkId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportNetworkConfigQueryKey = (networkId: string,
+    params?: ExportNetworkConfigParams,) => {
+    return [
+    `/api/networks/${networkId}/export`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getExportNetworkConfigQueryOptions = <TData = Awaited<ReturnType<typeof exportNetworkConfig>>, TError = unknown>(networkId: string,
+    params?: ExportNetworkConfigParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportNetworkConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportNetworkConfigQueryKey(networkId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportNetworkConfig>>> = ({ signal }) => exportNetworkConfig(networkId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: networkId !== null && networkId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportNetworkConfig>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ExportNetworkConfigQueryResult = NonNullable<Awaited<ReturnType<typeof exportNetworkConfig>>>
+export type ExportNetworkConfigQueryError = unknown
+
+
+export function useExportNetworkConfig<TData = Awaited<ReturnType<typeof exportNetworkConfig>>, TError = unknown>(
+ networkId: string,
+    params: undefined |  ExportNetworkConfigParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportNetworkConfig>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof exportNetworkConfig>>,
+          TError,
+          Awaited<ReturnType<typeof exportNetworkConfig>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useExportNetworkConfig<TData = Awaited<ReturnType<typeof exportNetworkConfig>>, TError = unknown>(
+ networkId: string,
+    params?: ExportNetworkConfigParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportNetworkConfig>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof exportNetworkConfig>>,
+          TError,
+          Awaited<ReturnType<typeof exportNetworkConfig>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useExportNetworkConfig<TData = Awaited<ReturnType<typeof exportNetworkConfig>>, TError = unknown>(
+ networkId: string,
+    params?: ExportNetworkConfigParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportNetworkConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useExportNetworkConfig<TData = Awaited<ReturnType<typeof exportNetworkConfig>>, TError = unknown>(
+ networkId: string,
+    params?: ExportNetworkConfigParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportNetworkConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getExportNetworkConfigQueryOptions(networkId,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

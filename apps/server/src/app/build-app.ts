@@ -24,6 +24,7 @@ import { VERSION } from "./context.js";
 import { registerAuditRoutes } from "../routes/audit-routes.js";
 import { registerDeviceRoutes } from "../routes/devices-routes.js";
 import { registerDnsRoutes } from "../routes/dns-routes.js";
+import { registerImportRoutes } from "../routes/import-routes.js";
 import { registerNetworkRoutes } from "../routes/networks-routes.js";
 import { registerPolicyRoutes } from "../routes/policy-routes.js";
 import { registerRouteRoutes } from "../routes/route-routes.js";
@@ -123,6 +124,7 @@ export async function buildApp(
   registerAuthHooks(app, context);
   registerSystemRoutes(app, context);
   registerNetworkRoutes(app, context);
+  registerImportRoutes(app, context);
   registerDeviceRoutes(app, context);
   registerPolicyRoutes(app, context);
   registerDnsRoutes(app, context);

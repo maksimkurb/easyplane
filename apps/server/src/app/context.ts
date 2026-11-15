@@ -9,6 +9,7 @@ import { OidcClient } from "../auth/oidc.js";
 import { SessionService } from "../auth/session.js";
 import { ControlPlaneServer } from "../control/control-plane.js";
 import { createLogger, type Logger } from "../logger.js";
+import { ImportService } from "../import/service.js";
 import { RealtimeHub } from "../realtime/hub.js";
 import { SecretBox } from "../security/crypto.js";
 import { AuditService } from "../services/audit.js";
@@ -40,6 +41,7 @@ export interface AppContext {
   audit: AuditService;
   auth: AuthService;
   networks: NetworkService;
+  imports: ImportService;
   invites: InviteService;
   deviceSessions: DeviceSessionRegistry;
   push: PushService;
@@ -102,6 +104,12 @@ export async function createAppContext(
   const networks = new NetworkService(db, secretBox, audit, realtime);
   const invites = new InviteService(db, audit);
   const deviceSessions = new DeviceSessionRegistry();
+  const imports = new ImportService({
+    db,
+    networks,
+    sessions: deviceSessions,
+    logger,
+  });
   // PolicyService and RouteService are wired after the push service because
   // they need to schedule pushes; the push service only needs callbacks.
   let policies: PolicyService | undefined;
@@ -197,6 +205,7 @@ export async function createAppContext(
     audit,
     auth,
     networks,
+    imports,
     invites,
     deviceSessions,
     push,

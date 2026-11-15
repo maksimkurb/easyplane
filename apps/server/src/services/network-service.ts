@@ -111,6 +111,79 @@ export class NetworkService {
     return toDto(network, { pending: 0, approved: 0, blocked: 0 });
   }
 
+  /**
+   * Creates a network from an imported EasyTier config. Unlike `create`, the
+   * `network_name` and `network_secret` come from the source and must be
+   * preserved byte-for-byte, otherwise existing peers cannot join. The secret
+   * is still sealed with AES-256-GCM before it touches the database.
+   */
+  async importNetwork(input: {
+    orgId: string;
+    userId: string;
+    name: string;
+    networkName: string;
+    secret: string;
+    ipv4Cidr: string;
+    defaultConfig: Record<string, unknown>;
+    magicDnsEnabled: boolean;
+    source: string;
+  }): Promise<NetworkDto> {
+    const name = input.name.trim();
+    if (name.length < 1) invalid("network name is required");
+    const networkName = input.networkName.trim();
+    if (networkName.length < 1 || networkName.length > 128) {
+      invalid("network_name must be 1..128 characters");
+    }
+    try {
+      parseCidr(input.ipv4Cidr);
+    } catch (error) {
+      invalid(error instanceof Error ? error.message : "invalid CIDR");
+    }
+    const defaults = normalizeDesiredConfig(input.defaultConfig);
+    const duplicate = await this.db.query.networks.findFirst({
+      where: (table, { eq }) => eq(table.networkName, networkName),
+    });
+    if (duplicate) {
+      conflict(
+        `a network with network_name "${networkName}" already exists in this deployment`,
+      );
+    }
+    const network = await insertNetwork(this.db, {
+      orgId: input.orgId,
+      name,
+      networkName,
+      secretCiphertext: this.secretBox.encrypt(input.secret),
+      ipv4Cidr: input.ipv4Cidr,
+      defaultConfig: defaults,
+      createdBy: input.userId,
+    });
+    if (input.magicDnsEnabled) {
+      await updateNetwork(this.db, network.id, { magicDnsEnabled: true });
+      network.magicDnsEnabled = true;
+    }
+    await this.audit.record({
+      orgId: input.orgId,
+      actorUserId: input.userId,
+      action: "network.imported",
+      targetType: "network",
+      targetId: network.id,
+      metadata: {
+        name,
+        networkName,
+        ipv4Cidr: input.ipv4Cidr,
+        source: input.source,
+        sourceIdentityKept: input.secret !== "",
+      },
+    });
+    this.realtime?.publish({
+      type: "network.updated",
+      orgId: input.orgId,
+      networkId: network.id,
+      data: { networkId: network.id, reason: "imported" },
+    });
+    return toDto(network, { pending: 0, approved: 0, blocked: 0 });
+  }
+
   async list(orgId: string): Promise<NetworkDto[]> {
     const networks = await listNetworks(this.db, orgId);
     return Promise.all(
@@ -142,6 +215,15 @@ export class NetworkService {
       targetType: "network",
       targetId: id,
     });
+    return this.secretBox.decrypt(network.secretCiphertext);
+  }
+
+  /**
+   * Decrypts a secret for an internal comparison (import preview, export).
+   * Never returns to a browser without an explicit admin action and never
+   * writes the plaintext anywhere.
+   */
+  async decryptSecretForComparison(network: Network): Promise<string> {
     return this.secretBox.decrypt(network.secretCiphertext);
   }
 

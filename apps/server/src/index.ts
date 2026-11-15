@@ -160,6 +160,9 @@ export {
 } from "./services/route-service.js";
 export { AppError } from "./services/errors.js";
 
+// M4: import flows, hardening and observability
+export * from "./import/index.js";
+
 // M3: realtime browser updates and topology
 export {
   RealtimeHub,

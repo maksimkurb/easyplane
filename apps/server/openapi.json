@@ -1605,6 +1605,607 @@
         }
       }
     },
+    "/api/networks/import/preview": {
+      "post": {
+        "operationId": "previewNetworkImport",
+        "tags": [
+          "networks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "toml"
+                            ]
+                          },
+                          "text": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 524288
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "text"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "shareLink"
+                            ]
+                          },
+                          "link": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 65536
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "link"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "device"
+                            ]
+                          },
+                          "deviceId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "instanceId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "deviceId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "existingNetworkId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  }
+                },
+                "required": [
+                  "source"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "draftId": {
+                      "type": "string"
+                    },
+                    "expiresAt": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "toml",
+                            "shareLink",
+                            "device"
+                          ]
+                        },
+                        "detail": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "detail"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "network": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "networkName": {
+                          "type": "string"
+                        },
+                        "ipv4Cidr": {
+                          "type": "string"
+                        },
+                        "magicDnsEnabled": {
+                          "type": "boolean"
+                        },
+                        "defaultConfig": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "networkName",
+                        "ipv4Cidr",
+                        "magicDnsEnabled",
+                        "defaultConfig"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "hostname": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "networkingMethod": {
+                          "type": "string"
+                        },
+                        "dhcp": {
+                          "type": "boolean"
+                        },
+                        "virtualIpv4": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "networkLength": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "peerUrls": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "listenerUrls": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "routes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "proxyCidrs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "exitNodes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "portForwards": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "aclChains": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "magicDns": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "hostname",
+                        "networkingMethod",
+                        "dhcp",
+                        "virtualIpv4",
+                        "networkLength",
+                        "peerUrls",
+                        "listenerUrls",
+                        "routes",
+                        "proxyCidrs",
+                        "exitNodes",
+                        "portForwards",
+                        "aclChains",
+                        "magicDns"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "secret": {
+                      "type": "object",
+                      "properties": {
+                        "present": {
+                          "type": "boolean"
+                        },
+                        "sameAsExisting": {
+                          "nullable": true,
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "present",
+                        "sameAsExisting"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "diff": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "current": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "incoming": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "changed": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "current",
+                          "incoming",
+                          "changed"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "unsupported": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "existingNetworkId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "networkNameTaken": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "draftId",
+                    "expiresAt",
+                    "source",
+                    "network",
+                    "summary",
+                    "secret",
+                    "diff",
+                    "warnings",
+                    "unsupported",
+                    "existingNetworkId",
+                    "networkNameTaken"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/import/{draftId}/commit": {
+      "post": {
+        "operationId": "commitNetworkImport",
+        "tags": [
+          "networks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "ipv4Cidr": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 32
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 64
+            },
+            "in": "path",
+            "name": "draftId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "networkName": {
+                      "type": "string"
+                    },
+                    "ipv4Cidr": {
+                      "type": "string"
+                    },
+                    "defaultConfig": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "magicDnsEnabled": {
+                      "type": "boolean"
+                    },
+                    "magicDnsZone": {
+                      "type": "string"
+                    },
+                    "policyVersion": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
+                    "deviceCounts": {
+                      "type": "object",
+                      "properties": {
+                        "pending": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "approved": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "blocked": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "pending",
+                        "approved",
+                        "blocked"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "networkName",
+                    "ipv4Cidr",
+                    "defaultConfig",
+                    "magicDnsEnabled",
+                    "magicDnsZone",
+                    "policyVersion",
+                    "createdAt",
+                    "updatedAt",
+                    "deviceCounts"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{deviceId}/import/instances": {
+      "get": {
+        "operationId": "listAdoptableInstances",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "instanceId": {
+                        "type": "string"
+                      },
+                      "managed": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "instanceId",
+                      "managed"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/export": {
+      "get": {
+        "operationId": "exportNetworkConfig",
+        "tags": [
+          "networks"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "default": "toml",
+              "type": "string",
+              "enum": [
+                "toml",
+                "share-link"
+              ]
+            },
+            "in": "query",
+            "name": "format",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "toml",
+                        "share-link"
+                      ]
+                    },
+                    "content": {
+                      "type": "string"
+                    },
+                    "secretIncluded": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "format",
+                    "content",
+                    "secretIncluded"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/devices": {
       "get": {
         "operationId": "listDevices",
