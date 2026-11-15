@@ -21,15 +21,18 @@ import {
   usedVirtualIps,
 } from "../db/repositories.js";
 import type { Device, Network, NetworkPeer } from "../db/schema.js";
+import type { RendezvousConfig } from "../env.js";
 import { parseCidr } from "../domain/ip.js";
 import { normalizeDnsZone } from "../domain/magic-dns.js";
 import { normalizeDesiredConfig } from "../domain/desired-config.js";
 import {
   dedupePeerUrls,
+  isValidPeerUrl,
   peerUrlKey,
   validatePeerUrl,
 } from "../domain/peers.js";
 import {
+  constantTimeEqual,
   generateNetworkSecret,
   slugify,
 } from "../security/crypto.js";
@@ -47,9 +50,43 @@ export interface NetworkDto {
   magicDnsEnabled: boolean;
   magicDnsZone: string;
   policyVersion: number;
+  /** Devices in this network dial the bundled rendezvous node. */
+  useRendezvous: boolean;
+  /** Every device is pushed `p2p_only` (advanced; no relay fallback). */
+  p2pOnly: boolean;
+  /** Read-only bundled rendezvous state for this network. */
+  rendezvous: NetworkRendezvousDto;
+  /** What the compiled peer list can contain, for the "no dial target" warning. */
+  peerPlan: NetworkPeerPlanDto;
   createdAt: string;
   updatedAt: string;
   deviceCounts: { pending: number; approved: number; blocked: number };
+}
+
+export interface NetworkRendezvousDto {
+  /** At least one endpoint is configured on the server. */
+  configured: boolean;
+  useBundled: boolean;
+  /**
+   * Whether this network's secret equals the node's secret, when the panel has
+   * `EASYPLANE_RENDEZVOUS_SECRET`. `null` means it cannot be checked here.
+   */
+  secretMatches: boolean | null;
+  endpoints: string[];
+  relayData: boolean;
+  privateMode: boolean;
+  networkName: string | null;
+}
+
+export interface NetworkPeerPlanDto {
+  /** Distinct advertised endpoints of approved hubs in the peer list. */
+  hubEndpoints: number;
+  /** Raw external peer URLs in the list. */
+  rawPeers: number;
+  /** Rendezvous endpoints appended at push time (0 when the toggle is off). */
+  rendezvousEndpoints: number;
+  /** False means devices have nothing to dial unless they share a LAN. */
+  hasPeerEndpoint: boolean;
 }
 
 /**
@@ -82,6 +119,8 @@ export interface NetworkPeerDto {
 function toDto(
   network: Network,
   counts: { pending: number; approved: number; blocked: number },
+  rendezvous: NetworkRendezvousDto,
+  peerPlan: NetworkPeerPlanDto,
 ): NetworkDto {
   return {
     id: network.id,
@@ -92,6 +131,10 @@ function toDto(
     magicDnsEnabled: network.magicDnsEnabled,
     magicDnsZone: network.magicDnsZone,
     policyVersion: network.policyVersion,
+    useRendezvous: network.useRendezvous,
+    p2pOnly: network.p2pOnly,
+    rendezvous,
+    peerPlan,
     createdAt: network.createdAt.toISOString(),
     updatedAt: network.updatedAt.toISOString(),
     deviceCounts: counts,
@@ -128,9 +171,73 @@ export class NetworkService {
     private readonly db: DbExecutor,
     private readonly secretBox: SecretBox,
     private readonly audit: AuditService,
+    private readonly rendezvous: RendezvousConfig,
     /** Live browser fan-out; optional so unit tests can omit it. */
     private readonly realtime?: RealtimeHub,
   ) {}
+
+  /** Read-only bundled rendezvous state, safe for every authenticated role. */
+  rendezvousInfo(): NetworkRendezvousDto {
+    return {
+      configured: this.rendezvous.configured,
+      useBundled: false,
+      secretMatches: null,
+      endpoints: [...this.rendezvous.endpoints],
+      relayData: this.rendezvous.relayData,
+      privateMode: this.rendezvous.privateMode,
+      networkName: this.rendezvous.networkName,
+    };
+  }
+
+  private rendezvousFor(network: Network): NetworkRendezvousDto {
+    const secret = this.secretBox.decrypt(network.secretCiphertext);
+    return {
+      configured: this.rendezvous.configured,
+      useBundled: network.useRendezvous,
+      secretMatches:
+        this.rendezvous.secret === null
+          ? null
+          : constantTimeEqual(secret, this.rendezvous.secret),
+      endpoints: [...this.rendezvous.endpoints],
+      relayData: this.rendezvous.relayData,
+      privateMode: this.rendezvous.privateMode,
+      networkName: this.rendezvous.networkName,
+    };
+  }
+
+  private async peerPlanFor(network: Network): Promise<NetworkPeerPlanDto> {
+    const records = await listNetworkPeerRecords(this.db, network.id);
+    const endpoints = new Set<string>();
+    let rawPeers = 0;
+    for (const { peer, device } of records) {
+      if (peer.url !== null) {
+        rawPeers += 1;
+        continue;
+      }
+      if (!device || device.state !== "approved" || !device.isHub) continue;
+      for (const endpoint of device.advertisedEndpoints) {
+        if (isValidPeerUrl(endpoint)) endpoints.add(peerUrlKey(endpoint));
+      }
+    }
+    const rendezvousEndpoints = network.useRendezvous
+      ? this.rendezvous.endpoints.length
+      : 0;
+    return {
+      hubEndpoints: endpoints.size,
+      rawPeers,
+      rendezvousEndpoints,
+      hasPeerEndpoint:
+        endpoints.size + rawPeers + rendezvousEndpoints > 0,
+    };
+  }
+
+  private async dto(
+    network: Network,
+    counts: { pending: number; approved: number; blocked: number },
+  ): Promise<NetworkDto> {
+    const [peerPlan] = await Promise.all([this.peerPlanFor(network)]);
+    return toDto(network, counts, this.rendezvousFor(network), peerPlan);
+  }
 
   async create(input: {
     orgId: string;
@@ -176,7 +283,7 @@ export class NetworkService {
       networkId: network.id,
       data: { networkId: network.id, reason: "created" },
     });
-    return toDto(network, { pending: 0, approved: 0, blocked: 0 });
+    return this.dto(network, { pending: 0, approved: 0, blocked: 0 });
   }
 
   /**
@@ -251,14 +358,14 @@ export class NetworkService {
       networkId: network.id,
       data: { networkId: network.id, reason: "imported" },
     });
-    return toDto(network, { pending: 0, approved: 0, blocked: 0 });
+    return this.dto(network, { pending: 0, approved: 0, blocked: 0 });
   }
 
   async list(orgId: string): Promise<NetworkDto[]> {
     const networks = await listNetworks(this.db, orgId);
     return Promise.all(
       networks.map(async (network) =>
-        toDto(network, await networkDeviceCounts(this.db, network.id)),
+        this.dto(network, await networkDeviceCounts(this.db, network.id)),
       ),
     );
   }
@@ -266,7 +373,7 @@ export class NetworkService {
   async get(orgId: string, id: string): Promise<NetworkDto> {
     const network = await getNetwork(this.db, orgId, id);
     if (!network) notFound("network not found");
-    return toDto(network, await networkDeviceCounts(this.db, network.id));
+    return this.dto(network, await networkDeviceCounts(this.db, network.id));
   }
 
   async requireNetwork(orgId: string, id: string): Promise<Network> {
@@ -587,9 +694,30 @@ export class NetworkService {
       ipv4Cidr?: string;
       magicDnsEnabled?: boolean;
       magicDnsZone?: string;
+      useRendezvous?: boolean;
+      p2pOnly?: boolean;
     },
   ): Promise<NetworkDto> {
     const network = await this.requireNetwork(orgId, id);
+    if (values.useRendezvous === true && !this.rendezvous.configured) {
+      conflict(
+        "no bundled rendezvous node is configured; set EASYPLANE_RENDEZVOUS_ENDPOINTS first",
+      );
+    }
+    if (
+      values.useRendezvous === true &&
+      network.useRendezvous !== true &&
+      this.rendezvous.secret !== null &&
+      !constantTimeEqual(
+        this.secretBox.decrypt(network.secretCiphertext),
+        this.rendezvous.secret,
+      )
+    ) {
+      conflict(
+        "this network's secret does not match the bundled rendezvous node's secret; " +
+          "align the secret first or run a node with this network's secret",
+      );
+    }
     if (values.ipv4Cidr !== undefined && values.ipv4Cidr !== network.ipv4Cidr) {
       const used = await usedVirtualIps(this.db, id);
       const cidr = parseCidr(values.ipv4Cidr);
@@ -618,6 +746,11 @@ export class NetworkService {
       (values.magicDnsEnabled !== undefined &&
         values.magicDnsEnabled !== network.magicDnsEnabled) ||
       (zone !== undefined && zone !== network.magicDnsZone);
+    const rendezvousChanged =
+      values.useRendezvous !== undefined &&
+      values.useRendezvous !== network.useRendezvous;
+    const p2pChanged =
+      values.p2pOnly !== undefined && values.p2pOnly !== network.p2pOnly;
     const updated = await updateNetwork(this.db, id, {
       ...(values.name !== undefined ? { name: values.name.trim() } : {}),
       ...(values.ipv4Cidr !== undefined ? { ipv4Cidr: values.ipv4Cidr } : {}),
@@ -625,12 +758,23 @@ export class NetworkService {
         ? { magicDnsEnabled: values.magicDnsEnabled }
         : {}),
       ...(zone !== undefined ? { magicDnsZone: zone } : {}),
+      ...(values.useRendezvous !== undefined
+        ? { useRendezvous: values.useRendezvous }
+        : {}),
+      ...(values.p2pOnly !== undefined ? { p2pOnly: values.p2pOnly } : {}),
     });
     if (!updated) notFound("network not found");
+    const action = rendezvousChanged
+      ? "network.rendezvous_updated"
+      : p2pChanged
+        ? "network.p2p_updated"
+        : dnsChanged
+          ? "network.magicdns_updated"
+          : "network.updated";
     await this.audit.record({
       orgId,
       actorUserId: userId,
-      action: dnsChanged ? "network.magicdns_updated" : "network.updated",
+      action,
       targetType: "network",
       targetId: id,
       metadata: {
@@ -641,15 +785,72 @@ export class NetworkService {
               magicDnsZone: updated.magicDnsZone,
             }
           : {}),
+        ...(rendezvousChanged
+          ? {
+              useRendezvous: updated.useRendezvous,
+              endpoints: updated.useRendezvous
+                ? this.rendezvous.endpoints
+                : [],
+            }
+          : {}),
+        ...(p2pChanged ? { p2pOnly: updated.p2pOnly } : {}),
       },
     });
     this.realtime?.publish({
       type: "network.updated",
       orgId,
       networkId: id,
-      data: { networkId: id, reason: "updated" },
+      data: {
+        networkId: id,
+        reason: rendezvousChanged
+          ? "rendezvous-updated"
+          : p2pChanged
+            ? "p2p-updated"
+            : "updated",
+      },
     });
-    return toDto(updated, await networkDeviceCounts(this.db, id));
+    return this.dto(updated, await networkDeviceCounts(this.db, id));
+  }
+
+  /**
+   * Sets this network's EasyTier secret to the bundled rendezvous node's
+   * secret, so its devices can use the node's private mode. The value comes
+   * from `EASYPLANE_RENDEZVOUS_SECRET`; it is never returned. Devices are
+   * repushed by the route (the new secret is part of every config).
+   */
+  async alignRendezvousSecret(
+    orgId: string,
+    userId: string,
+    id: string,
+  ): Promise<NetworkDto> {
+    const network = await this.requireNetwork(orgId, id);
+    if (this.rendezvous.secret === null) {
+      conflict(
+        "EASYPLANE_RENDEZVOUS_SECRET is not set, so the panel cannot align the secret",
+      );
+    }
+    const updated = await updateNetwork(this.db, id, {
+      secretCiphertext: this.secretBox.encrypt(this.rendezvous.secret),
+    });
+    if (!updated) notFound("network not found");
+    await this.audit.record({
+      orgId,
+      actorUserId: userId,
+      action: "network.rendezvous_secret_aligned",
+      targetType: "network",
+      targetId: id,
+      metadata: {
+        // The secret itself is never written to the audit log.
+        networkName: network.networkName,
+      },
+    });
+    this.realtime?.publish({
+      type: "network.updated",
+      orgId,
+      networkId: id,
+      data: { networkId: id, reason: "rendezvous-secret-aligned" },
+    });
+    return this.dto(updated, await networkDeviceCounts(this.db, id));
   }
 
   /**
@@ -718,6 +919,12 @@ export class NetworkService {
     id: string,
   ): Promise<string> {
     const network = await this.requireNetwork(orgId, id);
+    if (network.useRendezvous) {
+      conflict(
+        "this network uses the bundled rendezvous node and the node only admits its own secret. " +
+          "Turn 'Use bundled rendezvous node' off (or rotate the node secret and re-align) before rotating this network's secret.",
+      );
+    }
     const secret = generateNetworkSecret();
     const updated = await updateNetwork(this.db, id, {
       secretCiphertext: this.secretBox.encrypt(secret),

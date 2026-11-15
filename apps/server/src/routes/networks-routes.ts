@@ -21,6 +21,7 @@ import {
   paramsNetworkSchema,
   paramsPeerSchema,
   patchNetworkSchema,
+  rendezvousSchema,
 } from "../app/schemas.js";
 import { requireAuth } from "../app/auth-hooks.js";
 import { pushNetworkDevices } from "../services/push-service.js";
@@ -30,6 +31,29 @@ export function registerNetworkRoutes(
   context: AppContext,
 ): void {
   const typed = app.withTypeProvider<ZodTypeProvider>();
+
+  typed.get(
+    "/api/rendezvous",
+    {
+      schema: {
+        operationId: "getRendezvous",
+        tags: ["networks"],
+        response: { 200: rendezvousSchema },
+      },
+    },
+    async (request) => {
+      requireAuth(request);
+      const info = context.networks.rendezvousInfo();
+      return {
+        configured: info.configured,
+        endpoints: info.endpoints,
+        relayData: info.relayData,
+        privateMode: info.privateMode,
+        networkName: info.networkName,
+        secretComparisonAvailable: context.env.rendezvous.secret !== null,
+      };
+    },
+  );
 
   typed.get(
     "/api/networks",
@@ -108,7 +132,9 @@ export function registerNetworkRoutes(
         request.params.networkId,
         request.body,
       );
-      // MagicDNS is a network-level setting: flip it on every device.
+      // MagicDNS, the rendezvous toggle and p2p_only are network-level
+      // settings: flip them on every device. Peer URLs and secure mode are
+      // compiled at push time, so no revision is created.
       if (
         network.magicDnsEnabled !== before.magicDnsEnabled ||
         network.magicDnsZone !== before.magicDnsZone
@@ -120,6 +146,48 @@ export function registerNetworkRoutes(
           "magic dns updated",
         );
       }
+      if (
+        network.useRendezvous !== before.useRendezvous ||
+        network.p2pOnly !== before.p2pOnly
+      ) {
+        await pushNetworkDevices(
+          context.db,
+          context.push,
+          request.params.networkId,
+          network.useRendezvous !== before.useRendezvous
+            ? "rendezvous updated"
+            : "p2p only updated",
+        );
+      }
+      return network;
+    },
+  );
+
+  typed.post(
+    "/api/networks/:networkId/rendezvous/align-secret",
+    {
+      config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+      schema: {
+        operationId: "alignNetworkRendezvousSecret",
+        tags: ["networks"],
+        params: paramsNetworkSchema,
+        response: { 200: networkSchema },
+      },
+    },
+    async (request) => {
+      const auth = requireRole(request, ["admin"]);
+      const network = await context.networks.alignRendezvousSecret(
+        auth.organisation.id,
+        auth.user.id,
+        request.params.networkId,
+      );
+      // The secret is part of every pushed config: reconnect the fleet.
+      await pushNetworkDevices(
+        context.db,
+        context.push,
+        request.params.networkId,
+        "rendezvous secret aligned",
+      );
       return network;
     },
   );

@@ -146,26 +146,41 @@ export interface CompilePeerUrlsInput {
    */
   targetMachineId?: string;
   entries: readonly PeerCompilerEntry[];
+  /**
+   * Endpoints of the bundled rendezvous node. They are appended after the
+   * network's own entries, never excluded for any device (the node is not a
+   * device in this network) and de-duplicated against hub/raw URLs.
+   */
+  rendezvousEndpoints?: readonly string[];
+}
+
+/** Where one compiled peer URL came from. */
+export type PeerSource = "hub" | "external" | "rendezvous";
+
+export interface CompiledPeer {
+  url: string;
+  source: PeerSource;
 }
 
 /**
- * Compiles the `peer_urls` of one device from the network's peer list.
+ * Compiles the `peer_urls` of one device from the network's peer list and the
+ * bundled rendezvous endpoints, keeping each URL's source for the UI/audit.
  *
  * - a device-backed entry contributes every advertised endpoint of an
  *   **approved hub**, except the target device itself (by `device_id` and, as a
  *   second check, by `machine_id`);
  * - a raw URL is pushed verbatim, unless it is linked to the target device;
+ * - configured rendezvous endpoints are appended last and are never
+ *   self-excluded (the rendezvous node is not one of this network's devices);
  * - invalid URLs are dropped (they would make `gen_config` fail on the client);
  * - de-duplication is by trailing-slash-insensitive URL key, preserving the
- *   network's peer order and each device's endpoint order.
- *
- * A device that is the only (or the current) hub therefore gets an empty list:
- * it is the listener, and must never dial its own advertised endpoint.
+ *   network's peer order, each device's endpoint order and the rendezvous
+ *   order. A URL already present from the network list keeps that source.
  */
-export function compilePeerUrls(input: CompilePeerUrlsInput): string[] {
+export function compilePeerList(input: CompilePeerUrlsInput): CompiledPeer[] {
   const targetId = input.targetDeviceId;
   const targetMachineId = input.targetMachineId;
-  const urls: string[] = [];
+  const peers: CompiledPeer[] = [];
   const seen = new Set<string>();
 
   const isTarget = (deviceId: string | null | undefined, machineId?: string) => {
@@ -173,27 +188,38 @@ export function compilePeerUrls(input: CompilePeerUrlsInput): string[] {
     return Boolean(targetMachineId && machineId && machineId === targetMachineId);
   };
 
-  const add = (value: string) => {
+  const add = (value: string, source: PeerSource) => {
     if (!isValidPeerUrl(value)) return;
     const key = peerUrlKey(value);
     if (key.length === 0 || seen.has(key)) return;
     seen.add(key);
-    urls.push(value.trim());
+    peers.push({ url: value.trim(), source });
   };
 
   for (const entry of input.entries) {
     if (entry.url !== null) {
       if (isTarget(entry.deviceId, entry.device?.machineId)) continue;
-      add(entry.url);
+      add(entry.url, "external");
       continue;
     }
     const device = entry.device;
     if (!device) continue;
     if (device.state !== "approved" || !device.isHub) continue;
     if (isTarget(device.id, device.machineId)) continue;
-    for (const endpoint of device.advertisedEndpoints) add(endpoint);
+    for (const endpoint of device.advertisedEndpoints) add(endpoint, "hub");
   }
-  return urls;
+  for (const endpoint of input.rendezvousEndpoints ?? []) {
+    add(endpoint, "rendezvous");
+  }
+  return peers;
+}
+
+/**
+ * The `peer_urls` list pushed to the client. See `compilePeerList` for the
+ * rules; this wrapper keeps the existing call sites and tests simple.
+ */
+export function compilePeerUrls(input: CompilePeerUrlsInput): string[] {
+  return compilePeerList(input).map((peer) => peer.url);
 }
 
 /** Stable de-duplication for endpoint lists stored on a device. */

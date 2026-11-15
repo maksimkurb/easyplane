@@ -330,6 +330,8 @@ export async function updateNetwork(
       | "magicDnsEnabled"
       | "magicDnsZone"
       | "policyVersion"
+      | "useRendezvous"
+      | "p2pOnly"
     >
   >,
 ): Promise<typeof networks.$inferSelect | undefined> {

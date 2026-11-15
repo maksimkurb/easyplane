@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildNetworkConfig,
+  compilePeerList,
   compilePeerUrls,
+  configMatchesDesired,
   isValidPeerUrl,
   normalizeDesiredConfig,
   peerUrlKey,
@@ -216,6 +218,59 @@ describe("peer list compilation", () => {
   });
 });
 
+describe("rendezvous endpoints in the compiled peer list", () => {
+  const NODE = ["tcp://rv.example.com:11010", "udp://rv.example.com:11010"];
+
+  it("appends rendezvous endpoints after network entries with their source", () => {
+    const peers = compilePeerList({
+      targetDeviceId: TARGET,
+      targetMachineId: TARGET_MACHINE,
+      entries: [{ deviceId: null, url: "tcp://hub.example.com:11010" }],
+      rendezvousEndpoints: NODE,
+    });
+    expect(peers).toEqual([
+      { url: "tcp://hub.example.com:11010", source: "external" },
+      { url: "tcp://rv.example.com:11010", source: "rendezvous" },
+      { url: "udp://rv.example.com:11010", source: "rendezvous" },
+    ]);
+  });
+
+  it("never self-excludes the rendezvous node, even for the hub device", () => {
+    const peers = compilePeerList({
+      targetDeviceId: HUB,
+      targetMachineId: HUB_MACHINE,
+      entries: [deviceEntry()],
+      rendezvousEndpoints: NODE,
+    });
+    expect(peers.map((peer) => peer.url)).toEqual(NODE);
+  });
+
+  it("de-duplicates a rendezvous endpoint that is also a hub endpoint", () => {
+    const peers = compilePeerList({
+      targetDeviceId: TARGET,
+      targetMachineId: TARGET_MACHINE,
+      entries: [
+        deviceEntry({ advertisedEndpoints: ["tcp://rv.example.com:11010/"] }),
+      ],
+      rendezvousEndpoints: ["tcp://rv.example.com:11010"],
+    });
+    expect(peers).toEqual([
+      { url: "tcp://rv.example.com:11010/", source: "hub" },
+    ]);
+  });
+
+  it("drops invalid rendezvous endpoints instead of failing the push", () => {
+    expect(
+      compilePeerList({
+        targetDeviceId: TARGET,
+        targetMachineId: TARGET_MACHINE,
+        entries: [],
+        rendezvousEndpoints: ["ftp://bad.example:11010", "tcp://ok.example:11010"],
+      }),
+    ).toEqual([{ url: "tcp://ok.example:11010", source: "rendezvous" }]);
+  });
+});
+
 describe("desired config peer resolution", () => {
   function config(peerUrls: string[] | undefined) {
     return buildNetworkConfig({
@@ -249,5 +304,36 @@ describe("desired config peer resolution", () => {
     // Standalone = 2, Manual = 1 in the generated enum.
     expect(config([]).networkingMethod).toBe(2);
     expect(config(["tcp://hub.example:11010"]).networkingMethod).toBe(1);
+  });
+
+  it("pushes p2p_only and secure mode only when the network enables them", () => {
+    const base = {
+      networkId: TARGET,
+      deviceId: TARGET,
+      instanceId: "33333333-3333-4333-8333-333333333333",
+      hostname: "node-a",
+      networkName: "net",
+      networkSecret: "secret",
+      assignedIpv4: "10.144.144.2",
+      ipv4Cidr: "10.144.144.0/24",
+      stored: normalizeDesiredConfig({}),
+    };
+    const plain = buildNetworkConfig(base);
+    expect(plain.p2pOnly).toBeUndefined();
+    expect(plain.secureMode).toBeUndefined();
+
+    const advanced = buildNetworkConfig({
+      ...base,
+      p2pOnly: true,
+      secureMode: true,
+    });
+    expect(advanced.p2pOnly).toBe(true);
+    expect(advanced.secureMode?.enabled).toBe(true);
+    expect(configMatchesDesired(advanced, advanced)).toBe(true);
+
+    const withoutSecure = { ...advanced, secureMode: undefined };
+    expect(configMatchesDesired(withoutSecure, advanced)).toBe(false);
+    const withoutP2p = { ...advanced, p2pOnly: undefined };
+    expect(configMatchesDesired(withoutP2p, advanced)).toBe(false);
   });
 });

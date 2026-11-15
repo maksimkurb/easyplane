@@ -32,6 +32,33 @@ export const networkCountsSchema = z.object({
   blocked: z.number().int(),
 });
 
+export const networkRendezvousSchema = z.object({
+  configured: z.boolean(),
+  useBundled: z.boolean(),
+  secretMatches: z.boolean().nullable(),
+  endpoints: z.array(z.string()),
+  relayData: z.boolean(),
+  privateMode: z.boolean(),
+  networkName: z.string().nullable(),
+});
+
+export const networkPeerPlanSchema = z.object({
+  hubEndpoints: z.number().int(),
+  rawPeers: z.number().int(),
+  rendezvousEndpoints: z.number().int(),
+  hasPeerEndpoint: z.boolean(),
+});
+
+export const rendezvousSchema = z.object({
+  configured: z.boolean(),
+  endpoints: z.array(z.string()),
+  relayData: z.boolean(),
+  privateMode: z.boolean(),
+  networkName: z.string().nullable(),
+  /** Whether the panel can verify a network secret against the node's. */
+  secretComparisonAvailable: z.boolean(),
+});
+
 export const networkSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -41,6 +68,10 @@ export const networkSchema = z.object({
   magicDnsEnabled: z.boolean(),
   magicDnsZone: z.string(),
   policyVersion: z.number().int(),
+  useRendezvous: z.boolean(),
+  p2pOnly: z.boolean(),
+  rendezvous: networkRendezvousSchema,
+  peerPlan: networkPeerPlanSchema,
   createdAt: z.string(),
   updatedAt: z.string(),
   deviceCounts: networkCountsSchema,
@@ -228,6 +259,10 @@ export const patchNetworkSchema = z
     ipv4Cidr: z.string().min(1).max(32).optional(),
     magicDnsEnabled: z.boolean().optional(),
     magicDnsZone: z.string().min(3).max(200).optional(),
+    /** Dial the bundled rendezvous node from every device in this network. */
+    useRendezvous: z.boolean().optional(),
+    /** Push `p2p_only` to every device (advanced; disables relay fallback). */
+    p2pOnly: z.boolean().optional(),
   })
   .strict();
 

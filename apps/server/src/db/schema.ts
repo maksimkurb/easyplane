@@ -164,6 +164,19 @@ export const networks = pgTable(
     magicDnsZone: text("magic_dns_zone").notNull().default("et.net."),
     /** Latest policy document version (0 = no policy, traffic unrestricted). */
     policyVersion: integer("policy_version").notNull().default(0),
+    /**
+     * Network-level opt-in for the bundled rendezvous node. When on, the
+     * configured `EASYPLANE_RENDEZVOUS_ENDPOINTS` are appended to every
+     * device's compiled peer list and devices are pushed with secure mode
+     * (required for the node's private-mode shared-secret proof).
+     */
+    useRendezvous: boolean("use_rendezvous").notNull().default(false),
+    /**
+     * Push `p2p_only` to every device in this network. Advanced: devices then
+     * only talk to peers they have a direct connection with, so NAT
+     * combinations that need a relay cannot connect at all.
+     */
+    p2pOnly: boolean("p2p_only").notNull().default(false),
     /** Non-secret defaults merged into every device's desired config. */
     defaultConfig: jsonb("default_config")
       .$type<Record<string, unknown>>()

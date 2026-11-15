@@ -106,7 +106,13 @@ export async function createAppContext(
     maxTotal: env.sseMaxTotal,
     bufferSize: env.sseEventBuffer,
   });
-  const networks = new NetworkService(db, secretBox, audit, realtime);
+  const networks = new NetworkService(
+    db,
+    secretBox,
+    audit,
+    env.rendezvous,
+    realtime,
+  );
   const invites = new InviteService(db, audit);
   const deviceSessions = new DeviceSessionRegistry();
   const imports = new ImportService({
@@ -129,6 +135,7 @@ export async function createAppContext(
     logger,
     reportIntervalMs: env.routeReportIntervalMs,
     metrics,
+    rendezvousEndpoints: env.rendezvous.endpoints,
     onDeviceUpdated: async (deviceId, reason) => {
       await devicesService?.notifyDevice(deviceId, reason);
     },

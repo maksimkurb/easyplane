@@ -103,6 +103,7 @@ export {
 export {
   PEER_URL_MAX_LENGTH,
   PEER_URL_SCHEMES,
+  compilePeerList,
   compilePeerUrls,
   dedupePeerUrls,
   isValidPeerUrl,
@@ -110,8 +111,10 @@ export {
   peerUrlSchema,
   validatePeerUrl,
   type CompilePeerUrlsInput,
+  type CompiledPeer,
   type PeerCompilerDevice,
   type PeerCompilerEntry,
+  type PeerSource,
   type PeerUrlScheme,
 } from "./domain/peers.js";
 export { allocateIpv4, parseCidr, parseIpv4, formatIpv4 } from "./domain/ip.js";

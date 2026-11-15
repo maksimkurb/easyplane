@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { peerUrlKey, validatePeerUrl } from "./domain/peers.js";
+
 const oidcProviderSchema = z.object({
   /** Stable id used in URLs and identity rows. */
   id: z
@@ -26,6 +28,69 @@ const oidcProviderSchema = z.object({
 });
 
 export type OidcProviderConfig = z.infer<typeof oidcProviderSchema>;
+
+/**
+ * Bundled rendezvous node settings. `secret` is the node's EasyTier network
+ * secret; it is kept out of every DTO and is only used to compare/align a
+ * network's secret.
+ */
+export interface RendezvousConfig {
+  endpoints: string[];
+  /** Informational: the node forwards user data (CGNAT/symmetric-NAT users). */
+  relayData: boolean;
+  /** Informational: the node rejects foreign networks without its secret. */
+  privateMode: boolean;
+  /** Informational: the node's own EasyTier network name. */
+  networkName: string | null;
+  /** Optional comparison/alignment secret; never exposed. */
+  secret: string | null;
+  /** True when at least one endpoint is configured. */
+  configured: boolean;
+}
+
+function parseRendezvousEndpoints(raw: string): string[] {
+  const urls: string[] = [];
+  const seen = new Set<string>();
+  for (const entry of raw.split(",")) {
+    const value = entry.trim();
+    if (value === "") continue;
+    let url: string;
+    try {
+      url = validatePeerUrl(value);
+    } catch (error) {
+      throw new Error(
+        `EASYPLANE_RENDEZVOUS_ENDPOINTS: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    const key = peerUrlKey(url);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    urls.push(url);
+  }
+  return urls;
+}
+
+export function readRendezvousConfig(
+  source: NodeJS.ProcessEnv = process.env,
+): RendezvousConfig {
+  return buildRendezvousConfig(envSchema.parse(source));
+}
+
+function buildRendezvousConfig(
+  parsed: z.infer<typeof envSchema>,
+): RendezvousConfig {
+  const endpoints = parseRendezvousEndpoints(parsed.EASYPLANE_RENDEZVOUS_ENDPOINTS);
+  const secret = parsed.EASYPLANE_RENDEZVOUS_SECRET?.trim() ?? "";
+  return {
+    endpoints,
+    relayData: parsed.EASYPLANE_RENDEZVOUS_RELAY_DATA ?? false,
+    privateMode: parsed.EASYPLANE_RENDEZVOUS_PRIVATE_MODE ?? true,
+    networkName: parsed.EASYPLANE_RENDEZVOUS_NETWORK_NAME?.trim() || null,
+    secret: secret === "" ? null : secret,
+    configured: endpoints.length > 0,
+  };
+}
+
 
 const booleanish = z
   .string()
@@ -176,6 +241,24 @@ const envSchema = z.object({
   EASYPLANE_LOG_LEVEL: z
     .enum(["trace", "debug", "info", "warn", "error", "fatal", "silent"])
     .default("info"),
+  /**
+   * Bundled rendezvous node (a stock easytier-core public server). Endpoints
+   * are peer URLs every device in an opted-in network dials. Empty disables
+   * the feature in the panel.
+   */
+  EASYPLANE_RENDEZVOUS_ENDPOINTS: z.string().default(""),
+  /** Display only: whether the bundled node relays data (CGNAT users need it). */
+  EASYPLANE_RENDEZVOUS_RELAY_DATA: booleanish,
+  /** Display only: whether the bundled node is in private (shared-secret) mode. */
+  EASYPLANE_RENDEZVOUS_PRIVATE_MODE: booleanish,
+  /** Display only: the node's EasyTier network name. Never a secret. */
+  EASYPLANE_RENDEZVOUS_NETWORK_NAME: z.string().max(128).optional(),
+  /**
+   * The node's EasyTier network secret. Optional, but when set the panel can
+   * verify that a network's secret matches the node before enabling the
+   * toggle, and can align a network to it. Never returned by any API.
+   */
+  EASYPLANE_RENDEZVOUS_SECRET: z.string().max(512).optional(),
 });
 
 export interface AppEnv {
@@ -226,6 +309,7 @@ export interface AppEnv {
   maxPendingDevicesPerNetwork: number;
   webDir: string | undefined;
   logLevel: string;
+  rendezvous: RendezvousConfig;
 }
 
 function parseProviderList(raw: string): OidcProviderConfig[] {
@@ -329,5 +413,6 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
       parsed.EASYPLANE_MAX_PENDING_DEVICES_PER_NETWORK,
     webDir: parsed.EASYPLANE_WEB_DIR,
     logLevel: parsed.EASYPLANE_LOG_LEVEL,
+    rendezvous: buildRendezvousConfig(parsed),
   };
 }

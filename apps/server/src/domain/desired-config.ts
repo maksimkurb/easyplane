@@ -105,6 +105,17 @@ export interface BuildNetworkConfigOptions {
   manualRoutes?: string[];
   /** Compiled ACL for this device, if a policy exists. */
   acl?: acl.Acl;
+  /**
+   * Push `p2p_only`. Advanced network-wide switch: the device only sends to
+   * peers it has a direct connection with, so a relay cannot be used.
+   */
+  p2pOnly?: boolean;
+  /**
+   * Enable EasyTier secure mode on the device. Required when the network uses
+   * the bundled rendezvous node: private mode authenticates a foreign network
+   * with the Noise secret proof, which is only exchanged in secure mode.
+   */
+  secureMode?: boolean;
 }
 
 /** Turns a stored revision into the protobuf config pushed to the client. */
@@ -153,6 +164,8 @@ export function buildNetworkConfig(
     ...(options.stored.latencyFirst !== undefined
       ? { latencyFirst: options.stored.latencyFirst }
       : {}),
+    ...(options.p2pOnly ? { p2pOnly: true } : {}),
+    ...(options.secureMode ? { secureMode: { enabled: true } } : {}),
   };
 }
 
@@ -182,6 +195,10 @@ export function configMatchesDesired(
     return false;
   }
   if (Boolean(remote.enableManualRoutes) !== Boolean(desired.enableManualRoutes)) {
+    return false;
+  }
+  if (Boolean(remote.p2pOnly) !== Boolean(desired.p2pOnly)) return false;
+  if (Boolean(remote.secureMode?.enabled) !== Boolean(desired.secureMode?.enabled)) {
     return false;
   }
 
@@ -255,6 +272,12 @@ export function describeConfigMismatch(
     "enableManualRoutes",
     Boolean(remote.enableManualRoutes),
     Boolean(desired.enableManualRoutes),
+  );
+  check("p2pOnly", Boolean(remote.p2pOnly), Boolean(desired.p2pOnly));
+  check(
+    "secureMode.enabled",
+    Boolean(remote.secureMode?.enabled),
+    Boolean(desired.secureMode?.enabled),
   );
   check("proxyCidrs", [...(remote.proxyCidrs ?? [])].sort(), [...(desired.proxyCidrs ?? [])].sort());
   check("routes", [...(remote.routes ?? [])].sort(), [...(desired.routes ?? [])].sort());

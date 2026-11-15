@@ -73,6 +73,11 @@ export interface PushServiceOptions {
   /** Called after a push changes applied revision or the last error. */
   onDeviceUpdated?: (deviceId: string, reason: string) => Promise<void>;
   metrics?: MetricsRegistry;
+  /**
+   * Peer URLs of the bundled rendezvous node. Appended to the compiled peer
+   * list of a network that opted in (`networks.use_rendezvous`).
+   */
+  rendezvousEndpoints?: readonly string[];
 }
 
 function sleep(ms: number): Promise<void> {
@@ -284,6 +289,11 @@ export class PushService {
             }
           : null,
       })),
+      // The rendezvous node is not a device of this network, so it is never
+      // excluded for the target and only contributes when the network opted in.
+      rendezvousEndpoints: network.useRendezvous
+        ? (this.options.rendezvousEndpoints ?? [])
+        : [],
     });
     return this.buildConfig(
       device,
@@ -324,6 +334,8 @@ export class PushService {
         ? acceptedRoutesFor(approvedRoutes, device.id)
         : [],
       acl: compiledAcl,
+      p2pOnly: network.p2pOnly,
+      secureMode: network.useRendezvous,
     });
   }
 

@@ -113,4 +113,49 @@ describe("environment parsing", () => {
     expect(env.secureCookies).toBe(true);
     expect(env.trustProxy).toBe(false);
   });
+
+  it("disables the bundled rendezvous node by default", () => {
+    const env = readEnv(base);
+    expect(env.rendezvous).toEqual({
+      endpoints: [],
+      relayData: false,
+      privateMode: true,
+      networkName: null,
+      secret: null,
+      configured: false,
+    });
+  });
+
+  it("parses and de-duplicates rendezvous endpoints", () => {
+    const env = readEnv({
+      ...base,
+      EASYPLANE_RENDEZVOUS_ENDPOINTS:
+        "tcp://rv.example.com:11010, udp://rv.example.com:11010/,tcp://rv.example.com:11010",
+      EASYPLANE_RENDEZVOUS_RELAY_DATA: "true",
+      EASYPLANE_RENDEZVOUS_PRIVATE_MODE: "false",
+      EASYPLANE_RENDEZVOUS_NETWORK_NAME: "rv-net",
+      EASYPLANE_RENDEZVOUS_SECRET: "shared-secret",
+    });
+    expect(env.rendezvous.configured).toBe(true);
+    expect(env.rendezvous.endpoints).toEqual([
+      "tcp://rv.example.com:11010",
+      "udp://rv.example.com:11010/",
+    ]);
+    expect(env.rendezvous.relayData).toBe(true);
+    expect(env.rendezvous.privateMode).toBe(false);
+    expect(env.rendezvous.networkName).toBe("rv-net");
+    expect(env.rendezvous.secret).toBe("shared-secret");
+  });
+
+  it("treats an empty rendezvous secret as absent and rejects bad endpoint URLs", () => {
+    expect(
+      readEnv({ ...base, EASYPLANE_RENDEZVOUS_SECRET: "   " }).rendezvous.secret,
+    ).toBeNull();
+    expect(() =>
+      readEnv({
+        ...base,
+        EASYPLANE_RENDEZVOUS_ENDPOINTS: "ftp://rv.example.com:11010",
+      }),
+    ).toThrow(/EASYPLANE_RENDEZVOUS_ENDPOINTS/);
+  });
 });
