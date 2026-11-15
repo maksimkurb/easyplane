@@ -19,7 +19,8 @@ version 2.6.4-81487c36
 | `easytier-core 2.6.4-81487c36` | built from the pinned commit by `scripts/build-test-client.sh` (real upstream code, unmodified) | `ws`, `wss`, `tcp`, `udp` | full conformance suite green |
 | `easytier-core 2.6.4-81487c36 --secure-mode` | same binary | `ws`, `udp` | Noise handshake mandatory; green |
 | same binary, `GetFeature.support_encryption=false` | test server option | `ws` | legacy plain path; green |
-| official `v2.6.4` release tag (`8428a89d`, 2026-05-12) | **not used** | — | different commit than the pin, so not byte-identical |
+| official `v2.6.4` release tag (`8428a89d`, 2026-05-12) | **not used** | — | different commit than the pin, so not byte-identical; it predates `disable_relay_data` |
+| official `v2.7.0` (`8b7f1f01`, 2026-10-05) | `easytier/easytier:v2.7.0` (rendezvous node only) | `tcp` | manual lab: pinned leaves connect through it with private mode + secure mode, relay OFF drops data and relay ON passes it; healthcheck verified. The automated conformance node uses the **pinned** build instead. **Not** a panel config-server support statement |
 | Android app / JNI (`easytier-android-jni`) | same upstream web-client code path | — | **source-level only**; not exercised in CI (no device) |
 
 "Green" means `test/conformance/*.test.ts` with real containers: connection,
@@ -28,6 +29,15 @@ version 2.6.4-81487c36
 `ListNetworkInstanceMeta`, deletion/block, reconnect/re-push, invites,
 approval, policy/MagicDNS/routes and topology fields, plus the M4 adoption
 flow and UDP session layer.
+
+The **bundled rendezvous node** is the one deliberate exception to "one pinned
+binary": the deployment compose runs `easytier/easytier:v2.7.0` because the
+official `v2.6.4` image predates `disable_relay_data`. The conformance suite
+starts the rendezvous node from the **pinned** build instead, so the behaviour
+claimed in PROTOCOL.md §14 is verified on the exact commit. If you need
+byte-identical deployments, build an image from the pin and set
+`RENDEZVOUS_IMAGE`. The panel's config-server contract still only covers the
+pinned client.
 
 ## Supported range
 
@@ -63,6 +73,8 @@ The control plane degrades rather than crashes on a newer client:
 | credential-mode networks | `secure_mode.local_private_key` with no `network_secret`; EasyPlane does not push this mode and refuses to import it | PROTOCOL.md §13.2 |
 | EasyTier ACL import | compiles from the EasyPlane policy document, not from an imported TOML/ACL | POLICY.md |
 | UDP config-server | needs a client built with UDP support (the pinned build is) | PROTOCOL.md §13.1 |
+| rendezvous node private mode | **secure mode on both sides**: the shared-secret proof is only sent by the Noise handshake, which the core only performs in secure mode | PROTOCOL.md §14.3, DEPLOY.md §4e |
+| rendezvous data relay | `disable_relay_data` is a TOML/management flag, not a CLI flag; `RENDEZVOUS_RELAY_DATA` maps to it | PROTOCOL.md §14.2 |
 
 ## Re-syncing to a new upstream ref
 

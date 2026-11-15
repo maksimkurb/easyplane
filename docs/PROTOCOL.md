@@ -802,3 +802,174 @@ preview lists every dropped item; nothing is silently discarded.
   listener) exposes counts only: sessions, heartbeats, pushes, topology cycles,
   imports, SSE streams. It never contains a network/device name, token or
   secret.
+
+## 14. Bundled rendezvous node (source-level proof and limits)
+
+EasyPlane can run a stock `easytier-core` as a **public node**: a peer that
+helps devices find each other and coordinates NAT hole punching. The panel
+never implements EasyTier routing itself; it only appends the node's peer URLs
+to a network's compiled list. This section records what the pinned core
+actually does, with file citations, and what was verified against real
+containers. [source: pinned commit `81487c363a…`, version `2.6.4-81487c36`]
+
+### 14.1 How a public node serves foreign networks
+
+A node whose own `network_name` differs from a peer's is a **public server** for
+that peer's network. `easytier-core/src/peers/foreign_network/mod.rs` creates one
+foreign-network instance per admitted network (`build_foreign_peer_context`,
+`PUBLIC_SERVER_HOSTNAME_PREFIX = "PublicServer_"`), and
+`PeerManager::add_tunnel_as_server_with_origin`
+(`easytier-core/src/peers/peer_manager.rs` ~L2080–2160) decides admission. The
+foreign instance carries the peers' network identity and its own synthetic
+hostname, so leaves see it as `PublicServer_<node-hostname>` in
+`CollectNetworkInfo`/`easytier-cli route`.
+
+A public node does all of the following for an admitted foreign network:
+initial contact and peer discovery, peer RPC/OSPF route exchange, route
+selection and hole-punch coordination, plus control-plane liveness. It forwards
+**data-plane** packets only when relay is allowed (14.2). [verified in
+`test/conformance/rendezvous.test.ts`: leaves on disjoint Docker networks see
+each other through the node with `cost=2` / `next_hop=PublicServer_…` while an
+HTTP request times out]
+
+### 14.2 `disable_relay_data`: rendezvous only
+
+`FlagsInConfig.disable_relay_data` (`easytier-proto/proto/common.proto` field
+41) makes the node drop forwarded data:
+
+- `PeerManager::should_drop_relay_data` (`peer_manager.rs` ~L3250) and
+  `try_handle_foreign_network_packet` (~L3020) drop data-plane packets;
+- `foreign_network/mod.rs` (~L1330) drops them inside a foreign instance when
+  `!relay_data || disable_relay_data`;
+- the flag is also advertised as `PeerFeatureFlag.avoid_relay_data`
+  (`peers/context.rs` ~L140) and becomes `PeerPolicyConfig.relay_data = false`.
+
+The flag is **not a CLI switch** in the pinned build. It is reachable through
+the TOML `[flags]` table and the management API
+(`easytier-core/src/config/toml.rs`, `api_input.rs`), which is why the bundled
+image renders a TOML file from environment variables instead of passing a flag.
+The official `easytier/easytier:v2.6.4` image predates the field; the deployment
+image uses `v2.7.0` (14.6) while conformance runs the pinned build.
+
+What still works with `disable_relay_data=true`: admission, peer RPC, OSPF and
+hole punching. Two leaves behind the same reachable LAN still connect
+**directly**, and that is the intended default. [verified: HTTP 200 between two
+leaves with relay off, route `cost=1`; a third isolated pair got HTTP 000]
+
+### 14.3 `private_mode`: the shared-secret gate
+
+`FlagsInConfig.private_mode` (`common.proto` field 23) is the who-may-use-it
+gate. In `add_tunnel_as_server_with_origin` (`peer_manager.rs` ~L2127):
+
+```text
+if !is_local_network && private_mode && !foreign_network_allowed {
+    return Err(SecretKeyError(
+        "private mode is turned on, foreign network secret mismatch"));
+}
+```
+
+`foreign_network_allowed` is `conn.matches_local_network_secret()` or a trusted
+credential pubkey. `matches_local_network_secret`
+(`peers/conn/peer_conn.rs` ~L1449) accepts either:
+
+1. a **secret proof**: HMAC-SHA256 keyed by the peer's `network_secret` over the
+   Noise handshake hash (`secret_proof_from_secret`, `peers/context.rs` ~L730);
+2. an equal `network_secret_digest`. That digest is
+   `DefaultHasher(network_name || network_secret)`
+   (`easytier-core/src/config/mod.rs` ~L203), so it **changes with the network
+   name**.
+
+Two consequences, both verified:
+
+- A leaf with a **different secret** is rejected with the message above, even
+  when it uses the same network name. [verified: `core-rv-wrong-secret` in the
+  conformance suite, node log assertion]
+- A leaf with the **same secret but a different network name** is admitted only
+  if the proof path is available. That path requires **secure mode**: the client
+  performs the Noise secret proof only in
+  `do_noise_handshake_as_client` (`peer_conn.rs` ~L789, called only when
+  `is_secure_mode_enabled()`; the legacy handshake in ~L1256 sends no proof).
+  [verified: same secret + different name is **rejected** without secure mode,
+  and accepted with `--secure-mode true` on both sides]
+
+This is why the panel pushes `secure_mode: { enabled: true }` to every device in
+a network that opts into the bundled node (`normalize_secure_mode_config`
+generates the X25519 keypair client-side). The node's own entrypoint enables
+secure mode by default. It is a real, documented dependency, not a knob.
+
+The model is therefore **one shared secret per rendezvous node**: networks keep
+their own `network_name` (EasyTier isolates them as separate foreign networks)
+but must use the node's `network_secret`. The panel can verify this when
+`EASYPLANE_RENDEZVOUS_SECRET` is set and offers an explicit, audited
+"align network secret" action; otherwise the UI requires an acknowledgement.
+`private_mode=false` is an explicit opt-out for a truly open node and removes
+the gate entirely (14.7).
+
+### 14.4 `relay_network_whitelist` and `relay_all_peer_rpc`
+
+`FlagsInConfig.relay_network_whitelist` is a space-separated list of wildcard
+network names (`peers/whitelist.rs`); the default is `*`
+(`config/toml.rs` `gen_default_flags`). In `ForeignNetworkManager::add_peer_conn`
+(`foreign_network/mod.rs` ~L900) a foreign network outside the list is
+**rejected outright** unless `relay_all_peer_rpc = true`. The same
+`relay_data` boolean is then passed to the foreign instance, which drops
+data-plane packets when false. So:
+
+- with the default (`relay_all_peer_rpc=false`), the whitelist is an **admission
+  allow-list** (who may use the node at all);
+- with `relay_all_peer_rpc=true`, non-whitelisted networks may still rendezvous
+  and exchange peer RPC, but only whitelisted networks get data relay — a
+  second layer that restricts relay without breaking discovery.
+
+[verified: with whitelist `not-this-network`, the node log says
+`network … not in whitelist` and the pair cannot communicate; with
+`relay_all_peer_rpc=true` the connections stay up and peer routes appear, while
+the HTTP request still times out]
+
+`relay_all_peer_rpc` also matters for credential-mode/other peers: the upstream
+help says it helps peers outside the whitelist establish P2P.
+
+### 14.5 `p2p_only`
+
+`FlagsInConfig.p2p_only` (`common.proto` field 32) makes
+`PeerManager::check_p2p_only_before_send` (`peer_manager.rs` ~L2561) fail every
+send to a peer that is not already a direct peer. It is a device-side switch,
+not a node switch: a network can push it to every device to forbid relay
+fallback. The panel exposes it as an advanced, per-network toggle and warns
+that symmetric NAT/CGNAT combinations then cannot connect at all.
+
+### 14.6 Image and version choice
+
+| use | image | why |
+| --- | --- | --- |
+| conformance node | `easyplane/easytier-core-test:2.6.4-81487c36` built by `scripts/build-test-client.sh` | byte-identical to the panel pin; the only way to test the exact `disable_relay_data`/private-mode behaviour |
+| deployment node | `easytier/easytier:v2.7.0` (override `RENDEZVOUS_IMAGE`) | stock, multi-arch, contains the same `private_mode`, `disable_relay_data`, `relay_network_whitelist`, `relay_all_peer_rpc` fields (checked against tag `8b7f1f01`); no local Rust build and no vendored binary. Manually exercised with pinned leaves: private mode admits the right secret, relay off drops data, relay on passes it, healthcheck `easytier-cli node` works |
+
+The panel pin and the deployment node are **not the same commit**. The
+rendezvous role uses only the public-server handshake/RPC subset that exists in
+both; the panel's own config-server compatibility is still the pinned contract
+(docs/COMPATIBILITY.md). A deployment that wants byte-identical versions can
+point `RENDEZVOUS_IMAGE` at its own image built from the pin.
+
+### 14.7 Honest limits
+
+- Hole-punch assistance was verified on Docker bridge networks with real
+  clients, not on carrier NAT. The test proves "the node coordinates discovery
+  and does/does not forward data"; it is not a NAT-lab matrix.
+- The secret is a shared symmetric key. Anyone who obtains it can join the node
+  as an admitted foreign network (with their own network name) and consume its
+  rendezvous/relay capacity. There is no per-network quota except
+  `foreign_relay_bps_limit` (not exposed by the entrypoint) and no revocation
+  list. Rotating the secret means changing `RENDEZVOUS_NETWORK_SECRET` **and**
+  every network's secret, then repushing.
+- Private mode authenticates the **network**, not the individual device. A
+  leaked network secret is a leaked node credential.
+- `private_mode=false` is an open public node: anyone can use it, and with
+  `RENDEZVOUS_RELAY_DATA=true` anyone can relay traffic through it. Do not
+  combine the two on an untrusted host.
+- The node does not see payload plaintext (EasyTier encrypts peer traffic), but
+  it sees connection metadata: network names, peer ids, virtual IPs, timings
+  and volume. Relay operators can also observe traffic patterns.
+- The map's direct/relayed edge comes from OSPF `Route.cost`/`next_hop_peer_id`
+  as reported by each device; it is not an independent probe of the path.
+

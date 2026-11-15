@@ -15,7 +15,9 @@ names and subnet/exit-node approvals are managed from the panel; the browser
 updates live over SSE and a connectivity map shows direct vs relayed paths.
 M4 adds network import (TOML, share link, live device), hardening, optional
 Prometheus metrics, the UDP session layer, and a load test with hundreds of
-simulated clients.
+simulated clients. An optional **bundled rendezvous node** (a stock
+`easytier-core` public node, no data relay by default) is shipped as a compose
+profile for networks that cannot reach a hub directly.
 
 - [docs/PROTOCOL.md](docs/PROTOCOL.md) — wire protocol, control semantics, UDP layer, import formats
 - [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) — tested versions, supported range, re-syncing protos
@@ -95,6 +97,17 @@ docker compose up -d --build
 To run a published release instead of building from source, use
 `docker compose -f docker-compose.ghcr.yml up -d` (tags, `EASYPLANE_IMAGE_TAG`,
 release procedure and package visibility: [docs/DEPLOY.md](docs/DEPLOY.md) §1b).
+
+The optional public rendezvous node (devices find each other; no data relay by
+default) is an opt-in profile:
+
+```bash
+docker compose --profile rendezvous up -d --build
+# or standalone on a VPS: docker compose -f docker-compose.rendezvous.yml up -d
+```
+
+See [docs/DEPLOY.md](docs/DEPLOY.md) §4e for ports, `RENDEZVOUS_*` variables,
+the shared-secret model and the CGNAT relay switch.
 
 Open `http://localhost:8080`, bootstrap the first admin with the token, then
 sign in through OIDC. TLS, reverse proxies (nginx + Caddy), IdP examples and
@@ -244,6 +257,33 @@ are audited, broadcast over SSE and repush the devices that dial the hub,
 without creating a revision: the peer list is network state compiled at push
 time, like routes and MagicDNS.
 
+## Bundled rendezvous node
+
+A network with no reachable hub leaves devices with nothing to dial. The
+optional `rendezvous` compose profile runs a **stock `easytier-core` public
+node** whose only job is discovery: initial contact, peer RPC/OSPF and NAT
+hole-punch coordination. It **does not forward user data** unless
+`RENDEZVOUS_RELAY_DATA=true`, the fallback for symmetric NAT/CGNAT users who
+cannot get a direct path. It needs no TUN device or capabilities.
+
+It is protected by a shared secret rather than being open: private mode (the
+default) admits a foreign network only when it can prove the node's
+`RENDEZVOUS_NETWORK_SECRET`; networks keep their own names and stay isolated,
+but one node has one secret. The panel can verify/align that secret
+(`EASYPLANE_RENDEZVOUS_SECRET`), shows a read-only card with endpoints and
+relay/private state, and an admin per-network **Use bundled rendezvous node**
+toggle appends the endpoints to every device's peer list (audited, SSE,
+repush; compile-time state, like hubs). Enabling it also pushes
+`secure_mode: { enabled: true }`, because the secret proof only exists in
+EasyTier secure mode. An advanced per-network `p2p_only` toggle forbids relay
+fallback; the UI warns that some NAT combinations then cannot connect.
+
+The source-level proof (private mode, `disable_relay_data`,
+`relay_network_whitelist`, `relay_all_peer_rpc`, `p2p_only`, secure mode) is in
+[docs/PROTOCOL.md](docs/PROTOCOL.md) §14; hosting, ports, threat model and the
+VPS compose file are in [docs/DEPLOY.md](docs/DEPLOY.md) §4e. Version choice and
+its honest limits are in [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
+
 ## Realtime and the topology map (M3)
 
 - The panel subscribes to `GET /api/events` (server-sent events). The stream is
@@ -333,9 +373,13 @@ config running → revision change → rollback → offline/online → block; AC
 enforcement (200 on an allowed port, timeout on a denied one, both directions);
 MagicDNS resolution; approved vs unapproved subnet routes; the M3 hub-and-spoke
 relay map and the SSE stream; the M4 UDP session layer and adoption of a
-running instance; and a hub whose own endpoint is in the network peer list —
-the real core's log has no `peer id conflict` while a leaf connects. Linux-only;
-set `EASYPLANE_CONFORMANCE_NO_TUN=1` when TUN is unavailable.
+running instance; a hub whose own endpoint is in the network peer list —
+the real core's log has no `peer id conflict` while a leaf connects; and the
+bundled rendezvous node — direct traffic with relay off, no data across
+disjoint networks, relayed traffic plus `cost>1`/`next_hop` route data with
+relay on, private-mode rejection of a wrong secret, and whitelist
+admission/relay. Linux-only; set `EASYPLANE_CONFORMANCE_NO_TUN=1` when TUN is
+unavailable.
 
 CI (`.github/workflows/ci.yml`) runs proto drift, typecheck/lint/unit/web build,
 integration (PostgreSQL service), the dockerised real-client conformance suite

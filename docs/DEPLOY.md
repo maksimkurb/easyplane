@@ -10,6 +10,7 @@ easytier-core ──wss──▶ reverse proxy ──▶ server:22023 (ws config
 easytier-core ──tcp──▶ server:22020
 easytier-core ──udp──▶ server:22021 (optional, EASYPLANE_UDP_PORT)
 server ──▶ postgres:5432
+devices ⇄ rendezvous:11010/11011 (optional public easytier-core, opt-in profile)
 ```
 
 ## 1. Quick start
@@ -435,6 +436,169 @@ operator links them:
 4. repeat for every hub, then remove raw entries that nothing dials anymore.
 
 The old JSON is left in place, so a downgraded image still sees it.
+
+## 4e. Rendezvous node
+
+A **rendezvous node** is a stock `easytier-core` running as a public node: a
+well-known peer that devices dial so they can find each other, exchange peer
+RPC/OSPF routes and coordinate NAT hole punching. It is not a VPN exit. By
+default it **does not forward user data**; traffic goes directly between
+devices whenever their NAT allows it. Relaying is an explicit opt-in for
+symmetric NAT/CGNAT users who cannot get a direct path.
+
+> The node does not implement EasyTier itself and is not a fork: EasyPlane only
+> adds its peer URLs to a network's compiled list. The exact source behaviour,
+> including the private-mode check and the `disable_relay_data` drop path, is
+> cited in [PROTOCOL.md](PROTOCOL.md) §14.
+
+### Enable it
+
+```bash
+# one node with the panel, opt-in profile
+docker compose --profile rendezvous up -d --build
+
+# or on a separate VPS, without the panel or a database
+docker compose -f docker-compose.rendezvous.yml up -d
+```
+
+Both use the stock `easytier/easytier:v2.7.0` image (`RENDEZVOUS_IMAGE`
+overrides it) and mount `docker/rendezvous/entrypoint.sh`, which renders a TOML
+config and execs `easytier-core`. The node needs **no TUN device and no
+capabilities**: it only accepts peer connections. A custom `RENDEZVOUS_IMAGE`
+must provide `easytier-cli` for the healthcheck (or override the healthcheck
+with `RENDEZVOUS_IMAGE`-specific settings).
+
+Set on the node (`.env` for the compose files):
+
+| variable | default | meaning |
+| --- | --- | --- |
+| `RENDEZVOUS_NETWORK_SECRET` | — (**required**) | the node's EasyTier secret; the who-may-use-it key. `openssl rand -base64 32` |
+| `RENDEZVOUS_NETWORK_NAME` | `easyplane-rendezvous` | the node's own EasyTier network name (never a secret) |
+| `RENDEZVOUS_RELAY_DATA` | `false` | `true` = forward user data (CGNAT fallback) |
+| `RENDEZVOUS_PRIVATE_MODE` | `true` | reject networks that cannot prove the secret |
+| `RENDEZVOUS_NETWORK_WHITELIST` | `*` | space-separated wildcard network names allowed to use the node |
+| `RENDEZVOUS_RELAY_ALL_PEER_RPC` | `false` | with a whitelist: let non-whitelisted networks rendezvous but never relay |
+| `RENDEZVOUS_LISTENERS` | `tcp://0.0.0.0:11010,udp://0.0.0.0:11010,ws://0.0.0.0:11011` | peer listeners |
+| `RENDEZVOUS_MAPPED_LISTENERS` | — | public URLs to advertise behind 1:1 NAT/port mapping |
+| `RENDEZVOUS_HOSTNAME` | `rendezvous` | hostname in logs and the map (`PublicServer_<hostname>`) |
+| `RENDEZVOUS_FOREIGN_RELAY_BPS_LIMIT` | — | optional bytes/second cap on foreign-network relay (only matters when relay is on) |
+| `RENDEZVOUS_SECURE_MODE` | `true` | **keep it on**: private mode's secret proof only exists in secure mode |
+| `RENDEZVOUS_TCP_BIND` / `_UDP_BIND` / `_WS_BIND` | `0.0.0.0:11010` / `0.0.0.0:11010` / `0.0.0.0:11011` | host port mappings |
+
+Set on the panel (`EASYPLANE_*`):
+
+| variable | meaning |
+| --- | --- |
+| `EASYPLANE_RENDEZVOUS_ENDPOINTS` | comma-separated peer URLs every opted-in device dials, e.g. `tcp://rv.example.com:11010,udp://rv.example.com:11010,ws://rv.example.com:11011`. Empty hides the feature |
+| `EASYPLANE_RENDEZVOUS_RELAY_DATA` | display only: show "relay on" in the card (match the node) |
+| `EASYPLANE_RENDEZVOUS_PRIVATE_MODE` | display only: show "shared secret required" |
+| `EASYPLANE_RENDEZVOUS_NETWORK_NAME` | display only: the node's network name |
+| `EASYPLANE_RENDEZVOUS_SECRET` | optional: the **same** secret as the node. Enables exact checks and the audited "align network secret" action. Never returned by an API |
+
+Forward/publish on the VPS firewall:
+
+- **TCP 11010** (peer listener)
+- **UDP 11010** (peer listener; UDP hole punching is the useful one)
+- **TCP 11011** (ws listener; optional, put a TLS proxy in front for `wss`)
+
+The node has a healthcheck (`easytier-cli -o json node`) and `cap_drop: ALL`.
+
+### The shared-secret model (important)
+
+Private mode is the default. The node admits a foreign network only when the
+peer proves the node's `network_secret` (HMAC over the Noise handshake,
+`PROTOCOL.md` §14.3). Networks keep their own `network_name`, so they stay
+isolated from each other, but **one node has one secret**:
+
+1. reveal the network secret in the panel (admin, audited) and start the node
+   with `RENDEZVOUS_NETWORK_SECRET=<that value>` — the dedicated-node model; or
+2. run one shared node for several networks and give every network the same
+   secret. The network page's **Bundled rendezvous node** card shows whether the
+   secret matches when `EASYPLANE_RENDEZVOUS_SECRET` is set, and offers an
+   audited **Align network secret** action (rotates the network secret to the
+   node's and repushes every device); or
+3. if the panel does not know the node secret, enabling the toggle asks for an
+   explicit acknowledgement. A mismatch is not detected until the node log
+   says `private mode is turned on, foreign network secret mismatch`.
+
+**Secure mode is part of the contract.** The secret proof is only exchanged in
+EasyTier secure mode, so enabling the per-network toggle also pushes
+`secure_mode: { enabled: true }` to every device in that network and the node
+runs with secure mode. Without it, even a correct secret is rejected when the
+network names differ (the digest includes the network name). The node's
+`RENDEZVOUS_SECURE_MODE=true` default should not be changed for a private node.
+
+### Per-network toggle, p2p_only and warnings
+
+On a network page, admins get:
+
+- **Use bundled rendezvous node** — appends the configured endpoints to every
+  device's pushed peer list (compiled like a raw external entry, de-duplicated
+  with hub/raw URLs, never self-excluded). The change is audited, broadcast
+  over SSE and repushes the network; no revision is created.
+- **p2p_only (advanced)** — pushes `p2p_only` to every device. A device then
+  refuses to send to peers it does not have a direct connection with. Useful to
+  verify that a network really is direct-only; harmful when CGNAT users rely on
+  relay. The UI warns about exactly that.
+- A warning when the network has **no hub, no external peer URL and no
+  rendezvous endpoint**: devices then have nothing to dial and only connect on
+  the same LAN or when they already know each other's addresses.
+
+The card is read-only for members/viewers; toggles and secret alignment are
+admin-only. `GET /api/rendezvous` exposes the endpoints, relay/private display
+flags and whether secret comparison is available — never the secret.
+
+### Whitelist and relay limits
+
+`RENDEZVOUS_NETWORK_WHITELIST` matches EasyTier network names with wildcards
+(`*`, `team-*`, `net1 net2`). With `relay_all_peer_rpc=false` a non-listed
+network is rejected entirely; with `true` it may still use the node for
+discovery/peer RPC, but only listed networks get data relay. Use the latter when
+the node relays `RENDEZVOUS_RELAY_DATA=true` and you want to limit who consumes
+bandwidth, while still letting every secret-holding network discover peers.
+
+### Privacy, abuse and rotation
+
+- **Who can use it:** anyone who knows `RENDEZVOUS_NETWORK_SECRET` and is
+  admitted by the whitelist. The secret authenticates a *network*, not a device;
+  a leaked secret is a leaked node credential. To rotate: change
+  `RENDEZVOUS_NETWORK_SECRET` on the node and `EASYPLANE_RENDEZVOUS_SECRET` on
+  the panel, restart both, then run **Align network secret** on every network
+  (it sets the network secret to the node's and repushes). The panel refuses the
+  ordinary random `/secret/rotate` while the toggle is on, because a random
+  secret is guaranteed to stop matching the node.
+- **What leaks:** the node sees connection metadata — network names, peer ids,
+  virtual IPs, timing and volume. It does not see the payload plaintext
+  (EasyTier encrypts peer traffic). A relay operator additionally sees traffic
+  patterns and must pay for the bandwidth.
+- **Open node:** `RENDEZVOUS_PRIVATE_MODE=false` removes the gate. Combined with
+  `RENDEZVOUS_RELAY_DATA=true` it lets anyone relay through your host; only do
+  that if you intend to run a genuinely public service.
+- **Rate limiting:** `RENDEZVOUS_FOREIGN_RELAY_BPS_LIMIT` caps relayed bytes per
+  second (use it on any public relay). A serious public service should also add
+  host-level firewalling and connection limits. The node is deliberately small
+  and has no panel database, so treat it as an untrusted public endpoint.
+- **Logging:** the node logs network names and connection events but the
+  entrypoint never prints the secret; the rendered TOML is mode 600 and the
+  effective config in logs is redacted by the core. The healthcheck discards
+  `easytier-cli` output because that output includes the config.
+
+### Verification
+
+`test/conformance/rendezvous.test.ts` drives the **real pinned**
+`easytier-core` (the same binary the rest of the suite uses) and proves:
+
+1. two leaves that can reach each other and the node exchange HTTP with relay
+   **off** (direct route, `cost=1`);
+2. two leaves on disjoint networks cannot exchange data with relay off;
+3. with `RENDEZVOUS_RELAY_DATA=true` they can, and `CollectNetworkInfo` reports
+   a relayed route (`cost>1`, `next_hop=PublicServer_…`) — the same data the map
+   renders;
+4. a leaf with a different secret is rejected (`private mode is turned on,
+   foreign network secret mismatch`);
+5. a strict whitelist rejects non-listed networks, and
+   `relay_all_peer_rpc=true` admits them for discovery while still not relaying
+   data.
 
 ## 5. Operations
 
