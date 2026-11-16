@@ -32,7 +32,7 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 isolate z-50 bg-scrim duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className
       )}
       {...props}
@@ -73,7 +73,7 @@ function DialogContent({
           // The popup itself never scrolls: it is capped to the viewport and
           // the inner body scrolls, so the close button stays put while long
           // forms and previews scroll underneath a sticky header/footer.
-          "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-1rem)] w-full max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-background text-sm ring-1 ring-foreground/10 duration-100 outline-none sm:max-h-[90dvh] data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-1rem)] w-full max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-card text-sm shadow-lg ring-1 ring-line duration-100 outline-none sm:max-h-[90dvh] data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           dialogSizeClasses[size],
           className
         )}
@@ -81,7 +81,7 @@ function DialogContent({
       >
         <div
           data-slot="dialog-body"
-          className="flex min-h-0 flex-1 flex-col gap-4 overflow-x-hidden overflow-y-auto overscroll-contain p-4"
+          className="flex min-h-0 flex-1 flex-col gap-4 overflow-x-hidden overflow-y-auto overscroll-contain p-4 sm:p-5"
         >
           {children}
         </div>
@@ -112,7 +112,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
       className={cn(
         // Sticky against the scrolling dialog body (negative margins reach the
         // body padding), so the title stays visible in long dialogs.
-        "sticky -top-4 z-10 -mx-4 -mt-4 flex flex-col gap-2 rounded-t-xl bg-background px-4 pt-4 pr-12 pb-2",
+        "sticky -top-4 z-10 -mx-4 -mt-4 flex flex-col gap-2 rounded-t-2xl bg-card px-5 pt-5 pr-12 pb-2",
         className
       )}
       {...props}
@@ -132,7 +132,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "sticky -bottom-4 z-10 -mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 backdrop-blur-sm sm:flex-row sm:justify-end",
+        "sticky -bottom-4 z-10 -mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-2xl border-t border-line bg-surface-2/80 p-4 sm:flex-row sm:justify-end",
         className
       )}
       {...props}
@@ -151,7 +151,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-base leading-none font-medium", className)}
+      className={cn("text-base leading-tight font-semibold tracking-[-0.006em]", className)}
       {...props}
     />
   )

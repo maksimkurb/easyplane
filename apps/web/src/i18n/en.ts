@@ -17,6 +17,11 @@ export const enTranslation = {
       topology: "Topology",
       audit: "Audit log",
     },
+    back: "Back",
+    breadcrumb: "Breadcrumb",
+  },
+  account: {
+    menuLabel: "Account, language and theme",
   },
   auth: {
     loading: "Loading EasyPlane…",
@@ -99,6 +104,9 @@ export const enTranslation = {
     open: "Open network",
     empty: "No networks yet. Create one to invite devices.",
     created: "Network created",
+    summary: "{{networks}} networks · {{devices}} devices",
+    onlineOf: "{{online}} of {{total}} online",
+    waitingCount: "{{count}} waiting",
     secretRotated: "Secret rotated",
     rotate: "Rotate secret",
     rotateRendezvousBody:

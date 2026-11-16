@@ -19,6 +19,11 @@ export const ruTranslation: Translation = {
       topology: "Топология",
       audit: "Журнал аудита",
     },
+    back: "Назад",
+    breadcrumb: "Хлебные крошки",
+  },
+  account: {
+    menuLabel: "Аккаунт, язык и тема",
   },
   auth: {
     loading: "Загрузка EasyPlane…",
@@ -101,6 +106,9 @@ export const ruTranslation: Translation = {
     open: "Открыть сеть",
     empty: "Сетей пока нет. Создайте сеть, чтобы приглашать устройства.",
     created: "Сеть создана",
+    summary: "Сетей: {{networks}} · устройств: {{devices}}",
+    onlineOf: "{{online}} из {{total}} онлайн",
+    waitingCount: "{{count}} ждут",
     secretRotated: "Секрет обновлён",
     rotate: "Сменить секрет",
     rotateRendezvousBody:
