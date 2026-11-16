@@ -185,9 +185,9 @@ Concrete Keycloak, Authentik and Google Workspace examples are in
 | --- | --- | --- | --- |
 | read networks, devices, invites, policy, DNS, routes | ✅ | ✅ | ✅ |
 | read audit log, reveal/rotate secrets, export/import networks | — | — | ✅ |
-| create/revoke invites, approve/block/delete devices, edit desired config, set advertised endpoints, revoke/renew a member credential | — | ✅ | ✅ |
+| create/revoke invites, approve/block/delete devices, edit desired config, set advertised endpoints | — | ✅ | ✅ |
 | create/delete networks, edit policy, approve routes, create tags, toggle MagicDNS, edit the peer list, mark a device as hub | — | — | ✅ |
-| switch authentication mode, change a device role, rotate a network secret, remove an anchor (acknowledged) | — | — | ✅ |
+| switch authentication mode, change a device role, revoke/renew a member credential, rotate a network secret, remove an anchor (acknowledged) | — | — | ✅ |
 
 All checks are server-side pre-handlers; the UI only hides controls. State
 changing requests need the session-bound CSRF token from the `easyplane_csrf`
