@@ -140,7 +140,28 @@ export function NetworkMagicDnsCard({ networkId }: { networkId: string }) {
       {dns.names.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("magicDns.empty")}</p>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+        <ul className="divide-y divide-line overflow-hidden rounded-lg ring-1 ring-line sm:hidden">
+          {dns.names.map((name) => (
+            <li className="flex flex-wrap items-center gap-2 px-3 py-2.5" key={name.deviceId}>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-mono text-xs">{name.fqdn}</p>
+                <p className="font-mono text-[11px] text-fg-3">{name.ipv4}</p>
+              </div>
+              {canManage ? (
+                <Button
+                  aria-label={t("magicDns.rename")}
+                  onClick={() => setEditing({ deviceId: name.deviceId, name: name.hostname })}
+                  size="icon-sm"
+                  variant="ghost"
+                >
+                  <PencilIcon className="size-4" />
+                </Button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        <div className="hidden overflow-x-auto sm:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -182,6 +203,7 @@ export function NetworkMagicDnsCard({ networkId }: { networkId: string }) {
             </TableBody>
           </Table>
         </div>
+        </>
       )}
 
       <p className="mt-3 text-xs text-muted-foreground">{t("magicDns.honestNote")}</p>

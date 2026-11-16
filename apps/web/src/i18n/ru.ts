@@ -593,6 +593,7 @@ export const ruTranslation: Translation = {
     manage: "Управлять",
     history: "История",
     noVersionHint: "Политика ещё не сохранялась.",
+    appliedCount: "Синхронизировано на {{applied}} из {{total}} устройств",
     appliedToAll: "Применяется ко всем устройствам при следующей отправке",
     notApplied: "Без политики весь трафик разрешён",
   },

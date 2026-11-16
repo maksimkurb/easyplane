@@ -156,7 +156,7 @@ export function NetworkHero({
             return (
               <Link
                 aria-current={current ? "page" : undefined}
-                className={`flex h-11 flex-none items-center gap-2 border-b-2 px-3 font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none ${
+                className={`flex h-11 flex-none items-center gap-1.5 border-b-2 px-2 font-medium whitespace-nowrap sm:gap-2 sm:px-3 transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none ${
                   current
                     ? "border-foreground text-foreground"
                     : "border-transparent text-fg-3 hover:text-foreground"

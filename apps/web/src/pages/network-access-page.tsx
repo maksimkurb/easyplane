@@ -65,6 +65,10 @@ function AccessTab({ data }: { data: NetworkShellData }) {
     ),
   ]
   const latestVersion = versionsQuery.data?.data?.[0]
+  const approvedDevicesAll = (devicesQuery.data?.data ?? []).filter(
+    (device) => device.state === "approved"
+  )
+  const inSync = approvedDevicesAll.filter((device) => device.sync === "in-sync").length
 
   return (
     <div className="flex flex-col gap-5">
@@ -79,7 +83,7 @@ function AccessTab({ data }: { data: NetworkShellData }) {
           <div className="flex w-full gap-2 sm:w-auto sm:flex-none">
             <Button
               className="flex-1 justify-center sm:flex-none"
-              render={<Link href={`/networks/${networkId}/policy`} />}
+              render={<Link href={`/networks/${networkId}/policy?mode=json`} />}
               size="sm"
               variant="ghost"
             >
@@ -87,7 +91,7 @@ function AccessTab({ data }: { data: NetworkShellData }) {
             </Button>
             <Button
               className="flex-1 justify-center sm:flex-none"
-              render={<Link href={`/networks/${networkId}/policy`} />}
+              render={<Link href={`/networks/${networkId}/policy?add=rule`} />}
               size="sm"
               variant="outline"
             >
@@ -111,7 +115,37 @@ function AccessTab({ data }: { data: NetworkShellData }) {
             </Button>
           </div>
         ) : (
-          <div className="overflow-x-auto border-t border-line">
+          <>
+          <ul className="divide-y divide-line border-t border-line md:hidden">
+            {rows.map((row, index) => (
+              <li className="flex items-start gap-3 px-4 py-3" key={`m-${index}`}>
+                <Chip variant={row.action === "accept" ? "ok" : "err"}>
+                  {row.action === "accept" ? t("policy.allow") : t("policy.deny")}
+                </Chip>
+                <div className="min-w-0 flex-1">
+                  <p className="font-mono text-xs break-words">
+                    {row.src || "—"}
+                    <span className="px-1 text-fg-3">→</span>
+                    {row.dst || "—"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-fg-3">
+                    {row.proto === "any"
+                      ? t("accessPage.anyProtocol")
+                      : row.proto.toUpperCase()}
+                  </p>
+                </div>
+                <Button
+                  aria-label={t("accessPage.edit")}
+                  render={<Link href={`/networks/${networkId}/policy`} />}
+                  size="icon-sm"
+                  variant="ghost"
+                >
+                  <PencilIcon className="size-4" />
+                </Button>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto border-t border-line md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -154,6 +188,7 @@ function AccessTab({ data }: { data: NetworkShellData }) {
               </TableBody>
             </Table>
           </div>
+          </>
         )}
       </section>
 
@@ -223,7 +258,12 @@ function AccessTab({ data }: { data: NetworkShellData }) {
                 aria-hidden="true"
                 className={version > 0 ? "size-2 rounded-full bg-ok-dot" : "size-2 rounded-full bg-fg-3/50"}
               />
-              {version > 0 ? t("accessPage.appliedToAll") : t("accessPage.notApplied")}
+              {version > 0
+                ? t("accessPage.appliedCount", {
+                    applied: inSync,
+                    total: approvedDevicesAll.length,
+                  })
+                : t("accessPage.notApplied")}
             </p>
           </div>
         </section>
@@ -360,6 +400,7 @@ function TestAccessCard({
           )}
           <span className="hidden flex-1 sm:block" />
           <Button
+            className="max-sm:w-full"
             disabled={test.isPending || !src || !dst}
             onClick={() =>
               test.mutate({

@@ -147,7 +147,7 @@ function SettingsTab({ data }: { data: NetworkShellData }) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <span className="text-[13px] font-medium">{t("networks.cidr")}</span>
+              <span className="text-[13px] font-medium">{t("networks.table.range")}</span>
               <div className="flex h-10 items-center rounded-lg bg-surface-2 px-3 font-mono text-sm ring-1 ring-line">
                 {network.ipv4Cidr}
               </div>
@@ -162,7 +162,7 @@ function SettingsTab({ data }: { data: NetworkShellData }) {
         >
           <div className="flex max-w-[520px] flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <code className="flex h-10 min-w-0 flex-1 items-center overflow-hidden rounded-lg bg-surface-2 px-3 font-mono text-sm tracking-[0.2em] text-fg-3 ring-1 ring-line">
+              <code className="flex h-10 w-full min-w-0 items-center overflow-hidden rounded-lg bg-surface-2 px-3 font-mono text-sm tracking-[0.2em] text-fg-3 ring-1 ring-line sm:w-auto sm:flex-1">
                 <span className="truncate">{secret ?? "••••••••••••••••"}</span>
               </code>
               {isAdmin ? (

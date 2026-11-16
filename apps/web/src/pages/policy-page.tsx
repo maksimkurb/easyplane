@@ -68,7 +68,15 @@ export function PolicyPage() {
   const devicesQuery = useListDevices({ networkId: id })
   const routesQuery = useListNetworkRoutes(id)
 
-  const [mode, setMode] = useState<"form" | "json">("form")
+  const initialQuery = useMemo(
+    () => new URLSearchParams(window.location.search),
+    []
+  )
+  const addRuleRequested = initialQuery.get("add") === "rule"
+  const [mode, setMode] = useState<"form" | "json">(
+    initialQuery.get("mode") === "json" ? "json" : "form"
+  )
+  const [ruleAdded, setRuleAdded] = useState(false)
   const [rows, setRows] = useState<StatementRow[]>([])
   const [base, setBase] = useState<PolicyDocumentShape>(EMPTY_DOCUMENT)
   const [text, setText] = useState("")
@@ -100,8 +108,18 @@ export function PolicyPage() {
   // Load the active document into the editors once (and after each save).
   if (policyQuery.isSuccess && syncedVersion !== loadedVersion) {
     const document = (active?.document ?? EMPTY_DOCUMENT) as PolicyDocumentShape
+    let nextRows = toRows(document)
+    if (addRuleRequested && !ruleAdded) {
+      // Deep link from the Access tab's "Add rule": start with one blank row
+      // so the operator lands in the editor with the cursor in a new rule.
+      nextRows = [
+        ...nextRows,
+        { name: "", action: "accept", src: "", dst: "", proto: "tcp", rateLimit: "", burst: "", stateful: false },
+      ]
+      setRuleAdded(true)
+    }
     setBase(document)
-    setRows(toRows(document))
+    setRows(nextRows)
     setText(JSON.stringify(document, null, 2))
     setSyncedVersion(loadedVersion)
   }

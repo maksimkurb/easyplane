@@ -591,6 +591,7 @@ export const enTranslation = {
     manage: "Manage",
     history: "History",
     noVersionHint: "No policy has been saved yet.",
+    appliedCount: "In sync on {{applied}} of {{total}} devices",
     appliedToAll: "Applied to every device on the next push",
     notApplied: "Without a policy all traffic is allowed",
   },
