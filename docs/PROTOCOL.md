@@ -469,7 +469,7 @@ what a control plane may assume.
 | `acl` (`acl.Acl`) | `cfg.set_acl(...)`, applied to the instance's `AclFilter` | ignored when `Acl::is_empty()`; always send chains. Rules are sorted by descending `priority`, first match wins. `ports` are destination ports, `source_ports` are source ports; port criteria only apply when the packet carries a port, so an `Any`-protocol rule with ports also matches ICMP. |
 | `proxy_cidrs` | subnet router (`--proxy-networks`); advertised to peers | `"real"` or `"real->mapped"`. Advertisements are visible in *other* peers' `CollectNetworkInfo` routes. |
 | `enable_exit_node` | `--enable-exit-node` | reported back by `GetNetworkInstanceConfig`. |
-| `routes` + `enable_manual_routes` | install routes towards the overlay (`--manual-routes`) | `new_from_config` only reports `routes` (and sets `enable_manual_routes = true`) when the list is non-empty. |
+| `routes` + `enable_manual_routes` | install routes towards the overlay (`--manual-routes`) | `gen_config` applies an empty list (`manual_routes = Some([])`), which installs nothing. `new_from_config`/`network_config_from_toml` at the pin report the flag only when the list is **non-empty**, so "manual routes with an empty list" reads back as flag absent + `routes: []`; the panel's drift comparison accounts for it. |
 | `enable_magic_dns` | `flags.accept_dns` (`dns_server`) | zone is **not** in NetworkConfig; see §11.3. |
 | `hostname` | instance hostname; becomes the MagicDNS record name | EasyPlane pushes the device's unique DNS name. |
 

@@ -369,6 +369,136 @@ token; deleting a device does the same and removes its history.
   audited. A *separate* local `easytier-core` process is invisible to the
   control plane — see docs/POLICY.md §7 for what can and cannot be revoked.
 
+### Behaviour change: every device gets an explicit route list
+
+EasyTier installs **every** proxy CIDR a peer advertises unless the instance has
+`enable_manual_routes` set. The panel now always pushes
+`enable_manual_routes = true` with the explicit approved list:
+
+- a device with *Accept subnet routes from the network* gets
+  `routes = [<approved subnet routes of other devices>]`;
+- a device without it gets `routes = []` and installs **no** subnet routes.
+
+Before this change a device that never opted in silently installed every
+advertised route. If a site relied on that, enable *Accept subnet routes* on the
+devices that need reachability (device page → desired config) and let the panel
+re-push. This is a security fix, not a cosmetic default: without it an
+unapproved advertisement reaches every member's kernel routing table.
+
+The pinned client cannot report "manual routes with an empty list" (the flag is
+omitted when `routes` is empty), so drift comparison cannot see the old state.
+The panel therefore pushes **once** to every approved device after the upgrade
+(`devices.manual_routes_enforced_at`); no revision is created and the push is
+the normal idempotent one.
+
+### Device-declared routes: "stop the client, edit the file, start it"
+
+Tailscale-style declarations are supported on the **managed** instance itself.
+The client must persist its config, which needs `--config-dir`:
+
+```bash
+easytier-core \
+  --config-server wss://vpn.example.com/<invite-token> \
+  --config-dir /var/lib/easytier-client \
+  --hostname my-router
+```
+
+After approval the client writes `/var/lib/easytier-client/<instance-id>.toml`.
+To declare routes:
+
+1. **Stop** `easytier-core` on the device.
+2. Edit `<config-dir>/<instance-id>.toml` (the file name is the instance UUID
+   shown by `ListNetworkInstance`; it is the `instance_id` inside the file):
+
+   ```toml
+   # ... the panel-written config, unchanged ...
+
+   [[proxy_network]]
+   cidr = "192.168.50.0/24"
+
+   [flags]
+   enable_exit_node = true
+   ```
+
+3. **Start** `easytier-core` with the same arguments. The instance reloads from
+   the file and reports the declaration in its own config
+   (`GetNetworkInstanceConfig`).
+4. The panel creates a **pending** proposal ("Declared by device") for every
+   subnet and for the exit-node flag. An admin approves or rejects it on the
+   network's routes card. Pending declarations are *adopted* by the panel on
+   every push, so the edit is not erased while it waits; approval distributes
+   the subnet to devices that accept routes. Rejection removes it from the
+   device's config on the next push (config-dir file) and never distributes it.
+
+Notes and limits:
+
+- The file contains the network secret; it is written `0600`. Do not paste it
+  into tickets.
+- The panel rewrites the file on every push. Only `[[proxy_network]]` and
+  `enable_exit_node` are carried over from a local edit; change anything else in
+  the panel, not in the file.
+- A **read-only** file (an external `-c` outside the config dir, or mode `0444`)
+  is a different mode: the panel can neither read its config nor push to it.
+  The device shows "configuration is managed locally", no retry loop is created,
+  and only other members' route tables can reveal a CIDR (never the exit-node
+  flag). Use `--config-dir` for the workflow above.
+- Do **not** rename the file or change `instance_id`: the panel's deterministic
+  id no longer matches, so it starts a second instance next to yours and cannot
+  attribute the declaration. Keep `<instance-id>.toml` in the config dir.
+- Approved exit nodes are **consent only**. The panel never pushes `exit_nodes`
+  to clients. Working egress needs the client to name the exit node *and* an OS
+  route into the tunnel — see the OpenWrt section below.
+
+### OpenWrt / Linux clients and exit nodes
+
+EasyTier's `exit_nodes` decides where a packet that already reached the overlay
+is sent; it does not touch the OS routing table. Approving an exit node in the
+panel therefore does not make any client use it.
+
+**Variant A — full tunnel (split default).** Keep the control-plane/peer
+underlay on the physical interface and send everything else through the TUN.
+The host routes for the peers' public addresses are essential; without them the
+`/1` routes capture the tunnel's own underlay traffic.
+
+```sh
+# Replace with the public/underlay addresses this device dials (config-server,
+# hubs, public nodes). Keep the LAN reachable if you need local access.
+for peer in 203.0.113.10 198.51.100.20; do
+  ip route replace "$peer/32" via "$(ip route show default | awk '{print $3; exit}')" dev br-lan
+done
+ip route add 0.0.0.0/1 dev tun0
+ip route add 128.0.0.0/1 dev tun0
+```
+
+The client's own config must also name the exit node (`exit_nodes =
+["10.144.144.5"]` in TOML, or the equivalent client setting). *[verified in a
+Linux netns by the conformance suite: with the split default and `exit_nodes`
+the flow passes; without `exit_nodes`, or without the route, it does not. Not
+exercised on OpenWrt itself.]*
+
+**Variant B — policy routing for selected LAN hosts.** Send only chosen sources
+through the tunnel, leaving the rest of the LAN on the normal uplink:
+
+```sh
+ip rule add from 192.168.50.0/24 lookup 100
+ip route add default dev tun0 table 100
+ip route add <peer-public-ip>/32 via <gateway> dev br-lan  # keep underlay direct
+```
+
+This is standard Linux policy routing; no EasyTier involvement beyond
+`exit_nodes`. *[source-level: not exercised by the conformance suite, which has
+no second LAN to select from.]*
+
+**Variant C — subnet routes only.** No exit node: a device that accepts routes
+gets the approved subnet CIDRs in `enable_manual_routes` and the panel never
+installs anything else. This is the default panel behaviour and is what the
+conformance suite verifies. *[verified]*
+
+For all variants the declaration lives on the router; clients only need the
+approved route/exit-node configuration. The panel deliberately does not manage
+per-client `exit_nodes` yet (see docs/POLICY.md §9).
+
+
 ## 4c. Importing an existing network
 
 **Networks → Import network** (admin) opens the dedicated

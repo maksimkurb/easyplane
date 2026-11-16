@@ -1,14 +1,20 @@
 # Spike: device-declared routes on ONE managed instance
 
-Status: **spike only — no product code was changed.** This page records what a
-real, unmodified `easytier-core 2.6.4-81487c36` does when the *managed* instance
-is also the place where routes are declared. It is the evidence base for a
-follow-up implementation that needs the user's approval first.
+Status: **implemented.** This page records what a real, unmodified
+`easytier-core 2.6.4-81487c36` does when the *managed* instance is also the place
+where routes are declared. The measurements below are the evidence base for the
+implementation; the resulting semantics are in [POLICY.md §7.1](POLICY.md).
+
+The upstream sources are read from a scratch checkout pinned to
+`81487c363a…`. A newer checkout in `/home/maksimkurb/Dev/EasyTier` differs in at
+least one relevant place: after the pin, `network_config_from_toml` stopped
+requiring a non-empty route list before reporting `enable_manual_routes`. The
+pinned client uses the older rule, and the panel's drift comparison accounts for
+it (see §5).
 
 Ref: `81487c363a56779e745eae927e130a813535c71e` (pinned conformance build).
-Harness: `test/conformance/device-routes-spike.test.ts` +
-`docker-compose.test.yml` services `core-dr-{a,b,c}` (throwaway, not committed
-as product code).
+Harness: `test/conformance/declared-routes.test.ts` +
+`docker-compose.test.yml` services `core-dr-{a,b,c}`.
 
 Every claim is labelled **[verified by running]** (real containers, real
 sockets, `test/conformance/device-routes-spike.test.ts`, 7/7 green) or
@@ -235,10 +241,20 @@ fn resolve_proxy_cidrs(peer_routes, config) -> BTreeSet<Ipv4Cidr> {
 - **with** it, the receiver installs exactly the given list, and an empty list
   installs nothing.
 
-The panel currently emits `enableManualRoutes` only when the route list is
-non-empty (`buildMinimalNetworkConfig`: `enableManualRoutes ?? routes.length > 0`),
-so **today no receiver is constrained**, including devices that never opted into
-`acceptRoutes`. That is the gap the implementation has to close.
+The second half is not observable through `GetNetworkInstanceConfig` on the
+pinned client: its `network_config_from_toml`
+(`easytier-core/src/config/api.rs`, ~L616) only sets
+`enable_manual_routes = Some(true)` when `routes` is **non-empty**. An empty
+manual list therefore reads back as "flag absent, `routes: []`". `gen_config`
+still applies it (`api_input.rs` ~L285), so enforcement works; the panel only
+compares the flag when its own list is non-empty (and the conformance test
+asserts the route table, not the flag).
+
+At spike time the panel emitted `enableManualRoutes` only when the route list
+was non-empty (`buildMinimalNetworkConfig`), so no receiver was constrained,
+including devices that never opted into `acceptRoutes`. The implementation now
+always emits it with an explicit list (empty for devices without approved
+routes); see POLICY.md §7/§7.1 and DEPLOY.md §4b for the behaviour change.
 
 ## 6. Exit node
 
@@ -291,15 +307,19 @@ read-only case the report says "no routes" while the peers still see the
 advertisement. Any implementation should surface the read failure and use the
 peer observation for the CIDR instead of pretending there is none.
 
-## 8. Recommended implementation plan (needs approval)
+## 8. Implementation (what was built)
 
-1. **Make the workflow the documented default.** One client,
+The plan below was implemented with one deliberate change: instead of freezing
+the push loop while a declaration is pending (which would delay policy, peer and
+credential changes), the panel **adopts** pending declarations into the device's
+own pushed config. Receivers still only get approved routes.
+
+1. **Workflow.** One client,
    `--config-server ws://…/<token> --config-dir /var/lib/easytier-client`, no
    second instance. Docs: "stop the client, edit
-   `/var/lib/easytier-client/<instance-id>.toml`, start the client". Warn that
-   the file contains the network secret and is `0600`.
-   Do **not** support/encourage a read-only external `-c` file for this feature:
-   the panel can neither read nor revert it.
+   `/var/lib/easytier-client/<instance-id>.toml`, start the client". The file
+   contains the network secret and is `0600`. A read-only external `-c` file is
+   not supported for declarations (the panel can neither read nor revert it).
 2. **Detect the declaration from the device's own config.** In
    `PushService.collectReport`, keep the own-config read for the managed
    instance (it is the same instance now), and compare `proxyCidrs` /
@@ -310,45 +330,44 @@ peer observation for the CIDR instead of pretending there is none.
    not be resurrected). Audit `route.declared` once per row, never per poll.
    Fallback: peer-observed CIDRs on the device's own overlay IP, when the own
    config is unreadable.
-3. **Freeze convergence pushes while a declaration is pending.** Otherwise the
-   15 s reconciler (§4.1) erases the edit before an admin can act. `ensure` must
-   return a non-error state (`skipped`/`already-in-sync` with reason
-   `device-declared-route-pending`) and the UI must show "configuration is
-   locally managed — admin decision pending"; do not set `lastPushError`.
-   Trade-off: other desired-state changes (policy, peers, hostname) are delayed
-   for that device until the decision. The alternative — including the
-   declared but unapproved CIDRs in the pushed config — keeps other pushes
-   flowing but "blesses" the declaration into panel state and makes the
-   declaration impossible to retract locally; it also does not distribute the
-   route. Recommend the freeze.
-4. **On approval, adopt the declaration.** `approvedSubnetCidrs` /
-   `approvedExitNode` include approved `device_declared` rows, so the next push
+3. **Never erase the edit.** Detection runs *before* the drift comparison
+   (`declareRoutes` in `ensureInner`), and every push includes the device's
+   pending and approved declared routes in its own `proxy_cidrs` /
+   `enable_exit_node`. The 15 s reconciler therefore finds no drift and the
+   edit survives; receivers still get only approved routes. Trade-off: the
+   panel re-asserts a pending declaration, so an online pushed device keeps
+   advertising it until the admin decides. The `advertised` flag covers the
+   cases where it can disappear (offline, read-only file, foreign id).
+4. **On approval, the route becomes network state.** `approvedSubnetCidrs` /
+   `approvedExitNode` include approved `device_declared` rows, so the push
    writes `[[proxy_network]]` / `enable_exit_node = true` into the *same*
    instance's file (verified: the same instance keeps serving and B still
    reaches the subnet). No duplicate advertisement, no second instance.
-   Push the advertiser and every accepting device.
+   Decisions push every approved device, because the receivers' manual-route
+   list changes too.
 5. **Constrain every receiver.** Always push `enable_manual_routes = true` with
    `routes = acceptRoutes ? approved subnet routes of others : []`. This is a
    behaviour change: devices that did not accept routes currently install every
    advertised CIDR; after the change they install none. Call it out in the
    release notes. (`acceptRoutes` remains the per-device consent bit.)
-6. **On rejection, be explicit.** The route is not distributed (receiver lists
-   stay empty). Then either push the advertiser to revert the file (works for
-   the config-dir case; the edit is lost) or leave the declaration in place and
-   show "rejected, still advertised locally". Recommend the revert push, one
-   attempt, with the failure classified (see 7) — not a retry loop.
+6. **On rejection, be explicit.** The route is not distributed; one push
+   restores the advertiser's desired state (the config-dir file loses the
+   entry). A read-only file cannot be reverted; the panel shows that state and
+   does not retry. A rejected row is never re-proposed by a later report.
 7. **Classify "read-only config" as a state, not an error.** If
-   `ListNetworkInstanceMeta.configPermission` has `READ_ONLY` (bit 1), show
-   "configuration is locally managed; the panel cannot read or change it",
-   skip pushes, and never set `lastPushError` for it. This also fixes the
-   existing retry loop (§4.2).
+   `ListNetworkInstanceMeta.configPermission` has `READ_ONLY` (bit 1), the
+   device reports `configManagedLocally`, pushes are skipped, `lastPushError` is
+   cleared and no `device.config.push_failed` audit is written. The permission
+   is refreshed on the next reconcile, so replacing the file with a writable
+   one recovers. This also fixes the retry loop in §4.2.
 8. **Exit nodes stay consent-only.** Show approved/proposed badges, never
    `exitNodes` on clients, never `enable_exit_node` on the managed instance for
    a declared exit node (it is already local). Document that actual exit-node
    egress needs an OS route into the tunnel and is out of scope.
-9. **Disappearance.** Keep the row; store `last_declared_at` and show "no longer
-   advertised" after a threshold (or offer an explicit withdraw action). Do not
-   auto-approve, do not auto-delete history.
+9. **Disappearance.** `device_routes.last_declared_at` is refreshed by every
+   report that shows the declaration; older than five minutes sets
+   `advertised: false` and the UI says "no longer advertised". Rows are never
+   auto-withdrawn or deleted, and approvals are not reverted.
 
 ## 9. Risks
 
@@ -381,15 +400,20 @@ peer observation for the CIDR instead of pretending there is none.
 # real pinned client + Docker
 scripts/build-test-client.sh                 # once, if docker/easytier-core is missing
 bunx vitest run --project conformance \
-  test/conformance/device-routes-spike.test.ts
+  test/conformance/declared-routes.test.ts
 ```
 
-The test prints an evidence object and writes it to
-`/tmp/opencode/spike-evidence.json`. It uses the throwaway compose services
-`core-dr-a/b/c` and the existing M2 relay; nothing outside `test/`,
-`docker-compose.test.yml` and this document was touched.
+The test starts the three `core-dr-a/b/c` compose services and the M2 relay,
+then exercises the stop/edit/start cycle, proposals, approval/rejection,
+read-only mode and the foreign-id case. The relay now uses a LIFO host pool so a
+restarted client pairs with a fresh socket.
 
-## 11. Explicitly not done
+## 11. Remaining limits
 
-No migration, no server/web change, no UI, no API, no config compiler change.
-No commit of product code. Waiting for approval before implementing §8.
+- Per-client `exit_nodes` is not managed; approval is consent only.
+- A read-only file's declaration is not readable by the panel (upstream refuses
+  even `GetNetworkInstanceConfig`), so only peer-observed CIDRs are visible.
+- A foreign `instance_id` is not attributed; the extra instance shows up as an
+  `unknownPeer` and receivers do not install its routes.
+- Pending declarations are re-asserted by the panel, so the "no longer
+  advertised" state mainly covers offline/read-only/foreign-id cases.

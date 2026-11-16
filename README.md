@@ -230,9 +230,16 @@ described in [docs/PROTOCOL.md](docs/PROTOCOL.md) §13.2.
   `policy_version` on each config revision, so it is audited and rollbackable.
 - **MagicDNS** is a per-network switch with a zone and unique, renameable DNS
   names per network (enforced in the API and by a DB index).
-- **Subnet/exit-node routes** are requested by members, approved by admins, and
-  only approved routes reach `proxy_cidrs`/`enable_exit_node`. The panel reports
-  what clients actually advertise, including routes it did not approve.
+- **Subnet/exit-node routes** are requested by members or **declared by the
+  device itself** (Tailscale-style: stop the client, add `[[proxy_network]]` /
+  `enable_exit_node` to its persisted config, start it) and approved by admins.
+  Only approved routes reach `proxy_cidrs`; every receiver gets an explicit
+  `enable_manual_routes` list, so an unapproved advertisement is never installed
+  on another member. The panel reports what clients actually advertise,
+  including routes it did not approve, and keeps declared proposals with a
+  "no longer advertised" flag instead of forgetting them. Exit-node approval is
+  consent only: egress also needs the client's OS route and its own `exit_nodes`
+  setting (docs/DEPLOY.md §4b has the OpenWrt recipes).
 - [docs/POLICY.md](docs/POLICY.md) lists exactly which Tailscale constructs map
   cleanly, which are approximated and which are unsupported — including the
   EasyTier limits that no control plane can work around.

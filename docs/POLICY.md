@@ -256,35 +256,47 @@ Workflow:
 1. A member (or admin) requests `subnet 192.168.77.0/24` or `exit_node` for a
    device (`POST /api/devices/:id/routes`). Subnet requests are validated
    (IPv4 CIDR with prefix 0-32, no overlap with the overlay or other requests;
-   `0.0.0.0/0` is rejected — use the exit-node kind). **pending**.
-2. Only an admin approves or rejects (`POST /api/routes/:id/decision`). Every
-   decision is audited and triggers a push.
-3. The compiler/push path maps approvals:
+   `0.0.0.0/0` is rejected — use the exit-node kind). **pending**. Such a row has
+   `source = panel`.
+2. A device can instead **declare** its own routes in its persisted config
+   (see §7.1). The panel turns the declaration into a pending row with
+   `source = device_declared`. Both sources share one table and the same
+   decision endpoint; a unique index on `(device, kind, cidr)` means a repeated
+   report never duplicates a row and a rejection is never resurrected.
+3. Only an admin approves or rejects (`POST /api/routes/:id/decision`). Every
+   decision is audited and pushes **every approved device in the network**
+   (receivers' manual-route lists depend on the approval set).
+4. The compiler/push path maps approvals:
    - `subnet` approved -> `proxy_cidrs` on that device [verified: the client's
      `GetNetworkInstanceConfig` reports the CIDR];
    - `exit_node` approved -> `enable_exit_node = true` [verified: reported back
      and peers see the exit node];
-   - a device whose desired config sets `acceptRoutes` gets
-     `routes`/`enable_manual_routes` for every *other* approved subnet in the
-     network.
-4. Reported routes:
-
+   - every device gets `enable_manual_routes = true` and
+     `routes = [every other approved subnet]` when it accepts routes, or
+     `routes = []` when it does not. An unapproved advertisement is therefore
+     never installed on a receiver [verified — with an empty list the CIDR is
+     absent from `ip route` and unreachable; with the approved list it is
+     present and reachable].
+5. Reported routes:
    - `GetNetworkInstanceConfig` gives the device's own configured
-     `proxy_cidrs` (what EasyPlane pushed for the managed instance);
+     `proxy_cidrs` (what EasyPlane pushed, including a pending declaration) and
+     `enable_exit_node`;
    - `CollectNetworkInfo` route entries list **peers only** — upstream skips
      the local peer id (`peer_ospf_route.rs::list_routes`), so the panel cannot
      read a device's own advertisement from that device;
-   - therefore reports combine the device's own config with what **other
-     members** see it advertising (attributed per device, plus `unknownPeers`
-     for addresses that are not managed devices).
+   - reports combine the device's own config with what **other members** see it
+     advertising (attributed per device, plus `unknownPeers` for addresses that
+     are not managed devices).
 
 What can and cannot be revoked:
 
 | situation | detection | revocation |
 | --- | --- | --- |
 | managed instance advertises an unapproved CIDR (drift, manual RPC) | own config + peer reports | yes: the next push replaces `proxy_cidrs`; `DeleteNetworkInstance` stops it while online |
-| an extra instance inside the managed easytier-core process advertises a route | peers report an `unknownPeer` (or a known device with extra CIDRs) | only while the device is online (`DeleteNetworkInstance`); the panel cannot delete it on an offline device |
+| a device **declares** a route in its persisted config | its own `GetNetworkInstanceConfig` (primary), peers (secondary, CIDR only) | it becomes a pending proposal; while pending the panel **adopts** it (pushes it back) instead of erasing it. Reject -> one push restores the desired state (config-dir file) and the route is never distributed to receivers |
+| an extra instance inside the managed easytier-core process advertises a route | peers report an `unknownPeer` (or a known device with extra CIDRs) | only while the device is online (`DeleteNetworkInstance`); the panel cannot delete it on an offline device, and a *foreign `instance_id`* is not attributed to the device at all |
 | a **separate easytier-core process** started from a local file/CLI on the same host | **not detectable at all** — the control plane only sees the process connected as its config-server client | no; it must be changed on the device. `config_permission` is `READ_ONLY|NO_DELETE` for file-backed instances, so even the managed process would refuse to modify its own file-based instance |
+| a read-only (`-c`, mode 0444) instance file | `ListNetworkInstanceMeta` reports `config_permission` with the READ_ONLY bit; the own-config read is refused | no: the panel cannot read or overwrite it. It is a **state** ("configuration is managed locally"), not a push error; nothing is retried and no `push_failed` audit is written |
 | offline device | last report is stale (`collectedAt`) | no; it keeps the last pushed config until it reconnects |
 
 The conformance test creates a second, non-managed instance inside a client's
@@ -292,36 +304,78 @@ managed process advertising `172.31.0.0/16`; the panel flags it as
 `unknownPeers` with `unapprovedObservedCidrs` and audits
 `route.unapproved_reported`. [verified]
 
-### 7.1 Device-declared routes (spike; not implemented yet)
+### 7.1 Device-declared routes (implemented)
 
-A different workflow was measured on the pinned client and is written up in
-[docs/SPIKE-DECLARED-ROUTES.md](SPIKE-DECLARED-ROUTES.md): **one** managed
-instance per device, run with `--config-server … --config-dir <dir>`. The
-operator stops the client, edits the persisted `<instance-id>.toml` (adds
-`[[proxy_network]]` and/or `[flags] enable_exit_node = true`), and starts it
-again. Findings that change the design:
+A Tailscale-like path where the device itself is the source of truth for what it
+routes. It uses **one** managed instance per device, run with `--config-dir`:
 
-- the client persists the pushed config to `<config-dir>/<instance-id>.toml`
-  and reloads it on restart, so the edit is visible in
+```
+easytier-core --config-server wss://panel/<token> --config-dir /var/lib/easytier-client
+```
+
+The client persists the pushed `NetworkConfig` as
+`<config-dir>/<instance-id>.toml` (atomic, mode `0600`). The operator stops the
+client, adds `[[proxy_network]] cidr = "…"` and/or `enable_exit_node = true`,
+and starts it again. Findings that shape the implementation (measured on the
+pinned client, `test/conformance/declared-routes.test.ts`):
+
+- the persisted file is reloaded on start and the declaration is visible in
   `GetNetworkInstanceConfig` (`proxyCidrs`, `enableExitNode`) [verified];
-- the managed file is `EDITABLE|DELETABLE`, so the next `RunNetworkInstance`
-  — including one with empty `proxy_cidrs` — **overwrites the edit** [verified];
-  an external read-only `-c` file is refused *and* its config cannot even be
-  read, and the refusal is retried on every heartbeat [verified];
+- the managed file is `EDITABLE|DELETABLE`; an external read-only `-c` file is
+  refused **and its config cannot even be read**, and the refusal is retried on
+  every heartbeat unless the panel classifies it [verified];
 - peers see the declared CIDR on the device's own overlay IP (attributable, no
   `unknownPeer`), but never the exit-node flag [verified];
-- `enable_manual_routes` with an **empty** `routes` list installs nothing;
-  without it, every advertised proxy CIDR is installed automatically — the
-  panel currently emits it only for non-empty lists, so no receiver is
-  constrained today [verified + source];
+- `enable_manual_routes` with an empty `routes` list installs nothing; without
+  it, every advertised proxy CIDR is installed automatically [verified +
+  source: `resolve_proxy_cidrs` in `gateway/proxy/cidr_monitor.rs`];
+- the pinned client's `network_config_from_toml` reports
+  `enable_manual_routes` only when the list is **non-empty**, so an empty manual
+  list reads back as "flag absent, `routes: []`" [source; the panel's drift
+  comparison accounts for it];
 - a receiver never uses an exit node without `exit_nodes`, and even with
-  `exit_nodes` it needs an OS route into the tunnel (`routes: ["0.0.0.0/0"]`
-  loses to the physical default with a lower metric) [verified].
+  `exit_nodes` it needs an OS route into the tunnel [verified].
 
-Implementation (pending approval) must therefore gate the push loop while a
-declaration is pending, treat read-only configs as a state rather than an error,
-and always push an explicit manual-route list to receivers. Until then the
-behaviour above is what a deployment gets.
+Implemented semantics:
+
+1. **Detection.** After a drifted/periodic read of the managed instance's own
+   config, any `proxy_cidrs` / `enable_exit_node` that is not an approved or
+   known route becomes a pending `device_declared` row (`route.declared` audit,
+   once per row). `0.0.0.0/0` and CIDRs that contain or sit inside the overlay
+   are not turned into proposals (they stay visible as unapproved drift).
+2. **Adoption while pending.** Every push to the device includes its pending
+   *and* approved declared routes in its own `proxy_cidrs`/`enable_exit_node`,
+   so the 15 s reconciler cannot erase the operator's edit. Receivers still get
+   only **approved** routes. Because the panel re-asserts a pending
+   declaration, a device that is online and pushed keeps advertising it; only
+   a device that stops reporting (offline, read-only file, foreign instance id)
+   can make it disappear.
+3. **Decisions.** `POST /api/routes/:id/decision` is unchanged. Approving a
+   declared subnet adds it to the advertiser's `proxy_cidrs` and to every
+   accepting device's `routes`; rejecting it removes it from the advertiser on
+   the next push (config-dir file) and never distributes it.
+4. **Staleness.** `device_routes.last_declared_at` is refreshed by each report
+   that still shows the declaration. Older than five minutes (or never seen)
+   sets `advertised: false` in the API; the UI shows "no longer advertised".
+   Rows are never auto-withdrawn or deleted, and approvals are not reverted.
+5. **Read-only files.** A `READ_ONLY` `config_permission` is persisted as a
+   device state (`configManagedLocally`), skipping pushes without setting
+   `lastPushError`; the panel refreshes the permission when the file becomes
+   writable again. Only peer observations remain as a detection signal in that
+   mode (CIDR, no exit flag).
+6. **Exit nodes are consent only.** The panel never pushes `exitNodes` to a
+   client and never sets `enable_exit_node` on an advertiser for a *declared*
+   exit node (it is already local). The badge distinguishes "proposed" from
+   "approved". Actual egress needs the client's own `exit_nodes` setting plus an
+   OS route into the TUN; docs/DEPLOY.md §4b has the OpenWrt recipes.
+7. **File identity matters.** Renaming `<instance-id>.toml` keeps the same
+   instance id and a push overwrites the renamed file in place (`NO_DELETE`
+   only). Changing `instance_id` makes the panel create a second instance; the
+   foreign one is not attributed and its CIDR shows up as an `unknownPeer`
+   [verified]. Keep the file name and id.
+
+The panel-side request flow (`source = panel`) is unchanged and still useful for
+a device that cannot edit its own config.
 
 ## 8. API surface
 
@@ -339,19 +393,28 @@ behaviour above is what a deployment gets.
 | `GET /api/tags`, `POST /api/tags` | any / admin | policy tag list/create |
 | `PUT /api/devices/:id/tags` | member/admin | assign tags |
 | `PUT /api/devices/:id/owner` | admin | owner for `group:` subjects |
-| `GET /api/networks/:id/routes` | any | requests, approvals, reports |
-| `GET/POST /api/devices/:id/routes` | any / member+ | list / request |
-| `POST /api/routes/:id/decision` | admin | approve/reject |
+| `GET /api/networks/:id/routes` | any | requests, approvals, reports (`source`, `lastDeclaredAt`, `advertised` per row) |
+| `GET/POST /api/devices/:id/routes` | any / member+ | list / request (`source = panel`) |
+| `POST /api/routes/:id/decision` | admin | approve/reject; pushes every approved device |
 
 Audit actions: `policy.version_created`, `policy.disabled`, `tag.created`,
 `device.tags_updated`, `device.renamed`, `device.owner_updated`,
-`network.magicdns_updated`, `route.requested`, `route.approved`,
-`route.rejected`, `route.unapproved_reported`. No group secret, network secret
-or token is ever written to the audit log (`sanitizeAuditMetadata` strips
-secret-looking keys, and the compiler never hands secrets to it).
+`network.magicdns_updated`, `route.requested`, `route.declared`,
+`route.approved`, `route.rejected`, `route.unapproved_reported`. No group
+secret, network secret or token is ever written to the audit log
+(`sanitizeAuditMetadata` strips secret-looking keys, and the compiler never hands
+secrets to it).
 
 ## 9. Known gaps (M2)
 
+- Per-client exit-node selection is not managed: approving a declared exit node
+  records consent but the panel never pushes `exitNodes`, so egress still needs
+  the client's own setting and OS route.
+- A read-only instance file cannot be read by the control plane (upstream
+  refuses `GetNetworkInstanceConfig`), so a declaration there is invisible
+  except as a peer-observed CIDR; the exit-node flag cannot be detected at all.
+- A foreign `instance_id` (renamed file or a second instance) is not attributed
+  to the device; it appears as an `unknownPeer`.
 - Users cannot request routes for themselves (there is no per-user login on a
   device); a member asks on the device's behalf.
 - No auto-approvers (CIDR allow-lists) for route requests.
