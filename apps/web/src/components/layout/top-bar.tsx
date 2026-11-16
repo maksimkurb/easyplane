@@ -13,7 +13,7 @@ export function TopBar() {
   const [location] = useLocation()
   const { crumbs, back } = useBreadcrumbs()
   const current = crumbs[crumbs.length - 1]
-  const isHome = crumbs.length === 1 && !crumbs[0]?.href
+  const isHome = location === "/" || location === "/networks"
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-card">
