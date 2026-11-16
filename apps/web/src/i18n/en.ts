@@ -600,6 +600,7 @@ export const enTranslation = {
     inviteLink: "Invite link",
     labelHint: "Shown next to devices that join with it.",
     canBeUsed: "Can be used",
+    change: "Change",
     noLimit: "No limit",
     custom: "Custom",
     customUses: "Maximum uses",

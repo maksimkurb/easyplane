@@ -73,7 +73,7 @@ function DialogContent({
           // The popup itself never scrolls: it is capped to the viewport and
           // the inner body scrolls, so the close button stays put while long
           // forms and previews scroll underneath a sticky header/footer.
-          "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-1rem)] w-full max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-card text-sm shadow-lg ring-1 ring-line duration-100 outline-none sm:max-h-[90dvh] data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-card text-sm shadow-lg ring-1 ring-line duration-100 outline-none sm:max-h-[90dvh] data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           dialogSizeClasses[size],
           className
         )}

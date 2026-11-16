@@ -602,6 +602,7 @@ export const ruTranslation: Translation = {
     inviteLink: "Приглашение",
     labelHint: "Показывается рядом с устройствами, которые по нему подключились.",
     canBeUsed: "Можно использовать",
+    change: "Изменить",
     noLimit: "Без лимита",
     custom: "Своё",
     customUses: "Максимум использований",
