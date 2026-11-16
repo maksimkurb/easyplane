@@ -2,7 +2,7 @@ import type { Pool } from "pg";
 
 import type { AppEnv } from "../env.js";
 import type { Database } from "../db/client.js";
-import { ensureOrganisation } from "../db/repositories.js";
+import { ensureOrganisation, listApprovedDevicesByRole } from "../db/repositories.js";
 import type { Organisation } from "../db/schema.js";
 import { AuthService } from "../auth/service.js";
 import { OidcClient } from "../auth/oidc.js";
@@ -14,6 +14,7 @@ import { MetricsRegistry } from "../observability/metrics.js";
 import { RealtimeHub } from "../realtime/hub.js";
 import { SecretBox } from "../security/crypto.js";
 import { AuditService } from "../services/audit.js";
+import { CredentialService } from "../services/credential-service.js";
 import { DeviceService } from "../services/device-service.js";
 import { DeviceSessionRegistry } from "../services/device-sessions.js";
 import { InviteService } from "../services/invite-service.js";
@@ -46,6 +47,7 @@ export interface AppContext {
   networks: NetworkService;
   imports: ImportService;
   invites: InviteService;
+  credentials: CredentialService;
   deviceSessions: DeviceSessionRegistry;
   push: PushService;
   devices: DeviceService;
@@ -106,15 +108,35 @@ export async function createAppContext(
     maxTotal: env.sseMaxTotal,
     bufferSize: env.sseEventBuffer,
   });
+  const invites = new InviteService(db, audit);
+  const deviceSessions = new DeviceSessionRegistry();
+  let pushService: PushService | undefined;
+  const credentialService = new CredentialService({
+    db,
+    secretBox,
+    audit,
+    logger,
+    realtime,
+    ttlMs: env.credentialTtlMs,
+    renewBeforeMs: env.credentialRenewBeforeMs,
+    onCredentialsChanged: async (networkId, reason, memberDeviceId) => {
+      // Anchors carry the managed credential list; a renewed/reissued
+      // credential also changes that one member's own config.
+      const anchors = await listApprovedDevicesByRole(db, networkId, "anchor");
+      for (const anchor of anchors) pushService?.schedule(anchor.id, reason);
+      if (memberDeviceId) pushService?.schedule(memberDeviceId, reason);
+    },
+  });
   const networks = new NetworkService(
     db,
     secretBox,
     audit,
     env.rendezvous,
     realtime,
+    credentialService,
+    (deviceId) => deviceSessions.get(deviceId) !== undefined,
+    logger,
   );
-  const invites = new InviteService(db, audit);
-  const deviceSessions = new DeviceSessionRegistry();
   const imports = new ImportService({
     db,
     networks,
@@ -136,6 +158,11 @@ export async function createAppContext(
     reportIntervalMs: env.routeReportIntervalMs,
     metrics,
     rendezvousEndpoints: env.rendezvous.endpoints,
+    credentials: {
+      publishableMaterial: (networkId) =>
+        credentialService.publishableMaterial(networkId),
+      memberMaterial: (deviceId) => credentialService.memberMaterial(deviceId),
+    },
     onDeviceUpdated: async (deviceId, reason) => {
       await devicesService?.notifyDevice(deviceId, reason);
     },
@@ -148,6 +175,7 @@ export async function createAppContext(
       await routes.recordReport(device, payload);
     },
   });
+  pushService = push;
   policies = new PolicyService({ db, secretBox, audit, push, realtime });
   routes = new RouteService({ db, audit, push, realtime });
   const policyService = policies;
@@ -167,6 +195,7 @@ export async function createAppContext(
     unknownTokenLimitPerMinute: env.unknownTokenLimitPerMinute,
     heartbeatPersistIntervalMs: env.heartbeatPersistIntervalMs,
     listClients: () => controlPlane?.listClients() ?? [],
+    credentials: credentialService,
   });
   devicesService = devices;
 
@@ -228,6 +257,7 @@ export async function createAppContext(
     networks,
     imports,
     invites,
+    credentials: credentialService,
     deviceSessions,
     push,
     devices,

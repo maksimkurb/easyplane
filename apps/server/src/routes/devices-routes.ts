@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireAuth, requireRole } from "../app/auth-hooks.js";
 import type { AppContext } from "../app/context.js";
 import {
+  acknowledgeAnchorRiskSchema,
   approveDeviceSchema,
   createRevisionResponseSchema,
   createRevisionSchema,
@@ -15,9 +16,12 @@ import {
   paramsRevisionSchema,
   pushResultSchema,
   revisionSchema,
+  setDeviceRoleResponseSchema,
+  setDeviceRoleSchema,
   updateDeviceEndpointsSchema,
   updateDeviceHubSchema,
 } from "../app/schemas.js";
+import { pushNetworkDevices } from "../services/push-service.js";
 
 const listQuerySchema = z.object({
   networkId: z.string().uuid().optional(),
@@ -108,6 +112,7 @@ export function registerDeviceRoutes(
         operationId: "blockDevice",
         tags: ["devices"],
         params: paramsDeviceSchema,
+        body: acknowledgeAnchorRiskSchema.optional(),
         response: { 200: deviceSchema },
       },
     },
@@ -120,7 +125,99 @@ export function registerDeviceRoutes(
           role: auth.user.role,
         },
         request.params.deviceId,
+        { acknowledgeAnchorRisk: request.body?.acknowledgeAnchorRisk },
       );
+    },
+  );
+
+  typed.post(
+    "/api/devices/:deviceId/credential/renew",
+    {
+      config: { rateLimit: { max: 30, timeWindow: "1 minute" } },
+      schema: {
+        operationId: "renewDeviceCredential",
+        tags: ["devices"],
+        params: paramsDeviceSchema,
+        response: { 200: deviceSchema },
+      },
+    },
+    async (request) => {
+      // Admin-only: a renewal changes the key a member runs with.
+      const auth = requireRole(request, ["admin"]);
+      return context.devices.renewCredential(
+        { orgId: auth.organisation.id, userId: auth.user.id, role: auth.user.role },
+        request.params.deviceId,
+      );
+    },
+  );
+
+  typed.post(
+    "/api/devices/:deviceId/credential/revoke",
+    {
+      config: { rateLimit: { max: 30, timeWindow: "1 minute" } },
+      schema: {
+        operationId: "revokeDeviceCredential",
+        tags: ["devices"],
+        params: paramsDeviceSchema,
+        response: { 200: deviceSchema },
+      },
+    },
+    async (request) => {
+      const auth = requireRole(request, ["admin"]);
+      return context.devices.revokeCredential(
+        {
+          orgId: auth.organisation.id,
+          userId: auth.user.id,
+          role: auth.user.role,
+        },
+        request.params.deviceId,
+      );
+    },
+  );
+
+  typed.put(
+    "/api/devices/:deviceId/role",
+    {
+      config: { rateLimit: { max: 20, timeWindow: "1 minute" } },
+      schema: {
+        operationId: "setDeviceRole",
+        tags: ["devices"],
+        params: paramsDeviceSchema,
+        body: setDeviceRoleSchema,
+        response: { 200: setDeviceRoleResponseSchema },
+      },
+    },
+    async (request) => {
+      const auth = requireRole(request, ["admin"]);
+      const device = await context.devices.requireDevice(
+        auth.organisation.id,
+        request.params.deviceId,
+      );
+      const result = await context.networks.setDeviceRole({
+        orgId: auth.organisation.id,
+        userId: auth.user.id,
+        networkId: device.networkId,
+        deviceId: device.id,
+        role: request.body.role,
+        acknowledge: request.body.acknowledge,
+      });
+      await pushNetworkDevices(
+        context.db,
+        context.push,
+        device.networkId,
+        "device role changed",
+      );
+      return {
+        device: await context.devices.get(
+          {
+            orgId: auth.organisation.id,
+            userId: auth.user.id,
+            role: auth.user.role,
+          },
+          device.id,
+        ),
+        needsSecretRotation: result.needsSecretRotation,
+      };
     },
   );
 
@@ -131,6 +228,7 @@ export function registerDeviceRoutes(
         operationId: "deleteDevice",
         tags: ["devices"],
         params: paramsDeviceSchema,
+        body: acknowledgeAnchorRiskSchema.optional(),
         response: { 200: okSchema },
       },
     },
@@ -143,6 +241,7 @@ export function registerDeviceRoutes(
           role: auth.user.role,
         },
         request.params.deviceId,
+        { acknowledgeAnchorRisk: request.body?.acknowledgeAnchorRisk },
       );
       return { status: "ok" as const };
     },

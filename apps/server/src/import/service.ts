@@ -309,10 +309,18 @@ export class ImportService {
       credentialMode = true;
     }
     if (credentialMode) {
+      // Adoption as a member is refused: the device's credential is issued by
+      // an anchor of *this* network, and the private key in the imported config
+      // is that device's identity, not a network. There is no way to verify
+      // which network it belongs to without an anchor that already publishes
+      // it, so silently turning it into a shared-secret network would either
+      // break the chain or open the network. docs/CREDENTIALS.md §7.
       throw new AppError(
         422,
-        "this is a credential-mode network (secure_mode.local_private_key or credential_file with no network_secret). " +
-          "EasyPlane pushes shared-secret networks; importing it would silently break the credential chain.",
+        "this config belongs to a device that joins with a per-device credential " +
+          "(secure_mode.local_private_key or credential_file, no network_secret). " +
+          "A credential is issued by an anchor of an existing credentials network and cannot be adopted as a network: " +
+          "create the network, add this device as a member from the panel, and use the credential the panel issues.",
         "credential_mode_unsupported",
       );
     }

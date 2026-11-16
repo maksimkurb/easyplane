@@ -7,6 +7,8 @@ import { devices } from "../db/schema.js";
 import { requireRole } from "../app/auth-hooks.js";
 import type { AppContext } from "../app/context.js";
 import {
+  accessModePlanSchema,
+  accessModePreviewSchema,
   createInviteResponseSchema,
   createInviteSchema,
   createNetworkPeerSchema,
@@ -17,6 +19,9 @@ import {
   networkPeerSchema,
   networkSchema,
   okSchema,
+  rotateNetworkSecretResponseSchema,
+  switchAccessModeResponseSchema,
+  switchAccessModeSchema,
   paramsInviteSchema,
   paramsNetworkSchema,
   paramsPeerSchema,
@@ -164,6 +169,62 @@ export function registerNetworkRoutes(
   );
 
   typed.post(
+    "/api/networks/:networkId/access-mode/preview",
+    {
+      config: { rateLimit: { max: 30, timeWindow: "1 minute" } },
+      schema: {
+        operationId: "previewNetworkAccessMode",
+        tags: ["networks"],
+        params: paramsNetworkSchema,
+        body: accessModePreviewSchema,
+        response: { 200: accessModePlanSchema },
+      },
+    },
+    async (request) => {
+      const auth = requireRole(request, ["admin"]);
+      return context.networks.previewAccessMode({
+        orgId: auth.organisation.id,
+        networkId: request.params.networkId,
+        targetMode: request.body.mode,
+        anchorDeviceIds: request.body.anchorDeviceIds,
+      });
+    },
+  );
+
+  typed.post(
+    "/api/networks/:networkId/access-mode",
+    {
+      config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+      schema: {
+        operationId: "switchNetworkAccessMode",
+        tags: ["networks"],
+        params: paramsNetworkSchema,
+        body: switchAccessModeSchema,
+        response: { 200: switchAccessModeResponseSchema },
+      },
+    },
+    async (request) => {
+      const auth = requireRole(request, ["admin"]);
+      const result = await context.networks.switchAccessMode({
+        orgId: auth.organisation.id,
+        userId: auth.user.id,
+        networkId: request.params.networkId,
+        targetMode: request.body.mode,
+        anchorDeviceIds: request.body.anchorDeviceIds,
+        acknowledge: request.body.acknowledge,
+      });
+      // Every device's config changes (secret presence or credential identity).
+      await pushNetworkDevices(
+        context.db,
+        context.push,
+        request.params.networkId,
+        "access mode changed",
+      );
+      return result;
+    },
+  );
+
+  typed.post(
     "/api/networks/:networkId/rendezvous/align-secret",
     {
       config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
@@ -250,11 +311,15 @@ export function registerNetworkRoutes(
         operationId: "rotateNetworkSecret",
         tags: ["networks"],
         params: paramsNetworkSchema,
-        response: { 200: z.object({ secret: z.string() }) },
+        response: { 200: rotateNetworkSecretResponseSchema },
       },
     },
     async (request) => {
       const auth = requireRole(request, ["admin"]);
+      const network = await context.networks.requireNetwork(
+        auth.organisation.id,
+        request.params.networkId,
+      );
       const secret = await context.networks.regenerateSecret(
         auth.organisation.id,
         auth.user.id,
@@ -273,7 +338,16 @@ export function registerNetworkRoutes(
       for (const device of approved) {
         context.push.schedule(device.id, "network secret rotated");
       }
-      return { secret };
+      return {
+        secret,
+        credentialsSurvive: network.accessMode === "credentials",
+        ...(network.useRendezvous
+          ? {
+              rendezvousNote:
+                "this network uses the bundled rendezvous node: update EASYPLANE_RENDEZVOUS_SECRET on the node and restart it, or the node will reject the anchors",
+            }
+          : {}),
+      };
     },
   );
 
@@ -428,6 +502,7 @@ export function registerNetworkRoutes(
         networkId: request.params.networkId,
         userId: auth.user.id,
         label: request.body.label,
+        role: request.body.role,
         expiresInHours: request.body.expiresInHours,
         maxUses: request.body.maxUses,
       });

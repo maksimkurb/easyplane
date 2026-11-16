@@ -7,6 +7,7 @@ import {
   findDeviceByDnsName,
   findDeviceInNetwork,
   findUserById,
+  getCredentialByDevice,
   getDevice,
   getDeviceById,
   getNetworkById,
@@ -15,7 +16,9 @@ import {
   insertDevice,
   insertNetworkPeer,
   insertRevision,
+  listApprovedDevicesByRole,
   listApprovedDevicesInNetwork,
+  listCredentialsForOrg,
   listDeviceTags,
   listDevices,
   listRevisions,
@@ -29,12 +32,13 @@ import {
   updateDevice,
   usedVirtualIps,
 } from "../db/repositories.js";
-import type { Device, DeviceState, Network, UserRole } from "../db/schema.js";
+import type { Credential, Device, DeviceState, Network, UserRole } from "../db/schema.js";
 import {
   computeDeviceStatus,
   type DeviceStatus,
   type OnlineState,
 } from "../domain/device-status.js";
+import { effectiveRole, knowsNetworkSecret } from "../domain/credentials.js";
 import { normalizeDesiredConfig, type DesiredConfig } from "../domain/desired-config.js";
 import { allocateIpv4, cidrPrefix, parseCidr, parseIpv4 } from "../domain/ip.js";
 import { evaluateInvite } from "../domain/invite.js";
@@ -54,6 +58,7 @@ import { sha256Hex } from "../security/crypto.js";
 import type { AuditService } from "./audit.js";
 import type { DeviceSessionRegistry } from "./device-sessions.js";
 import { AppError, conflict, invalid, notFound } from "./errors.js";
+import type { CredentialService, CredentialDto } from "./credential-service.js";
 import type { InviteService } from "./invite-service.js";
 import { instanceIdFor, type PushService } from "./push-service.js";
 
@@ -86,6 +91,16 @@ export interface DeviceDto extends DeviceStatus {
   advertisedEndpoints: string[];
   /** `true` when this device is a hub in its network's peer list. */
   isHub: boolean;
+  /** Stored role: anchor or member (docs/CREDENTIALS.md). */
+  role: "anchor" | "member";
+  /** Role in effect: always `anchor` in shared-secret mode. */
+  effectiveRole: "anchor" | "member";
+  /** Whether the device holds the network secret (cannot be safely revoked). */
+  knowsSecret: boolean;
+  /** Access mode of the network this device belongs to. */
+  accessMode: "shared_secret" | "credentials";
+  /** Per-device credential in credentials mode; never contains the secret. */
+  credential: CredentialDto | null;
   tags: string[];
   /** Last route report (proxy CIDRs / unmanaged instances), if any. */
   reportedState: Record<string, unknown>;
@@ -177,6 +192,8 @@ export interface DeviceServiceOptions {
   heartbeatPersistIntervalMs?: number;
   /** Fallback lookup by machine id for reconnects that raced the registry. */
   listClients?: () => ManagedClient[];
+  /** Credential lifecycle (credentials networks); optional in unit tests. */
+  credentials?: CredentialService;
 }
 
 export class DeviceService {
@@ -305,10 +322,25 @@ export class DeviceService {
     return map;
   }
 
+  /** Loads the credential row and builds the DTO (the only async wrapper). */
+  private async dto(
+    device: Device,
+    network: Network | undefined,
+    tags: string[] = [],
+    credential?: Credential | null,
+  ): Promise<DeviceDto> {
+    const row =
+      credential === undefined
+        ? await getCredentialByDevice(this.options.db, device.id)
+        : credential;
+    return this.toDto(device, network, tags, row ?? null);
+  }
+
   private toDto(
     device: Device,
     network: Network | undefined,
     tags: string[] = [],
+    credential: Credential | null = null,
     now = new Date(),
   ): DeviceDto {
     const status = computeDeviceStatus({
@@ -322,6 +354,8 @@ export class DeviceService {
     });
     const zone = network?.magicDnsZone ?? DEFAULT_MAGIC_DNS_ZONE;
     const magicDnsEnabled = network?.magicDnsEnabled ?? false;
+    const accessMode = network?.accessMode ?? "shared_secret";
+    const role = effectiveRole(accessMode, device.role);
     return {
       ...status,
       id: device.id,
@@ -346,6 +380,11 @@ export class DeviceService {
       ownerUserId: device.ownerUserId,
       advertisedEndpoints: device.advertisedEndpoints,
       isHub: device.isHub,
+      role: device.role,
+      effectiveRole: role,
+      knowsSecret: knowsNetworkSecret(accessMode, device.role),
+      accessMode,
+      credential: credential ? this.credentialToDto(credential, now) : null,
       tags,
       reportedState: device.reportedState,
       reportedStateAt: device.reportedStateAt?.toISOString() ?? null,
@@ -359,6 +398,31 @@ export class DeviceService {
       approvedAt: device.approvedAt?.toISOString() ?? null,
       blockedAt: device.blockedAt?.toISOString() ?? null,
       createdAt: device.createdAt.toISOString(),
+    };
+  }
+
+  private credentialToDto(credential: Credential, now: Date): CredentialDto {
+    const status =
+      credential.status === "revoked"
+        ? "revoked"
+        : credential.expiry.getTime() > now.getTime()
+          ? "active"
+          : "expired";
+    return {
+      id: credential.id,
+      networkId: credential.networkId,
+      deviceId: credential.deviceId,
+      credentialId: credential.credentialId,
+      publicKey: credential.publicKey,
+      groups: credential.groups,
+      allowRelay: credential.allowRelay,
+      allowedProxyCidrs: credential.allowedProxyCidrs,
+      reusable: credential.reusable,
+      expiry: credential.expiry.toISOString(),
+      status,
+      revocationReason: credential.revocationReason,
+      revokedAt: credential.revokedAt?.toISOString() ?? null,
+      createdAt: credential.createdAt.toISOString(),
     };
   }
 
@@ -491,6 +555,7 @@ export class DeviceService {
         osDistribution: input.osDistribution,
         sourceIp: input.sourceIp,
         state: "pending",
+        role: invite.role,
         inviteId: invite.id,
         lastSeenAt: now,
       });
@@ -545,11 +610,18 @@ export class DeviceService {
       }
     }
     const tags = await this.tagsByDevice(actor.orgId);
+    const credentials = new Map<string, Credential>(
+      (await listCredentialsForOrg(this.options.db, actor.orgId)).map((row) => [
+        row.deviceId,
+        row,
+      ]),
+    );
     return devices.map((device) =>
       this.toDto(
         device,
         networks.get(device.networkId),
         tags.get(device.id) ?? [],
+        credentials.get(device.id) ?? null,
       ),
     );
   }
@@ -559,7 +631,7 @@ export class DeviceService {
     if (!device) notFound("device not found");
     const network = await getNetworkById(this.options.db, device.networkId);
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
-    return this.toDto(device, network, tags.get(deviceId) ?? []);
+    return this.dto(device, network, tags.get(deviceId) ?? []);
   }
 
   async listRevisions(actor: RequestActor, deviceId: string): Promise<RevisionDto[]> {
@@ -645,6 +717,24 @@ export class DeviceService {
     network: Network,
     request: { virtualIpv4?: string },
   ): Promise<DeviceDto> {
+    const credentialMode = network.accessMode === "credentials";
+    if (credentialMode && device.role === "member") {
+      const anchors = await listApprovedDevicesByRole(
+        this.options.db,
+        network.id,
+        "anchor",
+      );
+      if (anchors.length === 0) {
+        // Enforced here because this is the moment access is granted: a
+        // credentials network without an anchor has no trust root, so a
+        // member would never be admitted.
+        conflict(
+          "the first device of a credentials network must be an anchor " +
+            "(a device that holds the network secret). Approve an anchor first, " +
+            "or change the role of the invite/device.",
+        );
+      }
+    }
     const used = await usedVirtualIps(this.options.db, network.id);
     const address = request.virtualIpv4
       ? this.validateAddress(network, request.virtualIpv4, used, device.virtualIpv4)
@@ -715,12 +805,22 @@ export class DeviceService {
       },
     });
     this.options.push.schedule(device.id, "approved");
+    if (credentialMode && updated.role === "member") {
+      // Members join with a per-device key; anchors get it in the next push.
+      await this.options.credentials?.issueForDevice({
+        network,
+        device: updated,
+        userId: actor.userId,
+        reason: "device approved",
+        tags: (await this.tagsByDevice(actor.orgId, device.id)).get(device.id) ?? [],
+      });
+    }
     // Other devices must stop dialling this one if it is blocked later, and
     // must receive a newly approved hub's endpoints.
     await this.repushNetwork(network.id, "device approved");
     this.publishDevice(updated, "approved");
     const tags = await this.tagsByDevice(actor.orgId, device.id);
-    return this.toDto(updated, network, tags.get(device.id) ?? []);
+    return this.dto(updated, network, tags.get(device.id) ?? []);
   }
 
   /**
@@ -764,9 +864,16 @@ export class DeviceService {
     }
   }
 
-  async block(actor: RequestActor, deviceId: string): Promise<DeviceDto> {
+  async block(
+    actor: RequestActor,
+    deviceId: string,
+    options: { acknowledgeAnchorRisk?: boolean } = {},
+  ): Promise<DeviceDto> {
     const device = await getDevice(this.options.db, actor.orgId, deviceId);
     if (!device) notFound("device not found");
+    const network = await getNetworkById(this.options.db, device.networkId);
+    if (!network) notFound("network not found");
+    this.assertAnchorRemoval(network, device, "block", options);
     const client = this.findClient(device);
     const instanceCleanup = client
       ? await this.stopInstance(client, device)
@@ -790,22 +897,62 @@ export class DeviceService {
         hostname: device.hostname,
         instanceStopped: instanceCleanup === "deleted",
         instanceCleanup,
+        ...(network.accessMode === "credentials" && device.role === "anchor"
+          ? { anchorRemovalAcknowledged: true }
+          : {}),
       },
     });
-    const network = await getNetworkById(this.options.db, device.networkId);
+    if (network.accessMode === "credentials" && device.role === "anchor") {
+      await this.options.audit.record({
+        orgId: actor.orgId,
+        actorUserId: actor.userId,
+        action: "device.anchor_removed_acknowledged",
+        targetType: "device",
+        targetId: deviceId,
+        metadata: {
+          networkId: network.id,
+          hostname: device.hostname,
+          operation: "block",
+          note: "the device still knows the network secret until it is rotated",
+        },
+      });
+    }
+    if (network.accessMode === "credentials" && device.role === "member") {
+      await this.options.credentials?.revokeForDevice({
+        orgId: actor.orgId,
+        userId: actor.userId,
+        deviceId,
+        reason: "device blocked",
+      });
+    }
     this.publishDevice(updated, "blocked", { online: "offline" });
     // A blocked hub no longer contributes endpoints to the other devices.
     await this.repushNetwork(device.networkId, "device blocked");
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
-    return this.toDto(updated, network, tags.get(deviceId) ?? []);
+    return this.dto(updated, network, tags.get(deviceId) ?? []);
   }
 
-  async remove(actor: RequestActor, deviceId: string): Promise<void> {
+  async remove(
+    actor: RequestActor,
+    deviceId: string,
+    options: { acknowledgeAnchorRisk?: boolean } = {},
+  ): Promise<void> {
     const device = await getDevice(this.options.db, actor.orgId, deviceId);
     if (!device) notFound("device not found");
+    const network = await getNetworkById(this.options.db, device.networkId);
+    if (!network) notFound("network not found");
+    this.assertAnchorRemoval(network, device, "delete", options);
     const client = this.findClient(device);
     if (client) await this.stopInstance(client, device);
     client?.close("device was deleted");
+    if (network.accessMode === "credentials" && device.role === "member") {
+      await this.options.credentials?.revokeForDevice({
+        orgId: actor.orgId,
+        userId: actor.userId,
+        deviceId,
+        reason: "device deleted",
+      });
+    }
     this.notifyRemoved(device);
     await deleteDevice(this.options.db, deviceId);
     await this.options.audit.record({
@@ -818,9 +965,127 @@ export class DeviceService {
         networkId: device.networkId,
         machineId: device.machineId,
         hostname: device.hostname,
+        ...(network.accessMode === "credentials" && device.role === "anchor"
+          ? { anchorRemovalAcknowledged: true }
+          : {}),
       },
     });
+    if (network.accessMode === "credentials" && device.role === "anchor") {
+      await this.options.audit.record({
+        orgId: actor.orgId,
+        actorUserId: actor.userId,
+        action: "device.anchor_removed_acknowledged",
+        targetType: "device",
+        targetId: deviceId,
+        metadata: {
+          networkId: network.id,
+          hostname: device.hostname,
+          operation: "delete",
+          note: "the device still knows the network secret until it is rotated",
+        },
+      });
+    }
     await this.repushNetwork(device.networkId, "device deleted");
+  }
+
+  /**
+   * Anchors hold the network secret. Removing one cannot revoke that knowledge:
+   * only rotating the secret can. The API therefore requires an explicit
+   * acknowledgement, which is audited; the UI explains the choice and offers
+   * the rotation procedure.
+   */
+  private assertAnchorRemoval(
+    network: Network,
+    device: Device,
+    action: "block" | "delete",
+    options: { acknowledgeAnchorRisk?: boolean },
+  ): void {
+    if (network.accessMode !== "credentials") return;
+    if (effectiveRole(network.accessMode, device.role) !== "anchor") return;
+    if (!options.acknowledgeAnchorRisk) {
+      throw new AppError(
+        409,
+        "this device is an anchor and already knows the network secret. " +
+          "Removing it does not revoke it: rotate the network secret afterwards, " +
+          "or repeat the request with acknowledgeAnchorRisk to accept the risk.",
+        "anchor_removal_requires_acknowledgement",
+      );
+    }
+  }
+
+  /** Loads a device row for routes that need network/role information. */
+  async requireDevice(orgId: string, deviceId: string): Promise<Device> {
+    const device = await getDevice(this.options.db, orgId, deviceId);
+    if (!device) notFound("device not found");
+    return device;
+  }
+
+  /**
+   * Issues a fresh credential for a member (new keypair). The member's config
+   * identity changes, so it is repushed; anchors are repushed by the
+   * credential service. Admin-only at the route level.
+   */
+  async renewCredential(
+    actor: RequestActor,
+    deviceId: string,
+  ): Promise<DeviceDto> {
+    const device = await getDevice(this.options.db, actor.orgId, deviceId);
+    if (!device) notFound("device not found");
+    const network = await getNetworkById(this.options.db, device.networkId);
+    if (!network) notFound("network not found");
+    if (network.accessMode !== "credentials") {
+      conflict("this network uses a shared secret; there is no credential to renew");
+    }
+    if (device.role !== "member") {
+      conflict("anchors hold the network secret and have no credential");
+    }
+    const tags = (await this.tagsByDevice(actor.orgId, deviceId)).get(deviceId) ?? [];
+    await this.options.credentials?.issueForDevice({
+      network,
+      device,
+      userId: actor.userId,
+      reason: "manual credential renewal",
+      force: true,
+      tags,
+    });
+    this.options.push.schedule(deviceId, "credential renewed");
+    const updated = await getDevice(this.options.db, actor.orgId, deviceId);
+    if (!updated) notFound("device not found");
+    this.publishDevice(updated, "credential-renewed");
+    return this.toDto(updated, network, tags);
+  }
+
+  /**
+   * One-click revoke for a member: kill the credential *and* block the device
+   * so it cannot reconnect with the (now dead) key. Re-approving issues a new
+   * credential. Anchors are handled by `block`/`remove` with the explicit
+   * acknowledgement, because only a secret rotation can actually revoke them.
+   */
+  async revokeCredential(
+    actor: RequestActor,
+    deviceId: string,
+  ): Promise<DeviceDto> {
+    const device = await getDevice(this.options.db, actor.orgId, deviceId);
+    if (!device) notFound("device not found");
+    const network = await getNetworkById(this.options.db, device.networkId);
+    if (!network) notFound("network not found");
+    if (network.accessMode !== "credentials") {
+      conflict("this network uses a shared secret; block the device instead");
+    }
+    if (device.role === "anchor") {
+      conflict(
+        "this device is an anchor: it holds the network secret, so a credential revoke does not remove its access. " +
+          "Rotate the network secret, or remove the device and acknowledge the risk.",
+      );
+    }
+    await this.options.credentials?.revokeForDevice({
+      orgId: actor.orgId,
+      userId: actor.userId,
+      deviceId,
+      reason: "credential revoked from the panel",
+    });
+    // Blocking stops the running instance and refuses further heartbeats.
+    return this.block(actor, deviceId);
   }
 
   /** Manual push ("retry now"). */
@@ -908,7 +1173,7 @@ export class DeviceService {
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
     return {
       revision: this.revisionToDto(revision),
-      device: this.toDto(updated, network, tags.get(deviceId) ?? []),
+      device: await this.dto(updated, network, tags.get(deviceId) ?? []),
     };
   }
 
@@ -971,7 +1236,7 @@ export class DeviceService {
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
     return {
       revision: this.revisionToDto(revision),
-      device: this.toDto(updated, network, tags.get(deviceId) ?? []),
+      device: await this.dto(updated, network, tags.get(deviceId) ?? []),
     };
   }
 
@@ -1009,7 +1274,7 @@ export class DeviceService {
     this.options.push.schedule(deviceId, "renamed");
     this.publishDevice(updated, "renamed");
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
-    return this.toDto(updated, network, tags.get(deviceId) ?? []);
+    return this.dto(updated, network, tags.get(deviceId) ?? []);
   }
 
   /** Replaces a device's tags (policy subjects of kind `tag:`). */
@@ -1039,10 +1304,20 @@ export class DeviceService {
       targetId: deviceId,
       metadata: { tags: normalized, networkId: network.id },
     });
+    if (network.accessMode === "credentials" && device.role === "member") {
+      // Credential groups are EasyTier ACL group names; keep them in sync with
+      // the device's tags so `source_groups` rules keep matching.
+      await this.options.credentials?.syncGroupsForDevice(
+        deviceId,
+        normalized,
+        actor.userId,
+        actor.orgId,
+      );
+    }
     // A tag change changes the compiled ACL of other devices in the network.
     this.options.push.schedule(deviceId, "tags updated");
     this.publishDevice(updated, "tags-updated");
-    return this.toDto(updated, network, normalized);
+    return this.dto(updated, network, normalized);
   }
 
   /** Assigns the owning account used by policy `group:` subjects. */
@@ -1071,7 +1346,7 @@ export class DeviceService {
     });
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
     this.publishDevice(updated, "owner-updated");
-    return this.toDto(updated, network, tags.get(deviceId) ?? []);
+    return this.dto(updated, network, tags.get(deviceId) ?? []);
   }
 
   /**
@@ -1125,7 +1400,7 @@ export class DeviceService {
     });
     this.publishDevice(updated, "endpoints-updated");
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
-    return this.toDto(updated, network, tags.get(deviceId) ?? []);
+    return this.dto(updated, network, tags.get(deviceId) ?? []);
   }
 
   /**
@@ -1185,7 +1460,7 @@ export class DeviceService {
     });
     this.publishDevice(updated, "hub-updated");
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
-    return this.toDto(updated, network, tags.get(deviceId) ?? []);
+    return this.dto(updated, network, tags.get(deviceId) ?? []);
   }
 
   /**

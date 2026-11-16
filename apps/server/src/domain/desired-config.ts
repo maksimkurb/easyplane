@@ -1,6 +1,8 @@
 import { acl, manage } from "@easyplane/proto";
 
 import { buildMinimalNetworkConfig } from "../config/network-config.js";
+import { credentialPublicKey } from "../security/credential-keys.js";
+import { managedCredentialsMatch } from "./credentials.js";
 import { cidrPrefix, parseIpv4 } from "./ip.js";
 import { canonicalAcl } from "./policy/canonical.js";
 import { z } from "zod";
@@ -83,7 +85,8 @@ export interface BuildNetworkConfigOptions {
   deviceId: string;
   instanceId: string;
   networkName: string;
-  networkSecret: string;
+  /** Absent for a credential member (mode B): it never sees the secret. */
+  networkSecret?: string;
   /** Unique DNS name of the device; becomes the EasyTier hostname. */
   hostname: string;
   stored: DesiredConfig;
@@ -112,10 +115,23 @@ export interface BuildNetworkConfigOptions {
   p2pOnly?: boolean;
   /**
    * Enable EasyTier secure mode on the device. Required when the network uses
-   * the bundled rendezvous node: private mode authenticates a foreign network
-   * with the Noise secret proof, which is only exchanged in secure mode.
+   * the bundled rendezvous node (private mode authenticates a foreign network
+   * with the Noise secret proof, which is only exchanged in secure mode) and
+   * for every credential-mode device (the Noise key is the credential).
    */
   secureMode?: boolean;
+  /**
+   * Credential-mode member identity: the X25519 private key that becomes
+   * `secure_mode.local_private_key`. Presence also means "no network secret".
+   */
+  memberCredentialSecret?: string;
+  /**
+   * Credential-mode anchor trust root: every active member credential. The
+   * anchor publishes the derived public keys over OSPF (HMAC-signed with the
+   * network secret), which is what lets members join through a rendezvous
+   * node.
+   */
+  managedCredentials?: manage.ManagedCredentialConfig[];
 }
 
 /** Turns a stored revision into the protobuf config pushed to the client. */
@@ -157,6 +173,9 @@ export function buildNetworkConfig(
   return {
     ...base,
     exitNodes: [],
+    ...(options.managedCredentials !== undefined
+      ? { managedCredentials: options.managedCredentials }
+      : {}),
     ...(options.stored.mtu !== undefined ? { mtu: options.stored.mtu } : {}),
     ...(options.stored.disableP2p !== undefined
       ? { disableP2p: options.stored.disableP2p }
@@ -165,7 +184,16 @@ export function buildNetworkConfig(
       ? { latencyFirst: options.stored.latencyFirst }
       : {}),
     ...(options.p2pOnly ? { p2pOnly: true } : {}),
-    ...(options.secureMode ? { secureMode: { enabled: true } } : {}),
+    ...(options.memberCredentialSecret
+      ? {
+          secureMode: {
+            enabled: true,
+            localPrivateKey: options.memberCredentialSecret,
+          },
+        }
+      : options.secureMode
+        ? { secureMode: { enabled: true } }
+        : {}),
   };
 }
 
@@ -184,7 +212,10 @@ export function configMatchesDesired(
 ): boolean {
   if (!remote) return false;
   if (remote.networkName !== desired.networkName) return false;
-  if (remote.networkSecret !== desired.networkSecret) return false;
+  // A credential member has no secret (`undefined`/"" depending on the client
+  // path), so compare the normalised value: this also detects a device that
+  // still runs a shared-secret config after the network switched modes.
+  if ((remote.networkSecret ?? "") !== (desired.networkSecret ?? "")) return false;
   if (remote.hostname !== desired.hostname) return false;
   if (Boolean(remote.dhcp) !== Boolean(desired.dhcp)) return false;
   if (Boolean(remote.noTun) !== Boolean(desired.noTun)) return false;
@@ -200,6 +231,26 @@ export function configMatchesDesired(
   if (Boolean(remote.p2pOnly) !== Boolean(desired.p2pOnly)) return false;
   if (Boolean(remote.secureMode?.enabled) !== Boolean(desired.secureMode?.enabled)) {
     return false;
+  }
+  // Credential identity: the client reports the derived public key, so compare
+  // that instead of the private key (which we do not want to read back).
+  if (desired.secureMode?.localPrivateKey) {
+    const expected = credentialPublicKey(desired.secureMode.localPrivateKey);
+    if (remote.secureMode?.localPublicKey !== undefined) {
+      if (remote.secureMode.localPublicKey !== expected) return false;
+    } else if (remote.secureMode?.localPrivateKey !== desired.secureMode.localPrivateKey) {
+      return false;
+    }
+  }
+  // Anchor trust root: a stale managed-credential list must be repushed (this
+  // is how revoke/renew reach an anchor whose instance is still running).
+  if (
+    (desired.managedCredentials?.length ?? 0) > 0 ||
+    (remote.managedCredentials?.length ?? 0) > 0
+  ) {
+    if (!managedCredentialsMatch(remote.managedCredentials, desired.managedCredentials ?? [])) {
+      return false;
+    }
   }
 
   const sameSet = (left: readonly string[], right: readonly string[]) => {
@@ -262,7 +313,9 @@ export function describeConfigMismatch(
     }
   };
   check("networkName", remote.networkName, desired.networkName);
-  if (remote.networkSecret !== desired.networkSecret) reasons.push("networkSecret differs");
+  if ((remote.networkSecret ?? "") !== (desired.networkSecret ?? "")) {
+    reasons.push("networkSecret differs");
+  }
   check("hostname", remote.hostname, desired.hostname);
   check("dhcp", Boolean(remote.dhcp), Boolean(desired.dhcp));
   check("noTun", Boolean(remote.noTun), Boolean(desired.noTun));
@@ -279,6 +332,31 @@ export function describeConfigMismatch(
     Boolean(remote.secureMode?.enabled),
     Boolean(desired.secureMode?.enabled),
   );
+  if (desired.secureMode?.localPrivateKey) {
+    check(
+      "secureMode.localPublicKey",
+      remote.secureMode?.localPublicKey,
+      credentialPublicKey(desired.secureMode.localPrivateKey),
+    );
+  }
+  if (
+    (desired.managedCredentials?.length ?? 0) > 0 ||
+    (remote.managedCredentials?.length ?? 0) > 0
+  ) {
+    check(
+      "managedCredentials",
+      (remote.managedCredentials ?? []).map((entry) => ({
+        id: entry.credentialId,
+        expiry: String(entry.expiryUnix ?? ""),
+        groups: entry.groups,
+      })),
+      (desired.managedCredentials ?? []).map((entry) => ({
+        id: entry.credentialId,
+        expiry: String(entry.expiryUnix ?? ""),
+        groups: entry.groups,
+      })),
+    );
+  }
   check("proxyCidrs", [...(remote.proxyCidrs ?? [])].sort(), [...(desired.proxyCidrs ?? [])].sort());
   check("routes", [...(remote.routes ?? [])].sort(), [...(desired.routes ?? [])].sort());
   check("peerUrls", [...remote.peerUrls].map((u) => u.replace(/\/+$/, "")).sort(), [...desired.peerUrls].map((u) => u.replace(/\/+$/, "")).sort());

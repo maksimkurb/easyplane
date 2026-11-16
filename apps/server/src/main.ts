@@ -38,6 +38,21 @@ async function main(): Promise<void> {
   await app.listen({ host: env.host, port: env.httpPort });
   context.push.start(env.reconcileIntervalMs);
   context.topology.start();
+  // Credential renewal: once at startup, then hourly. Batched per network so
+  // one anchor repush covers all renewed keys (docs/CREDENTIALS.md).
+  void context.credentials.renewDue().catch((error: unknown) => {
+    logger.warn("credential renewal failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  });
+  const credentialRenewal = setInterval(() => {
+    void context.credentials.renewDue().catch((error: unknown) => {
+      logger.warn("credential renewal failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+  }, 3_600_000);
+  credentialRenewal.unref?.();
   const metricsServer =
     env.metricsPort !== undefined && env.metricsPort > 0
       ? await startInternalMetricsServer(context, env.metricsHost, env.metricsPort)
@@ -76,6 +91,7 @@ async function main(): Promise<void> {
     stopping = true;
     logger.info("shutting down", { signal });
     clearInterval(housekeeping);
+    clearInterval(credentialRenewal);
     if (metricsServer) await metricsServer.close();
     await context.topology.stop();
     await context.push.stop();

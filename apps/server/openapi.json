@@ -733,6 +733,67 @@
                       "p2pOnly": {
                         "type": "boolean"
                       },
+                      "access": {
+                        "type": "object",
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "enum": [
+                              "shared_secret",
+                              "credentials"
+                            ]
+                          },
+                          "anchors": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "onlineAnchors": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "members": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "activeCredentials": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "expiringCredentials": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "warnings": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "no_anchor",
+                                "no_anchor_online",
+                                "only_one_anchor",
+                                "no_members",
+                                "rendezvous_needs_anchor",
+                                "credentials_expiring"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "mode",
+                          "anchors",
+                          "onlineAnchors",
+                          "members",
+                          "activeCredentials",
+                          "expiringCredentials",
+                          "warnings"
+                        ],
+                        "additionalProperties": false
+                      },
                       "rendezvous": {
                         "type": "object",
                         "properties": {
@@ -848,6 +909,7 @@
                       "policyVersion",
                       "useRendezvous",
                       "p2pOnly",
+                      "access",
                       "rendezvous",
                       "peerPlan",
                       "createdAt",
@@ -938,6 +1000,67 @@
                     "p2pOnly": {
                       "type": "boolean"
                     },
+                    "access": {
+                      "type": "object",
+                      "properties": {
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "shared_secret",
+                            "credentials"
+                          ]
+                        },
+                        "anchors": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "onlineAnchors": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "members": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "activeCredentials": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "expiringCredentials": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "warnings": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "no_anchor",
+                              "no_anchor_online",
+                              "only_one_anchor",
+                              "no_members",
+                              "rendezvous_needs_anchor",
+                              "credentials_expiring"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "anchors",
+                        "onlineAnchors",
+                        "members",
+                        "activeCredentials",
+                        "expiringCredentials",
+                        "warnings"
+                      ],
+                      "additionalProperties": false
+                    },
                     "rendezvous": {
                       "type": "object",
                       "properties": {
@@ -1053,6 +1176,7 @@
                     "policyVersion",
                     "useRendezvous",
                     "p2pOnly",
+                    "access",
                     "rendezvous",
                     "peerPlan",
                     "createdAt",
@@ -1126,6 +1250,67 @@
                     "p2pOnly": {
                       "type": "boolean"
                     },
+                    "access": {
+                      "type": "object",
+                      "properties": {
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "shared_secret",
+                            "credentials"
+                          ]
+                        },
+                        "anchors": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "onlineAnchors": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "members": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "activeCredentials": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "expiringCredentials": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "warnings": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "no_anchor",
+                              "no_anchor_online",
+                              "only_one_anchor",
+                              "no_members",
+                              "rendezvous_needs_anchor",
+                              "credentials_expiring"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "anchors",
+                        "onlineAnchors",
+                        "members",
+                        "activeCredentials",
+                        "expiringCredentials",
+                        "warnings"
+                      ],
+                      "additionalProperties": false
+                    },
                     "rendezvous": {
                       "type": "object",
                       "properties": {
@@ -1241,6 +1426,7 @@
                     "policyVersion",
                     "useRendezvous",
                     "p2pOnly",
+                    "access",
                     "rendezvous",
                     "peerPlan",
                     "createdAt",
@@ -1349,6 +1535,67 @@
                     "p2pOnly": {
                       "type": "boolean"
                     },
+                    "access": {
+                      "type": "object",
+                      "properties": {
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "shared_secret",
+                            "credentials"
+                          ]
+                        },
+                        "anchors": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "onlineAnchors": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "members": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "activeCredentials": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "expiringCredentials": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "warnings": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "no_anchor",
+                              "no_anchor_online",
+                              "only_one_anchor",
+                              "no_members",
+                              "rendezvous_needs_anchor",
+                              "credentials_expiring"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "anchors",
+                        "onlineAnchors",
+                        "members",
+                        "activeCredentials",
+                        "expiringCredentials",
+                        "warnings"
+                      ],
+                      "additionalProperties": false
+                    },
                     "rendezvous": {
                       "type": "object",
                       "properties": {
@@ -1464,6 +1711,7 @@
                     "policyVersion",
                     "useRendezvous",
                     "p2pOnly",
+                    "access",
                     "rendezvous",
                     "peerPlan",
                     "createdAt",
@@ -1511,6 +1759,612 @@
                   },
                   "required": [
                     "status"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/access-mode/preview": {
+      "post": {
+        "operationId": "previewNetworkAccessMode",
+        "tags": [
+          "networks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "shared_secret",
+                      "credentials"
+                    ]
+                  },
+                  "anchorDeviceIds": {
+                    "maxItems": 1000,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "shared_secret",
+                        "credentials"
+                      ]
+                    },
+                    "targetMode": {
+                      "type": "string",
+                      "enum": [
+                        "shared_secret",
+                        "credentials"
+                      ]
+                    },
+                    "anchors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "deviceId": {
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "deviceId",
+                          "hostname"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "members": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "deviceId": {
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          },
+                          "hasCredential": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "deviceId",
+                          "hostname",
+                          "hasCredential"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "pendingDevices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "deviceId": {
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          },
+                          "role": {
+                            "type": "string",
+                            "enum": [
+                              "anchor",
+                              "member"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "deviceId",
+                          "hostname",
+                          "role"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "revokeCredentials": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "gainSecret": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "loseSecret": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "changes": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "mode",
+                    "targetMode",
+                    "anchors",
+                    "members",
+                    "pendingDevices",
+                    "revokeCredentials",
+                    "gainSecret",
+                    "loseSecret",
+                    "warnings",
+                    "changes"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/access-mode": {
+      "post": {
+        "operationId": "switchNetworkAccessMode",
+        "tags": [
+          "networks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "shared_secret",
+                      "credentials"
+                    ]
+                  },
+                  "anchorDeviceIds": {
+                    "maxItems": 1000,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "acknowledge": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "network": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "networkName": {
+                          "type": "string"
+                        },
+                        "ipv4Cidr": {
+                          "type": "string"
+                        },
+                        "defaultConfig": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        },
+                        "magicDnsEnabled": {
+                          "type": "boolean"
+                        },
+                        "magicDnsZone": {
+                          "type": "string"
+                        },
+                        "policyVersion": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "useRendezvous": {
+                          "type": "boolean"
+                        },
+                        "p2pOnly": {
+                          "type": "boolean"
+                        },
+                        "access": {
+                          "type": "object",
+                          "properties": {
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "shared_secret",
+                                "credentials"
+                              ]
+                            },
+                            "anchors": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "onlineAnchors": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "members": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "activeCredentials": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "expiringCredentials": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "warnings": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "no_anchor",
+                                  "no_anchor_online",
+                                  "only_one_anchor",
+                                  "no_members",
+                                  "rendezvous_needs_anchor",
+                                  "credentials_expiring"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "mode",
+                            "anchors",
+                            "onlineAnchors",
+                            "members",
+                            "activeCredentials",
+                            "expiringCredentials",
+                            "warnings"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "rendezvous": {
+                          "type": "object",
+                          "properties": {
+                            "configured": {
+                              "type": "boolean"
+                            },
+                            "useBundled": {
+                              "type": "boolean"
+                            },
+                            "secretMatches": {
+                              "nullable": true,
+                              "type": "boolean"
+                            },
+                            "endpoints": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "relayData": {
+                              "type": "boolean"
+                            },
+                            "privateMode": {
+                              "type": "boolean"
+                            },
+                            "networkName": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "configured",
+                            "useBundled",
+                            "secretMatches",
+                            "endpoints",
+                            "relayData",
+                            "privateMode",
+                            "networkName"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "peerPlan": {
+                          "type": "object",
+                          "properties": {
+                            "hubEndpoints": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "rawPeers": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "rendezvousEndpoints": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "hasPeerEndpoint": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "hubEndpoints",
+                            "rawPeers",
+                            "rendezvousEndpoints",
+                            "hasPeerEndpoint"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        },
+                        "deviceCounts": {
+                          "type": "object",
+                          "properties": {
+                            "pending": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "approved": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "blocked": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "pending",
+                            "approved",
+                            "blocked"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "networkName",
+                        "ipv4Cidr",
+                        "defaultConfig",
+                        "magicDnsEnabled",
+                        "magicDnsZone",
+                        "policyVersion",
+                        "useRendezvous",
+                        "p2pOnly",
+                        "access",
+                        "rendezvous",
+                        "peerPlan",
+                        "createdAt",
+                        "updatedAt",
+                        "deviceCounts"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "plan": {
+                      "type": "object",
+                      "properties": {
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "shared_secret",
+                            "credentials"
+                          ]
+                        },
+                        "targetMode": {
+                          "type": "string",
+                          "enum": [
+                            "shared_secret",
+                            "credentials"
+                          ]
+                        },
+                        "anchors": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "deviceId": {
+                                "type": "string"
+                              },
+                              "hostname": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "deviceId",
+                              "hostname"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "members": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "deviceId": {
+                                "type": "string"
+                              },
+                              "hostname": {
+                                "type": "string"
+                              },
+                              "hasCredential": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "deviceId",
+                              "hostname",
+                              "hasCredential"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "pendingDevices": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "deviceId": {
+                                "type": "string"
+                              },
+                              "hostname": {
+                                "type": "string"
+                              },
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "anchor",
+                                  "member"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "deviceId",
+                              "hostname",
+                              "role"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "revokeCredentials": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "gainSecret": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "loseSecret": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "warnings": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "changes": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "targetMode",
+                        "anchors",
+                        "members",
+                        "pendingDevices",
+                        "revokeCredentials",
+                        "gainSecret",
+                        "loseSecret",
+                        "warnings",
+                        "changes"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "network",
+                    "plan"
                   ],
                   "additionalProperties": false
                 }
@@ -1579,6 +2433,67 @@
                     "p2pOnly": {
                       "type": "boolean"
                     },
+                    "access": {
+                      "type": "object",
+                      "properties": {
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "shared_secret",
+                            "credentials"
+                          ]
+                        },
+                        "anchors": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "onlineAnchors": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "members": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "activeCredentials": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "expiringCredentials": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "warnings": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "no_anchor",
+                              "no_anchor_online",
+                              "only_one_anchor",
+                              "no_members",
+                              "rendezvous_needs_anchor",
+                              "credentials_expiring"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "anchors",
+                        "onlineAnchors",
+                        "members",
+                        "activeCredentials",
+                        "expiringCredentials",
+                        "warnings"
+                      ],
+                      "additionalProperties": false
+                    },
                     "rendezvous": {
                       "type": "object",
                       "properties": {
@@ -1694,6 +2609,7 @@
                     "policyVersion",
                     "useRendezvous",
                     "p2pOnly",
+                    "access",
                     "rendezvous",
                     "peerPlan",
                     "createdAt",
@@ -1776,6 +2692,12 @@
                   "type": "object",
                   "properties": {
                     "secret": {
+                      "type": "string"
+                    },
+                    "credentialsSurvive": {
+                      "type": "boolean"
+                    },
+                    "rendezvousNote": {
                       "type": "string"
                     }
                   },
@@ -2307,6 +3229,13 @@
                       "label": {
                         "type": "string"
                       },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "anchor",
+                          "member"
+                        ]
+                      },
                       "createdAt": {
                         "type": "string"
                       },
@@ -2356,6 +3285,7 @@
                       "id",
                       "networkId",
                       "label",
+                      "role",
                       "createdAt",
                       "expiresAt",
                       "maxUses",
@@ -2389,6 +3319,13 @@
                   "label": {
                     "type": "string",
                     "maxLength": 120
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "anchor",
+                      "member"
+                    ]
                   },
                   "expiresInHours": {
                     "nullable": true,
@@ -2440,6 +3377,13 @@
                         "label": {
                           "type": "string"
                         },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "anchor",
+                            "member"
+                          ]
+                        },
                         "createdAt": {
                           "type": "string"
                         },
@@ -2489,6 +3433,7 @@
                         "id",
                         "networkId",
                         "label",
+                        "role",
                         "createdAt",
                         "expiresAt",
                         "maxUses",
@@ -2552,6 +3497,13 @@
                     "label": {
                       "type": "string"
                     },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
                     "createdAt": {
                       "type": "string"
                     },
@@ -2601,6 +3553,7 @@
                     "id",
                     "networkId",
                     "label",
+                    "role",
                     "createdAt",
                     "expiresAt",
                     "maxUses",
@@ -3116,6 +4069,67 @@
                     "p2pOnly": {
                       "type": "boolean"
                     },
+                    "access": {
+                      "type": "object",
+                      "properties": {
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "shared_secret",
+                            "credentials"
+                          ]
+                        },
+                        "anchors": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "onlineAnchors": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "members": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "activeCredentials": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "expiringCredentials": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "warnings": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "no_anchor",
+                              "no_anchor_online",
+                              "only_one_anchor",
+                              "no_members",
+                              "rendezvous_needs_anchor",
+                              "credentials_expiring"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "anchors",
+                        "onlineAnchors",
+                        "members",
+                        "activeCredentials",
+                        "expiringCredentials",
+                        "warnings"
+                      ],
+                      "additionalProperties": false
+                    },
                     "rendezvous": {
                       "type": "object",
                       "properties": {
@@ -3231,6 +4245,7 @@
                     "policyVersion",
                     "useRendezvous",
                     "p2pOnly",
+                    "access",
                     "rendezvous",
                     "peerPlan",
                     "createdAt",
@@ -3506,6 +4521,107 @@
                       "isHub": {
                         "type": "boolean"
                       },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "anchor",
+                          "member"
+                        ]
+                      },
+                      "effectiveRole": {
+                        "type": "string",
+                        "enum": [
+                          "anchor",
+                          "member"
+                        ]
+                      },
+                      "knowsSecret": {
+                        "type": "boolean"
+                      },
+                      "accessMode": {
+                        "type": "string",
+                        "enum": [
+                          "shared_secret",
+                          "credentials"
+                        ]
+                      },
+                      "credential": {
+                        "nullable": true,
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "networkId": {
+                            "type": "string"
+                          },
+                          "deviceId": {
+                            "type": "string"
+                          },
+                          "credentialId": {
+                            "type": "string"
+                          },
+                          "publicKey": {
+                            "type": "string"
+                          },
+                          "groups": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "allowRelay": {
+                            "type": "boolean"
+                          },
+                          "allowedProxyCidrs": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "reusable": {
+                            "type": "boolean"
+                          },
+                          "expiry": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "revoked",
+                              "expired"
+                            ]
+                          },
+                          "revocationReason": {
+                            "type": "string"
+                          },
+                          "revokedAt": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "networkId",
+                          "deviceId",
+                          "credentialId",
+                          "publicKey",
+                          "groups",
+                          "allowRelay",
+                          "allowedProxyCidrs",
+                          "reusable",
+                          "expiry",
+                          "status",
+                          "revocationReason",
+                          "revokedAt",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      },
                       "tags": {
                         "type": "array",
                         "items": {
@@ -3587,6 +4703,11 @@
                       "ownerUserId",
                       "advertisedEndpoints",
                       "isHub",
+                      "role",
+                      "effectiveRole",
+                      "knowsSecret",
+                      "accessMode",
+                      "credential",
                       "tags",
                       "reportedState",
                       "reportedStateAt",
@@ -3739,6 +4860,107 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "effectiveRole": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "knowsSecret": {
+                      "type": "boolean"
+                    },
+                    "accessMode": {
+                      "type": "string",
+                      "enum": [
+                        "shared_secret",
+                        "credentials"
+                      ]
+                    },
+                    "credential": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "networkId": {
+                          "type": "string"
+                        },
+                        "deviceId": {
+                          "type": "string"
+                        },
+                        "credentialId": {
+                          "type": "string"
+                        },
+                        "publicKey": {
+                          "type": "string"
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "allowRelay": {
+                          "type": "boolean"
+                        },
+                        "allowedProxyCidrs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "reusable": {
+                          "type": "boolean"
+                        },
+                        "expiry": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "revoked",
+                            "expired"
+                          ]
+                        },
+                        "revocationReason": {
+                          "type": "string"
+                        },
+                        "revokedAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "networkId",
+                        "deviceId",
+                        "credentialId",
+                        "publicKey",
+                        "groups",
+                        "allowRelay",
+                        "allowedProxyCidrs",
+                        "reusable",
+                        "expiry",
+                        "status",
+                        "revocationReason",
+                        "revokedAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
                     "tags": {
                       "type": "array",
                       "items": {
@@ -3820,6 +5042,11 @@
                     "ownerUserId",
                     "advertisedEndpoints",
                     "isHub",
+                    "role",
+                    "effectiveRole",
+                    "knowsSecret",
+                    "accessMode",
+                    "credential",
                     "tags",
                     "reportedState",
                     "reportedStateAt",
@@ -3846,6 +5073,23 @@
         "tags": [
           "devices"
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "nullable": true,
+                "type": "object",
+                "properties": {
+                  "acknowledgeAnchorRisk": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
         "parameters": [
           {
             "schema": {
@@ -4029,6 +5273,107 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "effectiveRole": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "knowsSecret": {
+                      "type": "boolean"
+                    },
+                    "accessMode": {
+                      "type": "string",
+                      "enum": [
+                        "shared_secret",
+                        "credentials"
+                      ]
+                    },
+                    "credential": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "networkId": {
+                          "type": "string"
+                        },
+                        "deviceId": {
+                          "type": "string"
+                        },
+                        "credentialId": {
+                          "type": "string"
+                        },
+                        "publicKey": {
+                          "type": "string"
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "allowRelay": {
+                          "type": "boolean"
+                        },
+                        "allowedProxyCidrs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "reusable": {
+                          "type": "boolean"
+                        },
+                        "expiry": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "revoked",
+                            "expired"
+                          ]
+                        },
+                        "revocationReason": {
+                          "type": "string"
+                        },
+                        "revokedAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "networkId",
+                        "deviceId",
+                        "credentialId",
+                        "publicKey",
+                        "groups",
+                        "allowRelay",
+                        "allowedProxyCidrs",
+                        "reusable",
+                        "expiry",
+                        "status",
+                        "revocationReason",
+                        "revokedAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
                     "tags": {
                       "type": "array",
                       "items": {
@@ -4110,6 +5455,11 @@
                     "ownerUserId",
                     "advertisedEndpoints",
                     "isHub",
+                    "role",
+                    "effectiveRole",
+                    "knowsSecret",
+                    "accessMode",
+                    "credential",
                     "tags",
                     "reportedState",
                     "reportedStateAt",
@@ -4135,6 +5485,361 @@
     "/api/devices/{deviceId}/block": {
       "post": {
         "operationId": "blockDevice",
+        "tags": [
+          "devices"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "nullable": true,
+                "type": "object",
+                "properties": {
+                  "acknowledgeAnchorRisk": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "networkName": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "blocked"
+                      ]
+                    },
+                    "online": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "offline"
+                      ]
+                    },
+                    "sync": {
+                      "type": "string",
+                      "enum": [
+                        "not-applicable",
+                        "in-sync",
+                        "stale",
+                        "error"
+                      ]
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "machineId": {
+                      "type": "string"
+                    },
+                    "hostname": {
+                      "type": "string"
+                    },
+                    "dnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsZone": {
+                      "type": "string"
+                    },
+                    "magicDnsEnabled": {
+                      "type": "boolean"
+                    },
+                    "easytierVersion": {
+                      "type": "string"
+                    },
+                    "os": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "distribution": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "version",
+                        "distribution"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "sourceIp": {
+                      "type": "string"
+                    },
+                    "virtualIpv4": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "inviteId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "advertisedEndpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "isHub": {
+                      "type": "boolean"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "effectiveRole": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "knowsSecret": {
+                      "type": "boolean"
+                    },
+                    "accessMode": {
+                      "type": "string",
+                      "enum": [
+                        "shared_secret",
+                        "credentials"
+                      ]
+                    },
+                    "credential": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "networkId": {
+                          "type": "string"
+                        },
+                        "deviceId": {
+                          "type": "string"
+                        },
+                        "credentialId": {
+                          "type": "string"
+                        },
+                        "publicKey": {
+                          "type": "string"
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "allowRelay": {
+                          "type": "boolean"
+                        },
+                        "allowedProxyCidrs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "reusable": {
+                          "type": "boolean"
+                        },
+                        "expiry": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "revoked",
+                            "expired"
+                          ]
+                        },
+                        "revocationReason": {
+                          "type": "string"
+                        },
+                        "revokedAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "networkId",
+                        "deviceId",
+                        "credentialId",
+                        "publicKey",
+                        "groups",
+                        "allowRelay",
+                        "allowedProxyCidrs",
+                        "reusable",
+                        "expiry",
+                        "status",
+                        "revocationReason",
+                        "revokedAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "reportedState": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "reportedStateAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "desiredRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "policyVersion": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastSeenAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "approvedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "blockedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "networkName",
+                    "state",
+                    "online",
+                    "sync",
+                    "label",
+                    "machineId",
+                    "hostname",
+                    "dnsName",
+                    "magicDnsName",
+                    "magicDnsZone",
+                    "magicDnsEnabled",
+                    "easytierVersion",
+                    "os",
+                    "sourceIp",
+                    "virtualIpv4",
+                    "inviteId",
+                    "ownerUserId",
+                    "advertisedEndpoints",
+                    "isHub",
+                    "role",
+                    "effectiveRole",
+                    "knowsSecret",
+                    "accessMode",
+                    "credential",
+                    "tags",
+                    "reportedState",
+                    "reportedStateAt",
+                    "desiredRevision",
+                    "appliedRevision",
+                    "policyVersion",
+                    "appliedAt",
+                    "lastPushAt",
+                    "lastPushError",
+                    "lastSeenAt",
+                    "approvedAt",
+                    "blockedAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{deviceId}/credential/renew": {
+      "post": {
+        "operationId": "renewDeviceCredential",
         "tags": [
           "devices"
         ],
@@ -4261,6 +5966,107 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "effectiveRole": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "knowsSecret": {
+                      "type": "boolean"
+                    },
+                    "accessMode": {
+                      "type": "string",
+                      "enum": [
+                        "shared_secret",
+                        "credentials"
+                      ]
+                    },
+                    "credential": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "networkId": {
+                          "type": "string"
+                        },
+                        "deviceId": {
+                          "type": "string"
+                        },
+                        "credentialId": {
+                          "type": "string"
+                        },
+                        "publicKey": {
+                          "type": "string"
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "allowRelay": {
+                          "type": "boolean"
+                        },
+                        "allowedProxyCidrs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "reusable": {
+                          "type": "boolean"
+                        },
+                        "expiry": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "revoked",
+                            "expired"
+                          ]
+                        },
+                        "revocationReason": {
+                          "type": "string"
+                        },
+                        "revokedAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "networkId",
+                        "deviceId",
+                        "credentialId",
+                        "publicKey",
+                        "groups",
+                        "allowRelay",
+                        "allowedProxyCidrs",
+                        "reusable",
+                        "expiry",
+                        "status",
+                        "revocationReason",
+                        "revokedAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
                     "tags": {
                       "type": "array",
                       "items": {
@@ -4342,6 +6148,11 @@
                     "ownerUserId",
                     "advertisedEndpoints",
                     "isHub",
+                    "role",
+                    "effectiveRole",
+                    "knowsSecret",
+                    "accessMode",
+                    "credential",
                     "tags",
                     "reportedState",
                     "reportedStateAt",
@@ -4355,6 +6166,721 @@
                     "approvedAt",
                     "blockedAt",
                     "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{deviceId}/credential/revoke": {
+      "post": {
+        "operationId": "revokeDeviceCredential",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "networkName": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "blocked"
+                      ]
+                    },
+                    "online": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "offline"
+                      ]
+                    },
+                    "sync": {
+                      "type": "string",
+                      "enum": [
+                        "not-applicable",
+                        "in-sync",
+                        "stale",
+                        "error"
+                      ]
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "machineId": {
+                      "type": "string"
+                    },
+                    "hostname": {
+                      "type": "string"
+                    },
+                    "dnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsZone": {
+                      "type": "string"
+                    },
+                    "magicDnsEnabled": {
+                      "type": "boolean"
+                    },
+                    "easytierVersion": {
+                      "type": "string"
+                    },
+                    "os": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "distribution": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "version",
+                        "distribution"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "sourceIp": {
+                      "type": "string"
+                    },
+                    "virtualIpv4": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "inviteId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "advertisedEndpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "isHub": {
+                      "type": "boolean"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "effectiveRole": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "knowsSecret": {
+                      "type": "boolean"
+                    },
+                    "accessMode": {
+                      "type": "string",
+                      "enum": [
+                        "shared_secret",
+                        "credentials"
+                      ]
+                    },
+                    "credential": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "networkId": {
+                          "type": "string"
+                        },
+                        "deviceId": {
+                          "type": "string"
+                        },
+                        "credentialId": {
+                          "type": "string"
+                        },
+                        "publicKey": {
+                          "type": "string"
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "allowRelay": {
+                          "type": "boolean"
+                        },
+                        "allowedProxyCidrs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "reusable": {
+                          "type": "boolean"
+                        },
+                        "expiry": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "revoked",
+                            "expired"
+                          ]
+                        },
+                        "revocationReason": {
+                          "type": "string"
+                        },
+                        "revokedAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "networkId",
+                        "deviceId",
+                        "credentialId",
+                        "publicKey",
+                        "groups",
+                        "allowRelay",
+                        "allowedProxyCidrs",
+                        "reusable",
+                        "expiry",
+                        "status",
+                        "revocationReason",
+                        "revokedAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "reportedState": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "reportedStateAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "desiredRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "policyVersion": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastSeenAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "approvedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "blockedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "networkName",
+                    "state",
+                    "online",
+                    "sync",
+                    "label",
+                    "machineId",
+                    "hostname",
+                    "dnsName",
+                    "magicDnsName",
+                    "magicDnsZone",
+                    "magicDnsEnabled",
+                    "easytierVersion",
+                    "os",
+                    "sourceIp",
+                    "virtualIpv4",
+                    "inviteId",
+                    "ownerUserId",
+                    "advertisedEndpoints",
+                    "isHub",
+                    "role",
+                    "effectiveRole",
+                    "knowsSecret",
+                    "accessMode",
+                    "credential",
+                    "tags",
+                    "reportedState",
+                    "reportedStateAt",
+                    "desiredRevision",
+                    "appliedRevision",
+                    "policyVersion",
+                    "appliedAt",
+                    "lastPushAt",
+                    "lastPushError",
+                    "lastSeenAt",
+                    "approvedAt",
+                    "blockedAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{deviceId}/role": {
+      "put": {
+        "operationId": "setDeviceRole",
+        "tags": [
+          "devices"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "anchor",
+                      "member"
+                    ]
+                  },
+                  "acknowledge": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "role"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "device": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "networkId": {
+                          "type": "string"
+                        },
+                        "networkName": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "pending",
+                            "approved",
+                            "blocked"
+                          ]
+                        },
+                        "online": {
+                          "type": "string",
+                          "enum": [
+                            "online",
+                            "offline"
+                          ]
+                        },
+                        "sync": {
+                          "type": "string",
+                          "enum": [
+                            "not-applicable",
+                            "in-sync",
+                            "stale",
+                            "error"
+                          ]
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "machineId": {
+                          "type": "string"
+                        },
+                        "hostname": {
+                          "type": "string"
+                        },
+                        "dnsName": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "magicDnsName": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "magicDnsZone": {
+                          "type": "string"
+                        },
+                        "magicDnsEnabled": {
+                          "type": "boolean"
+                        },
+                        "easytierVersion": {
+                          "type": "string"
+                        },
+                        "os": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "string"
+                            },
+                            "distribution": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "version",
+                            "distribution"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "sourceIp": {
+                          "type": "string"
+                        },
+                        "virtualIpv4": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "inviteId": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "ownerUserId": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "advertisedEndpoints": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "isHub": {
+                          "type": "boolean"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "anchor",
+                            "member"
+                          ]
+                        },
+                        "effectiveRole": {
+                          "type": "string",
+                          "enum": [
+                            "anchor",
+                            "member"
+                          ]
+                        },
+                        "knowsSecret": {
+                          "type": "boolean"
+                        },
+                        "accessMode": {
+                          "type": "string",
+                          "enum": [
+                            "shared_secret",
+                            "credentials"
+                          ]
+                        },
+                        "credential": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "networkId": {
+                              "type": "string"
+                            },
+                            "deviceId": {
+                              "type": "string"
+                            },
+                            "credentialId": {
+                              "type": "string"
+                            },
+                            "publicKey": {
+                              "type": "string"
+                            },
+                            "groups": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "allowRelay": {
+                              "type": "boolean"
+                            },
+                            "allowedProxyCidrs": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "reusable": {
+                              "type": "boolean"
+                            },
+                            "expiry": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "active",
+                                "revoked",
+                                "expired"
+                              ]
+                            },
+                            "revocationReason": {
+                              "type": "string"
+                            },
+                            "revokedAt": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "networkId",
+                            "deviceId",
+                            "credentialId",
+                            "publicKey",
+                            "groups",
+                            "allowRelay",
+                            "allowedProxyCidrs",
+                            "reusable",
+                            "expiry",
+                            "status",
+                            "revocationReason",
+                            "revokedAt",
+                            "createdAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "tags": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "reportedState": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        },
+                        "reportedStateAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "desiredRevision": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "appliedRevision": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "policyVersion": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "appliedAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "lastPushAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "lastPushError": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "lastSeenAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "approvedAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "blockedAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "networkId",
+                        "networkName",
+                        "state",
+                        "online",
+                        "sync",
+                        "label",
+                        "machineId",
+                        "hostname",
+                        "dnsName",
+                        "magicDnsName",
+                        "magicDnsZone",
+                        "magicDnsEnabled",
+                        "easytierVersion",
+                        "os",
+                        "sourceIp",
+                        "virtualIpv4",
+                        "inviteId",
+                        "ownerUserId",
+                        "advertisedEndpoints",
+                        "isHub",
+                        "role",
+                        "effectiveRole",
+                        "knowsSecret",
+                        "accessMode",
+                        "credential",
+                        "tags",
+                        "reportedState",
+                        "reportedStateAt",
+                        "desiredRevision",
+                        "appliedRevision",
+                        "policyVersion",
+                        "appliedAt",
+                        "lastPushAt",
+                        "lastPushError",
+                        "lastSeenAt",
+                        "approvedAt",
+                        "blockedAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "needsSecretRotation": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "device",
+                    "needsSecretRotation"
                   ],
                   "additionalProperties": false
                 }
@@ -4567,6 +7093,107 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "effectiveRole": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "knowsSecret": {
+                      "type": "boolean"
+                    },
+                    "accessMode": {
+                      "type": "string",
+                      "enum": [
+                        "shared_secret",
+                        "credentials"
+                      ]
+                    },
+                    "credential": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "networkId": {
+                          "type": "string"
+                        },
+                        "deviceId": {
+                          "type": "string"
+                        },
+                        "credentialId": {
+                          "type": "string"
+                        },
+                        "publicKey": {
+                          "type": "string"
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "allowRelay": {
+                          "type": "boolean"
+                        },
+                        "allowedProxyCidrs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "reusable": {
+                          "type": "boolean"
+                        },
+                        "expiry": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "revoked",
+                            "expired"
+                          ]
+                        },
+                        "revocationReason": {
+                          "type": "string"
+                        },
+                        "revokedAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "networkId",
+                        "deviceId",
+                        "credentialId",
+                        "publicKey",
+                        "groups",
+                        "allowRelay",
+                        "allowedProxyCidrs",
+                        "reusable",
+                        "expiry",
+                        "status",
+                        "revocationReason",
+                        "revokedAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
                     "tags": {
                       "type": "array",
                       "items": {
@@ -4648,6 +7275,11 @@
                     "ownerUserId",
                     "advertisedEndpoints",
                     "isHub",
+                    "role",
+                    "effectiveRole",
+                    "knowsSecret",
+                    "accessMode",
+                    "credential",
                     "tags",
                     "reportedState",
                     "reportedStateAt",
@@ -4818,6 +7450,107 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "effectiveRole": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "knowsSecret": {
+                      "type": "boolean"
+                    },
+                    "accessMode": {
+                      "type": "string",
+                      "enum": [
+                        "shared_secret",
+                        "credentials"
+                      ]
+                    },
+                    "credential": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "networkId": {
+                          "type": "string"
+                        },
+                        "deviceId": {
+                          "type": "string"
+                        },
+                        "credentialId": {
+                          "type": "string"
+                        },
+                        "publicKey": {
+                          "type": "string"
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "allowRelay": {
+                          "type": "boolean"
+                        },
+                        "allowedProxyCidrs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "reusable": {
+                          "type": "boolean"
+                        },
+                        "expiry": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "revoked",
+                            "expired"
+                          ]
+                        },
+                        "revocationReason": {
+                          "type": "string"
+                        },
+                        "revokedAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "networkId",
+                        "deviceId",
+                        "credentialId",
+                        "publicKey",
+                        "groups",
+                        "allowRelay",
+                        "allowedProxyCidrs",
+                        "reusable",
+                        "expiry",
+                        "status",
+                        "revocationReason",
+                        "revokedAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
                     "tags": {
                       "type": "array",
                       "items": {
@@ -4899,6 +7632,11 @@
                     "ownerUserId",
                     "advertisedEndpoints",
                     "isHub",
+                    "role",
+                    "effectiveRole",
+                    "knowsSecret",
+                    "accessMode",
+                    "credential",
                     "tags",
                     "reportedState",
                     "reportedStateAt",
@@ -5245,6 +7983,107 @@
                         "isHub": {
                           "type": "boolean"
                         },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "anchor",
+                            "member"
+                          ]
+                        },
+                        "effectiveRole": {
+                          "type": "string",
+                          "enum": [
+                            "anchor",
+                            "member"
+                          ]
+                        },
+                        "knowsSecret": {
+                          "type": "boolean"
+                        },
+                        "accessMode": {
+                          "type": "string",
+                          "enum": [
+                            "shared_secret",
+                            "credentials"
+                          ]
+                        },
+                        "credential": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "networkId": {
+                              "type": "string"
+                            },
+                            "deviceId": {
+                              "type": "string"
+                            },
+                            "credentialId": {
+                              "type": "string"
+                            },
+                            "publicKey": {
+                              "type": "string"
+                            },
+                            "groups": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "allowRelay": {
+                              "type": "boolean"
+                            },
+                            "allowedProxyCidrs": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "reusable": {
+                              "type": "boolean"
+                            },
+                            "expiry": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "active",
+                                "revoked",
+                                "expired"
+                              ]
+                            },
+                            "revocationReason": {
+                              "type": "string"
+                            },
+                            "revokedAt": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "networkId",
+                            "deviceId",
+                            "credentialId",
+                            "publicKey",
+                            "groups",
+                            "allowRelay",
+                            "allowedProxyCidrs",
+                            "reusable",
+                            "expiry",
+                            "status",
+                            "revocationReason",
+                            "revokedAt",
+                            "createdAt"
+                          ],
+                          "additionalProperties": false
+                        },
                         "tags": {
                           "type": "array",
                           "items": {
@@ -5326,6 +8165,11 @@
                         "ownerUserId",
                         "advertisedEndpoints",
                         "isHub",
+                        "role",
+                        "effectiveRole",
+                        "knowsSecret",
+                        "accessMode",
+                        "credential",
                         "tags",
                         "reportedState",
                         "reportedStateAt",
@@ -5567,6 +8411,107 @@
                         "isHub": {
                           "type": "boolean"
                         },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "anchor",
+                            "member"
+                          ]
+                        },
+                        "effectiveRole": {
+                          "type": "string",
+                          "enum": [
+                            "anchor",
+                            "member"
+                          ]
+                        },
+                        "knowsSecret": {
+                          "type": "boolean"
+                        },
+                        "accessMode": {
+                          "type": "string",
+                          "enum": [
+                            "shared_secret",
+                            "credentials"
+                          ]
+                        },
+                        "credential": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "networkId": {
+                              "type": "string"
+                            },
+                            "deviceId": {
+                              "type": "string"
+                            },
+                            "credentialId": {
+                              "type": "string"
+                            },
+                            "publicKey": {
+                              "type": "string"
+                            },
+                            "groups": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "allowRelay": {
+                              "type": "boolean"
+                            },
+                            "allowedProxyCidrs": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "reusable": {
+                              "type": "boolean"
+                            },
+                            "expiry": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "active",
+                                "revoked",
+                                "expired"
+                              ]
+                            },
+                            "revocationReason": {
+                              "type": "string"
+                            },
+                            "revokedAt": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "networkId",
+                            "deviceId",
+                            "credentialId",
+                            "publicKey",
+                            "groups",
+                            "allowRelay",
+                            "allowedProxyCidrs",
+                            "reusable",
+                            "expiry",
+                            "status",
+                            "revocationReason",
+                            "revokedAt",
+                            "createdAt"
+                          ],
+                          "additionalProperties": false
+                        },
                         "tags": {
                           "type": "array",
                           "items": {
@@ -5648,6 +8593,11 @@
                         "ownerUserId",
                         "advertisedEndpoints",
                         "isHub",
+                        "role",
+                        "effectiveRole",
+                        "knowsSecret",
+                        "accessMode",
+                        "credential",
                         "tags",
                         "reportedState",
                         "reportedStateAt",
@@ -6923,6 +9873,107 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "effectiveRole": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "knowsSecret": {
+                      "type": "boolean"
+                    },
+                    "accessMode": {
+                      "type": "string",
+                      "enum": [
+                        "shared_secret",
+                        "credentials"
+                      ]
+                    },
+                    "credential": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "networkId": {
+                          "type": "string"
+                        },
+                        "deviceId": {
+                          "type": "string"
+                        },
+                        "credentialId": {
+                          "type": "string"
+                        },
+                        "publicKey": {
+                          "type": "string"
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "allowRelay": {
+                          "type": "boolean"
+                        },
+                        "allowedProxyCidrs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "reusable": {
+                          "type": "boolean"
+                        },
+                        "expiry": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "revoked",
+                            "expired"
+                          ]
+                        },
+                        "revocationReason": {
+                          "type": "string"
+                        },
+                        "revokedAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "networkId",
+                        "deviceId",
+                        "credentialId",
+                        "publicKey",
+                        "groups",
+                        "allowRelay",
+                        "allowedProxyCidrs",
+                        "reusable",
+                        "expiry",
+                        "status",
+                        "revocationReason",
+                        "revokedAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
                     "tags": {
                       "type": "array",
                       "items": {
@@ -7004,6 +10055,11 @@
                     "ownerUserId",
                     "advertisedEndpoints",
                     "isHub",
+                    "role",
+                    "effectiveRole",
+                    "knowsSecret",
+                    "accessMode",
+                    "credential",
                     "tags",
                     "reportedState",
                     "reportedStateAt",
@@ -7292,6 +10348,107 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "effectiveRole": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "knowsSecret": {
+                      "type": "boolean"
+                    },
+                    "accessMode": {
+                      "type": "string",
+                      "enum": [
+                        "shared_secret",
+                        "credentials"
+                      ]
+                    },
+                    "credential": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "networkId": {
+                          "type": "string"
+                        },
+                        "deviceId": {
+                          "type": "string"
+                        },
+                        "credentialId": {
+                          "type": "string"
+                        },
+                        "publicKey": {
+                          "type": "string"
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "allowRelay": {
+                          "type": "boolean"
+                        },
+                        "allowedProxyCidrs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "reusable": {
+                          "type": "boolean"
+                        },
+                        "expiry": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "revoked",
+                            "expired"
+                          ]
+                        },
+                        "revocationReason": {
+                          "type": "string"
+                        },
+                        "revokedAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "networkId",
+                        "deviceId",
+                        "credentialId",
+                        "publicKey",
+                        "groups",
+                        "allowRelay",
+                        "allowedProxyCidrs",
+                        "reusable",
+                        "expiry",
+                        "status",
+                        "revocationReason",
+                        "revokedAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
                     "tags": {
                       "type": "array",
                       "items": {
@@ -7373,6 +10530,11 @@
                     "ownerUserId",
                     "advertisedEndpoints",
                     "isHub",
+                    "role",
+                    "effectiveRole",
+                    "knowsSecret",
+                    "accessMode",
+                    "credential",
                     "tags",
                     "reportedState",
                     "reportedStateAt",
@@ -7546,6 +10708,107 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "effectiveRole": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "knowsSecret": {
+                      "type": "boolean"
+                    },
+                    "accessMode": {
+                      "type": "string",
+                      "enum": [
+                        "shared_secret",
+                        "credentials"
+                      ]
+                    },
+                    "credential": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "networkId": {
+                          "type": "string"
+                        },
+                        "deviceId": {
+                          "type": "string"
+                        },
+                        "credentialId": {
+                          "type": "string"
+                        },
+                        "publicKey": {
+                          "type": "string"
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "allowRelay": {
+                          "type": "boolean"
+                        },
+                        "allowedProxyCidrs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "reusable": {
+                          "type": "boolean"
+                        },
+                        "expiry": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "revoked",
+                            "expired"
+                          ]
+                        },
+                        "revocationReason": {
+                          "type": "string"
+                        },
+                        "revokedAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "networkId",
+                        "deviceId",
+                        "credentialId",
+                        "publicKey",
+                        "groups",
+                        "allowRelay",
+                        "allowedProxyCidrs",
+                        "reusable",
+                        "expiry",
+                        "status",
+                        "revocationReason",
+                        "revokedAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
                     "tags": {
                       "type": "array",
                       "items": {
@@ -7627,6 +10890,11 @@
                     "ownerUserId",
                     "advertisedEndpoints",
                     "isHub",
+                    "role",
+                    "effectiveRole",
+                    "knowsSecret",
+                    "accessMode",
+                    "credential",
                     "tags",
                     "reportedState",
                     "reportedStateAt",

@@ -1,6 +1,14 @@
 import { z } from "zod";
 
 export const roleSchema = z.enum(["admin", "member", "viewer"]);
+/**
+ * Inline enums (no shared constant): zod-to-openapi + orval otherwise emit the
+ * same named enum into one file twice when it is used by two object schemas.
+ */
+const accessModeEnum = () => z.enum(["shared_secret", "credentials"]);
+const deviceRoleEnum = () => z.enum(["anchor", "member"]);
+export const accessModeSchema = accessModeEnum();
+export const deviceRoleSchema = deviceRoleEnum();
 export const deviceStateSchema = z.enum(["pending", "approved", "blocked"]);
 export const syncStateSchema = z.enum([
   "not-applicable",
@@ -59,6 +67,42 @@ export const rendezvousSchema = z.object({
   secretComparisonAvailable: z.boolean(),
 });
 
+export const networkAccessSchema = z.object({
+  mode: accessModeEnum(),
+  anchors: z.number().int(),
+  onlineAnchors: z.number().int(),
+  members: z.number().int(),
+  activeCredentials: z.number().int(),
+  expiringCredentials: z.number().int(),
+  warnings: z.array(
+    z.enum([
+      "no_anchor",
+      "no_anchor_online",
+      "only_one_anchor",
+      "no_members",
+      "rendezvous_needs_anchor",
+      "credentials_expiring",
+    ]),
+  ),
+});
+
+export const credentialSchema = z.object({
+  id: z.string(),
+  networkId: z.string(),
+  deviceId: z.string(),
+  credentialId: z.string(),
+  publicKey: z.string(),
+  groups: z.array(z.string()),
+  allowRelay: z.boolean(),
+  allowedProxyCidrs: z.array(z.string()),
+  reusable: z.boolean(),
+  expiry: z.string(),
+  status: z.enum(["active", "revoked", "expired"]),
+  revocationReason: z.string(),
+  revokedAt: z.string().nullable(),
+  createdAt: z.string(),
+});
+
 export const networkSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -70,6 +114,7 @@ export const networkSchema = z.object({
   policyVersion: z.number().int(),
   useRendezvous: z.boolean(),
   p2pOnly: z.boolean(),
+  access: networkAccessSchema,
   rendezvous: networkRendezvousSchema,
   peerPlan: networkPeerPlanSchema,
   createdAt: z.string(),
@@ -81,6 +126,7 @@ export const inviteSchema = z.object({
   id: z.string(),
   networkId: z.string(),
   label: z.string(),
+  role: deviceRoleEnum(),
   createdAt: z.string(),
   expiresAt: z.string().nullable(),
   maxUses: z.number().int().nullable(),
@@ -118,6 +164,11 @@ export const deviceSchema = z.object({
   ownerUserId: z.string().nullable(),
   advertisedEndpoints: z.array(z.string()),
   isHub: z.boolean(),
+  role: deviceRoleEnum(),
+  effectiveRole: deviceRoleEnum(),
+  knowsSecret: z.boolean(),
+  accessMode: accessModeEnum(),
+  credential: credentialSchema.nullable(),
   tags: z.array(z.string()),
   reportedState: z.record(z.string(), z.unknown()),
   reportedStateAt: z.string().nullable(),
@@ -277,6 +328,8 @@ export const createNetworkSchema = z
 export const createInviteSchema = z
   .object({
     label: z.string().max(120).optional(),
+    /** Role the enrolled device gets in a credentials network. */
+    role: deviceRoleEnum().optional(),
     expiresInHours: z.number().int().min(1).max(8760).nullable().optional(),
     maxUses: z.number().int().min(1).max(10_000).nullable().optional(),
   })
@@ -290,6 +343,83 @@ export const createInviteResponseSchema = z.object({
 export const approveDeviceSchema = z
   .object({ virtualIpv4: z.string().optional() })
   .strict();
+
+/** Body for block/delete: an anchor knows the secret, so removal is explicit. */
+export const acknowledgeAnchorRiskSchema = z
+  .object({ acknowledgeAnchorRisk: z.boolean().optional() })
+  .strict()
+  // Fastify validates an absent body as `null`; allow it so block/delete keep
+  // working without a body (the acknowledgement is opt-in).
+  .nullable();
+
+export const accessModePreviewSchema = z
+  .object({
+    mode: accessModeEnum(),
+    /** Devices that keep (credentials) or gain the secret. */
+    anchorDeviceIds: z.array(z.string().uuid()).max(1000).optional(),
+  })
+  .strict();
+
+export const switchAccessModeSchema = z
+  .object({
+    mode: accessModeEnum(),
+    anchorDeviceIds: z.array(z.string().uuid()).max(1000).optional(),
+    /** Required for credentials -> shared_secret (blast radius). */
+    acknowledge: z.boolean().optional(),
+  })
+  .strict();
+
+export const accessModePlanSchema = z.object({
+  mode: accessModeEnum(),
+  targetMode: accessModeEnum(),
+  anchors: z.array(z.object({ deviceId: z.string(), hostname: z.string() })),
+  members: z.array(
+    z.object({
+      deviceId: z.string(),
+      hostname: z.string(),
+      hasCredential: z.boolean(),
+    }),
+  ),
+  pendingDevices: z.array(
+    z.object({
+      deviceId: z.string(),
+      hostname: z.string(),
+      role: deviceRoleEnum(),
+    }),
+  ),
+  revokeCredentials: z.number().int(),
+  gainSecret: z.number().int(),
+  loseSecret: z.number().int(),
+  warnings: z.array(z.string()),
+  changes: z.boolean(),
+});
+
+export const switchAccessModeResponseSchema = z.object({
+  network: networkSchema,
+  plan: accessModePlanSchema,
+});
+
+export const setDeviceRoleSchema = z
+  .object({
+    role: deviceRoleEnum(),
+    /** Accept that a demoted anchor still knows the secret. */
+    acknowledge: z.boolean().optional(),
+  })
+  .strict();
+
+export const setDeviceRoleResponseSchema = z.object({
+  device: deviceSchema,
+  /** True when anchor -> member requires a network secret rotation. */
+  needsSecretRotation: z.boolean(),
+});
+
+export const rotateNetworkSecretResponseSchema = z.object({
+  secret: z.string(),
+  /** Credentials survive a rotation; members do not need to re-enrol. */
+  credentialsSurvive: z.boolean().optional(),
+  /** The bundled rendezvous node must use the same secret. */
+  rendezvousNote: z.string().optional(),
+});
 
 export const createRevisionSchema = z
   .object({

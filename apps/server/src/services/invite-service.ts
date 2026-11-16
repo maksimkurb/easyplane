@@ -2,7 +2,9 @@ import type { DbExecutor } from "../db/repositories.js";
 import {
   findInviteByTokenHash,
   getInvite,
+  getNetworkById,
   insertInvite,
+  listApprovedDevicesByRole,
   listInvites,
   revokeInvite,
 } from "../db/repositories.js";
@@ -10,7 +12,7 @@ import type { Invite } from "../db/schema.js";
 import { evaluateInvite } from "../domain/invite.js";
 import { randomToken, sha256Hex } from "../security/crypto.js";
 import type { AuditService } from "./audit.js";
-import { invalid, notFound } from "./errors.js";
+import { conflict, invalid, notFound } from "./errors.js";
 
 export type InviteStatus = "active" | "expired" | "exhausted" | "revoked";
 
@@ -18,6 +20,8 @@ export interface InviteDto {
   id: string;
   networkId: string;
   label: string;
+  /** Role a new device enrolled with this invite gets (credentials mode). */
+  role: "anchor" | "member";
   createdAt: string;
   expiresAt: string | null;
   maxUses: number | null;
@@ -51,6 +55,7 @@ function toDto(invite: Invite, now: Date): InviteDto {
     id: invite.id,
     networkId: invite.networkId,
     label: invite.label,
+    role: invite.role,
     createdAt: invite.createdAt.toISOString(),
     expiresAt: invite.expiresAt?.toISOString() ?? null,
     maxUses: invite.maxUses,
@@ -74,6 +79,7 @@ export class InviteService {
     networkId: string;
     userId: string;
     label?: string;
+    role?: "anchor" | "member";
     expiresInHours?: number | null;
     maxUses?: number | null;
   }): Promise<{ invite: InviteDto; token: string }> {
@@ -87,12 +93,29 @@ export class InviteService {
       invalid("expiresInHours must be between 1 and 8760, or null");
     }
 
+    const network = await getNetworkById(this.db, input.networkId);
+    if (!network || network.orgId !== input.orgId) notFound("network not found");
+    const role = input.role ?? "anchor";
+    if (role === "member" && network.accessMode === "credentials") {
+      const anchors = await listApprovedDevicesByRole(
+        this.db,
+        network.id,
+        "anchor",
+      );
+      if (anchors.length === 0) {
+        conflict(
+          "this credentials network has no anchor yet: the first device must be an anchor " +
+            "(it holds the network secret and publishes the trusted credential list)",
+        );
+      }
+    }
     const token = randomToken(24);
     const invite = await insertInvite(this.db, {
       orgId: input.orgId,
       networkId: input.networkId,
       tokenHash: sha256Hex(token),
       label: input.label?.trim() ?? "",
+      role,
       expiresAt:
         expiresInHours === null
           ? null
@@ -108,6 +131,7 @@ export class InviteService {
       targetId: invite.id,
       metadata: {
         networkId: input.networkId,
+        role: invite.role,
         maxUses,
         expiresAt: invite.expiresAt?.toISOString() ?? null,
         label: invite.label,

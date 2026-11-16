@@ -11,7 +11,8 @@ import { acl, manage } from "@easyplane/proto";
 export interface MinimalNetworkConfigOptions {
   instanceId: string;
   networkName: string;
-  networkSecret: string;
+  /** Omitted for credential members: they have no network secret. */
+  networkSecret?: string;
   hostname: string;
   virtualIpv4?: string;
   networkLength?: number;

@@ -18,6 +18,11 @@ import {
   describeConfigMismatch,
   normalizeDesiredConfig,
 } from "../domain/desired-config.js";
+import {
+  buildManagedCredentials,
+  effectiveRole,
+  type CredentialMaterial,
+} from "../domain/credentials.js";
 import { formatIpv4, parseIpv4 } from "../domain/ip.js";
 import { compilePeerUrls } from "../domain/peers.js";
 import {
@@ -78,6 +83,16 @@ export interface PushServiceOptions {
    * list of a network that opted in (`networks.use_rendezvous`).
    */
   rendezvousEndpoints?: readonly string[];
+  /**
+   * Credential-mode hooks (docs/CREDENTIALS.md). Wired to CredentialService.
+   * An anchor receives every active member credential in
+   * `managed_credentials`; a member receives only its own X25519 key and no
+   * network secret.
+   */
+  credentials?: {
+    publishableMaterial: (networkId: string) => Promise<CredentialMaterial[]>;
+    memberMaterial: (deviceId: string) => Promise<CredentialMaterial | null>;
+  };
 }
 
 function sleep(ms: number): Promise<void> {
@@ -270,6 +285,25 @@ export class PushService {
       this.aclFor(network, device, policyVersion),
       listNetworkPeerRecords(this.options.db, network.id),
     ]);
+    const role = effectiveRole(network.accessMode, device.role);
+    const credentialMode = network.accessMode === "credentials";
+    let managedCredentials: manage.ManagedCredentialConfig[] | undefined;
+    let memberCredentialSecret: string | undefined;
+    if (credentialMode && this.options.credentials) {
+      if (role === "anchor") {
+        managedCredentials = buildManagedCredentials(
+          await this.options.credentials.publishableMaterial(network.id),
+        );
+      } else {
+        const material = await this.options.credentials.memberMaterial(device.id);
+        if (!material) {
+          throw new Error(
+            "device credential is revoked or expired; it cannot join until a new credential is issued",
+          );
+        }
+        memberCredentialSecret = material.secret;
+      }
+    }
     // Peer URLs are network state compiled per device: the target's own hub
     // entry is excluded by device id (and machine id), so a hub is a listener
     // and never dials its own advertised endpoint.
@@ -303,6 +337,7 @@ export class PushService {
       approvedRoutes,
       compiledAcl,
       peerUrls,
+      { managedCredentials, memberCredentialSecret, role },
     );
   }
 
@@ -314,15 +349,28 @@ export class PushService {
     approvedRoutes: Awaited<ReturnType<typeof approvedRoutesForNetwork>>,
     compiledAcl: acl.Acl | undefined,
     peerUrls: string[],
+    credentials: {
+      managedCredentials?: manage.ManagedCredentialConfig[];
+      memberCredentialSecret?: string;
+      role: "anchor" | "member";
+    },
   ): manage.NetworkConfig {
     const stored = normalizeDesiredConfig(rawConfig);
+    const credentialMode = network.accessMode === "credentials";
     return buildNetworkConfig({
       networkId: network.id,
       deviceId: device.id,
       instanceId: instanceIdFor(network.id, device.id),
       hostname: device.dnsName ?? (device.hostname || "easyplane-device"),
       networkName: network.networkName,
-      networkSecret: this.options.secretBox.decrypt(network.secretCiphertext),
+      // A credential member must not receive the secret: `gen_config` only
+      // takes the credential path when `network_secret` is absent.
+      networkSecret:
+        credentialMode && credentials.role === "member"
+          ? undefined
+          : this.options.secretBox.decrypt(network.secretCiphertext),
+      managedCredentials: credentials.managedCredentials,
+      memberCredentialSecret: credentials.memberCredentialSecret,
       stored,
       peerUrls,
       assignedIpv4: device.virtualIpv4,
@@ -335,7 +383,10 @@ export class PushService {
         : [],
       acl: compiledAcl,
       p2pOnly: network.p2pOnly,
-      secureMode: network.useRendezvous,
+      // Credential mode always needs secure mode: it carries the Noise key
+      // that *is* the credential. The rendezvous node needs it for the
+      // shared-secret proof.
+      secureMode: network.useRendezvous || credentialMode,
     });
   }
 

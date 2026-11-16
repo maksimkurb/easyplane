@@ -4,6 +4,7 @@ import type { DbExecutor } from "../db/repositories.js";
 import {
   compactNetworkPeerPositions,
   deleteNetwork,
+  getDeviceById,
   deleteNetworkPeer,
   getDevice,
   getNetwork,
@@ -20,8 +21,14 @@ import {
   updateNetworkPeer,
   usedVirtualIps,
 } from "../db/repositories.js";
-import type { Device, Network, NetworkPeer } from "../db/schema.js";
+import type {
+  Device,
+  Network,
+  NetworkAccessMode,
+  NetworkPeer,
+} from "../db/schema.js";
 import type { RendezvousConfig } from "../env.js";
+import type { Logger } from "../logger.js";
 import { parseCidr } from "../domain/ip.js";
 import { normalizeDnsZone } from "../domain/magic-dns.js";
 import { normalizeDesiredConfig } from "../domain/desired-config.js";
@@ -39,6 +46,10 @@ import {
 import type { RealtimeHub } from "../realtime/hub.js";
 import type { SecretBox } from "../security/crypto.js";
 import type { AuditService } from "./audit.js";
+import type {
+  CredentialMigrationPlan,
+  CredentialService,
+} from "./credential-service.js";
 import { AppError, conflict, invalid, notFound } from "./errors.js";
 
 export interface NetworkDto {
@@ -54,6 +65,8 @@ export interface NetworkDto {
   useRendezvous: boolean;
   /** Every device is pushed `p2p_only` (advanced; no relay fallback). */
   p2pOnly: boolean;
+  /** Read-only credential/anchor state for the access-mode card. */
+  access: NetworkAccessDto;
   /** Read-only bundled rendezvous state for this network. */
   rendezvous: NetworkRendezvousDto;
   /** What the compiled peer list can contain, for the "no dial target" warning. */
@@ -76,6 +89,32 @@ export interface NetworkRendezvousDto {
   relayData: boolean;
   privateMode: boolean;
   networkName: string | null;
+}
+
+export interface NetworkAccessDto {
+  mode: NetworkAccessMode;
+  /** Approved anchors (hold the network secret). */
+  anchors: number;
+  /** Approved anchors that are online right now. */
+  onlineAnchors: number;
+  /** Approved members (credential networks only). */
+  members: number;
+  activeCredentials: number;
+  /** Credentials that will be renewed in the next window. */
+  expiringCredentials: number;
+  /**
+   * Machine-readable warnings the UI renders in the operator's language.
+   * `no_anchor_online` is the important one: without an anchor no new member
+   * can join through a rendezvous node.
+   */
+  warnings: Array<
+    | "no_anchor"
+    | "no_anchor_online"
+    | "only_one_anchor"
+    | "no_members"
+    | "rendezvous_needs_anchor"
+    | "credentials_expiring"
+  >;
 }
 
 export interface NetworkPeerPlanDto {
@@ -121,6 +160,7 @@ function toDto(
   counts: { pending: number; approved: number; blocked: number },
   rendezvous: NetworkRendezvousDto,
   peerPlan: NetworkPeerPlanDto,
+  access: NetworkAccessDto,
 ): NetworkDto {
   return {
     id: network.id,
@@ -133,6 +173,7 @@ function toDto(
     policyVersion: network.policyVersion,
     useRendezvous: network.useRendezvous,
     p2pOnly: network.p2pOnly,
+    access,
     rendezvous,
     peerPlan,
     createdAt: network.createdAt.toISOString(),
@@ -174,6 +215,11 @@ export class NetworkService {
     private readonly rendezvous: RendezvousConfig,
     /** Live browser fan-out; optional so unit tests can omit it. */
     private readonly realtime?: RealtimeHub,
+    /** Credential lifecycle; optional in unit tests. */
+    private readonly credentials?: CredentialService,
+    /** Online check for anchor warnings; defaults to "unknown/offline". */
+    private readonly isDeviceOnline: (deviceId: string) => boolean = () => false,
+    private readonly logger?: Logger,
   ) {}
 
   /** Read-only bundled rendezvous state, safe for every authenticated role. */
@@ -231,12 +277,45 @@ export class NetworkService {
     };
   }
 
+  private async accessFor(network: Network): Promise<NetworkAccessDto> {
+    const devices = await listDevicesInNetwork(this.db, network.id);
+    const approved = devices.filter((device) => device.state === "approved");
+    const anchors = approved.filter((device) => device.role === "anchor");
+    const onlineAnchors = anchors.filter((device) =>
+      this.isDeviceOnline(device.id),
+    );
+    const summary = this.credentials
+      ? await this.credentials.anchorSummary(network.id)
+      : { anchors: 0, members: 0, activeCredentials: 0, expiringSoon: 0 };
+    const warnings: NetworkAccessDto["warnings"] = [];
+    if (network.accessMode === "credentials") {
+      if (anchors.length === 0) warnings.push("no_anchor");
+      else if (onlineAnchors.length === 0) warnings.push("no_anchor_online");
+      if (anchors.length === 1) warnings.push("only_one_anchor");
+      if (summary.members === 0 && approved.length > 0) warnings.push("no_members");
+      if (network.useRendezvous) warnings.push("rendezvous_needs_anchor");
+      if (summary.expiringSoon > 0) warnings.push("credentials_expiring");
+    }
+    return {
+      mode: network.accessMode,
+      anchors: anchors.length,
+      onlineAnchors: onlineAnchors.length,
+      members: summary.members,
+      activeCredentials: summary.activeCredentials,
+      expiringCredentials: summary.expiringSoon,
+      warnings,
+    };
+  }
+
   private async dto(
     network: Network,
     counts: { pending: number; approved: number; blocked: number },
   ): Promise<NetworkDto> {
-    const [peerPlan] = await Promise.all([this.peerPlanFor(network)]);
-    return toDto(network, counts, this.rendezvousFor(network), peerPlan);
+    const [peerPlan, access] = await Promise.all([
+      this.peerPlanFor(network),
+      this.accessFor(network),
+    ]);
+    return toDto(network, counts, this.rendezvousFor(network), peerPlan, access);
   }
 
   async create(input: {
@@ -851,6 +930,215 @@ export class NetworkService {
       data: { networkId: id, reason: "rendezvous-secret-aligned" },
     });
     return this.dto(updated, await networkDeviceCounts(this.db, id));
+  }
+
+  /**
+   * Guided migration between access modes (docs/CREDENTIALS.md).
+   *
+   * `shared_secret -> credentials`: the chosen devices stay anchors (they keep
+   * the secret); every other approved device becomes a member and receives a
+   * fresh credential. The preview lists exactly who gains/loses the secret and
+   * warns about the first-anchor rule and the rendezvous dependency.
+   *
+   * `credentials -> shared_secret`: every device gains the network secret,
+   * which is the largest possible blast radius; all credentials are revoked
+   * but the keys that were already deployed cannot be unlearnt.
+   */
+  async previewAccessMode(input: {
+    orgId: string;
+    networkId: string;
+    targetMode: NetworkAccessMode;
+    anchorDeviceIds?: readonly string[];
+  }): Promise<CredentialMigrationPlan> {
+    const network = await this.requireNetwork(input.orgId, input.networkId);
+    if (!this.credentials) {
+      conflict("credential support is not available in this deployment");
+    }
+    return this.credentials.previewMigration({
+      network,
+      targetMode: input.targetMode,
+      anchorDeviceIds: input.anchorDeviceIds,
+    });
+  }
+
+  async switchAccessMode(input: {
+    orgId: string;
+    userId: string;
+    networkId: string;
+    targetMode: NetworkAccessMode;
+    anchorDeviceIds?: readonly string[];
+    acknowledge?: boolean;
+  }): Promise<{ network: NetworkDto; plan: CredentialMigrationPlan }> {
+    const network = await this.requireNetwork(input.orgId, input.networkId);
+    if (!this.credentials) {
+      conflict("credential support is not available in this deployment");
+    }
+    if (network.accessMode === input.targetMode) {
+      // Re-running the switch is the documented repair path: a previous run
+      // that failed after flipping the mode leaves some members without a
+      // credential, and this issues what is missing.
+      if (input.targetMode === "credentials") {
+        const approved = await listDevicesInNetwork(this.db, network.id);
+        for (const device of approved) {
+          if (device.state !== "approved" || device.role !== "member") continue;
+          try {
+            await this.credentials.issueForDevice({
+              network,
+              device,
+              userId: input.userId,
+              reason: "access mode repair",
+            });
+          } catch (error) {
+            this.logIssueFailure(network.id, device.id, error);
+          }
+        }
+      }
+      const plan = await this.credentials.previewMigration({
+        network,
+        targetMode: input.targetMode,
+        anchorDeviceIds: input.anchorDeviceIds,
+      });
+      return {
+        network: await this.dto(
+          network,
+          await networkDeviceCounts(this.db, network.id),
+        ),
+        plan,
+      };
+    }
+    const plan = await this.credentials.previewMigration({
+      network,
+      targetMode: input.targetMode,
+      anchorDeviceIds: input.anchorDeviceIds,
+    });
+    if (input.targetMode === "shared_secret" && !input.acknowledge) {
+      conflict(
+        "switching back to a shared secret gives every device the network secret. " +
+          "Repeat with acknowledge=true to confirm.",
+      );
+    }
+    const updated = await updateNetwork(this.db, network.id, {
+      accessMode: input.targetMode,
+    });
+    if (!updated) notFound("network not found");
+    const approved = await listDevicesInNetwork(this.db, network.id);
+    const anchorIds = new Set(plan.anchors.map((anchor) => anchor.deviceId));
+
+    if (input.targetMode === "credentials") {
+      for (const device of approved) {
+        if (device.state !== "approved") continue;
+        const role = anchorIds.has(device.id) ? "anchor" : "member";
+        if (device.role === role) continue;
+        await updateDevice(this.db, device.id, { role });
+        if (role === "anchor") {
+          // A promoted device holds the secret now; the key is not needed.
+          await this.credentials.revokeForDevice({
+            orgId: input.orgId,
+            userId: input.userId,
+            deviceId: device.id,
+            reason: "access mode switched to credentials: device is an anchor",
+          });
+        }
+      }
+      const members = await listDevicesInNetwork(this.db, network.id);
+      for (const device of members) {
+        if (device.state !== "approved" || device.role !== "member") continue;
+        try {
+          await this.credentials.issueForDevice({
+            network: updated,
+            device,
+            userId: input.userId,
+            reason: "access mode switched to credentials",
+          });
+        } catch (error) {
+          // One failed key must not abort the migration; the retry path above
+          // issues what is missing, and the device shows a push error.
+          this.logIssueFailure(network.id, device.id, error);
+        }
+      }
+    } else {
+      await this.credentials.revokeAllForNetwork({
+        network: updated,
+        userId: input.userId,
+        reason: "access mode switched back to a shared secret",
+      });
+    }
+
+    await this.audit.record({
+      orgId: input.orgId,
+      actorUserId: input.userId,
+      action: "network.access_mode_changed",
+      targetType: "network",
+      targetId: network.id,
+      metadata: {
+        from: network.accessMode,
+        to: input.targetMode,
+        anchors: plan.anchors.map((anchor) => anchor.deviceId),
+        members: plan.members.length,
+        revokedCredentials: plan.revokeCredentials,
+        warnings: plan.warnings,
+        acknowledged: Boolean(input.acknowledge),
+      },
+    });
+    this.realtime?.publish({
+      type: "network.updated",
+      orgId: input.orgId,
+      networkId: network.id,
+      data: { networkId: network.id, reason: "access-mode-changed" },
+    });
+    return {
+      network: await this.dto(updated, await networkDeviceCounts(this.db, network.id)),
+      plan,
+    };
+  }
+
+  /**
+   * Changes one device's role in a credentials network. See
+   * CredentialService.setRole for the anchor→member caveat.
+   */
+  async setDeviceRole(input: {
+    orgId: string;
+    userId: string;
+    networkId: string;
+    deviceId: string;
+    role: "anchor" | "member";
+    acknowledge?: boolean;
+  }): Promise<{ device: Device; needsSecretRotation: boolean }> {
+    const network = await this.requireNetwork(input.orgId, input.networkId);
+    if (!this.credentials) {
+      conflict("credential support is not available in this deployment");
+    }
+    const device = await getDeviceById(this.db, input.deviceId);
+    if (!device || device.networkId !== network.id) notFound("device not found");
+    const result = await this.credentials.setRole({
+      network,
+      device,
+      userId: input.userId,
+      role: input.role,
+      acknowledge: input.acknowledge,
+    });
+    const updated = await getDeviceById(this.db, input.deviceId);
+    if (!updated) notFound("device not found");
+    this.realtime?.publish({
+      type: "network.updated",
+      orgId: input.orgId,
+      networkId: network.id,
+      data: { networkId: network.id, reason: "device-role-changed" },
+    });
+    return { device: updated, needsSecretRotation: result.needsSecretRotation };
+  }
+
+  /** Logs a per-device migration failure without aborting the migration. */
+  private logIssueFailure(
+    networkId: string,
+    deviceId: string,
+    error: unknown,
+  ): void {
+    this.logger?.warn("credential issue failed during access-mode migration", {
+      networkId,
+      deviceId,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 
   /**
