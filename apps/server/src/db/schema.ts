@@ -318,6 +318,16 @@ export const devices = pgTable(
     /** Revision the client last confirmed running. */
     appliedRevision: integer("applied_revision"),
     appliedAt: timestamp("applied_at", { withTimezone: true }),
+    /**
+     * Set after the first push that carries the explicit
+     * `enable_manual_routes` list. Null means "not enforced yet": the push
+     * engine forces one convergence so the security fix reaches devices that
+     * are already in sync (the pinned client cannot report an empty manual
+     * list, so drift comparison alone would never notice).
+     */
+    manualRoutesEnforcedAt: timestamp("manual_routes_enforced_at", {
+      withTimezone: true,
+    }),
     /** Last push failure, cleared on a successful push. */
     lastPushError: text("last_push_error"),
     lastPushAt: timestamp("last_push_at", { withTimezone: true }),
@@ -450,6 +460,17 @@ export const deviceRoutes = pgTable(
     /** IPv4 CIDR for `subnet`; empty string for `exit_node`. */
     cidr: text("cidr").notNull().default(""),
     state: deviceRouteStateEnum("state").notNull().default("pending"),
+    /**
+     * Who asked for the route: `panel` (a member/admin requested it on the
+     * device's behalf) or `device_declared` (the device's own persisted config
+     * advertises it; docs/POLICY.md §7.1).
+     */
+    source: text("source").$type<"panel" | "device_declared">().notNull().default("panel"),
+    /**
+     * Last report that showed a `device_declared` route in the device's own
+     * config. Older than the advertised window means "no longer advertised".
+     */
+    lastDeclaredAt: timestamp("last_declared_at", { withTimezone: true }),
     note: text("note").notNull().default(""),
     requestedBy: uuid("requested_by").references(() => users.id, {
       onDelete: "set null",

@@ -873,6 +873,7 @@ export async function upsertDeviceRoute(
       kind: values.kind,
       cidr: values.cidr,
       state: "pending",
+      source: "panel",
       note: values.note ?? "",
       requestedBy: values.requestedBy,
       decidedAt: null,
@@ -882,16 +883,85 @@ export async function upsertDeviceRoute(
       target: [deviceRoutes.deviceId, deviceRoutes.kind, deviceRoutes.cidr],
       set: {
         state: "pending",
+        // A human request on top of a declared row turns it into a panel
+        // request; its provenance follows the latest requester.
+        source: "panel",
         note: values.note ?? "",
         requestedBy: values.requestedBy,
         decidedAt: null,
         decidedBy: null,
+        lastDeclaredAt: null,
         updatedAt: new Date(),
       },
     })
     .returning();
   if (!rows[0]) throw new Error("failed to request route");
   return rows[0];
+}
+
+/**
+ * Creates a `device_declared` proposal only when no row for
+ * `(device, kind, cidr)` exists yet. Idempotent: a repeated report for the same
+ * declaration does not create a second row, change its state, or resurrect a
+ * rejected one. Returns `null` when the row already existed.
+ */
+export async function insertDeclaredDeviceRoute(
+  db: DbExecutor,
+  values: {
+    orgId: string;
+    networkId: string;
+    deviceId: string;
+    kind: DeviceRouteKind;
+    cidr: string;
+    note?: string;
+  },
+): Promise<DeviceRoute | null> {
+  const rows = await db
+    .insert(deviceRoutes)
+    .values({
+      orgId: values.orgId,
+      networkId: values.networkId,
+      deviceId: values.deviceId,
+      kind: values.kind,
+      cidr: values.cidr,
+      state: "pending",
+      source: "device_declared",
+      note: values.note ?? "",
+      requestedBy: null,
+      decidedAt: null,
+      decidedBy: null,
+      lastDeclaredAt: new Date(),
+    })
+    .onConflictDoNothing({
+      target: [deviceRoutes.deviceId, deviceRoutes.kind, deviceRoutes.cidr],
+    })
+    .returning();
+  return rows[0] ?? null;
+}
+
+/** Marks the declarations that are still present in a fresh report. */
+export async function touchDeviceRouteDeclarations(
+  db: DbExecutor,
+  ids: readonly string[],
+  at = new Date(),
+): Promise<void> {
+  if (ids.length === 0) return;
+  await db
+    .update(deviceRoutes)
+    .set({ lastDeclaredAt: at })
+    .where(inArray(deviceRoutes.id, [...ids]));
+}
+
+/** Every route row of an organisation (device list badges). */
+export async function listOrgDeviceRoutes(
+  db: DbExecutor,
+  orgId: string,
+): Promise<DeviceRoute[]> {
+  return db
+    .select()
+    .from(deviceRoutes)
+    .where(eq(deviceRoutes.orgId, orgId))
+    .orderBy(asc(deviceRoutes.createdAt));
 }
 
 export async function decideDeviceRoute(

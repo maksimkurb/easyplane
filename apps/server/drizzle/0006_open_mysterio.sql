@@ -1,0 +1,1 @@
+ALTER TABLE "devices" ADD COLUMN "manual_routes_enforced_at" timestamp with time zone;

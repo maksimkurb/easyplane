@@ -36,6 +36,20 @@
       "when": 1794812792463,
       "tag": "0004_dusty_lorna_dane",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794848419126,
+      "tag": "0005_watery_sphinx",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794853518937,
+      "tag": "0006_open_mysterio",
+      "breakpoints": true
     }
   ]
 }
