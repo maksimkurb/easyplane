@@ -1,13 +1,19 @@
 import { useCallback, useMemo, useState } from "react"
 import {
   Background,
+  BaseEdge,
   Controls,
+  EdgeLabelRenderer,
   Handle,
-  MarkerType,
   MiniMap,
   Position,
   ReactFlow,
+  getStraightPath,
+  useInternalNode,
   type Edge,
+  type EdgeProps,
+  type EdgeTypes,
+  type InternalNode,
   type Node,
   type NodeProps,
   type NodeTypes,
@@ -34,6 +40,72 @@ type DeviceNodeData = {
 }
 
 const nodeTypes: NodeTypes = { device: DeviceNode }
+
+/** Point where the line from `node`'s centre to `other`'s centre leaves `node`'s box. */
+function borderPoint(node: InternalNode, other: InternalNode) {
+  const w = (node.measured.width ?? 0) / 2
+  const h = (node.measured.height ?? 0) / 2
+  const cx = node.internals.positionAbsolute.x + w
+  const cy = node.internals.positionAbsolute.y + h
+  const ox = other.internals.positionAbsolute.x + (other.measured.width ?? 0) / 2
+  const oy = other.internals.positionAbsolute.y + (other.measured.height ?? 0) / 2
+  const dx = ox - cx
+  const dy = oy - cy
+  if (dx === 0 && dy === 0) return { x: cx, y: cy }
+  // Scale the direction vector until it touches the rectangle edge.
+  const scale = 1 / Math.max(Math.abs(dx) / (w || 1), Math.abs(dy) / (h || 1))
+  return { x: cx + dx * scale, y: cy + dy * scale }
+}
+
+/**
+ * Straight line between two device cards, clipped to the card borders. React
+ * Flow's default edges leave from fixed left/right handles, which loops lines
+ * around the cards when the peer sits on the other side.
+ */
+function DirectEdge({
+  id,
+  source,
+  target,
+  style,
+  label,
+  labelStyle,
+  labelBgStyle,
+}: EdgeProps) {
+  const from = useInternalNode(source)
+  const to = useInternalNode(target)
+  if (!from || !to) return null
+  const a = borderPoint(from, to)
+  const b = borderPoint(to, from)
+  const [path, labelX, labelY] = getStraightPath({
+    sourceX: a.x,
+    sourceY: a.y,
+    targetX: b.x,
+    targetY: b.y,
+  })
+  return (
+    <>
+      <BaseEdge id={id} interactionWidth={16} path={path} style={style} />
+      {label ? (
+        <EdgeLabelRenderer>
+          <div
+            className="nodrag nopan pointer-events-auto absolute rounded px-1 py-0.5 text-[10px] leading-3"
+            style={{
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+              background: "var(--card)",
+              opacity: (labelBgStyle as { fillOpacity?: number } | undefined)?.fillOpacity ?? 0.9,
+              ...(labelStyle as object),
+              fill: undefined,
+            }}
+          >
+            {label}
+          </div>
+        </EdgeLabelRenderer>
+      ) : null}
+    </>
+  )
+}
+
+const edgeTypes: EdgeTypes = { direct: DirectEdge }
 
 /**
  * One device card. Relay-capable nodes get a violet ring and a tower badge;
@@ -304,11 +376,11 @@ export function TopologyMap({
           from && to ? Math.hypot(from.x - to.x, from.y - to.y) < 230 : false
         return {
           id: link.id,
+          type: "direct" as const,
           source: link.source,
           target: link.target,
           label: pingLabels && short ? "" : label,
           animated: false,
-          markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 },
           style: {
             stroke: relayed ? "rgb(245 158 11)" : "rgb(16 185 129)",
             strokeWidth: 1.6,
@@ -350,6 +422,7 @@ export function TopologyMap({
       )}
     >
       <ReactFlow
+        edgeTypes={edgeTypes}
         edges={flowEdges}
         fitView
         fitViewOptions={{ padding: 0.08 }}

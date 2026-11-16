@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Segmented } from "@/components/ui/segmented"
 import {
   Sheet,
@@ -376,24 +377,23 @@ export function AddDeviceDialog({
       </aside>
 
       <div className="flex min-w-0 flex-col gap-4 px-1 sm:px-0">
-        <div
+        <RadioGroup
           aria-label={t("addDevice.modeLabel")}
-          className="grid grid-cols-1 gap-2 min-[520px]:grid-cols-2"
-          role="radiogroup"
+          className="grid-cols-1 gap-2 min-[520px]:grid-cols-2"
+          onValueChange={(value) => setMode(value as Mode)}
+          value={mode}
         >
           <ModeCard
-            active={mode === "join"}
             hint={t("addDevice.joinHint")}
             label={t("addDevice.join")}
-            onClick={() => setMode("join")}
+            value="join"
           />
           <ModeCard
-            active={mode === "install"}
             hint={t("addDevice.installHint")}
             label={t("addDevice.install")}
-            onClick={() => setMode("install")}
+            value="install"
           />
-        </div>
+        </RadioGroup>
 
         {mode === "join" ? (
           <div className="flex flex-col gap-4">
@@ -586,41 +586,22 @@ export function AddDeviceDialog({
 }
 
 function ModeCard({
-  active,
+  value,
   label,
   hint,
-  onClick,
 }: {
-  active: boolean
+  value: Mode
   label: string
   hint: string
-  onClick: () => void
 }) {
   return (
-    <button
-      aria-checked={active}
-      className={`flex min-h-11 cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none ${
-        active
-          ? "bg-brand-soft ring-1 ring-brand ring-inset"
-          : "bg-card ring-1 ring-line-2 ring-inset hover:bg-surface-2"
-      }`}
-      onClick={onClick}
-      role="radio"
-      type="button"
-    >
-      <span
-        aria-hidden="true"
-        className={`grid size-4 flex-none place-items-center rounded-full bg-card ring-1 ring-inset ${
-          active ? "ring-brand" : "ring-line-2"
-        }`}
-      >
-        {active ? <span className="size-2 rounded-full bg-brand" /> : null}
-      </span>
+    <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-line-2 bg-card p-3 transition-colors hover:bg-surface-2 has-[[data-checked]]:border-brand has-[[data-checked]]:bg-brand-soft">
+      <RadioGroupItem className="mt-0.5" value={value} />
       <span className="min-w-0">
         <span className="block text-sm leading-5 font-medium">{label}</span>
         <span className="block text-xs leading-4 text-fg-3">{hint}</span>
       </span>
-    </button>
+    </label>
   )
 }
 
