@@ -172,9 +172,10 @@ So the answer to "does the panel push refuse, ignore, or overwrite" is
 **overwrite**, and a push with an **empty `proxy_cidrs`/exit flag removes the
 declaration**. There is no error, no warning and no drift signal left.
 
-This is why the implementation must stop the 15 s reconciler from pushing while
-a declaration is pending (see §8). Otherwise the operator's edit survives at
-most one reconcile interval after the client reconnects.
+This is why the implementation detects the declaration *before* the drift
+comparison and adopts it into the device's own pushed config (see §8). Without
+that, the operator's edit survives at most one 15 s reconcile interval after the
+client reconnects.
 
 ### 4.2 External `-c` file, `chmod 0444`: **refused — and unreadable**
 
@@ -198,8 +199,8 @@ Two consequences:
   (CIDR, no exit flag) remain.
 - The failure path is a **retry loop**: `handleHeartbeat` schedules a push when
   `lastPushError !== ""`, so every heartbeat retries a push that can never
-  succeed. Any implementation must classify "read-only config" as a state, not
-  an error, and back off.
+  succeed. The implementation classifies "read-only config" as a state, skips
+  pushes and clears the error, so the loop does not start.
 
 `get_network_instance_config` refusing read-only instances is upstream code
 (`process_rpc.rs` ~L700–726):
@@ -300,12 +301,13 @@ Therefore the primary detection signal is the device's **own config**
 (`GetNetworkInstanceConfig`), exactly as the requirement states; peers are the
 fallback and cannot detect exit-node declarations.
 
-One more detail for the collector: the panel's `collectReport` already calls
+One more detail for the collector: the panel's `collectReport` calls
 `GetNetworkInstanceConfig(managedId)` and reads `proxyCidrs` /
-`enableExitNode`, but on error it silently stores `[]`/`false`. In the
-read-only case the report says "no routes" while the peers still see the
-advertisement. Any implementation should surface the read failure and use the
-peer observation for the CIDR instead of pretending there is none.
+`enableExitNode`; at spike time an error silently stored `[]`/`false`. The
+implementation now stores `config_permission` as well, so a read-only device is
+reported as "configuration is managed locally" and the UI does not pretend there
+are no routes. A declaration made in that mode is still only visible as a
+peer-observed CIDR, and never as an exit-node flag.
 
 ## 8. Implementation (what was built)
 
@@ -371,10 +373,10 @@ own pushed config. Receivers still only get approved routes.
 
 ## 9. Risks
 
-- **Push gating is the load-bearing part.** Any code path that pushes without
-  checking the pending declaration (retry button, policy save, credential
-  rotation, rollback) wipes the operator's edit. Each path must go through the
-  same gate.
+- **Adoption is the load-bearing part.** Every push path (retry button, policy
+  save, credential rotation, rollback) builds the device's own config through
+  the same compiler, which includes pending and approved declared routes. A new
+  path that builds a config elsewhere would wipe the operator's edit.
 - **The file is the panel's desired state, not a user file.** Every push rewrites
   it; edits outside the modelled fields (listeners, MTU, flags) are lost. Say so
   in the how-to.
