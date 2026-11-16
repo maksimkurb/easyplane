@@ -860,6 +860,7 @@ export const enTranslation = {
       "Networks this device shares with the mesh. Only approved routes are sent.",
     deviceEmpty: "This device does not share any routes yet.",
     deviceRouteHint: "Requested by the device",
+    approvedRouteHint: "Shared with the mesh",
     exitNodeApproved: "Exit node approved",
     acceptRoutesHint:
       "Subnets and exit nodes approved for other devices become usable here.",

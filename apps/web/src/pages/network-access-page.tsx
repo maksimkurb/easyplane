@@ -336,7 +336,10 @@ function TestAccessCard({
               empty={
                 approvedDevices.length === 0 ? t("policy.noSourceDevices") : undefined
               }
-              onValueChange={setSrc}
+              onValueChange={(value) => {
+                setResult(null)
+                setSrc(value)
+              }}
               options={deviceOptions}
               placeholder={t("policy.chooseSource")}
               triggerClassName="max-w-none"
@@ -352,7 +355,10 @@ function TestAccessCard({
                   ? t("policy.noDestinationOptions")
                   : undefined
               }
-              onValueChange={setDst}
+              onValueChange={(value) => {
+                setResult(null)
+                setDst(value)
+              }}
               options={[
                 ...deviceOptions,
                 ...approvedCidrs.map((cidr) => ({
@@ -372,7 +378,10 @@ function TestAccessCard({
             <span className="text-[13px] font-medium">{t("policy.proto")}</span>
             <Segmented
               label={t("policy.proto")}
-              onValueChange={setProtocol}
+              onValueChange={(value) => {
+                setResult(null)
+                setProtocol(value)
+              }}
               options={[
                 { value: "tcp", label: "TCP" },
                 { value: "udp", label: "UDP" },
@@ -394,7 +403,10 @@ function TestAccessCard({
                 inputMode="numeric"
                 max={65535}
                 min={0}
-                onChange={(event) => setPort(event.target.value)}
+                onChange={(event) => {
+                  setResult(null)
+                  setPort(event.target.value)
+                }}
                 type="number"
                 value={port}
               />

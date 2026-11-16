@@ -161,7 +161,10 @@ export function DeviceRoutesCard({
                     </Chip>
                   </div>
                   <p className="mt-0.5 text-xs text-fg-3">
-                    {route.note || t("routes.deviceRouteHint")}
+                    {route.note ||
+                      (route.state === "approved"
+                        ? t("routes.approvedRouteHint")
+                        : t("routes.deviceRouteHint"))}
                   </p>
                 </div>
 

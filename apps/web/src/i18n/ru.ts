@@ -860,6 +860,7 @@ export const ruTranslation: Translation = {
       "Сети, которые устройство отдаёт в общую сеть. Отправляются только одобренные маршруты.",
     deviceEmpty: "Устройство пока не отдаёт маршруты.",
     deviceRouteHint: "Запрошено устройством",
+    approvedRouteHint: "Открыто в общую сеть",
     exitNodeApproved: "Exit-нода одобрена",
     acceptRoutesHint:
       "Одобренные для других устройств подсети и exit-ноды станут доступны здесь.",
