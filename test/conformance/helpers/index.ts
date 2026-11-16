@@ -39,6 +39,8 @@ export const PORTS = {
   hub: 22092,
   /** Rendezvous node conformance (public node, relay off/on, private mode). */
   rendezvous: 22093,
+  /** Credential mode: anchors, members, revoke and the no-anchor window. */
+  credentials: 22094,
 } as const;
 
 /** Fixed addresses of the rendezvous conformance topology (docker-compose.test.yml). */
