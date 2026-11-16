@@ -21,12 +21,14 @@ import type {
   GetNetworkTopology200LinksItem as TopologyLink,
   GetNetworkTopology200NodesItem as TopologyNode,
 } from "@/api/generated/model"
+import { ExitNodeBadge, type ExitNodeState } from "@/components/exit-node-badge"
 import { Badge } from "@/components/ui/badge"
 import { layoutTopology } from "@/lib/topology-layout"
 import { cn } from "@/lib/utils"
 
 type DeviceNodeData = {
   node: TopologyNode
+  exitNode: ExitNodeState
 }
 
 const nodeTypes: NodeTypes = { device: DeviceNode }
@@ -38,9 +40,11 @@ const nodeTypes: NodeTypes = { device: DeviceNode }
  */
 export function TopologyNodeCard({
   node,
+  exitNode = "none",
   selected,
 }: {
   node: TopologyNode
+  exitNode?: ExitNodeState
   selected: boolean
 }) {
   const { t } = useTranslation()
@@ -103,6 +107,7 @@ export function TopologyNodeCard({
             {t("topology.unmanaged")}
           </Badge>
         )}
+        <ExitNodeBadge className="px-1.5 py-0 text-[9px]" state={exitNode} />
         {node.relaysFor.length > 0 ? (
           <Badge className="border-violet-500/40 px-1.5 py-0 text-[9px] text-violet-700 dark:text-violet-300" variant="outline">
             {t("topology.relayCount", { count: node.relaysFor.length })}
@@ -114,7 +119,13 @@ export function TopologyNodeCard({
 }
 
 function DeviceNode({ data, selected }: NodeProps<Node<DeviceNodeData, "device">>) {
-  return <TopologyNodeCard node={data.node} selected={Boolean(selected)} />
+  return (
+    <TopologyNodeCard
+      exitNode={data.exitNode}
+      node={data.node}
+      selected={Boolean(selected)}
+    />
+  )
 }
 
 export interface TopologyMapProps {
@@ -123,6 +134,8 @@ export interface TopologyMapProps {
   selectedNodeId: string | null
   onSelectNode: (nodeId: string | null) => void
   onSelectLink?: (linkId: string | null) => void
+  /** Exit-node badge per device id (declared proposals from the routes API). */
+  exitNodeByDeviceId?: Record<string, ExitNodeState>
 }
 
 /** Renders the derived snapshot as a React Flow graph. */
@@ -132,6 +145,7 @@ export function TopologyMap({
   selectedNodeId,
   onSelectNode,
   onSelectLink,
+  exitNodeByDeviceId,
 }: TopologyMapProps) {
   const { t } = useTranslation()
   const [overrides, setOverrides] = useState<Record<string, { x: number; y: number }>>({})
@@ -158,11 +172,16 @@ export function TopologyMap({
           id: node.id,
           type: "device" as const,
           position,
-          data: { node },
+          data: {
+            node,
+            exitNode: node.deviceId
+              ? (exitNodeByDeviceId?.[node.deviceId] ?? "none")
+              : "none",
+          },
           selected: selectedNodeId === node.id,
         }
       }),
-    [nodes, overrides, positions, selectedNodeId]
+    [nodes, overrides, positions, selectedNodeId, exitNodeByDeviceId]
   )
 
   const flowEdges = useMemo<Edge[]>(

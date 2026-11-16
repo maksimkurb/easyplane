@@ -100,7 +100,24 @@ export function NetworkRoutesCard({ networkId }: { networkId: string }) {
                     </Link>
                   </TableCell>
                   <TableCell className="text-xs">
-                    {route.kind === "subnet" ? t("routes.subnet") : t("routes.exitNode")}
+                    <div className="flex flex-wrap items-center gap-1">
+                      <span>
+                        {route.kind === "subnet" ? t("routes.subnet") : t("routes.exitNode")}
+                      </span>
+                      {route.source === "device_declared" ? (
+                        <Badge className="font-normal" variant="outline">
+                          {t("routes.declaredByDevice")}
+                        </Badge>
+                      ) : null}
+                      {route.source === "device_declared" && !route.advertised ? (
+                        <Badge
+                          className="border-amber-500/40 font-normal text-amber-700 dark:text-amber-300"
+                          variant="outline"
+                        >
+                          {t("routes.noLongerAdvertised")}
+                        </Badge>
+                      ) : null}
+                    </div>
                   </TableCell>
                   <TableCell className="font-mono text-xs">
                     {route.cidr || (route.kind === "exit_node" ? "0.0.0.0/0" : "")}
@@ -146,6 +163,8 @@ export function NetworkRoutesCard({ networkId }: { networkId: string }) {
       <p className="mt-3 text-xs text-muted-foreground">
         {canManage ? t("routes.requestHint") : t("routes.viewerHint")}
       </p>
+      <p className="mt-1 text-xs text-muted-foreground">{t("routes.declaredHint")}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{t("routes.exitNodeConsent")}</p>
 
       {flagged.length > 0 ? (
         <Alert className="mt-3 border-destructive/40">

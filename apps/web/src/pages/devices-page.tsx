@@ -17,6 +17,7 @@ import type { ListDevicesState } from "@/api/generated/model"
 import { useAuth } from "@/auth/auth-context"
 import { AnchorRemovalDialog } from "@/components/anchor-removal-dialog"
 import { DeviceStatusBadges } from "@/components/device-status"
+import { ExitNodeBadge } from "@/components/exit-node-badge"
 import { DeviceRoleBadge } from "@/components/network-access-card"
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
@@ -213,12 +214,15 @@ export function DevicesPage({ pendingOnly = false }: { pendingOnly?: boolean }) 
               {devices.map((device) => (
                 <TableRow key={device.id}>
                   <TableCell>
-                    <Link
-                      className="font-medium hover:underline"
-                      href={`/devices/${device.id}`}
-                    >
-                      {device.hostname || device.machineId.slice(0, 8)}
-                    </Link>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Link
+                        className="font-medium hover:underline"
+                        href={`/devices/${device.id}`}
+                      >
+                        {device.hostname || device.machineId.slice(0, 8)}
+                      </Link>
+                      <ExitNodeBadge state={device.exitNode} />
+                    </div>
                     <div className="max-w-56 truncate font-mono text-[10px] text-muted-foreground">
                       {device.machineId}
                     </div>

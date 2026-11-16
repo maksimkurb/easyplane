@@ -420,6 +420,14 @@ export const enTranslation = {
       error: "Error",
       notApplicable: "No config",
     },
+    exitNode: {
+      approved: "Exit node",
+      proposed: "Exit node (proposed)",
+      hint:
+        "The device advertises that it can be an exit node. Approval records consent only: actual egress depends on the client (OS route + exit_nodes).",
+    },
+    localConfig:
+      "The client's configuration file is read-only, so the panel cannot read or change this device's routes. It is managed locally on the device.",
     detail: {
       title: "Device",
       overview: "Overview",
@@ -606,6 +614,12 @@ export const enTranslation = {
       rejected: "Rejected",
     },
     reject: "Reject",
+    declaredByDevice: "Declared by device",
+    noLongerAdvertised: "No longer advertised",
+    declaredHint:
+      "A route a device advertises in its own persisted config appears here as a proposal. Approving it distributes it to devices that accept subnet routes; the device keeps advertising it either way.",
+    exitNodeConsent:
+      "Approving an exit node records consent only: the client still needs an OS route and exit_nodes to send traffic through it.",
     requestHint: "Members can request routes for a device; admins approve or reject them.",
     viewerHint: "Open a device page to request a route.",
     requested: "Route requested",

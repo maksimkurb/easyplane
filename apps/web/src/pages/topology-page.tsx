@@ -15,6 +15,7 @@ import {
   getGetNetworkTopologyQueryKey,
   getNetworkTopology,
   useGetNetworkTopology,
+  useListNetworkRoutes,
   useListNetworks,
 } from "@/api/generated/easyplane"
 import type {
@@ -64,6 +65,20 @@ export function TopologyPage() {
   const topologyQuery = useGetNetworkTopology(networkId || "", undefined, {
     query: { enabled: Boolean(networkId) },
   })
+  const routesQuery = useListNetworkRoutes(networkId || "", {
+    query: { enabled: Boolean(networkId) },
+  })
+  const exitNodeByDeviceId = useMemo(() => {
+    const states: Record<string, "none" | "proposed" | "approved"> = {}
+    for (const route of routesQuery.data?.data.routes ?? []) {
+      if (route.kind !== "exit_node" || route.state === "rejected") continue
+      if (route.state === "approved") states[route.deviceId] = "approved"
+      else if (route.source === "device_declared" && states[route.deviceId] !== "approved") {
+        states[route.deviceId] = "proposed"
+      }
+    }
+    return states
+  }, [routesQuery.data])
   const snapshot = topologyQuery.data?.data
   const stream = useEventStream({
     networkId: networkId || undefined,
@@ -212,6 +227,7 @@ export function TopologyPage() {
               <div className="grid gap-3">
                 <TopologyMap
                   key={networkId}
+                  exitNodeByDeviceId={exitNodeByDeviceId}
                   links={links}
                   nodes={nodes}
                   onSelectLink={setSelectedLinkId}

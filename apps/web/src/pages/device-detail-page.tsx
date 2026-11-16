@@ -25,6 +25,7 @@ import { DeviceAccessCard } from "@/components/device-access-card"
 import { DevicePeersCard } from "@/components/device-peers-card"
 import { DevicePolicyCard } from "@/components/device-policy-card"
 import { DeviceStatusBadges } from "@/components/device-status"
+import { ExitNodeBadge } from "@/components/exit-node-badge"
 import { PageHeader } from "@/components/shared/page-header"
 import { SectionCard } from "@/components/shared/section-card"
 import { Field, FieldGroup, FieldLabel } from "@/components/shared/field"
@@ -116,13 +117,19 @@ export function DeviceDetailPage() {
 
       <div className="grid gap-4">
         <SectionCard title={t("devices.detail.overview")}>
-          <div className="mb-3">
+          <div className="mb-3 flex flex-wrap items-center gap-1.5">
             <DeviceStatusBadges
               online={device.online}
               state={device.state}
               sync={device.sync}
             />
+            <ExitNodeBadge state={device.exitNode} />
           </div>
+          {device.configManagedLocally ? (
+            <p className="mb-3 text-xs text-amber-600 dark:text-amber-400">
+              {t("devices.localConfig")}
+            </p>
+          ) : null}
           <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
             <Info label={t("devices.hostname")} value={device.hostname} />
             <Info label={t("networks.title")} value={device.networkName} />
