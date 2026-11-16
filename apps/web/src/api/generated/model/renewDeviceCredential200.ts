@@ -8,6 +8,7 @@
 import type { RenewDeviceCredential200AccessMode } from './renewDeviceCredential200AccessMode';
 import type { RenewDeviceCredential200Credential } from './renewDeviceCredential200Credential';
 import type { RenewDeviceCredential200EffectiveRole } from './renewDeviceCredential200EffectiveRole';
+import type { RenewDeviceCredential200ExitNode } from './renewDeviceCredential200ExitNode';
 import type { RenewDeviceCredential200Online } from './renewDeviceCredential200Online';
 import type { RenewDeviceCredential200Os } from './renewDeviceCredential200Os';
 import type { RenewDeviceCredential200ReportedState } from './renewDeviceCredential200ReportedState';
@@ -49,6 +50,8 @@ export type RenewDeviceCredential200 = {
   /** @nullable */
   credential: RenewDeviceCredential200Credential;
   tags: string[];
+  exitNode: RenewDeviceCredential200ExitNode;
+  configManagedLocally: boolean;
   reportedState: RenewDeviceCredential200ReportedState;
   /** @nullable */
   reportedStateAt: string | null;

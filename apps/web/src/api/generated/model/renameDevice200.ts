@@ -8,6 +8,7 @@
 import type { RenameDevice200AccessMode } from './renameDevice200AccessMode';
 import type { RenameDevice200Credential } from './renameDevice200Credential';
 import type { RenameDevice200EffectiveRole } from './renameDevice200EffectiveRole';
+import type { RenameDevice200ExitNode } from './renameDevice200ExitNode';
 import type { RenameDevice200Online } from './renameDevice200Online';
 import type { RenameDevice200Os } from './renameDevice200Os';
 import type { RenameDevice200ReportedState } from './renameDevice200ReportedState';
@@ -49,6 +50,8 @@ export type RenameDevice200 = {
   /** @nullable */
   credential: RenameDevice200Credential;
   tags: string[];
+  exitNode: RenameDevice200ExitNode;
+  configManagedLocally: boolean;
   reportedState: RenameDevice200ReportedState;
   /** @nullable */
   reportedStateAt: string | null;

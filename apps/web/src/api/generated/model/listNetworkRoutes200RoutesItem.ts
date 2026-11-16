@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.3.0-M3
  */
 import type { ListNetworkRoutes200RoutesItemKind } from './listNetworkRoutes200RoutesItemKind';
+import type { ListNetworkRoutes200RoutesItemSource } from './listNetworkRoutes200RoutesItemSource';
 import type { ListNetworkRoutes200RoutesItemState } from './listNetworkRoutes200RoutesItemState';
 
 export type ListNetworkRoutes200RoutesItem = {
@@ -16,7 +17,11 @@ export type ListNetworkRoutes200RoutesItem = {
   kind: ListNetworkRoutes200RoutesItemKind;
   cidr: string;
   state: ListNetworkRoutes200RoutesItemState;
+  source: ListNetworkRoutes200RoutesItemSource;
   note: string;
+  /** @nullable */
+  lastDeclaredAt: string | null;
+  advertised: boolean;
   /** @nullable */
   requestedBy: string | null;
   /** @nullable */

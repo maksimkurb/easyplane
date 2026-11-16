@@ -8,6 +8,7 @@
 import type { SetDeviceTags200AccessMode } from './setDeviceTags200AccessMode';
 import type { SetDeviceTags200Credential } from './setDeviceTags200Credential';
 import type { SetDeviceTags200EffectiveRole } from './setDeviceTags200EffectiveRole';
+import type { SetDeviceTags200ExitNode } from './setDeviceTags200ExitNode';
 import type { SetDeviceTags200Online } from './setDeviceTags200Online';
 import type { SetDeviceTags200Os } from './setDeviceTags200Os';
 import type { SetDeviceTags200ReportedState } from './setDeviceTags200ReportedState';
@@ -49,6 +50,8 @@ export type SetDeviceTags200 = {
   /** @nullable */
   credential: SetDeviceTags200Credential;
   tags: string[];
+  exitNode: SetDeviceTags200ExitNode;
+  configManagedLocally: boolean;
   reportedState: SetDeviceTags200ReportedState;
   /** @nullable */
   reportedStateAt: string | null;

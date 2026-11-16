@@ -13,6 +13,7 @@ import type { ListNetworkRoutes200ReportsItemReportUnmanagedInstancesItem } from
  */
 export type ListNetworkRoutes200ReportsItemReport = {
   approvedCidrs: string[];
+  declaredCidrs: string[];
   configuredCidrs: string[];
   observedCidrs: string[];
   unapprovedCidrs: string[];

@@ -8,6 +8,7 @@
 import type { RevokeDeviceCredential200AccessMode } from './revokeDeviceCredential200AccessMode';
 import type { RevokeDeviceCredential200Credential } from './revokeDeviceCredential200Credential';
 import type { RevokeDeviceCredential200EffectiveRole } from './revokeDeviceCredential200EffectiveRole';
+import type { RevokeDeviceCredential200ExitNode } from './revokeDeviceCredential200ExitNode';
 import type { RevokeDeviceCredential200Online } from './revokeDeviceCredential200Online';
 import type { RevokeDeviceCredential200Os } from './revokeDeviceCredential200Os';
 import type { RevokeDeviceCredential200ReportedState } from './revokeDeviceCredential200ReportedState';
@@ -49,6 +50,8 @@ export type RevokeDeviceCredential200 = {
   /** @nullable */
   credential: RevokeDeviceCredential200Credential;
   tags: string[];
+  exitNode: RevokeDeviceCredential200ExitNode;
+  configManagedLocally: boolean;
   reportedState: RevokeDeviceCredential200ReportedState;
   /** @nullable */
   reportedStateAt: string | null;

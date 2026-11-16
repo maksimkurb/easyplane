@@ -8,6 +8,7 @@
 import type { CreateDeviceRevision201DeviceAccessMode } from './createDeviceRevision201DeviceAccessMode';
 import type { CreateDeviceRevision201DeviceCredential } from './createDeviceRevision201DeviceCredential';
 import type { CreateDeviceRevision201DeviceEffectiveRole } from './createDeviceRevision201DeviceEffectiveRole';
+import type { CreateDeviceRevision201DeviceExitNode } from './createDeviceRevision201DeviceExitNode';
 import type { CreateDeviceRevision201DeviceOnline } from './createDeviceRevision201DeviceOnline';
 import type { CreateDeviceRevision201DeviceOs } from './createDeviceRevision201DeviceOs';
 import type { CreateDeviceRevision201DeviceReportedState } from './createDeviceRevision201DeviceReportedState';
@@ -49,6 +50,8 @@ export type CreateDeviceRevision201Device = {
   /** @nullable */
   credential: CreateDeviceRevision201DeviceCredential;
   tags: string[];
+  exitNode: CreateDeviceRevision201DeviceExitNode;
+  configManagedLocally: boolean;
   reportedState: CreateDeviceRevision201DeviceReportedState;
   /** @nullable */
   reportedStateAt: string | null;

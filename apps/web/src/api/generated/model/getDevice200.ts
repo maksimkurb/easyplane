@@ -8,6 +8,7 @@
 import type { GetDevice200AccessMode } from './getDevice200AccessMode';
 import type { GetDevice200Credential } from './getDevice200Credential';
 import type { GetDevice200EffectiveRole } from './getDevice200EffectiveRole';
+import type { GetDevice200ExitNode } from './getDevice200ExitNode';
 import type { GetDevice200Online } from './getDevice200Online';
 import type { GetDevice200Os } from './getDevice200Os';
 import type { GetDevice200ReportedState } from './getDevice200ReportedState';
@@ -49,6 +50,8 @@ export type GetDevice200 = {
   /** @nullable */
   credential: GetDevice200Credential;
   tags: string[];
+  exitNode: GetDevice200ExitNode;
+  configManagedLocally: boolean;
   reportedState: GetDevice200ReportedState;
   /** @nullable */
   reportedStateAt: string | null;

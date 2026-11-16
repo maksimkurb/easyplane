@@ -8,6 +8,7 @@
 import type { UpdateDeviceHub200AccessMode } from './updateDeviceHub200AccessMode';
 import type { UpdateDeviceHub200Credential } from './updateDeviceHub200Credential';
 import type { UpdateDeviceHub200EffectiveRole } from './updateDeviceHub200EffectiveRole';
+import type { UpdateDeviceHub200ExitNode } from './updateDeviceHub200ExitNode';
 import type { UpdateDeviceHub200Online } from './updateDeviceHub200Online';
 import type { UpdateDeviceHub200Os } from './updateDeviceHub200Os';
 import type { UpdateDeviceHub200ReportedState } from './updateDeviceHub200ReportedState';
@@ -49,6 +50,8 @@ export type UpdateDeviceHub200 = {
   /** @nullable */
   credential: UpdateDeviceHub200Credential;
   tags: string[];
+  exitNode: UpdateDeviceHub200ExitNode;
+  configManagedLocally: boolean;
   reportedState: UpdateDeviceHub200ReportedState;
   /** @nullable */
   reportedStateAt: string | null;

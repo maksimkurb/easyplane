@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.3.0-M3
  */
 import type { DecideDeviceRoute200Kind } from './decideDeviceRoute200Kind';
+import type { DecideDeviceRoute200Source } from './decideDeviceRoute200Source';
 import type { DecideDeviceRoute200State } from './decideDeviceRoute200State';
 
 export type DecideDeviceRoute200 = {
@@ -16,7 +17,11 @@ export type DecideDeviceRoute200 = {
   kind: DecideDeviceRoute200Kind;
   cidr: string;
   state: DecideDeviceRoute200State;
+  source: DecideDeviceRoute200Source;
   note: string;
+  /** @nullable */
+  lastDeclaredAt: string | null;
+  advertised: boolean;
   /** @nullable */
   requestedBy: string | null;
   /** @nullable */

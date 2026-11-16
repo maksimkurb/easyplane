@@ -8,6 +8,7 @@
 import type { BlockDevice200AccessMode } from './blockDevice200AccessMode';
 import type { BlockDevice200Credential } from './blockDevice200Credential';
 import type { BlockDevice200EffectiveRole } from './blockDevice200EffectiveRole';
+import type { BlockDevice200ExitNode } from './blockDevice200ExitNode';
 import type { BlockDevice200Online } from './blockDevice200Online';
 import type { BlockDevice200Os } from './blockDevice200Os';
 import type { BlockDevice200ReportedState } from './blockDevice200ReportedState';
@@ -49,6 +50,8 @@ export type BlockDevice200 = {
   /** @nullable */
   credential: BlockDevice200Credential;
   tags: string[];
+  exitNode: BlockDevice200ExitNode;
+  configManagedLocally: boolean;
   reportedState: BlockDevice200ReportedState;
   /** @nullable */
   reportedStateAt: string | null;

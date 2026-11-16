@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.3.0-M3
  */
 import type { RequestDeviceRoute201Kind } from './requestDeviceRoute201Kind';
+import type { RequestDeviceRoute201Source } from './requestDeviceRoute201Source';
 import type { RequestDeviceRoute201State } from './requestDeviceRoute201State';
 
 export type RequestDeviceRoute201 = {
@@ -16,7 +17,11 @@ export type RequestDeviceRoute201 = {
   kind: RequestDeviceRoute201Kind;
   cidr: string;
   state: RequestDeviceRoute201State;
+  source: RequestDeviceRoute201Source;
   note: string;
+  /** @nullable */
+  lastDeclaredAt: string | null;
+  advertised: boolean;
   /** @nullable */
   requestedBy: string | null;
   /** @nullable */

@@ -19,8 +19,10 @@ import {
   listApprovedDevicesByRole,
   listApprovedDevicesInNetwork,
   listCredentialsForOrg,
+  listDeviceRoutes,
   listDeviceTags,
   listDevices,
+  listOrgDeviceRoutes,
   listRevisions,
   listRevisionsWithAuthor,
   listTags,
@@ -32,14 +34,25 @@ import {
   updateDevice,
   usedVirtualIps,
 } from "../db/repositories.js";
-import type { Credential, Device, DeviceState, Network, UserRole } from "../db/schema.js";
+import type {
+  Credential,
+  Device,
+  DeviceRoute,
+  DeviceState,
+  Network,
+  UserRole,
+} from "../db/schema.js";
 import {
   computeDeviceStatus,
   type DeviceStatus,
   type OnlineState,
 } from "../domain/device-status.js";
 import { effectiveRole, knowsNetworkSecret } from "../domain/credentials.js";
-import { normalizeDesiredConfig, type DesiredConfig } from "../domain/desired-config.js";
+import {
+  isConfigReadOnly,
+  normalizeDesiredConfig,
+  type DesiredConfig,
+} from "../domain/desired-config.js";
 import { allocateIpv4, cidrPrefix, parseCidr, parseIpv4 } from "../domain/ip.js";
 import { evaluateInvite } from "../domain/invite.js";
 import {
@@ -106,6 +119,16 @@ export interface DeviceDto extends DeviceStatus {
   /** Per-device credential in credentials mode; never contains the secret. */
   credential: CredentialDto | null;
   tags: string[];
+  /**
+   * Exit-node status for badges: `approved` when an approved exit-node route
+   * exists, `proposed` when the device advertises one that is still pending.
+   */
+  exitNode: "none" | "proposed" | "approved";
+  /**
+   * True when the client's instance file is read-only (external `-c`): the
+   * panel cannot read or overwrite its config (docs/POLICY.md §7.1).
+   */
+  configManagedLocally: boolean;
   /** Last route report (proxy CIDRs / unmanaged instances), if any. */
   reportedState: Record<string, unknown>;
   reportedStateAt: string | null;
@@ -198,6 +221,25 @@ export interface DeviceServiceOptions {
   listClients?: () => ManagedClient[];
   /** Credential lifecycle (credentials networks); optional in unit tests. */
   credentials?: CredentialService;
+}
+
+/**
+ * Badge state for exit nodes. "Proposed" means the device advertises the flag
+ * in its own config and no admin has decided yet; a rejected declaration does
+ * not count (the UI shows it on the routes card instead).
+ */
+function exitNodeStateFor(
+  routes: readonly DeviceRoute[],
+  deviceId: string,
+): "none" | "proposed" | "approved" {
+  let proposed = false;
+  for (const route of routes) {
+    if (route.deviceId !== deviceId) continue;
+    if (route.kind !== "exit_node" || route.state === "rejected") continue;
+    if (route.state === "approved") return "approved";
+    if (route.source === "device_declared") proposed = true;
+  }
+  return proposed ? "proposed" : "none";
 }
 
 export class DeviceService {
@@ -337,7 +379,15 @@ export class DeviceService {
       credential === undefined
         ? await getCredentialByDevice(this.options.db, device.id)
         : credential;
-    return this.toDto(device, network, tags, row ?? null);
+    const routes = await listDeviceRoutes(this.options.db, device.id);
+    return this.toDto(
+      device,
+      network,
+      tags,
+      row ?? null,
+      new Date(),
+      exitNodeStateFor(routes, device.id),
+    );
   }
 
   private toDto(
@@ -346,6 +396,7 @@ export class DeviceService {
     tags: string[] = [],
     credential: Credential | null = null,
     now = new Date(),
+    exitNode: "none" | "proposed" | "approved" = "none",
   ): DeviceDto {
     const status = computeDeviceStatus({
       state: device.state,
@@ -390,6 +441,8 @@ export class DeviceService {
       accessMode,
       credential: credential ? credentialToDto(credential, now) : null,
       tags,
+      exitNode,
+      configManagedLocally: isConfigReadOnly(device.reportedState),
       reportedState: device.reportedState,
       reportedStateAt: device.reportedStateAt?.toISOString() ?? null,
       desiredRevision: device.desiredRevision,
@@ -595,12 +648,21 @@ export class DeviceService {
         row,
       ]),
     );
+    const orgRoutes = new Map<string, DeviceRoute[]>();
+    const routes = await listOrgDeviceRoutes(this.options.db, actor.orgId);
+    for (const route of routes) {
+      const list = orgRoutes.get(route.deviceId) ?? [];
+      list.push(route);
+      orgRoutes.set(route.deviceId, list);
+    }
     return devices.map((device) =>
       this.toDto(
         device,
         networks.get(device.networkId),
         tags.get(device.id) ?? [],
         credentials.get(device.id) ?? null,
+        new Date(),
+        exitNodeStateFor(orgRoutes.get(device.id) ?? [], device.id),
       ),
     );
   }
@@ -1031,7 +1093,7 @@ export class DeviceService {
     const updated = await getDevice(this.options.db, actor.orgId, deviceId);
     if (!updated) notFound("device not found");
     this.publishDevice(updated, "credential-renewed");
-    return this.toDto(updated, network, tags);
+    return this.dto(updated, network, tags);
   }
 
   /**

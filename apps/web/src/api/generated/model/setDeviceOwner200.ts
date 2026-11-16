@@ -8,6 +8,7 @@
 import type { SetDeviceOwner200AccessMode } from './setDeviceOwner200AccessMode';
 import type { SetDeviceOwner200Credential } from './setDeviceOwner200Credential';
 import type { SetDeviceOwner200EffectiveRole } from './setDeviceOwner200EffectiveRole';
+import type { SetDeviceOwner200ExitNode } from './setDeviceOwner200ExitNode';
 import type { SetDeviceOwner200Online } from './setDeviceOwner200Online';
 import type { SetDeviceOwner200Os } from './setDeviceOwner200Os';
 import type { SetDeviceOwner200ReportedState } from './setDeviceOwner200ReportedState';
@@ -49,6 +50,8 @@ export type SetDeviceOwner200 = {
   /** @nullable */
   credential: SetDeviceOwner200Credential;
   tags: string[];
+  exitNode: SetDeviceOwner200ExitNode;
+  configManagedLocally: boolean;
   reportedState: SetDeviceOwner200ReportedState;
   /** @nullable */
   reportedStateAt: string | null;

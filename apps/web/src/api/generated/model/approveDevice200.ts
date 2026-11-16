@@ -8,6 +8,7 @@
 import type { ApproveDevice200AccessMode } from './approveDevice200AccessMode';
 import type { ApproveDevice200Credential } from './approveDevice200Credential';
 import type { ApproveDevice200EffectiveRole } from './approveDevice200EffectiveRole';
+import type { ApproveDevice200ExitNode } from './approveDevice200ExitNode';
 import type { ApproveDevice200Online } from './approveDevice200Online';
 import type { ApproveDevice200Os } from './approveDevice200Os';
 import type { ApproveDevice200ReportedState } from './approveDevice200ReportedState';
@@ -49,6 +50,8 @@ export type ApproveDevice200 = {
   /** @nullable */
   credential: ApproveDevice200Credential;
   tags: string[];
+  exitNode: ApproveDevice200ExitNode;
+  configManagedLocally: boolean;
   reportedState: ApproveDevice200ReportedState;
   /** @nullable */
   reportedStateAt: string | null;

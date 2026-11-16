@@ -8,6 +8,7 @@
 import type { RollbackDeviceRevision201DeviceAccessMode } from './rollbackDeviceRevision201DeviceAccessMode';
 import type { RollbackDeviceRevision201DeviceCredential } from './rollbackDeviceRevision201DeviceCredential';
 import type { RollbackDeviceRevision201DeviceEffectiveRole } from './rollbackDeviceRevision201DeviceEffectiveRole';
+import type { RollbackDeviceRevision201DeviceExitNode } from './rollbackDeviceRevision201DeviceExitNode';
 import type { RollbackDeviceRevision201DeviceOnline } from './rollbackDeviceRevision201DeviceOnline';
 import type { RollbackDeviceRevision201DeviceOs } from './rollbackDeviceRevision201DeviceOs';
 import type { RollbackDeviceRevision201DeviceReportedState } from './rollbackDeviceRevision201DeviceReportedState';
@@ -49,6 +50,8 @@ export type RollbackDeviceRevision201Device = {
   /** @nullable */
   credential: RollbackDeviceRevision201DeviceCredential;
   tags: string[];
+  exitNode: RollbackDeviceRevision201DeviceExitNode;
+  configManagedLocally: boolean;
   reportedState: RollbackDeviceRevision201DeviceReportedState;
   /** @nullable */
   reportedStateAt: string | null;

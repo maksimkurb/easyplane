@@ -8,6 +8,7 @@
 import type { UpdateDeviceEndpoints200AccessMode } from './updateDeviceEndpoints200AccessMode';
 import type { UpdateDeviceEndpoints200Credential } from './updateDeviceEndpoints200Credential';
 import type { UpdateDeviceEndpoints200EffectiveRole } from './updateDeviceEndpoints200EffectiveRole';
+import type { UpdateDeviceEndpoints200ExitNode } from './updateDeviceEndpoints200ExitNode';
 import type { UpdateDeviceEndpoints200Online } from './updateDeviceEndpoints200Online';
 import type { UpdateDeviceEndpoints200Os } from './updateDeviceEndpoints200Os';
 import type { UpdateDeviceEndpoints200ReportedState } from './updateDeviceEndpoints200ReportedState';
@@ -49,6 +50,8 @@ export type UpdateDeviceEndpoints200 = {
   /** @nullable */
   credential: UpdateDeviceEndpoints200Credential;
   tags: string[];
+  exitNode: UpdateDeviceEndpoints200ExitNode;
+  configManagedLocally: boolean;
   reportedState: UpdateDeviceEndpoints200ReportedState;
   /** @nullable */
   reportedStateAt: string | null;

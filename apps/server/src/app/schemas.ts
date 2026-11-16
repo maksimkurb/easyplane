@@ -170,6 +170,10 @@ export const deviceSchema = z.object({
   accessMode: accessModeEnum(),
   credential: credentialSchema.nullable(),
   tags: z.array(z.string()),
+  /** Exit-node badge: advertised-and-pending vs approved. */
+  exitNode: z.enum(["none", "proposed", "approved"]),
+  /** Client's instance file is read-only (the panel cannot read/change it). */
+  configManagedLocally: z.boolean(),
   reportedState: z.record(z.string(), z.unknown()),
   reportedStateAt: z.string().nullable(),
   desiredRevision: z.number().int().nullable(),
@@ -594,7 +598,13 @@ export const deviceRouteSchema = z.object({
   kind: routeKindSchema,
   cidr: z.string(),
   state: routeStateSchema,
+  /** `panel` = requested by a user; `device_declared` = advertised by the device. */
+  source: z.enum(["panel", "device_declared"]),
   note: z.string(),
+  /** Last report that showed a declared route in the device's own config. */
+  lastDeclaredAt: z.string().nullable(),
+  /** Declared route still inside the advertised window (5 min). */
+  advertised: z.boolean(),
   requestedBy: z.string().nullable(),
   decidedBy: z.string().nullable(),
   decidedAt: z.string().nullable(),
@@ -621,6 +631,8 @@ export const peerObservationSchema = z.object({
 
 export const routeReportSchema = z.object({
   approvedCidrs: z.array(z.string()),
+  /** Device-declared CIDRs (pending or approved); not unapproved drift. */
+  declaredCidrs: z.array(z.string()).default([]),
   /** Proxy CIDRs the device's own instance is configured with. */
   configuredCidrs: z.array(z.string()),
   /** CIDRs peers advertise for this device. */

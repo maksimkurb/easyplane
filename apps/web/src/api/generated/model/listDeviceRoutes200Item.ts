@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.3.0-M3
  */
 import type { ListDeviceRoutes200ItemKind } from './listDeviceRoutes200ItemKind';
+import type { ListDeviceRoutes200ItemSource } from './listDeviceRoutes200ItemSource';
 import type { ListDeviceRoutes200ItemState } from './listDeviceRoutes200ItemState';
 
 export type ListDeviceRoutes200Item = {
@@ -16,7 +17,11 @@ export type ListDeviceRoutes200Item = {
   kind: ListDeviceRoutes200ItemKind;
   cidr: string;
   state: ListDeviceRoutes200ItemState;
+  source: ListDeviceRoutes200ItemSource;
   note: string;
+  /** @nullable */
+  lastDeclaredAt: string | null;
+  advertised: boolean;
   /** @nullable */
   requestedBy: string | null;
   /** @nullable */

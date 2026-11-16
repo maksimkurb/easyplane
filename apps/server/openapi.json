@@ -4628,6 +4628,17 @@
                           "type": "string"
                         }
                       },
+                      "exitNode": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "proposed",
+                          "approved"
+                        ]
+                      },
+                      "configManagedLocally": {
+                        "type": "boolean"
+                      },
                       "reportedState": {
                         "type": "object",
                         "additionalProperties": {}
@@ -4709,6 +4720,8 @@
                       "accessMode",
                       "credential",
                       "tags",
+                      "exitNode",
+                      "configManagedLocally",
                       "reportedState",
                       "reportedStateAt",
                       "desiredRevision",
@@ -4967,6 +4980,17 @@
                         "type": "string"
                       }
                     },
+                    "exitNode": {
+                      "type": "string",
+                      "enum": [
+                        "none",
+                        "proposed",
+                        "approved"
+                      ]
+                    },
+                    "configManagedLocally": {
+                      "type": "boolean"
+                    },
                     "reportedState": {
                       "type": "object",
                       "additionalProperties": {}
@@ -5048,6 +5072,8 @@
                     "accessMode",
                     "credential",
                     "tags",
+                    "exitNode",
+                    "configManagedLocally",
                     "reportedState",
                     "reportedStateAt",
                     "desiredRevision",
@@ -5380,6 +5406,17 @@
                         "type": "string"
                       }
                     },
+                    "exitNode": {
+                      "type": "string",
+                      "enum": [
+                        "none",
+                        "proposed",
+                        "approved"
+                      ]
+                    },
+                    "configManagedLocally": {
+                      "type": "boolean"
+                    },
                     "reportedState": {
                       "type": "object",
                       "additionalProperties": {}
@@ -5461,6 +5498,8 @@
                     "accessMode",
                     "credential",
                     "tags",
+                    "exitNode",
+                    "configManagedLocally",
                     "reportedState",
                     "reportedStateAt",
                     "desiredRevision",
@@ -5735,6 +5774,17 @@
                         "type": "string"
                       }
                     },
+                    "exitNode": {
+                      "type": "string",
+                      "enum": [
+                        "none",
+                        "proposed",
+                        "approved"
+                      ]
+                    },
+                    "configManagedLocally": {
+                      "type": "boolean"
+                    },
                     "reportedState": {
                       "type": "object",
                       "additionalProperties": {}
@@ -5816,6 +5866,8 @@
                     "accessMode",
                     "credential",
                     "tags",
+                    "exitNode",
+                    "configManagedLocally",
                     "reportedState",
                     "reportedStateAt",
                     "desiredRevision",
@@ -6073,6 +6125,17 @@
                         "type": "string"
                       }
                     },
+                    "exitNode": {
+                      "type": "string",
+                      "enum": [
+                        "none",
+                        "proposed",
+                        "approved"
+                      ]
+                    },
+                    "configManagedLocally": {
+                      "type": "boolean"
+                    },
                     "reportedState": {
                       "type": "object",
                       "additionalProperties": {}
@@ -6154,6 +6217,8 @@
                     "accessMode",
                     "credential",
                     "tags",
+                    "exitNode",
+                    "configManagedLocally",
                     "reportedState",
                     "reportedStateAt",
                     "desiredRevision",
@@ -6411,6 +6476,17 @@
                         "type": "string"
                       }
                     },
+                    "exitNode": {
+                      "type": "string",
+                      "enum": [
+                        "none",
+                        "proposed",
+                        "approved"
+                      ]
+                    },
+                    "configManagedLocally": {
+                      "type": "boolean"
+                    },
                     "reportedState": {
                       "type": "object",
                       "additionalProperties": {}
@@ -6492,6 +6568,8 @@
                     "accessMode",
                     "credential",
                     "tags",
+                    "exitNode",
+                    "configManagedLocally",
                     "reportedState",
                     "reportedStateAt",
                     "desiredRevision",
@@ -6778,6 +6856,17 @@
                             "type": "string"
                           }
                         },
+                        "exitNode": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "proposed",
+                            "approved"
+                          ]
+                        },
+                        "configManagedLocally": {
+                          "type": "boolean"
+                        },
                         "reportedState": {
                           "type": "object",
                           "additionalProperties": {}
@@ -6859,6 +6948,8 @@
                         "accessMode",
                         "credential",
                         "tags",
+                        "exitNode",
+                        "configManagedLocally",
                         "reportedState",
                         "reportedStateAt",
                         "desiredRevision",
@@ -7200,6 +7291,17 @@
                         "type": "string"
                       }
                     },
+                    "exitNode": {
+                      "type": "string",
+                      "enum": [
+                        "none",
+                        "proposed",
+                        "approved"
+                      ]
+                    },
+                    "configManagedLocally": {
+                      "type": "boolean"
+                    },
                     "reportedState": {
                       "type": "object",
                       "additionalProperties": {}
@@ -7281,6 +7383,8 @@
                     "accessMode",
                     "credential",
                     "tags",
+                    "exitNode",
+                    "configManagedLocally",
                     "reportedState",
                     "reportedStateAt",
                     "desiredRevision",
@@ -7557,6 +7661,17 @@
                         "type": "string"
                       }
                     },
+                    "exitNode": {
+                      "type": "string",
+                      "enum": [
+                        "none",
+                        "proposed",
+                        "approved"
+                      ]
+                    },
+                    "configManagedLocally": {
+                      "type": "boolean"
+                    },
                     "reportedState": {
                       "type": "object",
                       "additionalProperties": {}
@@ -7638,6 +7753,8 @@
                     "accessMode",
                     "credential",
                     "tags",
+                    "exitNode",
+                    "configManagedLocally",
                     "reportedState",
                     "reportedStateAt",
                     "desiredRevision",
@@ -8090,6 +8207,17 @@
                             "type": "string"
                           }
                         },
+                        "exitNode": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "proposed",
+                            "approved"
+                          ]
+                        },
+                        "configManagedLocally": {
+                          "type": "boolean"
+                        },
                         "reportedState": {
                           "type": "object",
                           "additionalProperties": {}
@@ -8171,6 +8299,8 @@
                         "accessMode",
                         "credential",
                         "tags",
+                        "exitNode",
+                        "configManagedLocally",
                         "reportedState",
                         "reportedStateAt",
                         "desiredRevision",
@@ -8518,6 +8648,17 @@
                             "type": "string"
                           }
                         },
+                        "exitNode": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "proposed",
+                            "approved"
+                          ]
+                        },
+                        "configManagedLocally": {
+                          "type": "boolean"
+                        },
                         "reportedState": {
                           "type": "object",
                           "additionalProperties": {}
@@ -8599,6 +8740,8 @@
                         "accessMode",
                         "credential",
                         "tags",
+                        "exitNode",
+                        "configManagedLocally",
                         "reportedState",
                         "reportedStateAt",
                         "desiredRevision",
@@ -9980,6 +10123,17 @@
                         "type": "string"
                       }
                     },
+                    "exitNode": {
+                      "type": "string",
+                      "enum": [
+                        "none",
+                        "proposed",
+                        "approved"
+                      ]
+                    },
+                    "configManagedLocally": {
+                      "type": "boolean"
+                    },
                     "reportedState": {
                       "type": "object",
                       "additionalProperties": {}
@@ -10061,6 +10215,8 @@
                     "accessMode",
                     "credential",
                     "tags",
+                    "exitNode",
+                    "configManagedLocally",
                     "reportedState",
                     "reportedStateAt",
                     "desiredRevision",
@@ -10455,6 +10611,17 @@
                         "type": "string"
                       }
                     },
+                    "exitNode": {
+                      "type": "string",
+                      "enum": [
+                        "none",
+                        "proposed",
+                        "approved"
+                      ]
+                    },
+                    "configManagedLocally": {
+                      "type": "boolean"
+                    },
                     "reportedState": {
                       "type": "object",
                       "additionalProperties": {}
@@ -10536,6 +10703,8 @@
                     "accessMode",
                     "credential",
                     "tags",
+                    "exitNode",
+                    "configManagedLocally",
                     "reportedState",
                     "reportedStateAt",
                     "desiredRevision",
@@ -10815,6 +10984,17 @@
                         "type": "string"
                       }
                     },
+                    "exitNode": {
+                      "type": "string",
+                      "enum": [
+                        "none",
+                        "proposed",
+                        "approved"
+                      ]
+                    },
+                    "configManagedLocally": {
+                      "type": "boolean"
+                    },
                     "reportedState": {
                       "type": "object",
                       "additionalProperties": {}
@@ -10896,6 +11076,8 @@
                     "accessMode",
                     "credential",
                     "tags",
+                    "exitNode",
+                    "configManagedLocally",
                     "reportedState",
                     "reportedStateAt",
                     "desiredRevision",
@@ -11093,8 +11275,22 @@
                               "rejected"
                             ]
                           },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "panel",
+                              "device_declared"
+                            ]
+                          },
                           "note": {
                             "type": "string"
+                          },
+                          "lastDeclaredAt": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "advertised": {
+                            "type": "boolean"
                           },
                           "requestedBy": {
                             "nullable": true,
@@ -11123,7 +11319,10 @@
                           "kind",
                           "cidr",
                           "state",
+                          "source",
                           "note",
+                          "lastDeclaredAt",
+                          "advertised",
                           "requestedBy",
                           "decidedBy",
                           "decidedAt",
@@ -11149,6 +11348,13 @@
                             "type": "object",
                             "properties": {
                               "approvedCidrs": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "declaredCidrs": {
+                                "default": [],
                                 "type": "array",
                                 "items": {
                                   "type": "string"
@@ -11261,6 +11467,7 @@
                             },
                             "required": [
                               "approvedCidrs",
+                              "declaredCidrs",
                               "configuredCidrs",
                               "observedCidrs",
                               "unapprovedCidrs",
@@ -11357,8 +11564,22 @@
                           "rejected"
                         ]
                       },
+                      "source": {
+                        "type": "string",
+                        "enum": [
+                          "panel",
+                          "device_declared"
+                        ]
+                      },
                       "note": {
                         "type": "string"
+                      },
+                      "lastDeclaredAt": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "advertised": {
+                        "type": "boolean"
                       },
                       "requestedBy": {
                         "nullable": true,
@@ -11387,7 +11608,10 @@
                       "kind",
                       "cidr",
                       "state",
+                      "source",
                       "note",
+                      "lastDeclaredAt",
+                      "advertised",
                       "requestedBy",
                       "decidedBy",
                       "decidedAt",
@@ -11488,8 +11712,22 @@
                         "rejected"
                       ]
                     },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "panel",
+                        "device_declared"
+                      ]
+                    },
                     "note": {
                       "type": "string"
+                    },
+                    "lastDeclaredAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "advertised": {
+                      "type": "boolean"
                     },
                     "requestedBy": {
                       "nullable": true,
@@ -11518,7 +11756,10 @@
                     "kind",
                     "cidr",
                     "state",
+                    "source",
                     "note",
+                    "lastDeclaredAt",
+                    "advertised",
                     "requestedBy",
                     "decidedBy",
                     "decidedAt",
@@ -11616,8 +11857,22 @@
                         "rejected"
                       ]
                     },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "panel",
+                        "device_declared"
+                      ]
+                    },
                     "note": {
                       "type": "string"
+                    },
+                    "lastDeclaredAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "advertised": {
+                      "type": "boolean"
                     },
                     "requestedBy": {
                       "nullable": true,
@@ -11646,7 +11901,10 @@
                     "kind",
                     "cidr",
                     "state",
+                    "source",
                     "note",
+                    "lastDeclaredAt",
+                    "advertised",
                     "requestedBy",
                     "decidedBy",
                     "decidedAt",

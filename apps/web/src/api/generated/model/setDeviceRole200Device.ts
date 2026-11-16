@@ -8,6 +8,7 @@
 import type { SetDeviceRole200DeviceAccessMode } from './setDeviceRole200DeviceAccessMode';
 import type { SetDeviceRole200DeviceCredential } from './setDeviceRole200DeviceCredential';
 import type { SetDeviceRole200DeviceEffectiveRole } from './setDeviceRole200DeviceEffectiveRole';
+import type { SetDeviceRole200DeviceExitNode } from './setDeviceRole200DeviceExitNode';
 import type { SetDeviceRole200DeviceOnline } from './setDeviceRole200DeviceOnline';
 import type { SetDeviceRole200DeviceOs } from './setDeviceRole200DeviceOs';
 import type { SetDeviceRole200DeviceReportedState } from './setDeviceRole200DeviceReportedState';
@@ -49,6 +50,8 @@ export type SetDeviceRole200Device = {
   /** @nullable */
   credential: SetDeviceRole200DeviceCredential;
   tags: string[];
+  exitNode: SetDeviceRole200DeviceExitNode;
+  configManagedLocally: boolean;
   reportedState: SetDeviceRole200DeviceReportedState;
   /** @nullable */
   reportedStateAt: string | null;

@@ -8,6 +8,7 @@
 import type { ListDevices200ItemAccessMode } from './listDevices200ItemAccessMode';
 import type { ListDevices200ItemCredential } from './listDevices200ItemCredential';
 import type { ListDevices200ItemEffectiveRole } from './listDevices200ItemEffectiveRole';
+import type { ListDevices200ItemExitNode } from './listDevices200ItemExitNode';
 import type { ListDevices200ItemOnline } from './listDevices200ItemOnline';
 import type { ListDevices200ItemOs } from './listDevices200ItemOs';
 import type { ListDevices200ItemReportedState } from './listDevices200ItemReportedState';
@@ -49,6 +50,8 @@ export type ListDevices200Item = {
   /** @nullable */
   credential: ListDevices200ItemCredential;
   tags: string[];
+  exitNode: ListDevices200ItemExitNode;
+  configManagedLocally: boolean;
   reportedState: ListDevices200ItemReportedState;
   /** @nullable */
   reportedStateAt: string | null;
