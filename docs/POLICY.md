@@ -292,6 +292,37 @@ managed process advertising `172.31.0.0/16`; the panel flags it as
 `unknownPeers` with `unapprovedObservedCidrs` and audits
 `route.unapproved_reported`. [verified]
 
+### 7.1 Device-declared routes (spike; not implemented yet)
+
+A different workflow was measured on the pinned client and is written up in
+[docs/SPIKE-DECLARED-ROUTES.md](SPIKE-DECLARED-ROUTES.md): **one** managed
+instance per device, run with `--config-server … --config-dir <dir>`. The
+operator stops the client, edits the persisted `<instance-id>.toml` (adds
+`[[proxy_network]]` and/or `[flags] enable_exit_node = true`), and starts it
+again. Findings that change the design:
+
+- the client persists the pushed config to `<config-dir>/<instance-id>.toml`
+  and reloads it on restart, so the edit is visible in
+  `GetNetworkInstanceConfig` (`proxyCidrs`, `enableExitNode`) [verified];
+- the managed file is `EDITABLE|DELETABLE`, so the next `RunNetworkInstance`
+  — including one with empty `proxy_cidrs` — **overwrites the edit** [verified];
+  an external read-only `-c` file is refused *and* its config cannot even be
+  read, and the refusal is retried on every heartbeat [verified];
+- peers see the declared CIDR on the device's own overlay IP (attributable, no
+  `unknownPeer`), but never the exit-node flag [verified];
+- `enable_manual_routes` with an **empty** `routes` list installs nothing;
+  without it, every advertised proxy CIDR is installed automatically — the
+  panel currently emits it only for non-empty lists, so no receiver is
+  constrained today [verified + source];
+- a receiver never uses an exit node without `exit_nodes`, and even with
+  `exit_nodes` it needs an OS route into the tunnel (`routes: ["0.0.0.0/0"]`
+  loses to the physical default with a lower metric) [verified].
+
+Implementation (pending approval) must therefore gate the push loop while a
+declaration is pending, treat read-only configs as a state rather than an error,
+and always push an explicit manual-route list to receivers. Until then the
+behaviour above is what a deployment gets.
+
 ## 8. API surface
 
 | endpoint | role | purpose |
