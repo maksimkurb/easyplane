@@ -20,7 +20,9 @@ export function TopBar() {
       <PageContainer className="flex h-14 items-center gap-1 sm:gap-3">
         <Link
           aria-label={t("brand.logoAlt")}
-          className="hidden h-10 items-center gap-2.5 pr-1 text-[15px] font-semibold sm:flex"
+          className={`h-10 items-center gap-2.5 pr-1 text-[15px] font-semibold ${
+            isHome ? "flex" : "hidden sm:flex"
+          }`}
           href="/networks"
         >
           <LogoMark />
