@@ -599,10 +599,10 @@ function ModeCard({
   return (
     <button
       aria-checked={active}
-      className={`flex min-h-16 cursor-pointer items-start gap-3 rounded-[10px] px-3.5 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none ${
+      className={`flex min-h-11 cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none ${
         active
-          ? "bg-brand-soft ring-2 ring-brand"
-          : "bg-card ring-1 ring-line-2 hover:bg-surface-2"
+          ? "bg-brand-soft ring-1 ring-brand ring-inset"
+          : "bg-card ring-1 ring-line-2 ring-inset hover:bg-surface-2"
       }`}
       onClick={onClick}
       role="radio"
@@ -610,13 +610,15 @@ function ModeCard({
     >
       <span
         aria-hidden="true"
-        className={`mt-0.5 size-[18px] flex-none rounded-full ${
-          active ? "bg-card ring-[5px] ring-brand" : "ring-[1.5px] ring-line-2"
+        className={`grid size-4 flex-none place-items-center rounded-full bg-card ring-1 ring-inset ${
+          active ? "ring-brand" : "ring-line-2"
         }`}
-      />
+      >
+        {active ? <span className="size-2 rounded-full bg-brand" /> : null}
+      </span>
       <span className="min-w-0">
-        <span className="block font-medium">{label}</span>
-        <span className="mt-0.5 block text-xs text-fg-3">{hint}</span>
+        <span className="block text-sm leading-5 font-medium">{label}</span>
+        <span className="block text-xs leading-4 text-fg-3">{hint}</span>
       </span>
     </button>
   )
