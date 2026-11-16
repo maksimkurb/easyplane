@@ -1,23 +1,30 @@
 #!/bin/sh
-# Rendezvous leaf wrapper: forbid leaf-to-leaf *underlay* traffic, then run the
-# stock easytier-core.
+# Rendezvous leaf wrapper: leave the leaf with no underlay path except its own
+# docker networks, then run the stock easytier-core.
 #
 # Why: the "isolated pair" assertions (relay OFF must drop the data, relay ON
 # must carry it, a non-whitelisted network gets no relay) only measure the
-# node's relay decision if the two leaves have no direct path. That used to be
-# provided implicitly by the docker daemon's inter-bridge isolation rules
-# (DOCKER-ISOLATION-STAGE-*), which is ambient daemon/kernel state: when those
-# rules are not effective on a runner, two containers on different bridges route
-# to each other, easytier pairs them directly (route cost 1) and the relay
-# assertions fail for a reason that has nothing to do with the node.
+# node's relay decision if the two leaves cannot reach each other directly.
+# EasyTier pairs any two peers it can address: a route cost of 1 means a direct
+# peer connection that never touches the node, so relay OFF passes traffic and
+# the assertion fails for a reason that has nothing to do with the node.
 #
-# EASYPLANE_UNDERLAY_BLOCK lists the underlay addresses (docker data and control
-# addresses) of the *other* leaves in this test, comma separated. A `prohibit`
-# route inside this container's own network namespace makes them unreachable
-# before easytier starts, so the premise is enforced on every host and there is
-# no window in which a direct peer connection can form. The node's own addresses
-# are not listed, and relayed data arrives from the node's address, so relay ON
-# is unaffected.
+# Two mechanisms are removed here, both outside the node's control:
+#
+#  * another docker bridge. That is supposed to be blocked by the daemon's
+#    DOCKER-ISOLATION-STAGE-* rules, which is ambient daemon/kernel state.
+#  * anything else the host can route, in particular an address of the *host*
+#    itself. EasyTier discovers public/interface addresses (STUN, peer RPC) and
+#    a hosted runner's public address is a local address on the host, so two
+#    containers behind the same NAT can hairpin through it. That path survives
+#    any address blacklist and appears as an ordinary direct peer.
+#
+# So a leaf keeps only its directly connected subnets (its data network with the
+# node, its control network with the relay) and loses the default route, plus a
+# `prohibit` route for each of the other leaves' docker addresses (diagnostics in
+# `ip route show`, and no window before EasyTier starts). The node's own
+# addresses are untouched, and relayed data arrives from the node, so relay ON
+# still works.
 set -eu
 
 if [ -n "${EASYPLANE_UNDERLAY_BLOCK:-}" ]; then
@@ -29,5 +36,8 @@ if [ -n "${EASYPLANE_UNDERLAY_BLOCK:-}" ]; then
     }
   done
 fi
+
+ip route del default 2>/dev/null || true
+ip -6 route del default 2>/dev/null || true
 
 exec easytier-core "$@"
