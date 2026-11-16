@@ -15,7 +15,9 @@ names and subnet/exit-node approvals are managed from the panel; the browser
 updates live over SSE and a connectivity map shows direct vs relayed paths.
 M4 adds network import (TOML, share link, live device), hardening, optional
 Prometheus metrics, the UDP session layer, and a load test with hundreds of
-simulated clients. An optional **bundled rendezvous node** (a stock
+simulated clients. A network can additionally authenticate devices with
+per-device credentials instead of one shared secret (mode B); see
+[docs/CREDENTIALS.md](docs/CREDENTIALS.md). An optional **bundled rendezvous node** (a stock
 `easytier-core` public node, no data relay by default) is shipped as a compose
 profile for networks that cannot reach a hub directly.
 
@@ -25,6 +27,7 @@ profile for networks that cannot reach a hub directly.
 - [docs/PERFORMANCE.md](docs/PERFORMANCE.md) — load-test method and measured numbers
 - [docs/REALTIME.md](docs/REALTIME.md) — SSE design, topology collection, the map
 - [docs/POLICY.md](docs/POLICY.md) — policy compiler, tag/group mapping, honest limits
+- [docs/CREDENTIALS.md](docs/CREDENTIALS.md) — per-device credentials: anchors, members, revocation, the no-anchor window
 - [docs/BRIEF.md](docs/BRIEF.md), [docs/USER_STORIES.md](docs/USER_STORIES.md)
 
 ## Architecture
@@ -182,8 +185,9 @@ Concrete Keycloak, Authentik and Google Workspace examples are in
 | --- | --- | --- | --- |
 | read networks, devices, invites, policy, DNS, routes | ✅ | ✅ | ✅ |
 | read audit log, reveal/rotate secrets, export/import networks | — | — | ✅ |
-| create/revoke invites, approve/block/delete devices, edit desired config, set advertised endpoints | — | ✅ | ✅ |
+| create/revoke invites, approve/block/delete devices, edit desired config, set advertised endpoints, revoke/renew a member credential | — | ✅ | ✅ |
 | create/delete networks, edit policy, approve routes, create tags, toggle MagicDNS, edit the peer list, mark a device as hub | — | — | ✅ |
+| switch authentication mode, change a device role, rotate a network secret, remove an anchor (acknowledged) | — | — | ✅ |
 
 All checks are server-side pre-handlers; the UI only hides controls. State
 changing requests need the session-bound CSRF token from the `easyplane_csrf`
@@ -208,7 +212,9 @@ entries** (pushable exactly as before) and shown in the preview; when adopting
 from a device, a raw URL that exactly equals another device's advertised
 endpoint is proposed for linking, which converts it into a device-backed entry
 and stops that device from dialling itself. Credential-mode networks (a private
-key with no shared secret) are refused instead of being broken silently. The
+key with no shared secret) are refused instead of being broken silently, and
+the error explains how to add the device as a member of a credentials network
+instead. The
 reverse direction is available as an audited admin export
 (`?format=toml|share-link`). Formats, field mapping and golden tests are
 described in [docs/PROTOCOL.md](docs/PROTOCOL.md) §13.2.
@@ -230,6 +236,40 @@ described in [docs/PROTOCOL.md](docs/PROTOCOL.md) §13.2.
 - [docs/POLICY.md](docs/POLICY.md) lists exactly which Tailscale constructs map
   cleanly, which are approximated and which are unsupported — including the
   EasyTier limits that no control plane can work around.
+
+## Device authentication: shared secret or credentials
+
+A network authenticates devices in one of two ways (admin, **Device
+authentication** on the network page; full design and honest limits in
+[docs/CREDENTIALS.md](docs/CREDENTIALS.md)):
+
+- **Shared secret (default):** every device knows the network secret. Simple,
+  no dependencies; removing a device does not take the secret back and one leak
+  exposes the whole network.
+- **Per-device credentials:** **anchors** (always-on nodes, e.g. a server/VPS)
+  hold the secret and publish the trusted credential list over OSPF; **members**
+  join with their own X25519 credential and never see the secret, so access is
+  revocable per device, has a TTL and can carry EasyTier ACL groups. The panel
+  issues credentials with `node:crypto`, stores them AES-256-GCM at rest,
+  pushes them to anchors, renews them before expiry and revokes them on demand.
+
+The first device of a credentials network must be an anchor. At least one anchor
+must be **online** for new members to connect through a rendezvous node: the
+node learns the network and its trusted keys from a secret-verified anchor. The
+network card warns at zero and at one anchor. Anchors are permanent secret
+holders — removing one is only cosmetic until the secret is rotated, so the UI
+blocks that removal behind an explained acknowledgement and a guided rotation.
+Switching modes is a dry-run-guided migration; the reverse direction is
+explained as the largest blast radius. Credential-mode configs are still refused
+on import (the key is a device identity, not a network).
+
+Verified with the real pinned client: a member joins an anchor directly and
+through the rendezvous node, a revoke cuts a reconnecting member immediately
+and a live relayed session within ~2 minutes, expiry drops live peers at the
+timestamp, and with every anchor offline a new member is refused by the node
+and recovers automatically when an anchor returns. Credential changes restart
+the anchor instance for a moment because the config-server channel cannot patch
+`managed_credentials` in place.
 
 ## Hub peers and self-dialling
 
@@ -368,7 +408,9 @@ docker compose -f docker-compose.test.yml --profile test build
 bun run test:conformance     # real clients over ws/wss/tcp/udp + M1/M2/M3/M4 flows
 ```
 
-The conformance suite proves, with real clients: invite → pending → approve →
+The conformance suite proves, with real clients: credential mode (member joins
+through the rendezvous node, revoke, the no-anchor window and recovery);
+invite → pending → approve →
 config running → revision change → rollback → offline/online → block; ACL
 enforcement (200 on an allowed port, timeout on a denied one, both directions);
 MagicDNS resolution; approved vs unapproved subnet routes; the M3 hub-and-spoke

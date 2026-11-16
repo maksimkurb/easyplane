@@ -600,6 +600,89 @@ bandwidth, while still letting every secret-holding network discover peers.
    `relay_all_peer_rpc=true` admits them for discovery while still not relaying
    data.
 
+## 4f. Credential-mode networks (per-device access)
+
+A network can authenticate devices with per-device credentials instead of one
+shared secret (**Device authentication** on the network page). The full design,
+the wire contract and the measured limits are in
+[docs/CREDENTIALS.md](CREDENTIALS.md); this section is the operator view.
+
+### Roles and the one rule that matters
+
+- **Anchors** hold the network secret, receive every member's credential in
+  `managed_credentials`, and publish the trusted key list. They are trusted
+  permanently: removing one from the panel does **not** revoke its knowledge.
+  Only a secret rotation does.
+- **Members** join with a revocable X25519 credential and never see the secret.
+- A credentials network needs at least one **approved** anchor, and at least one
+  anchor **online** for new members to connect through a rendezvous node. Two
+  always-on anchors are the recommended deployment. The network card warns at
+  zero and at one anchor.
+
+### Enable it
+
+1. Network page → **Device authentication** → **Switch to per-device
+   credentials**.
+2. Pick the anchors (servers/VPS nodes) in the dialog and run the dry-run
+   preview.
+3. Apply. The selected devices keep the secret; every other approved device
+   becomes a member and receives a credential immediately.
+4. Create invites with the new "What kind of device is this?" choice (anchor or
+   regular device). The very first device of a credentials network must be an
+   anchor; the API rejects a member before that.
+
+The reverse migration (**Switch back to a shared secret**) gives every device
+the secret again and revokes all credentials. Removed devices can join again
+until the secret is rotated; the dialog requires an explicit acknowledgement.
+
+### Credential lifetime and renewal
+
+- `EASYPLANE_CREDENTIAL_TTL_DAYS` (default 90) and
+  `EASYPLANE_CREDENTIAL_RENEW_BEFORE_DAYS` (default 14) control issue/renewal.
+  Renewal runs hourly, is batched per network and is idempotent.
+- **Every credential change restarts the anchors' EasyTier instance** (the
+  config-server channel has no hot patch); expect a short blip on revoke and on
+  renewal. Keep the TTL long unless you have a reason not to.
+- Audit entries: `credential.issued`, `credential.reissued`,
+  `credential.renewed`, `credential.revoked`, `credential.revoked_all`,
+  `credential.groups_updated`, `network.access_mode_changed`,
+  `device.role_changed`, `device.anchor_removed_acknowledged`. No key material
+  is ever in them.
+
+### Revoking and removing devices
+
+- **Member:** one click (**Revoke access**) revokes the key, repushes anchors,
+  deletes the running instance and blocks the device. Re-approving issues a new
+  key. A live session through a rendezvous node can take up to ~2 minutes to
+  drop (upstream OSPF/GC timing); the anchors and expiry act within seconds.
+- **Anchor:** block/delete shows a blocking dialog that explains the device
+  still knows the secret and offers a secret rotation. "Remove anyway" is
+  audited. Removing the device also drops its endpoint from the network peer
+  list, so other devices stop dialling it.
+
+### Rotating the secret
+
+`POST /api/networks/:id/secret/rotate` (or the removal dialog) gives every
+device a new secret and repushes them. **Member credentials stay valid**:
+members never verify the HMAC proofs and anchors re-sign them with the new
+secret. If the network uses the bundled rendezvous node, rotate the node's
+secret in the same window — its private mode admits only its own secret:
+
+1. set the new `RENDEZVOUS_NETWORK_SECRET` on the node and
+   `EASYPLANE_RENDEZVOUS_SECRET` on the panel, restart both;
+2. rotate/align the network secret and let the anchors repush.
+
+Rotating only the anchors while the node keeps the old secret makes the node
+reject them (`private mode is turned on, foreign network secret mismatch`).
+
+### Import
+
+A credential-mode `NetworkConfig` (`secure_mode.local_private_key` or
+`credential_file` with no `network_secret`) is still refused: the private key is
+a *device* identity, not a network, and adopting it would either break the
+chain or open the network. Create the network, add the device as a member and
+use the credential the panel issues.
+
 ## 5. Operations
 
 - `GET /health` returns database and client counts plus the version (from

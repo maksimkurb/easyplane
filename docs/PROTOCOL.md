@@ -343,10 +343,11 @@ Observed behaviour with the real client:
   callable, but M1 converges devices with `RunNetworkInstance` + verification
   instead (see §10.4) rather than deleting whatever the server does not list.
   `RetainNetworkInstance` remains available for a future "adopt and prune" mode.
-- **Credential-mode networks** (`secure_mode.local_private_key` or
-  `credential_file` with no `network_secret`). EasyPlane pushes shared-secret
-  networks; importing such a config is refused instead of silently opening the
-  network.
+- **Importing a credential-mode config** (`secure_mode.local_private_key` or
+  `credential_file` with no `network_secret`). EasyPlane *runs* credential
+  networks (§15) but refuses to adopt such a config as a network: the private
+  key is a device identity, not a network. The error points at the supported
+  flow (create the network, add the device as a member).
 - **zstd compression of our own RPC bodies.** We always send uncompressed and
   ask the client not to compress responses. Inbound zstd is supported when the
   Node runtime provides `zlib.zstdDecompressSync`.
@@ -972,4 +973,42 @@ point `RENDEZVOUS_IMAGE` at its own image built from the pin.
   and volume. Relay operators can also observe traffic patterns.
 - The map's direct/relayed edge comes from OSPF `Route.cost`/`next_hop_peer_id`
   as reported by each device; it is not an independent probe of the path.
+
+## 15. Credential-mode networks (mode B)
+
+The full design, procedures and measured limits are in
+[docs/CREDENTIALS.md](CREDENTIALS.md). On the wire nothing new is called: the
+difference is entirely in the pushed `NetworkConfig`.
+
+**Member** [verified with the real client]:
+
+```text
+networkSecret   = absent            # `gen_config` then builds a name-only
+                                    # NetworkIdentity (NetworkIdentity::new_credential)
+secureMode      = { enabled: true, localPrivateKey: base64(32-byte X25519 key) }
+managedCredentials = []             # members never publish a trust list
+```
+
+**Anchor** [verified]:
+
+```text
+networkSecret   = <the network secret>
+secureMode      = { enabled: true }
+managedCredentials = every active member credential
+```
+
+`managed_credentials` entries carry the member's **private** key
+(`credential_secret = base64(X25519 private)`), its ACL `groups`, `allow_relay`,
+`allowed_proxy_cidrs`, `expiry_unix` and `reusable`. The anchor publishes the
+derived public keys over OSPF as `TrustedCredentialPubkeyProof`, HMAC-SHA256
+signed with the network secret (`peer_rpc.rs`); anchors verify, a public node
+accepts them from a secret-verified anchor (`foreign_network/mod.rs`). This is
+why a rendezvous node admits a credential member only while the network is
+established there by an anchor.
+
+`WebClientService` has no config-patch method, so changing
+`managed_credentials` means a full `RunNetworkInstance` (the anchor instance
+restarts briefly) [source: `management/full/process_rpc.rs`]. `GetNetworkInstanceConfig`
+reports `managedCredentials` and the derived `secureMode.localPublicKey`, which
+is what the push compiler compares to detect revoke/renew drift.
 
