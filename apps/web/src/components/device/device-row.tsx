@@ -23,36 +23,24 @@ import {
   useBlockDevice,
   useDeleteDevice,
   usePushDeviceConfig,
-  useRenameDevice,
   useRevokeDeviceCredential,
-  useSetDeviceTags,
   useUpdateDeviceHub,
-  useListTags,
   useListUsers,
 } from "@/api/generated/easyplane"
 import type { ListDevices200Item, ListDeviceRoutes200Item } from "@/api/generated/model"
 import { AnchorRemovalDialog } from "@/components/anchor-removal-dialog"
 import { DeviceRouteChips } from "@/components/routes/device-route-chips"
 import { useAuth } from "@/auth/auth-context"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Chip, Dot } from "@/components/ui/chip"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { DeviceIcon } from "@/components/device/device-icon"
+import { DeviceRenameDialog } from "@/components/device/device-rename-dialog"
+import { DeviceTagsDialog } from "@/components/device/device-tags-dialog"
 import { deviceName, osLabel } from "@/lib/device-presentation"
 import { formatRelativeTime } from "@/lib/format"
 
@@ -79,8 +67,6 @@ export function DeviceRow({
   const queryClient = useQueryClient()
   const [renameOpen, setRenameOpen] = useState(false)
   const [tagsOpen, setTagsOpen] = useState(false)
-  const [dnsName, setDnsName] = useState(device.dnsName ?? "")
-  const [selectedTags, setSelectedTags] = useState<string[]>(device.tags)
   const [anchorOperation, setAnchorOperation] = useState<"block" | "delete" | null>(null)
 
   const name = deviceName(device)
@@ -97,7 +83,6 @@ export function DeviceRow({
     device.approvedAt !== null &&
     now - Date.parse(device.approvedAt) < 86_400_000
   const lastSeen = online ? t("devices.connected") : formatRelativeTime(device.lastSeenAt, i18n.language) ?? t("common.none")
-  const tags = useListTags({ query: { enabled: tagsOpen } })
   const users = useListUsers({
     query: { enabled: isAdmin && Boolean(device.ownerUserId) },
   })
@@ -114,26 +99,6 @@ export function DeviceRow({
 
   const push = usePushDeviceConfig({
     mutation: { onSuccess: () => toast.success(t("devices.pushRequested")), onError },
-  })
-  const rename = useRenameDevice({
-    mutation: {
-      onSuccess: async () => {
-        setRenameOpen(false)
-        toast.success(t("magicDns.renamed"))
-        await invalidate()
-      },
-      onError,
-    },
-  })
-  const setTags = useSetDeviceTags({
-    mutation: {
-      onSuccess: async () => {
-        setTagsOpen(false)
-        toast.success(t("devices.tagsSaved"))
-        await invalidate()
-      },
-      onError,
-    },
   })
   const updateHub = useUpdateDeviceHub({
     mutation: {
@@ -282,19 +247,13 @@ export function DeviceRow({
                 </DropdownMenuItem>
               ) : null}
               <DropdownMenuItem
-                onClick={() => {
-                  setDnsName(device.dnsName ?? name)
-                  setRenameOpen(true)
-                }}
+                onClick={() => setRenameOpen(true)}
               >
                 <PencilIcon />
                 {t("devices.menu.rename")}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => {
-                  setSelectedTags(device.tags)
-                  setTagsOpen(true)
-                }}
+                onClick={() => setTagsOpen(true)}
               >
                 <TagIcon />
                 {t("devices.menu.tags")}
@@ -350,89 +309,22 @@ export function DeviceRow({
         ) : null}
       </div>
 
-      <Dialog onOpenChange={setRenameOpen} open={renameOpen}>
-        <DialogContent size="sm">
-          <form
-            onSubmit={(event) => {
-              event.preventDefault()
-              rename.mutate({ deviceId: device.id, data: { dnsName: dnsName.trim() } })
-            }}
-          >
-            <DialogHeader>
-              <DialogTitle>{t("magicDns.renameTitle")}</DialogTitle>
-              <DialogDescription>{t("magicDns.renameDescription")}</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-2 py-4">
-              <label className="text-[13px] font-medium" htmlFor={`dns-${device.id}`}>
-                {t("magicDns.label")}
-              </label>
-              <Input
-                autoFocus
-                className="font-mono"
-                id={`dns-${device.id}`}
-                onChange={(event) => setDnsName(event.target.value)}
-                required
-                value={dnsName}
-              />
-              <p className="text-xs text-fg-3">
-                {(dnsName || name) + "." + device.magicDnsZone}
-              </p>
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setRenameOpen(false)} type="button" variant="outline">
-                {t("common.cancel")}
-              </Button>
-              <Button disabled={rename.isPending || dnsName.trim() === ""} type="submit">
-                {t("common.save")}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <DeviceRenameDialog
+        currentName={device.dnsName ?? name}
+        deviceId={device.id}
+        networkId={device.networkId}
+        onOpenChange={setRenameOpen}
+        open={renameOpen}
+        zone={device.magicDnsZone}
+      />
 
-      <Dialog onOpenChange={setTagsOpen} open={tagsOpen}>
-        <DialogContent size="sm">
-          <DialogHeader>
-            <DialogTitle>{t("devices.tagsTitle", { name })}</DialogTitle>
-            <DialogDescription>{t("devices.tagsHint")}</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-2 py-3">
-            {(tags.data?.data ?? []).length === 0 ? (
-              <p className="text-sm text-fg-3">{t("devices.noTags")}</p>
-            ) : (
-              (tags.data?.data ?? []).map((tag) => (
-                <label className="flex items-center gap-2 text-sm" key={tag.id}>
-                  <Checkbox
-                    checked={selectedTags.includes(tag.name)}
-                    onCheckedChange={(checked) =>
-                      setSelectedTags((current) =>
-                        checked === true
-                          ? [...current, tag.name]
-                          : current.filter((entry) => entry !== tag.name)
-                      )
-                    }
-                  />
-                  <span className="font-mono text-xs">{tag.name}</span>
-                  <span className="ml-auto text-xs text-fg-3">{tag.deviceCount}</span>
-                </label>
-              ))
-            )}
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setTagsOpen(false)} variant="outline">
-              {t("common.cancel")}
-            </Button>
-            <Button
-              disabled={setTags.isPending}
-              onClick={() =>
-                setTags.mutate({ deviceId: device.id, data: { tags: selectedTags } })
-              }
-            >
-              {t("common.save")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeviceTagsDialog
+        currentTags={device.tags}
+        deviceId={device.id}
+        deviceName={name}
+        onOpenChange={setTagsOpen}
+        open={tagsOpen}
+      />
 
       <AnchorRemovalDialog
         hostname={name}

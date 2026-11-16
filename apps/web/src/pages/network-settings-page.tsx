@@ -20,6 +20,7 @@ import { NetworkAccessCard } from "@/components/network-access-card"
 import { NetworkMagicDnsCard } from "@/components/network-magic-dns-card"
 import { NetworkPeersCard } from "@/components/network-peers-card"
 import { NetworkRendezvousCard } from "@/components/network-rendezvous-card"
+import { NetworkRoutesCard } from "@/components/network-routes-card"
 import { NetworkShell, type NetworkShellData } from "@/components/network/network-shell"
 import { CopyButton } from "@/components/copy-button"
 import { CopyInline } from "@/components/shared/copy-inline"
@@ -206,6 +207,8 @@ function SettingsTab({ data }: { data: NetworkShellData }) {
       <NetworkPeersCard networkId={network.id} />
 
       <NetworkMagicDnsCard networkId={network.id} />
+
+      <NetworkRoutesCard networkId={network.id} />
 
       <NetworkAccessCard network={network} />
 

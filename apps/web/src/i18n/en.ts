@@ -440,6 +440,9 @@ export const enTranslation = {
     noMatches: "No devices match your search.",
     noTags: "No tags yet. Create tags in the policy editor.",
     tagsTitle: "Tags for {{name}}",
+    ownerSaved: "Owner updated",
+    copyMachineId: "Copy machine ID",
+    copyVirtualIp: "Copy virtual IP",
     tagsHint:
       "Tags are policy subjects: they decide which rules apply to this device.",
     tagsSaved: "Tags saved",
@@ -474,6 +477,27 @@ export const enTranslation = {
     detail: {
       title: "Device",
       overview: "Overview",
+      details: "Details",
+      actions: "Device actions",
+      publicIp: "Public IP",
+      joined: "Joined",
+      connections: "Connections",
+      connectionsHint: "Direct and relayed peers reported by the clients.",
+      noConnections:
+        "No connections reported yet. The map fills in after the next probe.",
+      historyHint: "Each change is a revision. Roll back to any of them.",
+      running: "Running",
+      notApplied: "Not applied",
+      notAppliedTitle:
+        "Config {{desired}} isn't applied — the device still runs {{applied}}",
+      pushFailedTitle: "The last config push failed",
+      waitingForDevice: "The device will receive the config when it reconnects.",
+      change: {
+        label: "Change",
+        approval: "Approved by admin",
+        rollback: "Rollback to {{revision}}",
+        manual: "Manual change",
+      },
       config: "Desired config",
       history: "Revision history",
       newRevision: "New revision",
@@ -484,18 +508,21 @@ export const enTranslation = {
       acceptRoutes: "Accept subnet routes from the network",
       identity: "Identity and routes",
       identityHint: "DNS name, tags (policy subjects) and route requests for this device.",
-      owner: "Owner (policy groups)",
+      owner: "Owner",
       noOwner: "No owner",
       endpoints: {
         title: "Advertised endpoints",
         hint:
           "Peer URLs other devices dial to reach this one, one per line. This is network state: changing it repushes the devices that dial it and creates no revision.",
         placeholder: "tcp://node-a.example.com:11010",
+        emptyHint:
+          "Add at least one address, otherwise nobody can dial this hub.",
         save: "Save endpoints",
         saved: "Advertised endpoints saved",
       },
       hub: {
-        title: "Use as hub",
+        title: "Hub",
+        description: "Every other device dials a hub directly.",
         hint:
           "A hub is dialled by every other device. The hub itself receives none of its own endpoints, so it cannot dial its own public address and loop.",
         enabled: "Device is now a hub",
@@ -778,6 +805,7 @@ export const enTranslation = {
   },
   routes: {
     title: "Subnet and exit-node routes",
+    deviceTitle: "Routes",
     description: "Requests stay pending until an admin approves them; only approved routes are pushed.",
     empty: "No route requests yet. Request one from a device page.",
     kind: "Kind",
@@ -807,6 +835,14 @@ export const enTranslation = {
     reportTitle: "Route report from the client",
     unapproved: "Unapproved",
     noReportYet: "No report collected yet. It arrives with the next reconcile tick.",
+    deviceHint:
+      "Networks this device shares with the mesh. Only approved routes are sent.",
+    deviceEmpty: "This device does not share any routes yet.",
+    deviceRouteHint: "Requested by the device",
+    exitNodeApproved: "Exit node approved",
+    acceptRoutesHint:
+      "Subnets and exit nodes approved for other devices become usable here.",
+    acceptRoutesNote: "Use routes shared by other devices",
     deviceHonestNote:
       "Configured comes from GetNetworkInstanceConfig; seen-by-peers from other clients' route tables. Neither can revoke a route set by a separate local instance.",
   },
