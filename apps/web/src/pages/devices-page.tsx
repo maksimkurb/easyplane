@@ -58,6 +58,7 @@ export function DevicesPage({ pendingOnly = false }: { pendingOnly?: boolean }) 
     hostname: string
     networkId: string
     operation: "block" | "delete"
+    useRendezvous: boolean
   } | null>(null)
 
   const networksQuery = useListNetworks()
@@ -318,6 +319,10 @@ export function DevicesPage({ pendingOnly = false }: { pendingOnly?: boolean }) 
                                     hostname: device.hostname,
                                     networkId: device.networkId,
                                     operation: "block",
+                                    useRendezvous:
+                                      (networks ?? []).find(
+                                        (network) => network.id === device.networkId,
+                                      )?.useRendezvous ?? false,
                                   })
                                   return
                                 }
@@ -346,6 +351,10 @@ export function DevicesPage({ pendingOnly = false }: { pendingOnly?: boolean }) 
                                 hostname: device.hostname,
                                 networkId: device.networkId,
                                 operation: "delete",
+                                useRendezvous:
+                                  (networks ?? []).find(
+                                    (network) => network.id === device.networkId,
+                                  )?.useRendezvous ?? false,
                               })
                               return
                             }
@@ -384,6 +393,7 @@ export function DevicesPage({ pendingOnly = false }: { pendingOnly?: boolean }) 
         open={anchorTarget !== null}
         operation={anchorTarget?.operation ?? "block"}
         pending={block.isPending || remove.isPending}
+        useRendezvous={anchorTarget?.useRendezvous ?? false}
       />
     </>
   )

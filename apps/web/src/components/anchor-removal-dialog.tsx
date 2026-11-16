@@ -29,6 +29,7 @@ export function AnchorRemovalDialog({
   hostname,
   networkId,
   operation,
+  useRendezvous = false,
   onClose,
   onConfirm,
   pending,
@@ -37,6 +38,8 @@ export function AnchorRemovalDialog({
   hostname: string
   networkId: string
   operation: "block" | "delete"
+  /** The bundled node pins the secret, so a random rotation is refused. */
+  useRendezvous?: boolean
   onClose: () => void
   onConfirm: () => void
   pending?: boolean
@@ -83,18 +86,24 @@ export function AnchorRemovalDialog({
 
         <div className="space-y-2 rounded border p-3">
           <p className="text-sm font-medium">{t("access.rotateTitle")}</p>
-          <p className="text-xs text-muted-foreground">{t("access.rotateBody")}</p>
+          <p className="text-xs text-muted-foreground">
+            {useRendezvous
+              ? t("access.rotateRendezvousBody")
+              : t("access.rotateBody")}
+          </p>
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              disabled={rotate.isPending}
-              onClick={() => rotate.mutate({ networkId })}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <KeyRoundIcon className="size-4" />
-              {t("access.rotate")}
-            </Button>
+            {useRendezvous ? null : (
+              <Button
+                disabled={rotate.isPending}
+                onClick={() => rotate.mutate({ networkId })}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <KeyRoundIcon className="size-4" />
+                {t("access.rotate")}
+              </Button>
+            )}
             {secret ? (
               <div className="flex min-w-0 items-center gap-2">
                 <code className="max-w-64 truncate rounded bg-muted px-1.5 py-0.5 font-mono text-xs">

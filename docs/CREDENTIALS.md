@@ -84,10 +84,11 @@ Two facts that shaped the design:
 2. **Anchor configs are not hot-patchable over the config-server channel.**
    `WebClientService` has no `PatchConfig`; `RunNetworkInstance` replaces the
    instance (stop + start). Every credential issue/revoke/renew repushes the
-   anchors and restarts their EasyTier instance for a moment [source:
-   `management/full/process_rpc.rs`; observed as the anchor's peer sessions
-   dropping and reconnecting]. That is why the default TTL is long and
-   renewals are batched per network.
+   anchors, so expect a brief interruption while the anchor instance is
+   recreated [source: `management/full/process_rpc.rs`]. The spike changed the
+   anchor config by restarting the whole container, which is a superset of that
+   blip. This is why the default TTL is long and renewals are batched per
+   network.
 
 An anchor must also be in secure mode: the member's Noise handshake (packet
 type 13) is only accepted by a secure-mode peer. A non-secure anchor answers
@@ -117,9 +118,11 @@ the RFC 7748 public-key vector is a unit test].
   `noise_static_pubkey` is disconnected on the next refresh
   (`peer_ospf_route.rs`: "removing untrusted peer from route info") [source +
   verified: the anchor and the node logged exactly that].
-- A public/rendezvous node does **not** know the network secret, so
-  `credential_proof_is_valid` accepts proofs without verifying the HMAC there
-  (`unwrap_or(true)`) [source]. Its trust root is the secret-verified anchor:
+- The public node's **foreign-network instance** has no network secret (it
+  copies the peer's name-only identity), so `credential_proof_is_valid`
+  accepts proofs there without verifying the HMAC (`unwrap_or(true)`)
+  [source]. The parent node may hold its own secret, but the foreign instance
+  cannot see it. Its trust root is therefore the secret-verified anchor:
   a foreign-network entry is created by a peer that proved the node's secret,
   and a credential peer is admitted only if the entry already exists **and**
   its public key is in the OSPF-propagated trusted set
@@ -161,9 +164,12 @@ not inferred.
 - The anchor whose list changed rejects *new* connections within ~1 s
   (`authentication failed: invalid proof and unknown credential` in its log)
   [verified].
-- An established relayed session kept working for **98 s** in one run (the
-  node removed the untrusted peer only on its next OSPF/GC pass) [verified].
-  A member that reconnects after the revoke is refused immediately [verified].
+- An established relayed session kept working for **98 s** in one run when only
+  the anchor list changed and the member kept running (the node removed the
+  untrusted peer only on its next OSPF/GC pass) [verified]. A member that
+  reconnects after the revoke is refused immediately [verified]. EasyPlane's
+  revoke is stronger: it also blocks the device and deletes its running
+  instance, so the device stops at once (conformance proves traffic stops).
 - Revocation is only complete when **every** anchor drops the key. In a
   two-anchor run, removing it from one anchor left the other (and the node,
   which still learned it from the other anchor) trusting the device.
@@ -280,7 +286,7 @@ change: the reconcile loop detects the drift and repushes.
 | `POST /api/devices/:id/credential/renew` | admin | reissue the key now |
 | `POST /api/devices/:id/credential/revoke` | admin | revoke + block the device |
 | `POST /api/networks/:id/secret/rotate` | admin | rotate; reports `credentialsSurvive` and a rendezvous note |
-| `POST/DELETE /api/devices/:id/block|...` | admin/member | anchors require `acknowledgeAnchorRisk: true` in the body (audited) |
+| `POST /api/devices/:id/block`, `DELETE /api/devices/:id` | admin/member | anchors require `{ "acknowledgeAnchorRisk": true }` (audited) |
 
 Invites carry `role`. Device DTOs expose `role`, `effectiveRole`,
 `knowsSecret`, `accessMode` and the device's own credential (public data only).
@@ -352,16 +358,18 @@ acknowledgement.
 - **Anchors are super-devices.** They hold every member's private key and can
   impersonate any member. They are also permanent secret holders: removal
   without rotation is cosmetic.
-- **A member that is offline at the moment of a key rotation** keeps working:
-  its key does not change. A member whose credential was *revoked* and
+- **A member that is offline during a network-secret rotation** keeps working:
+  its credential does not change. A member whose credential was *revoked* and
   reissued while offline converges on reconnect because its own config is
   repushed when it comes back.
 - **No anchor online means no new member joins through the node.** Existing
   sessions survive about 1.5–2 minutes; the panel warns, but it cannot fix the
   upstream admission rule.
-- **Revocation of a live relayed session is not instant** (up to ~2 min in the
-  spike; anchors and expiry are faster). Do not promise "cut off in a second"
-  for sessions that go through a node.
+- **Withdrawing an anchor's trust is not instant for a session that keeps
+  running through a node** (up to ~2 min in the spike; anchors and expiry are
+  faster). The panel's own revoke additionally deletes the member's instance,
+  so it is effectively immediate — but if only the credential list is changed
+  (for example by a script), a node may relay for a while.
 - **Every credential change restarts the anchors** for a moment (full
   `RunNetworkInstance`). Batch changes, keep the TTL long, and expect a short
   blip on revoke.

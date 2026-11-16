@@ -101,6 +101,8 @@ export const enTranslation = {
     created: "Network created",
     secretRotated: "Secret rotated",
     rotate: "Rotate secret",
+    rotateRendezvousBody:
+      "This network uses the bundled rendezvous node, which pins the network secret: rotate RENDEZVOUS_NETWORK_SECRET on the node and EASYPLANE_RENDEZVOUS_SECRET on the panel first, restart both, then use the rendezvous card's Align network secret action. The ordinary random rotation is refused while the node toggle is on.",
     rotateConfirm: "Rotating the secret disconnects existing devices until they receive the new config. Continue?",
     deleteConfirm: "Delete this network, its invites, devices and config history?",
     import: {
@@ -334,6 +336,8 @@ export const enTranslation = {
     rotateBody:
       "Every anchor gets a new secret; members keep their credentials and do not need to re-enrol. If this network uses the bundled rendezvous node, update EASYPLANE_RENDEZVOUS_SECRET on the node too, or its private mode will reject the anchors.",
     rotate: "Rotate secret",
+    rotateRendezvousBody:
+      "This network uses the bundled rendezvous node, which pins the network secret: rotate RENDEZVOUS_NETWORK_SECRET on the node and EASYPLANE_RENDEZVOUS_SECRET on the panel first, restart both, then use the rendezvous card's Align network secret action. The ordinary random rotation is refused while the node toggle is on.",
     rotateDone: "Secret rotated and devices repushed",
     rotateNote:
       "Store the new secret now: it is shown once. The old anchors can no longer join after they are repushed.",

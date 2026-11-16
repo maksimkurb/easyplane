@@ -7,7 +7,6 @@ import type { ManagedClient } from "@easyplane/server";
 import {
   PORTS,
   RENDEZVOUS_TOPOLOGY,
-  dockerComposeAsync,
   execInAsync,
   openRelayPool,
   requireDockerConformanceEnvironment,

@@ -13,6 +13,7 @@ import {
   insertNetworkPeer,
   listDevicesInNetwork,
   listNetworkPeerRecords,
+  listDeviceTags,
   listNetworks,
   networkDeviceCounts,
   nextNetworkPeerPosition,
@@ -1041,6 +1042,12 @@ export class NetworkService {
         }
       }
       const members = await listDevicesInNetwork(this.db, network.id);
+      const tagsByDevice = new Map<string, string[]>();
+      for (const row of await listDeviceTags(this.db, input.orgId)) {
+        const list = tagsByDevice.get(row.deviceId) ?? [];
+        list.push(row.tagName);
+        tagsByDevice.set(row.deviceId, list);
+      }
       for (const device of members) {
         if (device.state !== "approved" || device.role !== "member") continue;
         try {
@@ -1049,6 +1056,7 @@ export class NetworkService {
             device,
             userId: input.userId,
             reason: "access mode switched to credentials",
+            tags: tagsByDevice.get(device.id) ?? [],
           });
         } catch (error) {
           // One failed key must not abort the migration; the retry path above

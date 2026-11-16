@@ -48,7 +48,11 @@ export interface CredentialDto {
   createdAt: string;
 }
 
-function toDto(credential: Credential, now: Date): CredentialDto {
+/** Browser-safe credential view (also used by the device DTO). */
+export function credentialToDto(
+  credential: Credential,
+  now: Date = new Date(),
+): CredentialDto {
   return {
     id: credential.id,
     networkId: credential.networkId,
@@ -140,12 +144,12 @@ export class CredentialService {
   async listForNetwork(networkId: string): Promise<CredentialDto[]> {
     const now = this.now();
     const rows = await listCredentialsForNetwork(this.options.db, networkId);
-    return rows.map((row) => toDto(row, now));
+    return rows.map((row) => credentialToDto(row, now));
   }
 
   async forDevice(deviceId: string): Promise<CredentialDto | null> {
     const row = await getCredentialByDevice(this.options.db, deviceId);
-    return row ? toDto(row, this.now()) : null;
+    return row ? credentialToDto(row, this.now()) : null;
   }
 
   /** Credential status for a device DTO (no secret). */
@@ -218,7 +222,7 @@ export class CredentialService {
     const now = this.now();
     const existing = await getCredentialByDevice(this.options.db, device.id);
     if (existing && !input.force && isCredentialUsable(existing, now)) {
-      return toDto(existing, now);
+      return credentialToDto(existing, now);
     }
     const keypair = generateCredentialKeypair();
     const expiry = new Date(now.getTime() + this.options.ttlMs);
@@ -272,7 +276,7 @@ export class CredentialService {
       },
     });
     await this.changed(network.id, "credential issued", device.id);
-    return toDto(row, now);
+    return credentialToDto(row, now);
   }
 
   /**
@@ -287,7 +291,7 @@ export class CredentialService {
   }): Promise<CredentialDto | null> {
     const row = await getCredentialByDevice(this.options.db, input.deviceId);
     if (!row) return null;
-    if (row.status === "revoked") return toDto(row, this.now());
+    if (row.status === "revoked") return credentialToDto(row, this.now());
     const updated = await updateCredential(this.options.db, row.id, {
       status: "revoked",
       revokedAt: this.now(),
@@ -310,7 +314,7 @@ export class CredentialService {
       },
     });
     await this.changed(row.networkId, "credential revoked");
-    return toDto(updated, this.now());
+    return credentialToDto(updated, this.now());
   }
 
   /**

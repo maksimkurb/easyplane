@@ -58,7 +58,11 @@ import { sha256Hex } from "../security/crypto.js";
 import type { AuditService } from "./audit.js";
 import type { DeviceSessionRegistry } from "./device-sessions.js";
 import { AppError, conflict, invalid, notFound } from "./errors.js";
-import type { CredentialService, CredentialDto } from "./credential-service.js";
+import {
+  credentialToDto,
+  type CredentialService,
+  type CredentialDto,
+} from "./credential-service.js";
 import type { InviteService } from "./invite-service.js";
 import { instanceIdFor, type PushService } from "./push-service.js";
 
@@ -384,7 +388,7 @@ export class DeviceService {
       effectiveRole: role,
       knowsSecret: knowsNetworkSecret(accessMode, device.role),
       accessMode,
-      credential: credential ? this.credentialToDto(credential, now) : null,
+      credential: credential ? credentialToDto(credential, now) : null,
       tags,
       reportedState: device.reportedState,
       reportedStateAt: device.reportedStateAt?.toISOString() ?? null,
@@ -398,31 +402,6 @@ export class DeviceService {
       approvedAt: device.approvedAt?.toISOString() ?? null,
       blockedAt: device.blockedAt?.toISOString() ?? null,
       createdAt: device.createdAt.toISOString(),
-    };
-  }
-
-  private credentialToDto(credential: Credential, now: Date): CredentialDto {
-    const status =
-      credential.status === "revoked"
-        ? "revoked"
-        : credential.expiry.getTime() > now.getTime()
-          ? "active"
-          : "expired";
-    return {
-      id: credential.id,
-      networkId: credential.networkId,
-      deviceId: credential.deviceId,
-      credentialId: credential.credentialId,
-      publicKey: credential.publicKey,
-      groups: credential.groups,
-      allowRelay: credential.allowRelay,
-      allowedProxyCidrs: credential.allowedProxyCidrs,
-      reusable: credential.reusable,
-      expiry: credential.expiry.toISOString(),
-      status,
-      revocationReason: credential.revocationReason,
-      revokedAt: credential.revokedAt?.toISOString() ?? null,
-      createdAt: credential.createdAt.toISOString(),
     };
   }
 
