@@ -261,9 +261,26 @@ describe("rendezvous conformance: private public node, relay off/on", () => {
     const routes = await routesFor("iso-a").catch((error: unknown) =>
       error instanceof Error ? `error: ${error.message}` : String(error),
     );
+    const id = instanceFor("iso-a");
+    const peers = await clientFor("iso-a")
+      .remote.collectNetworkInfo([id])
+      .then((info) =>
+        (info.info?.map[id]?.peers ?? []).map((peer) => ({
+          peerId: peer.peerId,
+          conns: peer.conns.map((conn) => ({
+            tunnel: conn.tunnel,
+            isClient: conn.isClient,
+            lossRate: conn.lossRate,
+          })),
+        })),
+      )
+      .catch((error: unknown) =>
+        error instanceof Error ? `error: ${error.message}` : String(error),
+      );
     throw new Error(
       `${label}, but iso-a reached iso-b over the overlay (HTTP 200); ` +
         `iso-a routes=${safeStringify(routes)}\n` +
+        `iso-a peer connections=${safeStringify(peers)}\n` +
         (await underlayDiagnostics([
           { label: "iso-a", service: LEAVES["iso-a"].service },
           { label: "iso-b", service: LEAVES["iso-b"].service },

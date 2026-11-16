@@ -470,9 +470,15 @@ export async function underlayDiagnostics(
     const routes = await execInAsync(service, ["ip", "route", "show"], {
       allowFailure: true,
     });
+    const sockets = await execInAsync(
+      service,
+      ["sh", "-c", "ss -tunap 2>/dev/null || cat /proc/net/tcp /proc/net/udp"],
+      { allowFailure: true },
+    );
     parts.push(
       `--- ${label} (${service}) addresses:\n${addresses.stdout.trim()}\n` +
-        `--- ${label} (${service}) routes:\n${routes.stdout.trim()}`,
+        `--- ${label} (${service}) routes:\n${routes.stdout.trim()}\n` +
+        `--- ${label} (${service}) sockets:\n${sockets.stdout.trim()}`,
     );
   }
   return parts.join("\n");
