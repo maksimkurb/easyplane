@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { CheckIcon, CopyIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -17,6 +18,7 @@ export function CopyInline({
   label: string
   className?: string
 }) {
+  const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
 
   const copy = async () => {
@@ -46,7 +48,7 @@ export function CopyInline({
         <CopyIcon aria-hidden="true" className="size-3.5 flex-none text-fg-3" />
       )}
       <span aria-live="polite" className="sr-only">
-        {copied ? label : ""}
+        {copied ? t("common.copied") : ""}
       </span>
     </button>
   )

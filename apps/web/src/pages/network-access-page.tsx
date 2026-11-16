@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link } from "wouter"
 import { CheckCircle2Icon, PencilIcon, ShieldIcon, XCircleIcon } from "lucide-react"
 import { toast } from "sonner"
 
@@ -17,6 +16,7 @@ import type { NetworkShellData } from "@/components/network/network-shell"
 import { NetworkShell } from "@/components/network/network-shell"
 import { OptionSelect } from "@/components/shared/option-select"
 import { Button } from "@/components/ui/button"
+import { LinkButton } from "@/components/shared/link-button"
 import { Chip } from "@/components/ui/chip"
 import { Segmented } from "@/components/ui/segmented"
 import {
@@ -81,22 +81,22 @@ function AccessTab({ data }: { data: NetworkShellData }) {
             <p className="text-[13px] text-fg-3">{t("accessPage.rulesHint")}</p>
           </div>
           <div className="flex w-full gap-2 sm:w-auto sm:flex-none">
-            <Button
+            <LinkButton
               className="flex-1 justify-center sm:flex-none"
-              render={<Link href={`/networks/${networkId}/policy?mode=json`} />}
+              href={`/networks/${networkId}/policy?mode=json`}
               size="sm"
               variant="ghost"
             >
               {t("accessPage.editJson")}
-            </Button>
-            <Button
+            </LinkButton>
+            <LinkButton
               className="flex-1 justify-center sm:flex-none"
-              render={<Link href={`/networks/${networkId}/policy?add=rule`} />}
+              href={`/networks/${networkId}/policy?add=rule`}
               size="sm"
               variant="outline"
             >
               {t("accessPage.addRule")}
-            </Button>
+            </LinkButton>
           </div>
         </div>
 
@@ -105,14 +105,14 @@ function AccessTab({ data }: { data: NetworkShellData }) {
             <ShieldIcon aria-hidden="true" className="mx-auto size-6 text-fg-3" />
             <p className="mt-2 text-sm font-medium">{t("accessPage.noRules")}</p>
             <p className="mt-1 text-[13px] text-fg-3">{t("accessPage.noRulesHint")}</p>
-            <Button
+            <LinkButton
               className="mt-3"
-              render={<Link href={`/networks/${networkId}/policy`} />}
+              href={`/networks/${networkId}/policy`}
               size="sm"
               variant="outline"
             >
               {t("accessPage.openEditor")}
-            </Button>
+            </LinkButton>
           </div>
         ) : (
           <>
@@ -134,14 +134,14 @@ function AccessTab({ data }: { data: NetworkShellData }) {
                       : row.proto.toUpperCase()}
                   </p>
                 </div>
-                <Button
+                <LinkButton
                   aria-label={t("accessPage.edit")}
-                  render={<Link href={`/networks/${networkId}/policy`} />}
+                  href={`/networks/${networkId}/policy`}
                   size="icon-sm"
                   variant="ghost"
                 >
                   <PencilIcon className="size-4" />
-                </Button>
+                </LinkButton>
               </li>
             ))}
           </ul>
@@ -174,14 +174,14 @@ function AccessTab({ data }: { data: NetworkShellData }) {
                         : row.proto.toUpperCase()}
                     </TableCell>
                     <TableCell className="pr-4 text-right sm:pr-5">
-                      <Button
+                      <LinkButton
                         aria-label={t("accessPage.edit")}
-                        render={<Link href={`/networks/${networkId}/policy`} />}
+                        href={`/networks/${networkId}/policy`}
                         size="icon-sm"
                         variant="ghost"
                       >
                         <PencilIcon className="size-4" />
-                      </Button>
+                      </LinkButton>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -207,13 +207,13 @@ function AccessTab({ data }: { data: NetworkShellData }) {
               </h2>
               <p className="text-[13px] text-fg-3">{t("accessPage.tagsHint")}</p>
             </div>
-            <Button
-              render={<Link href={`/networks/${networkId}/policy`} />}
+            <LinkButton
+              href={`/networks/${networkId}/policy`}
               size="sm"
               variant="ghost"
             >
               {t("accessPage.manage")}
-            </Button>
+            </LinkButton>
           </div>
           <div className="flex flex-wrap gap-2 px-4 pb-4 sm:px-5">
             {tags.length === 0 ? (
@@ -244,13 +244,13 @@ function AccessTab({ data }: { data: NetworkShellData }) {
                     : t("accessPage.noVersionHint"))}
               </p>
             </div>
-            <Button
-              render={<Link href={`/networks/${networkId}/policy`} />}
+            <LinkButton
+              href={`/networks/${networkId}/policy`}
               size="sm"
               variant="ghost"
             >
               {t("accessPage.history")}
-            </Button>
+            </LinkButton>
           </div>
           <div className="px-4 pb-4 sm:px-5">
             <p className="flex items-center gap-2.5 text-[13px] text-fg-2">
@@ -332,6 +332,7 @@ function TestAccessCard({
           <label className="flex min-w-0 flex-col gap-1.5">
             <span className="text-[13px] font-medium">{t("policy.source")}</span>
             <OptionSelect
+              aria-label={t("policy.source")}
               empty={
                 approvedDevices.length === 0 ? t("policy.noSourceDevices") : undefined
               }
@@ -345,6 +346,7 @@ function TestAccessCard({
           <label className="flex min-w-0 flex-col gap-1.5">
             <span className="text-[13px] font-medium">{t("policy.destination")}</span>
             <OptionSelect
+              aria-label={t("policy.destination")}
               empty={
                 deviceOptions.length + approvedCidrs.length === 0
                   ? t("policy.noDestinationOptions")

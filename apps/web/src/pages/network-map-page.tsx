@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link } from "wouter"
 import {
   AlertTriangleIcon,
   ArrowRightIcon,
@@ -24,6 +23,7 @@ import { NetworkShell, type NetworkShellData } from "@/components/network/networ
 import { CompactTopologyMap } from "@/components/topology/compact-topology-map"
 import { TopologyMap } from "@/components/topology/topology-map"
 import { Button } from "@/components/ui/button"
+import { LinkButton } from "@/components/shared/link-button"
 import { Chip } from "@/components/ui/chip"
 import {
   Empty,
@@ -381,23 +381,23 @@ function MapSidePanel({
 
       <div className="p-4 pt-3">
         {node.deviceId ? (
-          <Button
+          <LinkButton
             className="w-full"
-            render={<Link href={`/devices/${node.deviceId}`} />}
+            href={`/devices/${node.deviceId}`}
             variant="outline"
           >
             {t("topology.openDevice")}
             <ArrowRightIcon className="size-4" />
-          </Button>
+          </LinkButton>
         ) : (
-          <Button
+          <LinkButton
             className="w-full"
-            render={<Link href={`/networks/${networkId}`} />}
+            href={`/networks/${networkId}`}
             variant="outline"
           >
             {t("deviceDrawer.openNetwork")}
             <ArrowRightIcon className="size-4" />
-          </Button>
+          </LinkButton>
         )}
       </div>
     </div>

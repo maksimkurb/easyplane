@@ -135,8 +135,7 @@ export function ApprovalsPanel({
         <Chip variant="warn">{count}</Chip>
       </div>
 
-      {canManage
-        ? pendingDevices.map((device) => {
+      {pendingDevices.map((device) => {
             const relative = formatRelativeTime(device.createdAt, i18n.language)
             const invite = inviteLabel(device.inviteId)
             return (
@@ -158,28 +157,29 @@ export function ApprovalsPanel({
                     {relative ? ` · ${relative}` : ""}
                   </p>
                 </div>
-                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-none">
-                  <Button
-                    className="justify-center"
-                    disabled={block.isPending}
-                    onClick={() => rejectWithUndo(device)}
-                    variant="outline"
-                  >
-                    {t("approvals.reject")}
-                  </Button>
-                  <Button
-                    className="justify-center"
-                    disabled={approve.isPending}
-                    onClick={() => approveWithUndo(device)}
-                  >
-                    <CheckIcon className="size-4" />
-                    {t("common.approve")}
-                  </Button>
-                </div>
+                {canManage ? (
+                  <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-none">
+                    <Button
+                      className="justify-center"
+                      disabled={block.isPending}
+                      onClick={() => rejectWithUndo(device)}
+                      variant="outline"
+                    >
+                      {t("approvals.reject")}
+                    </Button>
+                    <Button
+                      className="justify-center"
+                      disabled={approve.isPending}
+                      onClick={() => approveWithUndo(device)}
+                    >
+                      <CheckIcon className="size-4" />
+                      {t("common.approve")}
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             )
-          })
-        : null}
+          })}
 
       {pendingRoutes.map((route) => (
         <div className="border-t border-line first:border-t-0" key={route.id}>

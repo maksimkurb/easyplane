@@ -102,6 +102,7 @@ export function NetworkMagicDnsCard({ networkId }: { networkId: string }) {
           <div className="grid gap-1">
             <span className="text-xs text-muted-foreground">{t("magicDns.zone")}</span>
             <Input
+              aria-label={t("magicDns.zone")}
               className="h-8 w-56 font-mono text-xs"
               disabled={!canManage}
               onChange={(event) => setZone(event.target.value)}

@@ -142,7 +142,7 @@ export function NetworkAccessCard({ network }: { network: AccessCardNetwork }) {
         </div>
       ) : null}
 
-      <div className="overflow-x-auto">
+      <div className="hidden overflow-x-auto sm:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -182,6 +182,31 @@ export function NetworkAccessCard({ network }: { network: AccessCardNetwork }) {
             </TableRow>
           </TableBody>
         </Table>
+      </div>
+
+      <div className="grid gap-3 sm:hidden">
+        {(
+          [
+            ["onboarding", "onboardingShared", "onboardingCredentials"],
+            ["revocation", "revocationShared", "revocationCredentials"],
+            ["blastRadius", "blastRadiusShared", "blastRadiusCredentials"],
+            ["requirements", "requirementsShared", "requirementsCredentials"],
+          ] as const
+        ).map(([aspect, shared, credentials]) => (
+          <div className="rounded-lg bg-surface-2 p-3 ring-1 ring-line" key={aspect}>
+            <p className="text-xs font-medium text-fg-2">
+              {t(`access.compare.${aspect}`)}
+            </p>
+            <p className="mt-1 text-xs">
+              <span className="text-fg-3">{t("access.mode.shared_secret")}: </span>
+              {t(`access.compare.${shared}`)}
+            </p>
+            <p className="mt-0.5 text-xs">
+              <span className="text-fg-3">{t("access.mode.credentials")}: </span>
+              {t(`access.compare.${credentials}`)}
+            </p>
+          </div>
+        ))}
       </div>
 
       <p className="text-xs text-muted-foreground">

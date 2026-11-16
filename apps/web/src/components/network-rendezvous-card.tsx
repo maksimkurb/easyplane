@@ -52,7 +52,7 @@ export function NetworkRendezvousCard({ network }: { network: GetNetwork200 }) {
   const update = useUpdateNetwork({
     mutation: {
       onSuccess: async () => {
-        toast.success(t("networks.rendezvous.updated"))
+        toast.success(t("rendezvous.updated"))
         await refresh()
       },
       onError,
@@ -61,7 +61,7 @@ export function NetworkRendezvousCard({ network }: { network: GetNetwork200 }) {
   const align = useAlignNetworkRendezvousSecret({
     mutation: {
       onSuccess: async () => {
-        toast.success(t("networks.rendezvous.aligned"))
+        toast.success(t("rendezvous.aligned"))
         await refresh()
       },
       onError,
@@ -89,19 +89,19 @@ export function NetworkRendezvousCard({ network }: { network: GetNetwork200 }) {
   return (
     <SectionCard
       action={<RadioTowerIcon className="size-4 text-muted-foreground" />}
-      description={t("networks.rendezvous.description")}
-      title={t("networks.rendezvous.title")}
+      description={t("rendezvous.description")}
+      title={t("rendezvous.title")}
     >
       {!info.configured ? (
         <Alert>
-          <AlertDescription>{t("networks.rendezvous.notConfigured")}</AlertDescription>
+          <AlertDescription>{t("rendezvous.notConfigured")}</AlertDescription>
         </Alert>
       ) : (
         <>
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <div className="sm:col-span-2">
               <dt className="text-muted-foreground">
-                {t("networks.rendezvous.endpoints")}
+                {t("rendezvous.endpoints")}
               </dt>
               <dd className="mt-1 flex flex-wrap gap-1">
                 {info.endpoints.map((endpoint) => (
@@ -116,63 +116,63 @@ export function NetworkRendezvousCard({ network }: { network: GetNetwork200 }) {
             </div>
             <div>
               <dt className="text-muted-foreground">
-                {t("networks.rendezvous.relayData")}
+                {t("rendezvous.relayData")}
               </dt>
               <dd className="mt-1">
                 <Badge variant={info.relayData ? "warning" : "success"}>
                   {info.relayData
-                    ? t("networks.rendezvous.relayOn")
-                    : t("networks.rendezvous.relayOff")}
+                    ? t("rendezvous.relayOn")
+                    : t("rendezvous.relayOff")}
                 </Badge>
               </dd>
             </div>
             <div>
               <dt className="text-muted-foreground">
-                {t("networks.rendezvous.privateMode")}
+                {t("rendezvous.privateMode")}
               </dt>
               <dd className="mt-1">
                 <Badge variant={info.privateMode ? "success" : "destructive"}>
                   {info.privateMode
-                    ? t("networks.rendezvous.privateOn")
-                    : t("networks.rendezvous.privateOff")}
+                    ? t("rendezvous.privateOn")
+                    : t("rendezvous.privateOff")}
                 </Badge>
               </dd>
             </div>
             {info.networkName ? (
               <div>
                 <dt className="text-muted-foreground">
-                  {t("networks.rendezvous.nodeNetwork")}
+                  {t("rendezvous.nodeNetwork")}
                 </dt>
                 <dd className="mt-1 font-mono text-xs">{info.networkName}</dd>
               </div>
             ) : null}
             <div>
               <dt className="text-muted-foreground">
-                {t("networks.rendezvous.secretMatch")}
+                {t("rendezvous.secretMatch")}
               </dt>
               <dd className="mt-1 text-xs">
                 {info.secretMatches === true
-                  ? t("networks.rendezvous.secretMatches")
+                  ? t("rendezvous.secretMatches")
                   : info.secretMatches === false
-                    ? t("networks.rendezvous.secretDiffers")
-                    : t("networks.rendezvous.secretUnknown")}
+                    ? t("rendezvous.secretDiffers")
+                    : t("rendezvous.secretUnknown")}
               </dd>
             </div>
           </dl>
 
           <p className="mt-4 text-sm text-muted-foreground">
             {info.relayData
-              ? t("networks.rendezvous.explainRelay")
-              : t("networks.rendezvous.explainRendezvous")}
+              ? t("rendezvous.explainRelay")
+              : t("rendezvous.explainRendezvous")}
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            {t("networks.rendezvous.cgnatNote")}
+            {t("rendezvous.cgnatNote")}
           </p>
 
           {secretMismatch ? (
             <Alert className="mt-4">
               <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <span>{t("networks.rendezvous.secretMismatchWarning")}</span>
+                <span>{t("rendezvous.secretMismatchWarning")}</span>
                 {isAdmin ? (
                   <Button
                     disabled={busy}
@@ -180,7 +180,7 @@ export function NetworkRendezvousCard({ network }: { network: GetNetwork200 }) {
                     size="sm"
                     variant="outline"
                   >
-                    {t("networks.rendezvous.alignSecret")}
+                    {t("rendezvous.alignSecret")}
                   </Button>
                 ) : null}
               </AlertDescription>
@@ -194,18 +194,18 @@ export function NetworkRendezvousCard({ network }: { network: GetNetwork200 }) {
                 disabled={!isAdmin || busy}
                 onCheckedChange={toggle}
               />
-              <span>{t("networks.rendezvous.useBundled")}</span>
+              <span>{t("rendezvous.useBundled")}</span>
             </label>
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted-foreground">
-                {t("networks.rendezvous.devicesDial", {
+                {t("rendezvous.devicesDial", {
                   count: network.peerPlan.rendezvousEndpoints,
                 })}
               </span>
               <Badge variant={info.useBundled ? "success" : "outline"}>
                 {info.useBundled
-                  ? t("networks.rendezvous.on")
-                  : t("networks.rendezvous.off")}
+                  ? t("rendezvous.on")
+                  : t("rendezvous.off")}
               </Badge>
             </div>
           </div>
@@ -214,7 +214,7 @@ export function NetworkRendezvousCard({ network }: { network: GetNetwork200 }) {
 
       {noDialTarget ? (
         <Alert className="mt-4">
-          <AlertDescription>{t("networks.rendezvous.noDialTarget")}</AlertDescription>
+          <AlertDescription>{t("rendezvous.noDialTarget")}</AlertDescription>
         </Alert>
       ) : null}
 
@@ -230,35 +230,35 @@ export function NetworkRendezvousCard({ network }: { network: GetNetwork200 }) {
             }
           />
           <span>
-            <span className="font-medium">{t("networks.rendezvous.p2pOnly")}</span>
+            <span className="font-medium">{t("rendezvous.p2pOnly")}</span>
             <span className="block text-xs text-muted-foreground">
-              {t("networks.rendezvous.p2pOnlyHint")}
+              {t("rendezvous.p2pOnlyHint")}
             </span>
           </span>
         </label>
         <Badge variant={network.p2pOnly ? "warning" : "outline"}>
           {network.p2pOnly
-            ? t("networks.rendezvous.on")
-            : t("networks.rendezvous.off")}
+            ? t("rendezvous.on")
+            : t("rendezvous.off")}
         </Badge>
       </div>
       {network.p2pOnly ? (
         <Alert className="mt-3">
-          <AlertDescription>{t("networks.rendezvous.p2pOnlyWarning")}</AlertDescription>
+          <AlertDescription>{t("rendezvous.p2pOnlyWarning")}</AlertDescription>
         </Alert>
       ) : null}
 
       <Dialog onOpenChange={setConfirmOpen} open={confirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("networks.rendezvous.confirmTitle")}</DialogTitle>
+            <DialogTitle>{t("rendezvous.confirmTitle")}</DialogTitle>
             <DialogDescription>
-              {t("networks.rendezvous.confirmBody")}
+              {t("rendezvous.confirmBody")}
             </DialogDescription>
           </DialogHeader>
           <Alert>
             <AlertDescription>
-              {t("networks.rendezvous.confirmWarning")}
+              {t("rendezvous.confirmWarning")}
             </AlertDescription>
           </Alert>
           <DialogFooter>
@@ -266,7 +266,7 @@ export function NetworkRendezvousCard({ network }: { network: GetNetwork200 }) {
               {t("common.cancel")}
             </Button>
             <Button disabled={busy} onClick={confirm}>
-              {t("networks.rendezvous.confirm")}
+              {t("rendezvous.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

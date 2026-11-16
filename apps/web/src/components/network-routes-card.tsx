@@ -80,7 +80,53 @@ export function NetworkRoutesCard({ networkId }: { networkId: string }) {
       {data.routes.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("routes.empty")}</p>
       ) : (
-        <div className="overflow-x-auto">
+        <>
+          <ul className="divide-y divide-line md:hidden">
+            {data.routes.map((route) => (
+              <li className="px-1 py-3" key={route.id}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    className="font-medium hover:underline"
+                    href={`/devices/${route.deviceId}`}
+                  >
+                    {route.deviceHostname}
+                  </Link>
+                  <Badge variant={stateVariant(route.state)}>
+                    {t(`routes.state.${route.state}`)}
+                  </Badge>
+                </div>
+                <p className="mt-0.5 font-mono text-xs text-fg-3">
+                  {route.kind === "subnet" ? t("routes.subnet") : t("routes.exitNode")}
+                  {" · "}
+                  {route.cidr || "0.0.0.0/0"}
+                </p>
+                {isAdmin && route.state === "pending" ? (
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <Button
+                      disabled={decide.isPending}
+                      onClick={() =>
+                        decide.mutate({ routeId: route.id, data: { state: "rejected" } })
+                      }
+                      size="sm"
+                      variant="outline"
+                    >
+                      {t("routes.reject")}
+                    </Button>
+                    <Button
+                      disabled={decide.isPending}
+                      onClick={() =>
+                        decide.mutate({ routeId: route.id, data: { state: "approved" } })
+                      }
+                      size="sm"
+                    >
+                      {t("common.approve")}
+                    </Button>
+                  </div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        <div className="hidden overflow-x-auto md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -141,6 +187,7 @@ export function NetworkRoutesCard({ networkId }: { networkId: string }) {
             </TableBody>
           </Table>
         </div>
+        </>
       )}
 
       <p className="mt-3 text-xs text-muted-foreground">

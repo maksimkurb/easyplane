@@ -1,13 +1,12 @@
 import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
-import { Link } from "wouter"
 import { ArrowRightIcon } from "lucide-react"
 
 import type {
   GetNetworkTopology200LinksItem as TopologyLink,
   GetNetworkTopology200NodesItem as TopologyNode,
 } from "@/api/generated/model"
-import { Button } from "@/components/ui/button"
+import { LinkButton } from "@/components/shared/link-button"
 import { Chip } from "@/components/ui/chip"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -44,10 +43,10 @@ export function DeviceConnectionsCard({
           </h2>
           <p className="text-[13px] text-fg-3">{t("devices.detail.connectionsHint")}</p>
         </div>
-        <Button render={<Link href={`/networks/${networkId}/map`} />} size="sm" variant="ghost">
+        <LinkButton href={`/networks/${networkId}/map`} size="sm" variant="ghost">
           {t("network.tabs.map")}
           <ArrowRightIcon className="size-4" />
-        </Button>
+        </LinkButton>
       </div>
 
       {loading ? (

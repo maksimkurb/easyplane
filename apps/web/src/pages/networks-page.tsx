@@ -10,6 +10,7 @@ import { PageContainer } from "@/components/layout/page-container"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/shared/field"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { LinkButton } from "@/components/shared/link-button"
 import { Chip, Dot } from "@/components/ui/chip"
 import {
   Dialog,
@@ -80,15 +81,16 @@ export function NetworksPage() {
           </p>
         </div>
         {isAdmin ? (
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-none">
-            <Button
+          <div className="flex w-full gap-2 sm:w-auto sm:flex-none">
+            <LinkButton
+              aria-label={t("networks.import.open")}
               className="flex-1 justify-center sm:flex-none"
-              render={<Link href="/networks/import" />}
+              href="/networks/import"
               variant="outline"
             >
               <FileUpIcon className="size-4" />
-              {t("networks.import.open")}
-            </Button>
+              {t("networks.import.short")}
+            </LinkButton>
             <Button
               className="flex-1 justify-center sm:flex-none"
               onClick={() => setOpen(true)}

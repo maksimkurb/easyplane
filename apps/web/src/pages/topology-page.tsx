@@ -24,6 +24,7 @@ import type {
 import { DeviceDrawer } from "@/components/topology/device-drawer"
 import { TopologyMap } from "@/components/topology/topology-map"
 import { OptionSelect } from "@/components/shared/option-select"
+import { PageContainer } from "@/components/layout/page-container"
 import { PageHeader } from "@/components/shared/page-header"
 import { SectionCard } from "@/components/shared/section-card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -108,7 +109,8 @@ export function TopologyPage() {
     now - Date.parse(snapshot.collectedAt) > 60_000
 
   return (
-    <>
+    <PageContainer className="py-6 sm:py-8">
+      <>
       <PageHeader
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -251,7 +253,8 @@ export function TopologyPage() {
         open={Boolean(selectedNode)}
         node={selectedNode}
       />
-    </>
+      </>
+    </PageContainer>
   )
 }
 

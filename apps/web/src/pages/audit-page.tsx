@@ -3,6 +3,7 @@ import { ScrollTextIcon } from "lucide-react"
 
 import { useListAuditLog } from "@/api/generated/easyplane"
 import { useAuth } from "@/auth/auth-context"
+import { PageContainer } from "@/components/layout/page-container"
 import { PageHeader } from "@/components/shared/page-header"
 import {
   Empty,
@@ -34,7 +35,8 @@ export function AuditPage() {
   }
 
   return (
-    <>
+    <PageContainer className="py-6 sm:py-8">
+      <>
       <PageHeader description={t("audit.description")} title={t("audit.title")} />
       {query.isLoading ? (
         <Skeleton className="h-64 w-full" />
@@ -88,6 +90,7 @@ export function AuditPage() {
           </Table>
         </div>
       )}
-    </>
+      </>
+    </PageContainer>
   )
 }

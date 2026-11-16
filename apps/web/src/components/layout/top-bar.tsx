@@ -1,6 +1,6 @@
 import { ChevronLeftIcon, HistoryIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { Link } from "wouter"
+import { Link, useLocation } from "wouter"
 
 import { useAuth } from "@/auth/auth-context"
 import { useBreadcrumbs } from "@/lib/use-breadcrumbs"
@@ -10,6 +10,7 @@ import { PageContainer } from "@/components/layout/page-container"
 export function TopBar() {
   const { t } = useTranslation()
   const { isAdmin } = useAuth()
+  const [location] = useLocation()
   const { crumbs, back } = useBreadcrumbs()
   const current = crumbs[crumbs.length - 1]
   const isHome = crumbs.length === 1 && !crumbs[0]?.href
@@ -76,7 +77,7 @@ export function TopBar() {
 
         <span className="hidden flex-1 sm:block" />
 
-        {isAdmin ? (
+        {isAdmin && location !== "/audit" ? (
           <Link
             className="hidden h-10 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-fg-2 hover:bg-surface-2 hover:text-foreground sm:flex"
             href="/audit"

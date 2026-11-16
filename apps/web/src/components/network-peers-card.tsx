@@ -260,7 +260,9 @@ function PeerRow({
               </>
             ) : (
               <>
-                <code className="w-full break-all font-mono text-xs sm:w-auto sm:truncate">{peer.url}</code>
+                <code className="w-full font-mono text-xs break-words sm:w-auto sm:truncate">
+                  {peer.url}
+                </code>
                 <Chip>{t("networks.peers.kindValue.external")}</Chip>
               </>
             )}

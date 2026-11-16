@@ -29,6 +29,7 @@ import {
   type StatementRow,
 } from "@/lib/policy-document"
 import { useAuth } from "@/auth/auth-context"
+import { PageContainer } from "@/components/layout/page-container"
 import { PageHeader } from "@/components/shared/page-header"
 import { OptionSelect } from "@/components/shared/option-select"
 import { SectionCard } from "@/components/shared/section-card"
@@ -229,12 +230,13 @@ export function PolicyPage() {
   if (policyQuery.isLoading) return <Skeleton className="h-64 w-full" />
 
   return (
-    <>
+    <PageContainer className="py-6 sm:py-8">
+      <>
       <PageHeader
         description={t("policy.description")}
         title={
           <span className="flex items-center gap-2">
-            <Link className="text-muted-foreground hover:text-foreground" href={`/networks/${id}`}>
+            <Link className="text-muted-foreground hover:text-foreground" href={`/networks/${id}/access`}>
               <ArrowLeftIcon className="size-5" />
             </Link>
             <ShieldIcon className="size-5" />
@@ -687,6 +689,7 @@ export function PolicyPage() {
           </code>
         </p>
       </div>
-    </>
+      </>
+    </PageContainer>
   )
 }

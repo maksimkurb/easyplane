@@ -83,6 +83,25 @@ export function DeviceRow({
     device.approvedAt !== null &&
     now - Date.parse(device.approvedAt) < 86_400_000
   const lastSeen = online ? t("devices.connected") : formatRelativeTime(device.lastSeenAt, i18n.language) ?? t("common.none")
+  const approvedRoutes = routes.filter((route) => route.state === "approved")
+  const pushFailed = device.sync === "error" || Boolean(device.lastPushError)
+  const configStale = device.sync === "stale" && !device.lastPushError
+  // Phones have room for one chip; show the one that needs attention first.
+  const mobileChip = pushFailed ? (
+    <Chip variant="err">{t("devices.chips.pushFailed")}</Chip>
+  ) : device.state === "blocked" ? (
+    <Chip variant="err">{t("devices.status.blocked")}</Chip>
+  ) : configStale ? (
+    <Chip variant="warn">{t("devices.chips.configNotApplied")}</Chip>
+  ) : approvedRoutes.some((route) => route.kind === "exit_node") ? (
+    <Chip variant="brand">{t("routes.exitNode")}</Chip>
+  ) : approvedRoutes.some((route) => route.kind === "subnet") ? (
+    <Chip>{t("routes.subnet")}</Chip>
+  ) : device.isHub ? (
+    <Chip variant="brand">{t("devices.detail.hub.badge")}</Chip>
+  ) : newDevice && device.state === "approved" ? (
+    <Chip variant="ok">{t("devices.chips.new")}</Chip>
+  ) : null
   const users = useListUsers({
     query: { enabled: isAdmin && Boolean(device.ownerUserId) },
   })
@@ -168,7 +187,10 @@ export function DeviceRow({
             >
               {name}
             </Link>
-            <span className="relative z-[1] flex min-w-0 flex-wrap items-center gap-1.5">
+            {mobileChip ? (
+              <span className="relative z-[1] flex sm:hidden">{mobileChip}</span>
+            ) : null}
+            <span className="relative z-[1] hidden min-w-0 flex-wrap items-center gap-1.5 sm:flex">
               {device.isHub ? (
                 <Chip variant="brand">{t("devices.detail.hub.badge")}</Chip>
               ) : null}
@@ -176,10 +198,10 @@ export function DeviceRow({
               {device.state === "blocked" ? (
                 <Chip variant="err">{t("devices.status.blocked")}</Chip>
               ) : null}
-              {device.sync === "stale" && !device.lastPushError ? (
+              {configStale ? (
                 <Chip variant="warn">{t("devices.chips.configNotApplied")}</Chip>
               ) : null}
-              {device.sync === "error" || device.lastPushError ? (
+              {pushFailed ? (
                 <Chip variant="err">{t("devices.chips.pushFailed")}</Chip>
               ) : null}
               {newDevice && device.state === "approved" ? (
@@ -187,7 +209,7 @@ export function DeviceRow({
               ) : null}
             </span>
           </div>
-          <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-fg-3">
+          <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-fg-3 max-sm:[&>*:nth-child(n+2)]:hidden">
             <span className="font-mono text-[12px] whitespace-nowrap lg:hidden">
               {device.virtualIpv4 ?? t("common.none")}
             </span>
@@ -220,6 +242,7 @@ export function DeviceRow({
       <span className="flex items-center gap-2 justify-self-end text-[13px] whitespace-nowrap text-fg-2 lg:justify-self-auto">
         <Dot online={online} />
         <span className="max-sm:hidden">{lastSeen}</span>
+        <span className="sr-only">{lastSeen}</span>
       </span>
 
       <div className="relative z-10 flex justify-end">
