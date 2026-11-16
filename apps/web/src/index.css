@@ -293,3 +293,37 @@
     }
   }
 }
+
+/* React Flow ships light chrome; the map needs the panel's surfaces. */
+.react-flow__controls {
+  overflow: hidden !important;
+  border-radius: 10px !important;
+  background: var(--surface) !important;
+  box-shadow: 0 0 0 1px var(--line), var(--shadow-sm) !important;
+}
+
+.react-flow__controls-button {
+  width: 40px !important;
+  height: 40px !important;
+  background: var(--surface) !important;
+  border-bottom: 1px solid var(--line) !important;
+  color: var(--fg-2) !important;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--surface-2) !important;
+}
+
+.react-flow__controls-button svg {
+  fill: currentColor !important;
+}
+
+.react-flow__attribution {
+  background: var(--surface) !important;
+  color: var(--fg-3) !important;
+  border-radius: 6px 0 0 0;
+}
+
+.react-flow__attribution a {
+  color: var(--fg-3) !important;
+}

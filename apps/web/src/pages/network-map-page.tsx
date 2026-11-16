@@ -21,6 +21,7 @@ import type {
   GetNetworkTopology200NodesItem as TopologyNode,
 } from "@/api/generated/model"
 import { NetworkShell, type NetworkShellData } from "@/components/network/network-shell"
+import { CompactTopologyMap } from "@/components/topology/compact-topology-map"
 import { TopologyMap } from "@/components/topology/topology-map"
 import { Button } from "@/components/ui/button"
 import { Chip } from "@/components/ui/chip"
@@ -59,6 +60,7 @@ function MapTab({ data }: { data: NetworkShellData }) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const isCompact = useIsMobile(1100)
+  const isPhone = useIsMobile(640)
 
   const topologyQuery = useGetNetworkTopology(networkId)
   const snapshot = topologyQuery.data?.data
@@ -148,7 +150,7 @@ function MapTab({ data }: { data: NetworkShellData }) {
           className="min-w-0 flex-1 overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-line"
         >
           <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-2.5">
-            <div className="flex flex-1 flex-wrap items-center gap-3 text-xs text-fg-2">
+            <div className="hidden flex-1 flex-wrap items-center gap-3 text-xs text-fg-2 sm:flex">
               <span className="flex items-center gap-1.5">
                 <span aria-hidden="true" className="h-0.5 w-5 bg-ok-dot" />
                 {t("topology.direct")}
@@ -196,18 +198,37 @@ function MapTab({ data }: { data: NetworkShellData }) {
               <RefreshCwIcon className="size-4" />
             </Button>
           </div>
-          <div className="h-[440px] p-2 sm:h-[520px] xl:h-[600px]">
-            <TopologyMap
-              className="h-full min-h-0 rounded-none border-0"
-              key={networkId}
-              links={links}
-              minimap={false}
-              nodes={nodes}
-              pingLabels
-              onSelectNode={setSelectedNodeId}
-              selectedNodeId={selectedNode?.id ?? null}
-            />
-          </div>
+          {isPhone ? (
+            <div
+              className="flex h-[460px] items-center justify-center p-2"
+              style={{
+                backgroundImage: "radial-gradient(var(--line) 1px, transparent 1px)",
+                backgroundSize: "20px 20px",
+              }}
+            >
+              <CompactTopologyMap
+                key={networkId}
+                links={links}
+                nodes={nodes}
+                onSelectNode={setSelectedNodeId}
+                selectedNodeId={selectedNode?.id ?? null}
+              />
+            </div>
+          ) : (
+            <div className="h-[440px] p-2 sm:h-[520px] xl:h-[600px]">
+              <TopologyMap
+                className="h-full min-h-0 rounded-none border-0"
+                key={networkId}
+                links={links}
+                minimap={false}
+                nodes={nodes}
+                pingLabels
+                slim
+                onSelectNode={setSelectedNodeId}
+                selectedNodeId={selectedNode?.id ?? null}
+              />
+            </div>
+          )}
           <div className="flex flex-wrap items-start gap-2 border-t border-line px-4 py-2.5 text-xs text-fg-3">
             <InfoIcon aria-hidden="true" className="mt-0.5 size-3.5 flex-none" />
             <span>{t("topology.honestNote")}</span>
@@ -241,6 +262,7 @@ function MapTab({ data }: { data: NetworkShellData }) {
             <SheetHeader className="sr-only">
               <SheetTitle>{selectedNode?.hostname ?? t("topology.deviceDrawer")}</SheetTitle>
             </SheetHeader>
+            <div aria-hidden="true" className="mx-auto h-[5px] w-10 flex-none rounded-full bg-line-2" />
             {panel}
           </SheetContent>
         </Sheet>
