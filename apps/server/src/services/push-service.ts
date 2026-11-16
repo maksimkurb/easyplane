@@ -7,6 +7,7 @@ import {
   approvedRoutesForNetwork,
   getDeviceById,
   getNetworkById,
+  listDeviceRoutes,
   listNetworkPeerRecords,
   listRevisions,
   updateDevice,
@@ -16,7 +17,9 @@ import {
   buildNetworkConfig,
   configMatchesDesired,
   describeConfigMismatch,
+  isConfigReadOnly,
   normalizeDesiredConfig,
+  CONFIG_PERMISSION_READ_ONLY,
 } from "../domain/desired-config.js";
 import {
   buildManagedCredentials,
@@ -29,6 +32,8 @@ import {
   acceptedRoutesFor,
   approvedExitNode,
   approvedSubnetCidrs,
+  declaredExitNode,
+  declaredSubnetCidrs,
   type ReportedInstance,
 } from "../domain/routes.js";
 import { deterministicUuid } from "../security/crypto.js";
@@ -65,12 +70,28 @@ export interface PushServiceOptions {
     deviceId: string,
     policyVersion: number,
   ) => Promise<acl.Acl | undefined>;
+  /**
+   * Turns the managed instance's own declared proxy CIDRs / exit-node flag into
+   * pending proposals. Called *before* the drift comparison so the desired
+   * config can adopt the declaration instead of erasing it.
+   */
+  declareRoutes?: (
+    device: Device,
+    declared: { subnetCidrs: string[]; exitNode: boolean },
+  ) => Promise<void>;
   /** Persists what the client reports about its routes. */
   recordReport?: (
     device: Device,
     payload: {
       instances: ReportedInstance[];
       peerObservations: Array<{ ipv4: string; hostname: string; proxyCidrs: string[] }>;
+      /**
+       * What the managed instance's own config says it advertises. `undefined`
+       * when the config could not be read (read-only file, instance starting).
+       */
+      declared?: { subnetCidrs: string[]; exitNode: boolean };
+      /** `ListNetworkInstanceMeta.config_permission` of the managed instance. */
+      configPermission?: number;
     },
   ) => Promise<void>;
   /** Minimum gap between route reports per device. */
@@ -229,9 +250,31 @@ export class PushService {
     const client = this.options.sessions.get(deviceId);
     if (!client) return { status: "skipped", reason: "offline" };
 
+    if (
+      isConfigReadOnly(device.reportedState) &&
+      (await this.refreshConfigPermission(
+        device,
+        client,
+        instanceIdFor(device.networkId, device.id),
+      ))
+    ) {
+      // Still refresh the report (instances, peers, permission) so the panel
+      // shows the locally managed state instead of an empty/old one.
+      await this.collectReport(device, client);
+      return { status: "skipped", reason: "config is locally managed (read-only)" };
+    }
+
     const revisions = await listRevisions(this.options.db, deviceId);
     const latest = revisions[0];
     if (!latest) return { status: "skipped", reason: "no desired config" };
+
+    // One convergence after the explicit manual-route list was introduced.
+    // The pinned client cannot echo "manual routes, empty list", so an
+    // already-in-sync device would otherwise keep installing every advertised
+    // proxy CIDR forever (docs/DEPLOY.md §4b).
+    if (!device.manualRoutesEnforcedAt) {
+      return this.doPush(deviceId);
+    }
 
     if (
       device.appliedRevision !== null &&
@@ -244,6 +287,20 @@ export class PushService {
           const reported = await client.remote.getNetworkInstanceConfig(instanceId);
           const network = await getNetworkById(this.options.db, device.networkId);
           if (network) {
+            // Detect a locally declared route before comparing: the desired
+            // config then carries it (pending declarations are adopted), so the
+            // comparison matches and no push erases the operator's edit.
+            try {
+              await this.options.declareRoutes?.(device, {
+                subnetCidrs: reported.config?.proxyCidrs ?? [],
+                exitNode: Boolean(reported.config?.enableExitNode),
+              });
+            } catch (error) {
+              this.options.logger.debug("declaration detection failed", {
+                deviceId,
+                error: error instanceof Error ? error.message : String(error),
+              });
+            }
             const desired = await this.desiredConfigFor(
               device,
               network,
@@ -280,8 +337,9 @@ export class PushService {
     rawConfig: Record<string, unknown>,
     policyVersion: number | null,
   ): Promise<manage.NetworkConfig> {
-    const [approvedRoutes, compiledAcl, peerRecords] = await Promise.all([
+    const [approvedRoutes, deviceRoutes, compiledAcl, peerRecords] = await Promise.all([
       approvedRoutesForNetwork(this.options.db, network.id),
+      listDeviceRoutes(this.options.db, device.id),
       this.aclFor(network, device, policyVersion),
       listNetworkPeerRecords(this.options.db, network.id),
     ]);
@@ -335,6 +393,7 @@ export class PushService {
       rawConfig,
       policyVersion,
       approvedRoutes,
+      deviceRoutes,
       compiledAcl,
       peerUrls,
       { managedCredentials, memberCredentialSecret, role },
@@ -347,6 +406,7 @@ export class PushService {
     rawConfig: Record<string, unknown>,
     policyVersion: number | null,
     approvedRoutes: Awaited<ReturnType<typeof approvedRoutesForNetwork>>,
+    deviceRoutes: Awaited<ReturnType<typeof listDeviceRoutes>>,
     compiledAcl: acl.Acl | undefined,
     peerUrls: string[],
     credentials: {
@@ -376,8 +436,18 @@ export class PushService {
       assignedIpv4: device.virtualIpv4,
       ipv4Cidr: network.ipv4Cidr,
       magicDnsEnabled: network.magicDnsEnabled,
-      proxyCidrs: approvedSubnetCidrs(approvedRoutes, device.id),
-      enableExitNode: approvedExitNode(approvedRoutes, device.id),
+      // A device's own config always carries its declared routes, pending or
+      // approved, so a local edit is never erased by a push (the panel adopts
+      // the declaration). Receivers only ever get approved routes.
+      proxyCidrs: [
+        ...new Set([
+          ...approvedSubnetCidrs(approvedRoutes, device.id),
+          ...declaredSubnetCidrs(deviceRoutes, device.id),
+        ]),
+      ].sort(),
+      enableExitNode:
+        approvedExitNode(approvedRoutes, device.id) ||
+        declaredExitNode(deviceRoutes, device.id),
       manualRoutes: stored.acceptRoutes
         ? acceptedRoutesFor(approvedRoutes, device.id)
         : [],
@@ -420,7 +490,23 @@ export class PushService {
     if (device.state !== "approved") {
       return { status: "skipped", reason: `device is ${device.state}` };
     }
-    const client = this.options.sessions.get(deviceId);
+    const instanceId = instanceIdFor(device.networkId, device.id);
+    const offlineClient = this.options.sessions.get(deviceId);
+    if (
+      isConfigReadOnly(device.reportedState) &&
+      (!offlineClient ||
+        (await this.refreshConfigPermission(device, offlineClient, instanceId)))
+    ) {
+      // A read-only instance file is a state, not an error: the panel can
+      // neither overwrite nor read it (SPIKE-DECLARED-ROUTES.md §4.2). Do not
+      // retry and do not keep a stale error on the device. The state is
+      // reported even when the device is offline.
+      if (device.lastPushError) {
+        await updateDevice(this.options.db, device.id, { lastPushError: null });
+      }
+      return { status: "skipped", reason: "config is locally managed (read-only)" };
+    }
+    const client = offlineClient;
     if (!client) return { status: "skipped", reason: "offline" };
     const network = await getNetworkById(this.options.db, device.networkId);
     if (!network) return { status: "skipped", reason: "network not found" };
@@ -428,7 +514,6 @@ export class PushService {
     const latest = revisions[0];
     if (!latest) return { status: "skipped", reason: "no desired config" };
 
-    const instanceId = instanceIdFor(network.id, device.id);
     let config: manage.NetworkConfig;
     try {
       config = await this.desiredConfigFor(
@@ -453,6 +538,14 @@ export class PushService {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      if (/is read-only/i.test(message)) {
+        await this.markConfigReadOnly(device, message);
+        return {
+          status: "skipped",
+          reason: "config is locally managed (read-only)",
+          revision: latest.revision,
+        };
+      }
       await this.recordFailure(device, message);
       await this.options.audit.record({
         orgId: device.orgId,
@@ -494,6 +587,7 @@ export class PushService {
       appliedAt: now,
       lastPushAt: now,
       lastPushError: null,
+      manualRoutesEnforcedAt: now,
     });
     await this.options.audit.record({
       orgId: device.orgId,
@@ -533,6 +627,70 @@ export class PushService {
       await sleep(interval);
     }
     return { ok: false, error: lastError };
+  }
+
+  /**
+   * Classifies a client whose instance file is read-only. The observation is
+   * persisted so the heartbeat path (and the UI) stop retrying it.
+   */
+  private async markConfigReadOnly(device: Device, message: string): Promise<void> {
+    const state =
+      device.reportedState && typeof device.reportedState === "object"
+        ? (device.reportedState as Record<string, unknown>)
+        : {};
+    const current = typeof state.managedConfigPermission === "number" ? state.managedConfigPermission : 0;
+    if ((current & CONFIG_PERMISSION_READ_ONLY) !== 0 && !device.lastPushError) return;
+    await updateDevice(this.options.db, device.id, {
+      reportedState: {
+        ...state,
+        managedConfigPermission: current | CONFIG_PERMISSION_READ_ONLY,
+      },
+      lastPushError: null,
+    });
+    this.options.logger.info("device config is locally managed", {
+      deviceId: device.id,
+      error: message.slice(0, 200),
+    });
+  }
+
+  /**
+   * Re-reads `config_permission` from the client and persists it. Returns true
+   * when the instance is still read-only. A file that was replaced with a
+   * writable one (the documented "stop, edit, start" cycle) must not stay stuck
+   * in the read-only state.
+   */
+  private async refreshConfigPermission(
+    device: Device,
+    client: ManagedClient,
+    instanceId: string,
+  ): Promise<boolean> {
+    try {
+      const meta = (
+        await client.remote.listNetworkInstanceMeta([instanceId])
+      ).metas.find(
+        (entry) => (entry.instId ? protoToUuid(entry.instId) : "") === instanceId,
+      );
+      const permission = meta?.configPermission ?? 0;
+      const readOnly = (permission & CONFIG_PERMISSION_READ_ONLY) !== 0;
+      const state =
+        device.reportedState && typeof device.reportedState === "object"
+          ? (device.reportedState as Record<string, unknown>)
+          : {};
+      if (state.managedConfigPermission !== permission) {
+        const next = { ...state, managedConfigPermission: permission };
+        await updateDevice(this.options.db, device.id, {
+          reportedState: next,
+          ...(readOnly ? {} : { lastPushError: null }),
+        });
+        device.reportedState = next;
+      } else if (!readOnly && device.lastPushError) {
+        await updateDevice(this.options.db, device.id, { lastPushError: null });
+      }
+      return readOnly;
+    } catch {
+      // The instance may be mid-restart; keep the last known state.
+      return isConfigReadOnly(device.reportedState);
+    }
   }
 
   private async recordFailure(device: Device, message: string): Promise<void> {
@@ -581,6 +739,9 @@ export class PushService {
       const metaById = new Map(
         metas.map((meta) => [meta.instId ? protoToUuid(meta.instId) : "", meta]),
       );
+      const managedMeta = metaById.get(managedId);
+      const configPermission = managedMeta?.configPermission ?? 0;
+      let managedConfigRead = false;
       let managedExitNode = false;
       let managedProxyCidrs: string[] = [];
       if (ids.includes(managedId)) {
@@ -588,9 +749,17 @@ export class PushService {
           const config = await client.remote.getNetworkInstanceConfig(managedId);
           managedExitNode = Boolean(config.config?.enableExitNode);
           managedProxyCidrs = config.config?.proxyCidrs ?? [];
+          managedConfigRead = true;
         } catch {
-          // The instance may be mid-restart; the CIDR report is still useful.
+          // The instance may be mid-restart, or the file is read-only (that
+          // path refuses even the read). The CIDR report is still useful.
         }
+      }
+      if (
+        (configPermission & CONFIG_PERMISSION_READ_ONLY) !== 0 &&
+        device.lastPushError
+      ) {
+        await updateDevice(this.options.db, device.id, { lastPushError: null });
       }
       const instances: ReportedInstance[] = [];
       const peerObservations: Array<{
@@ -623,7 +792,19 @@ export class PushService {
           });
         }
       }
-      await this.options.recordReport(device, { instances, peerObservations });
+      await this.options.recordReport(device, {
+        instances,
+        peerObservations,
+        configPermission,
+        ...(managedConfigRead
+          ? {
+              declared: {
+                subnetCidrs: managedProxyCidrs,
+                exitNode: managedExitNode,
+              },
+            }
+          : {}),
+      });
     } catch (error) {
       this.options.logger.debug("route report failed", {
         deviceId: device.id,

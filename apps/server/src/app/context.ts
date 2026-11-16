@@ -170,6 +170,10 @@ export async function createAppContext(
       if (!policies) return undefined;
       return policies.compileForVersion(network, deviceId, policyVersion);
     },
+    declareRoutes: async (device, declared) => {
+      if (!routes) return;
+      await routes.declare(device, declared);
+    },
     recordReport: async (device, payload) => {
       if (!routes) return;
       await routes.recordReport(device, payload);

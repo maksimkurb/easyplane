@@ -4,9 +4,11 @@ import {
   getDevice,
   getDeviceRoute,
   getNetworkById,
+  insertDeclaredDeviceRoute,
   listDevicesInNetwork,
   listDeviceRoutes,
   listNetworkRoutes,
+  touchDeviceRouteDeclarations,
   updateDevice,
   upsertDeviceRoute,
 } from "../db/repositories.js";
@@ -14,17 +16,20 @@ import type { Device, DeviceRoute } from "../db/schema.js";
 import {
   buildRouteReport,
   cidrContains,
+  declarableCidr,
+  isDeclaredRouteAdvertised,
   mergePeerObservations,
   validateSubnetRequest,
   type PeerObservation,
   type PeerObservationRecord,
   type ReportedInstance,
   type RouteReport,
+  type RouteSource,
 } from "../domain/routes.js";
 import { AppError, conflict, invalid, notFound } from "./errors.js";
 import type { RealtimeHub } from "../realtime/hub.js";
 import type { AuditService } from "./audit.js";
-import type { PushService } from "./push-service.js";
+import { pushNetworkDevices, type PushService } from "./push-service.js";
 import type { RequestActor } from "./device-service.js";
 
 export interface DeviceRouteDto {
@@ -35,7 +40,13 @@ export interface DeviceRouteDto {
   kind: "subnet" | "exit_node";
   cidr: string;
   state: "pending" | "approved" | "rejected";
+  /** `panel` = requested by a user; `device_declared` = advertised by the device. */
+  source: RouteSource;
   note: string;
+  /** Last report that showed a `device_declared` route in the own config. */
+  lastDeclaredAt: string | null;
+  /** `device_declared` row seen within the advertised window. */
+  advertised: boolean;
   requestedBy: string | null;
   decidedBy: string | null;
   decidedAt: string | null;
@@ -61,7 +72,8 @@ export interface RouteServiceOptions {
 
 const REPORT_KEY = "routeReport";
 
-function toDto(route: DeviceRoute, hostname: string): DeviceRouteDto {
+function toDto(route: DeviceRoute, hostname: string, now = Date.now()): DeviceRouteDto {
+  const source = (route.source === "device_declared" ? "device_declared" : "panel") as RouteSource;
   return {
     id: route.id,
     networkId: route.networkId,
@@ -70,7 +82,12 @@ function toDto(route: DeviceRoute, hostname: string): DeviceRouteDto {
     kind: route.kind,
     cidr: route.cidr,
     state: route.state,
+    source,
     note: route.note,
+    lastDeclaredAt: route.lastDeclaredAt?.toISOString() ?? null,
+    advertised:
+      source === "device_declared" &&
+      isDeclaredRouteAdvertised(route.lastDeclaredAt, now),
     requestedBy: route.requestedBy,
     decidedBy: route.decidedBy,
     decidedAt: route.decidedAt?.toISOString() ?? null,
@@ -117,6 +134,9 @@ export class RouteService {
       kind: row.kind,
       cidr: row.cidr,
       state: row.state,
+      source: (row.source === "device_declared"
+        ? "device_declared"
+        : "panel") as RouteSource,
     }));
     const reports: RouteReportDto[] = devices.map((device) => {
       const stored = this.reportOf(device);
@@ -260,8 +280,15 @@ export class RouteService {
         note: input.note ?? "",
       },
     });
-    // Only now does the route enter the pushed config.
-    this.options.push.schedule(route.deviceId, `route ${input.state}`);
+    // Only now does the route enter the pushed config. Every device needs the
+    // update: the advertiser's own config and the receivers' manual-route list
+    // both depend on the approval set.
+    await pushNetworkDevices(
+      this.db,
+      this.options.push,
+      route.networkId,
+      `route ${input.state}`,
+    );
     this.options.realtime?.publish({
       type: "route.updated",
       orgId: actor.orgId,
@@ -285,8 +312,13 @@ export class RouteService {
     payload: {
       instances: readonly ReportedInstance[];
       peerObservations: readonly PeerObservation[];
+      declared?: { subnetCidrs: string[]; exitNode: boolean };
+      configPermission?: number;
     },
   ): Promise<RouteReport> {
+    // Detect declarations before building the report so a first-time
+    // declaration is already an expected (pending) row, not "unapproved drift".
+    await this.declare(device, payload.declared);
     const devices = await listDevicesInNetwork(this.db, device.networkId);
     const networkRoutes = await listNetworkRoutes(this.db, device.networkId);
     const approvals = networkRoutes.map((row) => ({
@@ -294,6 +326,9 @@ export class RouteService {
       kind: row.kind,
       cidr: row.cidr,
       state: row.state,
+      source: (row.source === "device_declared"
+        ? "device_declared"
+        : "panel") as RouteSource,
     }));
     const byIp = new Map(
       devices
@@ -311,11 +346,19 @@ export class RouteService {
         .map((entry) => ({ deviceId: entry.id, ipv4: entry.virtualIpv4! })),
     });
     const previous = this.reportOf(device);
+    const previousState =
+      device.reportedState && typeof device.reportedState === "object"
+        ? (device.reportedState as Record<string, unknown>)
+        : {};
     await updateDevice(this.db, device.id, {
       reportedState: {
+        ...previousState,
         [REPORT_KEY]: report,
         instances: payload.instances,
         peerObservations: payload.peerObservations,
+        ...(payload.configPermission !== undefined
+          ? { managedConfigPermission: payload.configPermission }
+          : {}),
         checkedAt: new Date().toISOString(),
       },
       reportedStateAt: new Date(),
@@ -402,6 +445,93 @@ export class RouteService {
         unmanagedInstances: report.unmanagedInstances.length,
       },
     });
+  }
+
+  /**
+   * Turns the routes a device advertises in its own persisted config into
+   * pending `device_declared` proposals. Idempotent: a repeated report never
+   * creates a duplicate, changes a state, or resurrects a rejected row; it only
+   * refreshes `last_declared_at` (docs/POLICY.md §7.1).
+   */
+  async declare(
+    device: Device,
+    declared: { subnetCidrs: string[]; exitNode: boolean } | undefined,
+  ): Promise<void> {
+    if (!declared) return;
+    const network = await getNetworkById(this.db, device.networkId);
+    if (!network) return;
+    const rows = await listDeviceRoutes(this.db, device.id);
+    const declaredRows: string[] = [];
+    const created: DeviceRoute[] = [];
+
+    for (const raw of declared.subnetCidrs) {
+      const cidr = declarableCidr(raw, network.ipv4Cidr);
+      if (!cidr) continue;
+      const existing = rows.find(
+        (row) => row.kind === "subnet" && row.cidr === cidr,
+      );
+      if (existing) {
+        if (existing.source === "device_declared") declaredRows.push(existing.id);
+        continue;
+      }
+      const row = await insertDeclaredDeviceRoute(this.db, {
+        orgId: device.orgId,
+        networkId: device.networkId,
+        deviceId: device.id,
+        kind: "subnet",
+        cidr,
+        note: "advertised by the device's own config",
+      });
+      if (row) {
+        created.push(row);
+        rows.push(row);
+      }
+    }
+
+    if (declared.exitNode) {
+      const existing = rows.find((row) => row.kind === "exit_node");
+      if (existing) {
+        if (existing.source === "device_declared") declaredRows.push(existing.id);
+      } else {
+        const row = await insertDeclaredDeviceRoute(this.db, {
+          orgId: device.orgId,
+          networkId: device.networkId,
+          deviceId: device.id,
+          kind: "exit_node",
+          cidr: "",
+          note: "advertised by the device's own config (exit node)",
+        });
+        if (row) {
+          created.push(row);
+          rows.push(row);
+        }
+      }
+    }
+
+    await touchDeviceRouteDeclarations(this.db, declaredRows);
+    for (const row of created) {
+      await this.options.audit.record({
+        orgId: device.orgId,
+        actorType: "device",
+        action: "route.declared",
+        targetType: "device",
+        targetId: device.id,
+        metadata: {
+          kind: row.kind,
+          cidr: row.cidr,
+          networkId: device.networkId,
+        },
+      });
+    }
+    if (created.length > 0) {
+      this.options.realtime?.publish({
+        type: "route.updated",
+        orgId: device.orgId,
+        networkId: device.networkId,
+        deviceId: device.id,
+        data: { networkId: device.networkId, deviceId: device.id },
+      });
+    }
   }
 
   reportOf(device: Device): RouteReport | null {

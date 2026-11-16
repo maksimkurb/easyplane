@@ -65,6 +65,30 @@ export const desiredConfigSchema = z
 
 export type DesiredConfig = z.infer<typeof desiredConfigSchema>;
 
+/** `ConfigFilePermission` bits reported by `ListNetworkInstanceMeta`. */
+export const CONFIG_PERMISSION_READ_ONLY = 1 << 0;
+export const CONFIG_PERMISSION_NO_DELETE = 1 << 1;
+
+/**
+ * `config_permission` from the last `ListNetworkInstanceMeta` report. Absent
+ * until the first report, which means "not known yet", not read-only.
+ */
+export function configPermissionOf(reportedState: unknown): number {
+  if (!reportedState || typeof reportedState !== "object") return 0;
+  const value = (reportedState as Record<string, unknown>).managedConfigPermission;
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+/**
+ * A read-only instance file (`-c` outside the config dir, or mode 0444) cannot
+ * be overwritten *and* its config cannot be read back by
+ * `GetNetworkInstanceConfig`. Pushing it is not an error to retry: it is a
+ * state (docs/SPIKE-DECLARED-ROUTES.md §4.2).
+ */
+export function isConfigReadOnly(reportedState: unknown): boolean {
+  return (configPermissionOf(reportedState) & CONFIG_PERMISSION_READ_ONLY) !== 0;
+}
+
 /**
  * Merge arbitrary stored JSON (possibly from an older revision) with
  * fallbacks. Explicit values in `input` always win over the fallbacks.
@@ -167,6 +191,11 @@ export function buildNetworkConfig(
     proxyCidrs: options.proxyCidrs ?? [],
     enableExitNode: options.enableExitNode,
     routes: options.manualRoutes ?? [],
+    // Always constrain route installation: EasyTier otherwise installs every
+    // proxy CIDR a peer advertises. An empty list means "install nothing",
+    // which is what a device that does not accept routes must get
+    // (docs/POLICY.md §7.1, SPIKE-DECLARED-ROUTES.md §5).
+    enableManualRoutes: true,
     acl: options.acl,
   });
 
@@ -225,7 +254,14 @@ export function configMatchesDesired(
   if (Boolean(remote.enableExitNode) !== Boolean(desired.enableExitNode)) {
     return false;
   }
-  if (Boolean(remote.enableManualRoutes) !== Boolean(desired.enableManualRoutes)) {
+  // The pinned client reports `enable_manual_routes` only when the list is
+  // non-empty (`network_config_from_toml` in api.rs), so an empty manual list is
+  // represented as "flag absent + routes []". Compare the flag only when the
+  // list carries something; `routes` is compared as a set below.
+  if (
+    (desired.routes ?? []).length > 0 &&
+    Boolean(remote.enableManualRoutes) !== Boolean(desired.enableManualRoutes)
+  ) {
     return false;
   }
   if (Boolean(remote.p2pOnly) !== Boolean(desired.p2pOnly)) return false;
@@ -321,11 +357,13 @@ export function describeConfigMismatch(
   check("noTun", Boolean(remote.noTun), Boolean(desired.noTun));
   check("enableMagicDns", Boolean(remote.enableMagicDns), Boolean(desired.enableMagicDns));
   check("enableExitNode", Boolean(remote.enableExitNode), Boolean(desired.enableExitNode));
-  check(
-    "enableManualRoutes",
-    Boolean(remote.enableManualRoutes),
-    Boolean(desired.enableManualRoutes),
-  );
+  if ((desired.routes ?? []).length > 0) {
+    check(
+      "enableManualRoutes",
+      Boolean(remote.enableManualRoutes),
+      Boolean(desired.enableManualRoutes),
+    );
+  }
   check("p2pOnly", Boolean(remote.p2pOnly), Boolean(desired.p2pOnly));
   check(
     "secureMode.enabled",

@@ -17,6 +17,16 @@ import { formatIpv4, parseIpv4 } from "./ip.js";
 
 export type RouteKind = "subnet" | "exit_node";
 export type RouteState = "pending" | "approved" | "rejected";
+/** Who asked for the route (docs/POLICY.md §7.1). */
+export type RouteSource = "panel" | "device_declared";
+
+/**
+ * How long a `device_declared` row stays "advertised" after the last report
+ * that showed it. The route report runs every 30 s by default, so this tolerates
+ * several missed reports (and a short offline window) before the UI says
+ * "no longer advertised".
+ */
+export const DECLARED_ADVERTISED_WINDOW_MS = 5 * 60_000;
 
 /** Parses an IPv4 CIDR with a 0..32 prefix and returns the canonical form. */
 export function normalizeCidr(raw: string): string {
@@ -67,6 +77,8 @@ export interface RouteRecord {
   kind: RouteKind;
   cidr: string;
   state: RouteState;
+  /** Absent on older callers; treated as `panel`. */
+  source?: RouteSource;
 }
 
 export function approvedSubnetCidrs(
@@ -80,6 +92,80 @@ export function approvedSubnetCidrs(
     }
   }
   return [...result].sort();
+}
+
+/**
+ * Subnets the device itself declares in its persisted config, whether the
+ * admin has decided or not. A push always includes them in the device's own
+ * `proxy_cidrs`, so a local edit is never erased while a proposal is pending
+ * (docs/SPIKE-DECLARED-ROUTES.md §8).
+ */
+export function declaredSubnetCidrs(
+  routes: readonly RouteRecord[],
+  deviceId: string,
+): string[] {
+  const result = new Set<string>();
+  for (const route of routes) {
+    if (
+      route.deviceId === deviceId &&
+      route.kind === "subnet" &&
+      route.source === "device_declared" &&
+      route.state !== "rejected"
+    ) {
+      result.add(normalizeCidr(route.cidr));
+    }
+  }
+  return [...result].sort();
+}
+
+/** True when the device declares an exit node that is pending or approved. */
+export function declaredExitNode(
+  routes: readonly RouteRecord[],
+  deviceId: string,
+): boolean {
+  return routes.some(
+    (route) =>
+      route.deviceId === deviceId &&
+      route.kind === "exit_node" &&
+      route.source === "device_declared" &&
+      route.state !== "rejected",
+  );
+}
+
+/** `device_declared` row still present in the reports (not stale). */
+export function isDeclaredRouteAdvertised(
+  lastDeclaredAt: Date | string | null | undefined,
+  now = Date.now(),
+): boolean {
+  if (!lastDeclaredAt) return false;
+  const at =
+    lastDeclaredAt instanceof Date ? lastDeclaredAt.getTime() : Date.parse(lastDeclaredAt);
+  if (!Number.isFinite(at)) return false;
+  return now - at < DECLARED_ADVERTISED_WINDOW_MS;
+}
+
+/**
+ * Normalises a CIDR a device advertises in its own config and drops values the
+ * control plane must not turn into a proposal: `0.0.0.0/0` is an exit node (not
+ * a subnet route) and a CIDR that contains or sits inside the overlay would
+ * swallow or replace the overlay route. Returns `null` for those.
+ */
+export function declarableCidr(raw: string, overlayCidr: string): string | null {
+  let cidr: string;
+  try {
+    cidr = normalizeCidr(raw);
+  } catch {
+    return null;
+  }
+  if (cidr === "0.0.0.0/0") return null;
+  try {
+    if (cidrContains(cidr, overlayCidr) || cidrContains(overlayCidr, cidr)) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+  return cidr;
 }
 
 export function approvedExitNode(
@@ -137,6 +223,8 @@ export interface PeerObservation {
 
 export interface RouteReport {
   approvedCidrs: string[];
+  /** `device_declared` CIDRs in the device's own config (pending or approved). */
+  declaredCidrs: string[];
   /**
    * Proxy CIDRs the device's own instance is configured with
    * (GetNetworkInstanceConfig). For a managed instance this is what EasyPlane
@@ -162,6 +250,10 @@ export interface RouteReport {
  * approved. EasyTier reports proxy CIDRs per instance in CollectNetworkInfo, so
  * a locally started instance shows up even though it cannot be stopped from
  * here.
+ *
+ * A `device_declared` CIDR (pending or approved) is *expected*: there is a
+ * proposal for it, so it is not reported as unapproved drift. A rejected
+ * declaration is not expected and still appears as unapproved.
  */
 export function buildRouteReport(input: {
   approvals: readonly RouteRecord[];
@@ -174,7 +266,9 @@ export function buildRouteReport(input: {
   knownDeviceIps?: Iterable<{ deviceId: string; ipv4: string }>;
 }): RouteReport {
   const approved = approvedSubnetCidrs(input.approvals, input.deviceId);
+  const declared = declaredSubnetCidrs(input.approvals, input.deviceId);
   const approvedSet = new Set(approved);
+  const expected = new Set([...approved, ...declared]);
   const configured = new Set<string>();
   const unapproved = new Set<string>();
   const unmanaged: ReportedInstance[] = [];
@@ -192,7 +286,7 @@ export function buildRouteReport(input: {
         continue;
       }
       configured.add(cidr);
-      if (!approvedSet.has(cidr)) unapproved.add(cidr);
+      if (!expected.has(cidr)) unapproved.add(cidr);
     }
     if (instance.exitNode) reportedExitNode = true;
   }
@@ -223,10 +317,11 @@ export function buildRouteReport(input: {
       });
     }
   }
-  const unapprovedObserved = [...observed].filter((cidr) => !approvedSet.has(cidr));
+  const unapprovedObserved = [...observed].filter((cidr) => !expected.has(cidr));
 
   return {
     approvedCidrs: approved,
+    declaredCidrs: declared,
     configuredCidrs: [...configured].sort(),
     observedCidrs: [...observed].sort(),
     unapprovedCidrs: [...unapproved].sort(),
@@ -289,7 +384,10 @@ export function mergePeerObservations(
   deviceId: string,
 ): RouteReport {
   if (observations.length === 0) return report;
-  const approved = new Set(approvedSubnetCidrs(approvals, deviceId));
+  const expected = new Set([
+    ...approvedSubnetCidrs(approvals, deviceId),
+    ...declaredSubnetCidrs(approvals, deviceId),
+  ]);
   const observed = new Set(report.observedCidrs);
   for (const observation of observations) {
     for (const raw of observation.proxyCidrs) {
@@ -304,7 +402,7 @@ export function mergePeerObservations(
     ...report,
     observedCidrs: [...observed].sort(),
     unapprovedObservedCidrs: [...observed]
-      .filter((cidr) => !approved.has(cidr))
+      .filter((cidr) => !expected.has(cidr))
       .sort(),
   };
 }
