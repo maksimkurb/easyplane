@@ -237,6 +237,24 @@ const envSchema = z.object({
     .int()
     .positive()
     .default(100),
+  /**
+   * Credential-mode networks (docs/CREDENTIALS.md). Members join with a
+   * per-device credential; the panel renews it before expiry. A renewal
+   * repushes anchors, which restarts their instance, so keep the TTL long.
+   */
+  EASYPLANE_CREDENTIAL_TTL_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(3650)
+    .default(90),
+  /** Renew when less than this many days remain (clamped below the TTL). */
+  EASYPLANE_CREDENTIAL_RENEW_BEFORE_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(3650)
+    .default(14),
   EASYPLANE_WEB_DIR: z.string().optional(),
   EASYPLANE_LOG_LEVEL: z
     .enum(["trace", "debug", "info", "warn", "error", "fatal", "silent"])
@@ -307,6 +325,8 @@ export interface AppEnv {
   metricsPort: number | undefined;
   metricsHost: string;
   maxPendingDevicesPerNetwork: number;
+  credentialTtlMs: number;
+  credentialRenewBeforeMs: number;
   webDir: string | undefined;
   logLevel: string;
   rendezvous: RendezvousConfig;
@@ -411,6 +431,12 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     metricsHost: parsed.EASYPLANE_METRICS_HOST,
     maxPendingDevicesPerNetwork:
       parsed.EASYPLANE_MAX_PENDING_DEVICES_PER_NETWORK,
+    credentialTtlMs: parsed.EASYPLANE_CREDENTIAL_TTL_DAYS * 86_400_000,
+    credentialRenewBeforeMs:
+      Math.min(
+        parsed.EASYPLANE_CREDENTIAL_RENEW_BEFORE_DAYS * 86_400_000,
+        parsed.EASYPLANE_CREDENTIAL_TTL_DAYS * 86_400_000 - 3_600_000,
+      ),
     webDir: parsed.EASYPLANE_WEB_DIR,
     logLevel: parsed.EASYPLANE_LOG_LEVEL,
     rendezvous: buildRendezvousConfig(parsed),

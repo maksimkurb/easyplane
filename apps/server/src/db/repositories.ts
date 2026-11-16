@@ -4,6 +4,7 @@ import type { Database } from "./client.js";
 import {
   auditLog,
   configRevisions,
+  credentials,
   deviceRoutes,
   deviceTags,
   devices,
@@ -21,6 +22,7 @@ import {
   type DeviceRoute,
   type DeviceRouteKind,
   type DeviceRouteState,
+  type Credential,
   type DeviceState,
   type NetworkPeer,
   type User,
@@ -332,6 +334,7 @@ export async function updateNetwork(
       | "policyVersion"
       | "useRendezvous"
       | "p2pOnly"
+      | "accessMode"
     >
   >,
 ): Promise<typeof networks.$inferSelect | undefined> {
@@ -372,6 +375,7 @@ export async function insertInvite(
     networkId: string;
     tokenHash: string;
     label: string;
+    role?: "anchor" | "member";
     expiresAt: Date | null;
     maxUses: number | null;
     createdBy: string | null;
@@ -938,6 +942,137 @@ export async function approvedRoutesForNetwork(
         eq(deviceRoutes.state, "approved"),
       ),
     );
+}
+
+/** Every credential of an organisation (device list rendering). */
+export async function listCredentialsForOrg(
+  db: DbExecutor,
+  orgId: string,
+): Promise<Credential[]> {
+  return db
+    .select()
+    .from(credentials)
+    .where(eq(credentials.orgId, orgId))
+    .orderBy(desc(credentials.createdAt));
+}
+
+/** Credentials of one network, newest first (including revoked history rows). */
+export async function listCredentialsForNetwork(
+  db: DbExecutor,
+  networkId: string,
+): Promise<Credential[]> {
+  return db
+    .select()
+    .from(credentials)
+    .where(eq(credentials.networkId, networkId))
+    .orderBy(desc(credentials.createdAt));
+}
+
+/** Only credentials an anchor may publish: `active` and not past expiry. */
+export async function listPublishableCredentials(
+  db: DbExecutor,
+  networkId: string,
+  now: Date,
+): Promise<Credential[]> {
+  return db
+    .select()
+    .from(credentials)
+    .where(
+      and(
+        eq(credentials.networkId, networkId),
+        eq(credentials.status, "active"),
+        gt(credentials.expiry, now),
+      ),
+    )
+    .orderBy(asc(credentials.credentialId));
+}
+
+export async function getCredentialByDevice(
+  db: DbExecutor,
+  deviceId: string,
+): Promise<Credential | undefined> {
+  const rows = await db
+    .select()
+    .from(credentials)
+    .where(eq(credentials.deviceId, deviceId))
+    .limit(1);
+  return rows[0];
+}
+
+export async function getCredentialById(
+  db: DbExecutor,
+  orgId: string,
+  id: string,
+): Promise<Credential | undefined> {
+  const rows = await db
+    .select()
+    .from(credentials)
+    .where(and(eq(credentials.orgId, orgId), eq(credentials.id, id)))
+    .limit(1);
+  return rows[0];
+}
+
+export async function insertCredential(
+  db: DbExecutor,
+  values: typeof credentials.$inferInsert,
+): Promise<Credential> {
+  const rows = await db.insert(credentials).values(values).returning();
+  if (!rows[0]) throw new Error("failed to create credential");
+  return rows[0];
+}
+
+export async function updateCredential(
+  db: DbExecutor,
+  id: string,
+  values: Partial<typeof credentials.$inferInsert>,
+): Promise<Credential | undefined> {
+  const rows = await db
+    .update(credentials)
+    .set({ ...values, updatedAt: new Date() })
+    .where(eq(credentials.id, id))
+    .returning();
+  return rows[0];
+}
+
+/**
+ * Credentials due for renewal: active, not yet expired, expiring before
+ * `before`. Ordered by network so one renewal run can batch per network.
+ */
+export async function listCredentialsExpiringBefore(
+  db: DbExecutor,
+  before: Date,
+  now: Date,
+): Promise<Credential[]> {
+  return db
+    .select()
+    .from(credentials)
+    .where(
+      and(
+        eq(credentials.status, "active"),
+        gt(credentials.expiry, now),
+        lt(credentials.expiry, before),
+      ),
+    )
+    .orderBy(asc(credentials.networkId), asc(credentials.expiry));
+}
+
+/** Approved devices of one network filtered by role. */
+export async function listApprovedDevicesByRole(
+  db: DbExecutor,
+  networkId: string,
+  role: "anchor" | "member",
+): Promise<Device[]> {
+  return db
+    .select()
+    .from(devices)
+    .where(
+      and(
+        eq(devices.networkId, networkId),
+        eq(devices.state, "approved"),
+        eq(devices.role, role),
+      ),
+    )
+    .orderBy(asc(devices.hostname));
 }
 
 export async function listApprovedDevicesInNetwork(

@@ -22,6 +22,25 @@ export const deviceStateEnum = pgEnum("device_state", [
   "blocked",
 ]);
 
+/** How devices authenticate to the EasyTier network (see docs/CREDENTIALS.md). */
+export const networkAccessModeEnum = pgEnum("network_access_mode", [
+  "shared_secret",
+  "credentials",
+]);
+
+/**
+ * Device role in a credentials network. In `shared_secret` mode every device
+ * effectively holds the secret, so its role is informational (`anchor`).
+ */
+export const deviceRoleEnum = pgEnum("device_role", ["anchor", "member"]);
+
+/** Lifecycle of a per-device EasyTier credential. */
+export const credentialStatusEnum = pgEnum("credential_status", [
+  "active",
+  "revoked",
+  "expired",
+]);
+
 /** Where a config revision came from. */
 export const revisionSourceEnum = pgEnum("revision_source", [
   "approval",
@@ -152,6 +171,14 @@ export const networks = pgTable(
     networkName: text("network_name").notNull().unique(),
     /** AES-256-GCM ciphertext of the EasyTier `network_secret`. */
     secretCiphertext: text("secret_ciphertext").notNull(),
+    /**
+     * How devices authenticate. `shared_secret` (default): every device knows
+     * the secret. `credentials`: anchors hold the secret and publish trusted
+     * device keys; members join with a per-device, revocable credential.
+     */
+    accessMode: networkAccessModeEnum("access_mode")
+      .notNull()
+      .default("shared_secret"),
     /** IPv4 CIDR the control plane allocates device addresses from. */
     ipv4Cidr: text("ipv4_cidr").notNull().default("10.144.144.0/24"),
     /** Per-network MagicDNS switch (pushed as `enable_magic_dns`). */
@@ -206,6 +233,11 @@ export const invites = pgTable(
     /** SHA-256 of the invite token; the plaintext is shown exactly once. */
     tokenHash: text("token_hash").notNull().unique(),
     label: text("label").notNull().default(""),
+    /**
+     * Role a newly enrolled device gets. In a credentials network the first
+     * device must be an anchor; later invites usually are members.
+     */
+    role: deviceRoleEnum("role").notNull().default("anchor"),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     /** null means unlimited uses (expiry still applies). */
     maxUses: integer("max_uses"),
@@ -242,6 +274,7 @@ export const devices = pgTable(
     osDistribution: text("os_distribution").notNull().default(""),
     sourceIp: text("source_ip").notNull().default(""),
     state: deviceStateEnum("state").notNull().default("pending"),
+    role: deviceRoleEnum("role").notNull().default("anchor"),
     inviteId: uuid("invite_id").references(() => invites.id, {
       onDelete: "set null",
     }),
@@ -506,6 +539,73 @@ export const configRevisions = pgTable(
   ],
 );
 
+/**
+ * A per-device EasyTier credential in a `credentials` network.
+ *
+ * The member never receives the network secret: it joins with the X25519
+ * private key stored here (encrypted at rest, exactly like a network secret).
+ * Anchors receive the same private key inside `managed_credentials` and
+ * publish the derived public key over OSPF, so one row drives both sides.
+ * Only the current row per device is kept; revoking marks it `revoked` (an
+ * append-only audit trail lives in `audit_log`).
+ */
+export const credentials = pgTable(
+  "credentials",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organisations.id, { onDelete: "cascade" }),
+    networkId: uuid("network_id")
+      .notNull()
+      .references(() => networks.id, { onDelete: "cascade" }),
+    deviceId: uuid("device_id")
+      .notNull()
+      .references(() => devices.id, { onDelete: "cascade" }),
+    /** EasyTier `credential_id` (a UUID string, also used by the client). */
+    credentialId: text("credential_id").notNull(),
+    /** AES-256-GCM ciphertext of `base64(X25519 private key)`. */
+    secretCiphertext: text("secret_ciphertext").notNull(),
+    /** `base64(X25519 public key)`; safe to display and audit. */
+    publicKey: text("public_key").notNull(),
+    /** EasyTier ACL group names granted to this member (our tags). */
+    groups: text("groups").array().notNull().default(sql`'{}'::text[]`),
+    /** Whether this member may relay traffic (`allow_relay`). */
+    allowRelay: boolean("allow_relay").notNull().default(true),
+    /** CIDRs the member may proxy (`allowed_proxy_cidrs`). */
+    allowedProxyCidrs: text("allowed_proxy_cidrs")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    /** Whether several peers may use the same credential. */
+    reusable: boolean("reusable").notNull().default(true),
+    expiry: timestamp("expiry", { withTimezone: true }).notNull(),
+    status: credentialStatusEnum("status").notNull().default("active"),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    revokedBy: uuid("revoked_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    /** Why it was revoked (revoked, network switched to shared_secret, …). */
+    revocationReason: text("revocation_reason").notNull().default(""),
+    createdAt,
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("credentials_device_uq").on(table.deviceId),
+    uniqueIndex("credentials_network_credential_uq").on(
+      table.networkId,
+      table.credentialId,
+    ),
+    index("credentials_network_status_idx").on(table.networkId, table.status),
+    index("credentials_expiry_idx").on(table.expiry),
+  ],
+);
+
 export const auditLog = pgTable(
   "audit_log",
   {
@@ -558,6 +658,17 @@ export const networksRelations = relations(networks, ({ one, many }) => ({
   peers: many(networkPeers),
 }));
 
+export const credentialsRelations = relations(credentials, ({ one }) => ({
+  network: one(networks, {
+    fields: [credentials.networkId],
+    references: [networks.id],
+  }),
+  device: one(devices, {
+    fields: [credentials.deviceId],
+    references: [devices.id],
+  }),
+}));
+
 export const devicesRelations = relations(devices, ({ one, many }) => ({
   network: one(networks, {
     fields: [devices.networkId],
@@ -585,6 +696,10 @@ export const networkPeersRelations = relations(networkPeers, ({ one }) => ({
 export type Organisation = typeof organisations.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type UserRole = User["role"];
+export type Credential = typeof credentials.$inferSelect;
+export type CredentialStatus = Credential["status"];
+export type NetworkAccessMode = Network["accessMode"];
+export type DeviceRole = Device["role"];
 export type Network = typeof networks.$inferSelect;
 export type Invite = typeof invites.$inferSelect;
 export type Device = typeof devices.$inferSelect;

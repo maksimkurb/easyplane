@@ -94,6 +94,34 @@ export {
   type DesiredConfig,
 } from "./domain/desired-config.js";
 export {
+  buildManagedCredentials,
+  buildMemberSecureMode,
+  credentialExpiry,
+  credentialGroupsFromTags,
+  credentialStatusAt,
+  DEFAULT_CREDENTIAL_TTL_DAYS,
+  CREDENTIAL_RENEW_RATIO,
+  effectiveRole,
+  isCredentialUsable,
+  knowsNetworkSecret,
+  managedCredentialsMatch,
+  type CredentialMaterial,
+} from "./domain/credentials.js";
+export {
+  credentialPublicKey,
+  generateCredentialKeypair,
+  isCredentialKey,
+  type CredentialKeypair,
+} from "./security/credential-keys.js";
+export {
+  CredentialService,
+  fingerprint,
+  publicKeyOf,
+  type CredentialDto,
+  type CredentialMigrationPlan,
+  type CredentialServiceOptions,
+} from "./services/credential-service.js";
+export {
   nextRevisionNumber,
   latestRevision,
   planRollback,
