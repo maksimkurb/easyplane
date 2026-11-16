@@ -123,6 +123,12 @@ export interface TopologyMapProps {
   selectedNodeId: string | null
   onSelectNode: (nodeId: string | null) => void
   onSelectLink?: (linkId: string | null) => void
+  /** Height comes from the page; the map fills whatever box it is given. */
+  className?: string
+  /** The network map uses the side panel instead of a minimap. */
+  minimap?: boolean
+  /** Short latency labels (design "ping pills") instead of full edge text. */
+  pingLabels?: boolean
 }
 
 /** Renders the derived snapshot as a React Flow graph. */
@@ -132,6 +138,9 @@ export function TopologyMap({
   selectedNodeId,
   onSelectNode,
   onSelectLink,
+  className,
+  minimap = true,
+  pingLabels = false,
 }: TopologyMapProps) {
   const { t } = useTranslation()
   const [overrides, setOverrides] = useState<Record<string, { x: number; y: number }>>({})
@@ -169,19 +178,27 @@ export function TopologyMap({
     () =>
       links.map((link) => {
         const relayed = link.kind === "relayed"
-        const label = relayed
-          ? `${link.viaHostname ?? t("topology.relay")} · ${t("topology.hops", { count: link.cost ?? "?" })}${
-              link.protocolIsFirstHop ? ` · ${link.protocol}` : ""
-            }`
-          : [
-              link.protocol,
-              link.latencyMs !== null ? `${link.latencyMs} ms` : null,
-              link.lossPercent !== null && link.lossPercent > 0
-                ? `${link.lossPercent}% loss`
-                : null,
-            ]
-              .filter(Boolean)
-              .join(" · ")
+        // The network map uses ping pills: protocol and loss stay in the side
+        // panel, where there is room to read them.
+        const label = pingLabels
+          ? relayed
+            ? `${link.viaHostname ?? t("topology.relay")} · ${t("topology.hops", { count: link.cost ?? "?" })}`
+            : link.latencyMs !== null
+              ? `${link.latencyMs} ms`
+              : link.protocol
+          : relayed
+            ? `${link.viaHostname ?? t("topology.relay")} · ${t("topology.hops", { count: link.cost ?? "?" })}${
+                link.protocolIsFirstHop ? ` · ${link.protocol}` : ""
+              }`
+            : [
+                link.protocol,
+                link.latencyMs !== null ? `${link.latencyMs} ms` : null,
+                link.lossPercent !== null && link.lossPercent > 0
+                  ? `${link.lossPercent}% loss`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")
         return {
           id: link.id,
           source: link.source,
@@ -201,7 +218,7 @@ export function TopologyMap({
           data: { link },
         }
       }),
-    [links, t]
+    [links, pingLabels, t]
   )
 
   const handleNodesChange: OnNodesChange<Node<DeviceNodeData, "device">> = useCallback(
@@ -223,7 +240,12 @@ export function TopologyMap({
   )
 
   return (
-    <div className="h-[68vh] min-h-96 w-full rounded-lg border bg-muted/20">
+    <div
+      className={cn(
+        "h-[68vh] min-h-96 w-full rounded-lg border border-line bg-surface-2/40",
+        className
+      )}
+    >
       <ReactFlow
         edges={flowEdges}
         fitView
@@ -241,15 +263,17 @@ export function TopologyMap({
       >
         <Background gap={24} size={1} />
         <Controls showInteractive={false} />
-        <MiniMap
-          className="!bg-card"
-          maskColor="rgb(0 0 0 / 0.08)"
-          nodeColor={(node) =>
-            (node.data as DeviceNodeData).node.online ? "#10b981" : "#9ca3af"
-          }
-          pannable
-          zoomable
-        />
+        {minimap ? (
+          <MiniMap
+            className="!bg-card"
+            maskColor="rgb(0 0 0 / 0.08)"
+            nodeColor={(node) =>
+              (node.data as DeviceNodeData).node.online ? "#10b981" : "#9ca3af"
+            }
+            pannable
+            zoomable
+          />
+        ) : null}
       </ReactFlow>
     </div>
   )

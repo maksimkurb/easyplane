@@ -22,6 +22,7 @@ export function Segmented<T extends string>({
   label,
   className,
   size = "default",
+  fill = false,
 }: {
   value: T
   options: SegmentedOption<T>[]
@@ -29,12 +30,15 @@ export function Segmented<T extends string>({
   label: string
   className?: string
   size?: "default" | "sm"
+  /** Equal-width options; use inside narrow panels and sheets. */
+  fill?: boolean
 }) {
   return (
     <div
       aria-label={label}
       className={cn(
-        "inline-flex flex-none gap-0.5 rounded-[10px] bg-surface-3 p-[3px]",
+        "inline-flex gap-0.5 rounded-[10px] bg-surface-3 p-[3px]",
+        fill ? "w-full flex-none" : "flex-none",
         className
       )}
       role="radiogroup"
@@ -46,6 +50,7 @@ export function Segmented<T extends string>({
             aria-checked={active}
             className={cn(
               "inline-flex h-[34px] cursor-pointer items-center gap-1.5 rounded-[7px] px-3 text-[13px] font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
+              fill && "min-w-0 flex-1 justify-center px-1.5",
               size === "sm" && "h-7 px-2 text-xs",
               active
                 ? "bg-card text-foreground shadow-sm ring-1 ring-line"
@@ -59,9 +64,7 @@ export function Segmented<T extends string>({
           >
             {option.label}
             {option.count !== undefined ? (
-              <span className={cn("font-normal", active ? "text-fg-3" : "text-fg-3")}>
-                {option.count}
-              </span>
+              <span className="font-normal text-fg-3">{option.count}</span>
             ) : null}
           </button>
         )

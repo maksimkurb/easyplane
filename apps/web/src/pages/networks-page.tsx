@@ -123,9 +123,9 @@ export function NetworksPage() {
               aria-hidden="true"
               className="hidden h-10 grid-cols-[minmax(0,2fr)_minmax(140px,1fr)_minmax(170px,1.2fr)_44px] items-center gap-4 border-b border-line px-5 text-xs font-medium text-fg-3 md:grid"
             >
-              <span>{t("networks.title")}</span>
-              <span>{t("networks.cidr")}</span>
-              <span>{t("networks.devices")}</span>
+              <span>{t("networks.table.network")}</span>
+              <span>{t("networks.table.range")}</span>
+              <span>{t("networks.table.devices")}</span>
               <span />
             </div>
             <ul className="divide-y divide-line">
