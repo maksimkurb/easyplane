@@ -16,12 +16,12 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "mb-6 grid grid-cols-1 gap-x-4 gap-y-2 border-b pb-4 md:mb-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-start",
+        "mb-6 grid grid-cols-1 gap-x-4 gap-y-2 md:mb-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-start",
         className
       )}
     >
       <h1
-        className="min-w-0 text-3xl font-semibold tracking-tight text-balance md:text-2xl"
+        className="min-w-0 text-2xl leading-8 font-semibold tracking-[-0.018em] text-balance"
         id="page-title"
       >
         {title}
@@ -32,7 +32,7 @@ export function PageHeader({
         </div>
       ) : null}
       {description ? (
-        <p className="min-w-0 text-base text-pretty text-muted-foreground md:col-span-2 md:text-sm">
+        <p className="min-w-0 text-sm text-pretty text-fg-3 md:col-span-2">
           {description}
         </p>
       ) : null}

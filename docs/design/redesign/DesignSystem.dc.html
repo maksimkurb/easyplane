@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Design system</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./ep.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>body{margin:0}.sw{height:44px;border-radius:var(--radius-md);border:1px solid var(--border);display:flex;align-items:flex-end;padding:3px 6px;font:10px var(--font-mono)}.panel{padding:20px;border-radius:var(--radius-xl);background:var(--background);color:var(--foreground);border:1px solid var(--border)}</style>
+</helmet>
+<div class="ep" style="width:1440px;height:1700px;padding:40px;display:flex;flex-direction:column;gap:28px;background:#fff">
+  <div><div style="font-size:30px;font-weight:600;letter-spacing:-.025em">EasyPlane design system</div><div class="mut">Source: apps/web/src/index.css (Tailwind 4 @theme inline), components/ui/* (shadcn base-nova on @base-ui). Neutral grays + one brand blue, system font stack, radius 0.45rem.</div></div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div class="ep panel"><div class="label" style="margin-bottom:10px">Colour tokens: light (:root)</div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+        <div class="sw" style="background:var(--background)">background</div><div class="sw" style="background:var(--foreground);color:var(--background)">foreground</div><div class="sw" style="background:var(--card)">card</div><div class="sw" style="background:var(--popover)">popover</div>
+        <div class="sw" style="background:var(--brand);color:#fff">brand</div><div class="sw" style="background:var(--primary);color:var(--primary-foreground)">primary</div>
+        <div class="sw" style="background:var(--secondary)">secondary</div><div class="sw" style="background:var(--muted)">muted</div><div class="sw" style="background:var(--muted-foreground);color:var(--background)">muted-fg</div><div class="sw" style="background:var(--accent)">accent</div>
+        <div class="sw" style="background:var(--destructive);color:#fff">destructive</div><div class="sw" style="background:var(--warning)">warning</div>
+        <div class="sw" style="background:var(--success);color:#fff">success</div><div class="sw" style="background:var(--border)">border</div><div class="sw" style="background:var(--input)">input</div><div class="sw" style="background:var(--ring)">ring</div>
+        <div class="sw" style="background:var(--sidebar)">sidebar</div><div class="sw" style="background:var(--sidebar-accent)">sidebar-accent</div>
+      </div></div>
+    <div class="ep dark panel"><div class="label" style="margin-bottom:10px">Colour tokens: dark (.dark)</div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+        <div class="sw" style="background:var(--background)">background</div><div class="sw" style="background:var(--foreground);color:var(--background)">foreground</div><div class="sw" style="background:var(--card)">card</div><div class="sw" style="background:var(--popover)">popover</div>
+        <div class="sw" style="background:var(--brand);color:#fff">brand</div><div class="sw" style="background:var(--primary);color:var(--primary-foreground)">primary</div>
+        <div class="sw" style="background:var(--secondary)">secondary</div><div class="sw" style="background:var(--muted)">muted</div><div class="sw" style="background:var(--muted-foreground);color:var(--background)">muted-fg</div><div class="sw" style="background:var(--accent)">accent</div>
+        <div class="sw" style="background:var(--destructive);color:#fff">destructive</div><div class="sw" style="background:var(--warning);color:#000">warning</div>
+        <div class="sw" style="background:var(--success);color:#000">success</div><div class="sw" style="background:var(--border)">border</div><div class="sw" style="background:var(--input)">input</div><div class="sw" style="background:var(--ring)">ring</div>
+        <div class="sw" style="background:var(--sidebar)">sidebar</div><div class="sw" style="background:var(--sidebar-accent)">sidebar-accent</div>
+      </div></div>
+  </div>
+
+  <div class="card" style="padding:20px"><div class="label">Status colours (literal Tailwind palette, not tokens)</div>
+    <div class="row wrap" style="gap:24px;margin-top:10px">
+      <span class="row"><span class="sw" style="width:90px;background:#f59e0b">amber-500</span>pending / stale / relayed / unapproved</span>
+      <span class="row"><span class="sw" style="width:90px;background:#10b981">emerald-500</span>approved / in sync / online / direct</span>
+      <span class="row"><span class="sw" style="width:90px;background:#ef4444">red-500</span>blocked / error / rejected</span>
+      <span class="row"><span class="sw" style="width:90px;background:#8b5cf6;color:#fff">violet-500</span>relay-capable node ring</span>
+      <span class="row"><span class="sw" style="width:90px;background:#2563eb;color:#fff">#2563eb</span>logo rect</span>
+    </div></div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
+    <div class="card" style="padding:20px"><div class="label">Typography (system sans, mono for ids/URLs)</div>
+      <div style="font-size:30px;font-weight:600;line-height:36px;letter-spacing:-.025em">Page title mobile 30</div>
+      <div style="font-size:24px;font-weight:600;line-height:32px;letter-spacing:-.025em">Page title desktop 24 / 600</div>
+      <div style="font-size:16px;font-weight:500">Card title 16 / 500</div>
+      <div class="sm" style="font-size:14px">Body / table 14 / 400 (text-sm)</div>
+      <div class="mut" style="font-size:14px">Description 14 muted-foreground</div>
+      <div class="xs">Meta 12 (text-xs)</div>
+      <div class="mono xs">10.144.144.0/24 mono 12</div>
+      <div class="mono" style="font-size:10px">machine-id mono 10</div></div>
+    <div class="card" style="padding:20px"><div class="label">Radius (--radius: 0.45rem)</div>
+      <div class="row" style="gap:14px;align-items:flex-end">
+        <div style="text-align:center"><div style="width:56px;height:56px;border:2px solid var(--primary);border-radius:var(--radius-sm)"></div><div class="xs mut">sm</div></div>
+        <div style="text-align:center"><div style="width:56px;height:56px;border:2px solid var(--primary);border-radius:var(--radius-md)"></div><div class="xs mut">md</div></div>
+        <div style="text-align:center"><div style="width:56px;height:56px;border:2px solid var(--primary);border-radius:var(--radius-lg)"></div><div class="xs mut">lg: buttons, inputs</div></div>
+        <div style="text-align:center"><div style="width:56px;height:56px;border:2px solid var(--primary);border-radius:var(--radius-xl)"></div><div class="xs mut">xl: cards, dialogs</div></div>
+        <div style="text-align:center"><div style="width:56px;height:28px;border:2px solid var(--primary);border-radius:999px"></div><div class="xs mut">pill: badges</div></div></div></div>
+    <div class="card" style="padding:20px"><div class="label">Spacing and layout</div>
+      <div class="sm mut">Base 4px (Tailwind). Page: max-w-7xl, px-4 py-4. Header: mb-8 pb-4 border-b. Section gap 16. Card gap 16, padding 16. Sidebar 16rem. Control heights: input 32, button 32 (xs 24, sm 28, lg 36, xl 44), badge 20, table head 40, nav sub-item 28 (44 on mobile).</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div class="card" style="padding:20px"><div class="label">Buttons (ui/button.tsx)</div>
+      <div class="row wrap"><span class="btn">Default</span><span class="btn outline">Outline</span><span class="btn secondary">Secondary</span><span class="btn ghost">Ghost</span><span class="btn destructive">Destructive</span><span class="btn link">Link</span><span class="btn disabled">Disabled</span></div>
+      <div class="row wrap"><span class="btn xs">xs</span><span class="btn sm">sm</span><span class="btn">default</span><span class="btn lg">lg</span><span class="btn xl">xl</span><span class="btn icon outline"><i class="ic i-refresh"></i></span><span class="btn"><i class="ic i-plus"></i>With icon</span></div></div>
+    <div class="card" style="padding:20px"><div class="label">Badges (ui/badge.tsx)</div>
+      <div class="row wrap"><span class="badge">default</span><span class="badge secondary">secondary</span><span class="badge outline">outline</span><span class="badge success">success</span><span class="badge warning">warning</span><span class="badge destructive">destructive</span></div></div>
+  </div>
+
+  <div class="card" style="padding:20px"><div class="label">Status badge system (components/device-status.tsx): approval x online x sync</div>
+    <table class="tbl" style="margin-top:6px"><thead><tr><th>Axis</th><th>Values</th><th>Look</th></tr></thead><tbody>
+      <tr><td style="font-weight:500">Approval state</td><td>pending / approved / blocked</td><td><div class="badges"><span class="badge outline s-amber">Pending</span><span class="badge outline s-green">Approved</span><span class="badge outline s-red">Blocked</span></div></td></tr>
+      <tr><td style="font-weight:500">Online</td><td>online / offline</td><td><div class="badges"><span class="badge outline"><span class="dot on"></span>Online</span><span class="badge outline"><span class="dot"></span>Offline</span></div></td></tr>
+      <tr><td style="font-weight:500">Config sync</td><td>in-sync / stale / error / not-applicable</td><td><div class="badges"><span class="badge outline s-green">In sync</span><span class="badge outline s-amber">Stale</span><span class="badge outline s-red">Error</span><span class="badge outline s-none">No config</span></div></td></tr>
+      <tr><td style="font-weight:500">Invite</td><td>active / expired / exhausted / revoked</td><td><div class="badges"><span class="badge outline s-green">Active</span><span class="badge outline s-amber">Expired</span><span class="badge outline s-amber">Used up</span><span class="badge outline s-red">Revoked</span></div></td></tr>
+      <tr><td style="font-weight:500">Topology link</td><td>direct / relayed / relay-capable / offline</td><td><div class="row wrap xs" style="gap:14px"><span class="row" style="gap:6px"><span style="width:24px;height:2px;background:#10b981"></span>Direct</span><span class="row" style="gap:6px"><span style="width:24px;border-top:2px dashed #f59e0b"></span>Relayed</span><span class="row" style="gap:6px"><i class="ic i-tower s14" style="color:#8b5cf6"></i>Relay-capable (violet ring)</span><span class="row" style="gap:6px"><span class="dot lg"></span>Offline (dashed border, 70% opacity)</span></div></td></tr>
+    </tbody></table></div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
+    <div class="card" style="padding:20px"><div class="label">Inputs, select, switch, checkbox</div>
+      <div class="input">Text input</div><div class="input ph">Placeholder</div><div class="input focus">Focused</div><div class="input invalid">Invalid</div>
+      <div class="input select"><span>Select</span><i class="ic i-down s14 mut"></i></div>
+      <div class="row"><span class="switch on"></span><span class="switch"></span><span class="check on"><i class="ic i-check"></i></span><span class="check"></span></div></div>
+    <div class="card" style="padding:20px"><div class="label">Tabs, alert</div>
+      <div class="tabs"><span class="tab on">TOML config</span><span class="tab">Share link</span><span class="tab">From a device</span></div>
+      <div class="alert"><i class="ic i-info" style="margin-top:2px"></i><div><div class="at">Default alert</div><div class="ad">Muted description</div></div></div>
+      <div class="alert err"><i class="ic i-alert" style="margin-top:2px"></i><div><div class="at">Destructive alert</div></div></div></div>
+    <div class="card" style="padding:20px"><div class="label">Icon set: lucide, 16px stroke 2</div>
+      <div class="row wrap" style="gap:14px"><i class="ic i-network"></i><i class="ic i-fileup"></i><i class="ic i-devices"></i><i class="ic i-waypoints"></i><i class="ic i-usercheck"></i><i class="ic i-scroll"></i><i class="ic i-logout"></i><i class="ic i-plus"></i><i class="ic i-refresh"></i><i class="ic i-tower"></i><i class="ic i-copy"></i><i class="ic i-x"></i><i class="ic i-menu"></i><i class="ic i-info"></i><i class="ic i-check"></i><i class="ic i-sun"></i><i class="ic i-moon"></i><i class="ic i-trash"></i><i class="ic i-upload"></i><i class="ic i-globe"></i><i class="ic i-alert"></i><i class="ic i-ban"></i><i class="ic i-shield"></i><i class="ic i-key"></i></div>
+      <div class="hint">Lucide names in code: NetworkIcon, FileUpIcon, MonitorSmartphoneIcon, WaypointsIcon, UserCheckIcon, ScrollTextIcon, LogOutIcon, PlusIcon, RefreshCwIcon, RadioTowerIcon, CopyIcon, XIcon, MenuIcon, InfoIcon, CheckIcon, Trash2Icon, ShieldBanIcon, ShieldIcon, KeyRoundIcon, EyeIcon, ArrowLeftIcon, LogInIcon.</div></div>
+  </div>
+
+  <div class="card" style="padding:0;max-width:760px"><div class="card-h" style="padding:16px 16px 0"><div><div class="card-t">Card, table (ui/card.tsx, ui/table.tsx)</div><div class="card-d">Table head tint is color-mix(primary 6%, background).</div></div></div>
+    <div class="tscroll"><table class="tbl"><thead><tr><th>Hostname</th><th>Status</th><th>Virtual IP</th></tr></thead><tbody><tr><td>nas-01</td><td><span class="badge outline s-green">Approved</span></td><td class="mono xs">10.144.144.2</td></tr><tr class="hl"><td>relay-fra (hover)</td><td><span class="badge outline s-amber">Stale</span></td><td class="mono xs">10.144.144.3</td></tr></tbody></table></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1700}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

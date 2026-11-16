@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home lab settings</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./v2.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}.v2 .sub{border-radius:10px;box-shadow:0 0 0 1px var(--line);overflow:hidden}.v2 .sub .line:first-child{border-top:0}.v2 .sub .line{padding:8px 8px 8px 16px}</style>
+</helmet>
+<div class="v2 {{tc}}" style="min-height:900px">
+  <header class="top">
+    <a class="btn ghost icon back" href="V2Networks.dc.html" aria-label="Back to networks"><i class="ic i-chev-l s20"></i></a>
+    <a class="brand" href="V2Networks.dc.html"><span class="logo"><svg viewBox="0 0 512 512" fill="none" aria-hidden="true"><path d="M308,120 H182 Q136,120 136,166 V346 Q136,392 182,392 H308 M136,256 H348" fill="none" stroke="currentColor" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="336" cy="120" r="50" fill="currentColor"></circle><circle cx="376" cy="256" r="50" fill="currentColor"></circle><circle cx="336" cy="392" r="50" fill="currentColor"></circle></svg></span>EasyPlane</a>
+    <nav class="crumbs" aria-label="Breadcrumb"><span class="sep">/</span><a href="V2Networks.dc.html">Networks</a><span class="sep">/</span><span class="cur">Home lab</span></nav>
+    <span class="spacer"></span>
+    <a class="tlink" href="Audit.dc.html"><i class="ic i-history s16"></i>Audit log</a>
+    <button class="avatar" aria-label="Account, language and theme"><span>MK</span></button>
+  </header>
+
+  <section class="hero">
+    <div class="wrap">
+      <div class="nh">
+        <div class="nh-main">
+          <h1>Home lab</h1>
+          <div class="meta">
+            <button class="copy mono" aria-label="Copy EasyTier network name">homelab-7f3a91<i class="ic i-copy s14"></i></button>
+            <span class="mono">10.144.144.0/24</span>
+            <span class="row" style="gap:6px"><span class="dot on"></span>6 of 7 online</span>
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn sec icon" aria-label="Network actions"><i class="ic i-more"></i></button>
+          <a class="btn pri" href="V2AddDevice.dc.html"><i class="ic i-plus s16"></i>Add device</a>
+        </div>
+      </div>
+      <nav class="tabs" aria-label="Network sections">
+        <a class="tab" href="V2Devices.dc.html">Devices <span class="cnt warn">2 waiting</span></a>
+        <a class="tab" href="V2Map.dc.html">Map</a>
+        <a class="tab" href="V2Access.dc.html">Access</a>
+        <a class="tab on" href="V2Settings.dc.html" aria-current="page">Settings</a>
+      </nav>
+    </div>
+  </section>
+
+  <div class="wrap content">
+    <div class="card pad">
+
+      <div class="set">
+        <div><h2>General</h2><p class="sm t3" style="margin-top:4px">How this network is named here and on the wire.</p></div>
+        <div style="display:flex;flex-direction:column;gap:16px;max-width:520px">
+          <label class="field"><span class="label">Display name</span><span class="fs"><span class="input grow" style="flex:1">Home lab</span><button class="btn sec">Save</button></span></label>
+          <div class="field"><span class="label">EasyTier network name</span><span class="input mono" style="background:var(--surface-2)"><span class="grow">homelab-7f3a91</span><button class="btn ghost icon" style="width:32px;height:32px;margin-right:-6px" aria-label="Copy"><i class="ic i-copy s16"></i></button></span></div>
+          <div class="field"><span class="label">Address range</span><span class="input mono" style="background:var(--surface-2)">10.144.144.0/24</span><span class="hint">Devices get addresses from this range. It can’t be changed while devices are connected.</span></div>
+        </div>
+      </div>
+
+      <div class="set">
+        <div><h2>Network secret</h2><p class="sm t3" style="margin-top:4px">Shared by every device. Never shown unless you ask.</p></div>
+        <div class="fs" style="max-width:520px">
+          <span class="input mono grow" style="flex:1 1 220px;letter-spacing:.2em;color:var(--fg-3)">••••••••••••••••</span>
+          <button class="btn sec"><i class="ic i-key s16"></i>Reveal</button>
+          <button class="btn ghost">Rotate…</button>
+        </div>
+      </div>
+
+      <div class="set">
+        <div><h2>Hubs and peers</h2><p class="sm t3" style="margin-top:4px">Addresses every device dials to join the mesh. A hub never dials itself.</p></div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="sub">
+            <div class="line">
+              <span class="dicon"><i class="ic i-server"></i></span>
+              <div class="grow"><div class="dname"><span class="n">nas-01</span><span class="chip brand">Hub</span></div><div class="dsub mono" style="font-size:12px">tcp://nas.example.com:11010 · udp +1</div></div>
+              <button class="btn ghost icon" aria-label="Peer actions"><i class="ic i-more"></i></button>
+            </div>
+            <div class="line">
+              <span class="dicon"><i class="ic i-server"></i></span>
+              <div class="grow"><div class="dname"><span class="n">relay-fra</span><span class="chip brand">Hub</span><span class="chip warn">No endpoints</span></div><div class="dsub">Add its public address on the <a href="V2Device.dc.html" style="color:var(--brand-text);font-weight:500">device page</a>, or nobody can dial it.</div></div>
+              <button class="btn ghost icon" aria-label="Peer actions"><i class="ic i-more"></i></button>
+            </div>
+            <div class="line">
+              <span class="dicon"><i class="ic i-globe"></i></span>
+              <div class="grow"><div class="dname"><span class="n mono" style="font-weight:500">wss://public.easytier.cn:11012</span></div><div class="dsub">External peer · sent to devices as is</div></div>
+              <button class="btn ghost icon" aria-label="Peer actions"><i class="ic i-more"></i></button>
+            </div>
+          </div>
+          <div><button class="btn sec"><i class="ic i-plus s16"></i>Add peer</button></div>
+        </div>
+      </div>
+
+      <div class="set">
+        <div><h2>MagicDNS</h2><p class="sm t3" style="margin-top:4px">Reach devices by name instead of IP.</p></div>
+        <div style="max-width:520px">
+          <div class="row" style="gap:16px;align-items:flex-start"><div class="grow" style="flex:1"><div class="m">Enable MagicDNS</div><div class="hint">Devices resolve names like <span class="mono">nas-01.et.net</span>. The zone is fixed by EasyTier.</div></div><button class="tgl on" role="switch" aria-checked="true" aria-label="Enable MagicDNS"></button></div>
+        </div>
+      </div>
+
+      <div class="set">
+        <div><h2>Invite links</h2><p class="sm t3" style="margin-top:4px">Links that let new devices join. Create one with Add device.</p></div>
+        <div class="sub">
+          <div class="line">
+            <span class="dicon"><i class="ic i-link"></i></span>
+            <div class="grow"><div class="dname"><span class="n">Family phones</span></div><div class="dsub">2 of 5 used · expires in 6 days · needs approval</div></div>
+            <button class="btn ghost icon" aria-label="Copy invite link"><i class="ic i-copy s16"></i></button>
+            <button class="btn ghost">Revoke</button>
+          </div>
+          <div class="line">
+            <span class="dicon"><i class="ic i-link"></i></span>
+            <div class="grow"><div class="dname"><span class="n t2">Old laptop</span><span class="chip">Used up</span></div><div class="dsub">1 of 1 used · created 3 weeks ago</div></div>
+            <button class="btn ghost">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="set">
+        <div><h2 style="color:var(--err)">Delete network</h2><p class="sm t3" style="margin-top:4px">Disconnects all 7 devices and removes their config. This can’t be undone.</p></div>
+        <div><button class="btn danger"><i class="ic i-trash s16"></i>Delete Home lab…</button></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic { renderVals() { return { tc: this.props.theme === 'dark' ? 'dark' : '' }; } }
+</script>
+</body>
+</html>

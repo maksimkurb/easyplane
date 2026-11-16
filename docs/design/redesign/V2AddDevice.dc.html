@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add device</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./v2.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}.v2 .qr{width:112px;height:112px;border-radius:10px;flex:none;background:#fff;box-shadow:0 0 0 1px var(--line);display:grid;place-items:center;color:#16181d}.v2 .opts{background:var(--surface-2);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:18px;box-shadow:inset 0 0 0 1px var(--line)}.v2 .opts .seg{background:var(--surface-3)}.v2 .opts .seg button{flex:1;justify-content:center;padding:0 8px}.v2 .mode{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.v2 .mode button{min-height:64px;padding:10px 14px;border-radius:10px;text-align:left;box-shadow:inset 0 0 0 1px var(--line-2);display:flex;gap:12px;align-items:flex-start}.v2 .mode button.on{box-shadow:inset 0 0 0 2px var(--brand);background:var(--brand-soft)}.v2 .mode .rd{width:18px;height:18px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--line-2);flex:none;margin-top:1px}.v2 .mode .on .rd{box-shadow:inset 0 0 0 5px var(--brand)}</style>
+</helmet>
+<div class="v2 {{tc}}" style="min-height:900px;overflow:hidden">
+  <dc-import name="V2Devices" theme="{{theme}}" hint-size="100%,1100px"></dc-import>
+  <div class="scrim" style="position:fixed"></div>
+  <div class="dialog wide" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+    <div class="dlg-h">
+      <div style="flex:1;padding-top:4px"><h2 id="dlg-t" style="font-size:18px;line-height:26px">Add a device to Home lab</h2><p class="sm t3" style="margin-top:2px">Use the invite on the device, then approve it in the list.</p></div>
+      <a class="btn ghost icon" href="V2Devices.dc.html" aria-label="Close"><i class="ic i-x"></i></a>
+    </div>
+
+    <div class="dlg-b dgrid" style="display:grid;grid-template-columns:272px minmax(0,1fr);gap:24px;align-items:start">
+      <aside class="opts {{optsCls}}" aria-label="Invite options">
+        <button class="opts-sum" onClick="{{toggleOpts}}" aria-expanded="{{optsExp}}"><i class="ic i-link s16 t3"></i><span class="os-t"><span class="m trunc">Family phones</span><span class="sm t3 trunc">{{summary}}</span></span><span class="m os-b">{{optsBtn}}</span></button>
+        <div class="opts-body">
+        <div class="row" style="gap:8px"><i class="ic i-link s16 t3"></i><span class="m">Invite link</span></div>
+        <label class="field"><span class="label">Label</span><span class="input">Family phones</span><span class="hint">Shown next to devices that join with it.</span></label>
+        <div class="field"><span class="label">Can be used</span>
+          <div class="seg" role="radiogroup" aria-label="Maximum uses"><sc-for list="{{uses}}" as="u" hint-placeholder-count="4"><button class="{{u.cls}}" role="radio" onClick="{{u.pick}}">{{u.label}}</button></sc-for></div>
+          <sc-if value="{{usesCustom}}" hint-placeholder-val="{{false}}"><span class="row" style="gap:8px"><span class="input focus mono" style="width:88px">25</span><span class="sm t2">devices</span></span></sc-if>
+          <span class="hint">{{usesHint}}</span>
+        </div>
+        <div class="field"><span class="label">Expires</span>
+          <div class="seg" role="radiogroup" aria-label="Expires in"><sc-for list="{{exps}}" as="e" hint-placeholder-count="4"><button class="{{e.cls}}" role="radio" onClick="{{e.pick}}">{{e.label}}</button></sc-for></div>
+          <sc-if value="{{expCustom}}" hint-placeholder-val="{{false}}"><span class="input focus"><span class="grow" style="flex:1">30 Nov 2026, 18:00</span><i class="ic i-chev-d s16 t3"></i></span><span class="hint">Pick a date and time, in your time zone.</span></sc-if>
+        </div>
+        <div class="hr"></div>
+        <div class="row xs t3" style="gap:8px;align-items:flex-start"><i class="ic i-shield s14" style="margin-top:1px"></i><span>New devices wait for your approval before they get an address.</span></div>
+        </div>
+      </aside>
+
+      <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+        <div class="mode" role="radiogroup" aria-label="Is EasyTier on the device?">
+          <button class="{{joinCls}}" role="radio" onClick="{{setJoin}}"><span class="rd"></span><span><span class="m" style="display:block">Join</span><span class="xs t3">EasyTier is already installed</span></span></button>
+          <button class="{{instCls}}" role="radio" onClick="{{setInst}}"><span class="rd"></span><span><span class="m" style="display:block">Install</span><span class="xs t3">Set up EasyTier and join in one go</span></span></button>
+        </div>
+
+        <sc-if value="{{isJoin}}" hint-placeholder-val="{{true}}">
+          <div style="display:flex;flex-direction:column;gap:18px">
+            <div class="field">
+              <span class="label">Run on the device</span>
+              <div class="row" style="align-items:stretch;gap:8px"><div class="code" style="flex:1">easytier-core --config-server {{url}}</div><button class="btn sec icon" style="height:auto;min-height:40px" aria-label="Copy command"><i class="ic i-copy s16"></i></button></div>
+              <span class="hint">Same command on Linux, macOS, Windows and OpenWrt. Stop any EasyTier already running with a local config first.</span>
+            </div>
+            <div class="qrrow">
+              <div class="qr" role="img" aria-label="QR code with the invite link"><i class="ic i-qr" style="width:60px;height:60px"></i></div>
+              <div class="field" style="flex:1;min-width:0">
+                <span class="label">Or in the EasyTier app</span>
+                <span class="hint" style="margin-top:-2px">Scan the code on a phone, or paste the link into <span class="m t2">Config server</span>.</span>
+                <div class="row" style="align-items:stretch;gap:8px"><div class="code" style="flex:1">{{url}}</div><button class="btn sec icon" style="height:auto;min-height:40px" aria-label="Copy link"><i class="ic i-copy s16"></i></button></div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isInst}}" hint-placeholder-val="{{false}}">
+          <div style="display:flex;flex-direction:column;gap:18px">
+            <div class="seg scroll" role="tablist" aria-label="Device system" style="align-self:flex-start"><sc-for list="{{plats}}" as="p" hint-placeholder-count="5"><button class="{{p.cls}}" role="tab" onClick="{{p.pick}}">{{p.label}}</button></sc-for></div>
+            <sc-if value="{{hasCmd}}" hint-placeholder-val="{{true}}">
+              <div class="field">
+                <span class="label">{{cmdLabel}}</span>
+                <div class="row" style="align-items:stretch;gap:8px"><div class="code" style="flex:1">{{cmd}}</div><button class="btn sec icon" style="height:auto;min-height:40px" aria-label="Copy command"><i class="ic i-copy s16"></i></button></div>
+                <span class="hint">{{cmdHint}}</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{isPhone}}" hint-placeholder-val="{{false}}">
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div class="row" style="gap:12px"><span class="cnt" style="width:24px;height:24px;border-radius:12px">1</span><span class="grow" style="flex:1">Install EasyTier for Android</span><a class="btn sec" href="https://github.com/EasyTier/EasyTier/releases">Get the app<i class="ic i-arrow-r s16"></i></a></div>
+                <div class="row" style="gap:12px;align-items:flex-start"><span class="cnt" style="width:24px;height:24px;border-radius:12px">2</span><div style="flex:1"><div style="margin-bottom:10px">Open it and scan this code</div><div class="qr" role="img" aria-label="QR code with the invite link"><i class="ic i-qr" style="width:60px;height:60px"></i></div></div></div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <div class="banner warn" style="padding:10px 14px"><i class="ic i-info s16" style="color:var(--warn);margin-top:2px"></i><div class="grow sm t2">The link is shown only now. Copy it before you close this window.</div></div>
+      </div>
+    </div>
+    <div class="dlg-f"><span class="sm t3" style="margin-right:auto;align-self:center">{{summary}}</span><a class="btn pri" href="V2Devices.dc.html">Done</a></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"mode":{"editor":"enum","options":["join","install"],"default":"join"},"open":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { mode: undefined, plat: 'linux', uses: '1', exp: '7d', opts: !!this.props.open }; }
+  renderVals() {
+    const s = this.state;
+    const mode = s.mode || this.props.mode || 'join';
+    const url = 'https://plane.acme.test/c/ep_inv_8Qx2Lm4k7Tz';
+    const P = {
+      linux: ['Linux', 'Run as root', 'curl -fsSL https://plane.acme.test/install.sh | sudo sh -s -- --config-server ' + url, 'Installs easytier-core as a systemd service and joins Home lab.'],
+      macos: ['macOS', 'Run in Terminal', 'curl -fsSL https://plane.acme.test/install.sh | sudo sh -s -- --config-server ' + url, 'Installs easytier-core as a launchd service and joins Home lab.'],
+      windows: ['Windows', 'Run in PowerShell as administrator', '& ([scriptblock]::Create((irm https://plane.acme.test/install.ps1))) -ConfigServer ' + url, 'Installs easytier-core as a Windows service and joins Home lab.'],
+      docker: ['Docker', 'Run on the host', 'docker run -d --name easytier --restart unless-stopped --network host --cap-add NET_ADMIN --device /dev/net/tun easytier/easytier:latest --config-server ' + url, 'Needs host networking and access to /dev/net/tun.'],
+      android: ['Android', '', '', '']
+    };
+    const U = [['1', '1'], ['5', '5'], ['0', 'No limit'], ['c', 'Custom']];
+    const E = [['1d', '1 day'], ['7d', '7 days'], ['0', 'Never'], ['c', 'Custom']];
+    const nUses = s.uses === 'c' ? '25' : s.uses;
+    const usesLbl = nUses === '1' ? 'One device' : nUses === '0' ? 'Any number of devices' : 'Up to ' + nUses + ' devices';
+    const expLbl = s.exp === '0' ? 'never expires' : s.exp === 'c' ? 'expires 30 Nov 2026, 18:00' : 'expires in ' + E.find(e => e[0] === s.exp)[1];
+    const p = P[s.plat];
+    return {
+      theme: this.props.theme || 'light',
+      tc: this.props.theme === 'dark' ? 'dark' : '',
+      url: url,
+      usesCustom: s.uses === 'c', expCustom: s.exp === 'c',
+      uses: U.map(u => ({ label: u[1], cls: u[0] === s.uses ? 'on' : '', pick: () => this.setState({ uses: u[0] }) })),
+      usesHint: nUses === '1' ? 'The link stops working after one device joins.' : nUses === '0' ? 'Reusable until it expires or you revoke it.' : 'Stops working after ' + nUses + ' devices join.',
+      exps: E.map(e => ({ label: e[1], cls: e[0] === s.exp ? 'on' : '', pick: () => this.setState({ exp: e[0] }) })),
+      isJoin: mode === 'join', isInst: mode === 'install',
+      joinCls: mode === 'join' ? 'on' : '', instCls: mode === 'install' ? 'on' : '',
+      setJoin: () => this.setState({ mode: 'join' }), setInst: () => this.setState({ mode: 'install' }),
+      plats: Object.keys(P).map(k => ({ label: P[k][0], cls: k === s.plat ? 'on' : '', pick: () => this.setState({ plat: k }) })),
+      hasCmd: s.plat !== 'android', isPhone: s.plat === 'android',
+      cmdLabel: p[1], cmd: p[2], cmdHint: p[3],
+      optsCls: s.opts ? 'open' : '', optsExp: s.opts ? 'true' : 'false', optsBtn: s.opts ? 'Done' : 'Change', toggleOpts: () => this.setState({ opts: !s.opts }),
+      summary: usesLbl + ' · ' + expLbl
+    };
+  }
+}
+</script>
+</body>
+</html>

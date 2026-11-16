@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Handoff</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./ep.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>body{margin:0}</style>
+</helmet>
+<div class="ep" style="width:1440px;height:1700px;padding:40px;display:flex;flex-direction:column;gap:20px">
+  <div><div style="font-size:30px;font-weight:600;letter-spacing:-.025em">Handoff: applying design edits to apps/web</div><div class="mut">All paths are relative to <span class="mono">apps/web/src</span>. Strings: <span class="mono">i18n/en.ts</span> and <span class="mono">i18n/ru.ts</span> (keep keys in sync, change copy in both).</div></div>
+  <div class="card" style="padding:18px"><div class="label">Rules for a coding agent</div>
+    <ol class="sm" style="margin:8px 0 0;padding-left:18px;line-height:1.7">
+      <li>Colours, radii, shadows: edit only the CSS variables in <span class="mono">index.css</span> (<span class="mono">:root</span> light, <span class="mono">.dark</span> dark). Canvas <span class="mono">ep.css</span> variable names equal the app's, so a token change maps 1:1. Never hard-code hex in components, except the existing status colours (Tailwind amber/emerald/red/violet-500).</li>
+      <li><b>shadcn / base-ui components</b> (<span class="mono">components/ui/*</span>: button, badge, card, table, input, select, dialog, sheet, tabs-like segmented control, switch, checkbox, alert, empty, skeleton, tooltip, sidebar, dropdown-menu, sonner) keep their API. Change look through class variants (cva) in that file, not per page.</li>
+      <li><b>Custom components</b>: <span class="mono">components/device-status.tsx</span> (status badges), <span class="mono">components/layout/*</span> (shell, brand header), <span class="mono">components/shared/*</span> (PageHeader, SectionCard, Field, OptionSelect, ListPlaceholder), <span class="mono">components/topology/*</span> (map, drawer), network-/device- cards.</li>
+      <li>Layout is Tailwind utility classes in TSX; there is no CSS beyond <span class="mono">index.css</span>. Responsive: sidebar offcanvas under md, page title 3xl on mobile / 2xl on md+, tables scroll in <span class="mono">overflow-x-auto</span>.</li>
+      <li>Canvas frames are fixed-size mockups, not responsive code: translate spacing and sizes to Tailwind classes; do not copy inline styles.</li>
+      <li>Keep both themes working and the Russian copy untouched unless the design changes text.</li>
+    </ol></div>
+  <div class="card" style="padding:0"><div class="tscroll"><table class="tbl" style="white-space:normal"><thead><tr><th style="width:190px">Canvas board</th><th>Source file(s)</th><th>Kind</th><th>Tokens / classes used</th></tr></thead><tbody>
+    <tr><td style="font-weight:500">Design system</td><td class="mono xs">index.css, components/ui/*</td><td>tokens + shadcn</td><td class="mono xs">--background --foreground --card --popover --primary --brand --secondary --muted --accent --destructive --warning --success --border --input --ring --sidebar* --radius(-sm/md/lg/xl) --shadow*</td></tr>
+    <tr><td style="font-weight:500">App shell + sidebar</td><td class="mono xs">components/layout/app-shell.tsx, components/app-sidebar.tsx, components/nav-main.tsx, components/layout/app-brand-header.tsx, components/ui/sidebar.tsx, live-status.tsx, language-selector.tsx, theme-selector.tsx</td><td>custom + shadcn sidebar</td><td class="mono xs">bg-muted/20, --sidebar, --sidebar-accent, --sidebar-border, bg-brand (logo), text-primary</td></tr>
+    <tr><td style="font-weight:500">Login (3)</td><td class="mono xs">auth/login-page.tsx, ui/button.tsx (xl), ui/alert.tsx</td><td>custom page</td><td class="mono xs">bg-brand (left panel, white text), grid md:38%, max-w-100 form</td></tr>
+    <tr><td style="font-weight:500">Networks (3)</td><td class="mono xs">pages/networks-page.tsx, ui/card.tsx, ui/dialog.tsx, ui/empty.tsx, shared/page-header.tsx</td><td>custom + shadcn</td><td class="mono xs">Card hover:shadow-md, text-primary link, grid md:2 xl:3</td></tr>
+    <tr><td style="font-weight:500">Network detail (2)</td><td class="mono xs">pages/network-detail-page.tsx, components/network-peers-card.tsx, network-magic-dns-card.tsx, network-routes-card.tsx, shared/section-card.tsx, copy-button.tsx</td><td>custom cards on shadcn</td><td class="mono xs">SectionCard, ui/table, ui/switch, ui/alert, Badge variants, bg-muted code chips</td></tr>
+    <tr><td style="font-weight:500">Routes approval</td><td class="mono xs">components/network-routes-card.tsx, components/device-peers-card.tsx</td><td>custom</td><td class="mono xs">status badge colours (amber/emerald/red), Button sm</td></tr>
+    <tr><td style="font-weight:500">Import network (2)</td><td class="mono xs">pages/network-import-page.tsx, shared/option-select.tsx, shared/field.tsx, ui/textarea.tsx, ui/select.tsx</td><td>custom page, segmented tabs hand-built</td><td class="mono xs">lg:grid 5/6 columns, ui/empty for preview</td></tr>
+    <tr><td style="font-weight:500">Devices / Pending (4)</td><td class="mono xs">pages/devices-page.tsx, components/device-status.tsx, ui/table.tsx, ui/select.tsx</td><td>custom + shadcn</td><td class="mono xs">stateClass/syncClass in device-status.tsx, Badge outline, text-amber-600 for desired revision</td></tr>
+    <tr><td style="font-weight:500">Device detail (2)</td><td class="mono xs">pages/device-detail-page.tsx, components/device-policy-card.tsx, device-peers-card.tsx, shared/field.tsx, ui/checkbox.tsx, ui/switch.tsx</td><td>custom</td><td class="mono xs">SectionCard, Alert destructive for push error, ui/table history</td></tr>
+    <tr><td style="font-weight:500">Topology (2) + device drawer</td><td class="mono xs">pages/topology-page.tsx, components/topology/topology-map.tsx, device-drawer.tsx, lib/topology-layout.ts, ui/sheet.tsx</td><td>custom (@xyflow/react)</td><td class="mono xs">edge stroke rgb(16 185 129) solid / rgb(245 158 11) dasharray 6 4; relay node border-violet-500/70 ring-violet-500/40; offline border-dashed opacity-70; selected ring-2 ring-primary</td></tr>
+    <tr><td style="font-weight:500">Policy (2)</td><td class="mono xs">pages/policy-page.tsx, lib/policy-document.ts</td><td>custom</td><td class="mono xs">Form/JSON toggle, ui/table, Badge success/destructive for Accept/Deny, test result Alert</td></tr>
+    <tr><td style="font-weight:500">Audit log</td><td class="mono xs">pages/audit-page.tsx, ui/table.tsx</td><td>custom</td><td class="mono xs">Badge secondary action chip</td></tr>
+    <tr><td style="font-weight:500">Dialogs (2)</td><td class="mono xs">ui/dialog.tsx, ui/sheet.tsx, pages/network-detail-page.tsx (invite + QR via qrcode.react), ui/sonner.tsx, ui/dropdown-menu.tsx</td><td>shadcn base-ui</td><td class="mono xs">--popover, DialogFooter bg-muted/50 border-t, scrim bg-black/50</td></tr>
+    <tr><td style="font-weight:500">States</td><td class="mono xs">ui/empty.tsx, ui/skeleton.tsx, ui/alert.tsx, shared/list-placeholder.tsx, shared/table-skeleton.tsx, live-status.tsx</td><td>shadcn + custom</td><td class="mono xs">Empty dashed border, Skeleton bg-muted, destructive Alert</td></tr>
+    <tr><td style="font-weight:500">Settings</td><td class="mono xs">(none) language-selector.tsx, theme-selector.tsx in sidebar footer</td><td>n/a</td><td class="mono xs">The app has no Settings page</td></tr>
+  </tbody></table></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1700}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

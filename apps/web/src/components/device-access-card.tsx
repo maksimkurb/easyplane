@@ -17,6 +17,7 @@ import { CopyButton } from "@/components/copy-button"
 import { DeviceRoleBadge } from "@/components/network-access-card"
 import { SectionCard } from "@/components/shared/section-card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -92,11 +93,15 @@ export function DeviceAccessCard({ device }: { device: GetDevice200 }) {
       title={t("access.deviceTitle")}
     >
       <div className="flex flex-wrap items-center gap-2">
-        <DeviceRoleBadge
-          expiresAt={credential?.expiry}
-          role={device.effectiveRole}
-          status={credential?.status}
-        />
+        {credentialsMode ? (
+          <DeviceRoleBadge
+            expiresAt={credential?.expiry}
+            role={device.effectiveRole}
+            status={credential?.status}
+          />
+        ) : (
+          <Badge variant="outline">{t("access.mode.shared_secret")}</Badge>
+        )}
         {device.knowsSecret ? (
           <span className="text-xs text-muted-foreground">{t("access.knowsSecretLong")}</span>
         ) : (

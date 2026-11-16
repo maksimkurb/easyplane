@@ -15,7 +15,7 @@ import {
   type NodeChange,
 } from "@xyflow/react"
 import { useTranslation } from "react-i18next"
-import { RadioTowerIcon } from "lucide-react"
+import { RadioTowerIcon, ServerIcon } from "lucide-react"
 
 import type {
   GetNetworkTopology200LinksItem as TopologyLink,
@@ -28,7 +28,9 @@ import { cn } from "@/lib/utils"
 
 type DeviceNodeData = {
   node: TopologyNode
-  exitNode: ExitNodeState
+  exitNode?: ExitNodeState
+  compact?: boolean
+  slim?: boolean
 }
 
 const nodeTypes: NodeTypes = { device: DeviceNode }
@@ -42,12 +44,67 @@ export function TopologyNodeCard({
   node,
   exitNode = "none",
   selected,
+  compact = false,
+  slim = false,
 }: {
   node: TopologyNode
   exitNode?: ExitNodeState
   selected: boolean
+  compact?: boolean
+  slim?: boolean
 }) {
   const { t } = useTranslation()
+  if (slim) {
+    return (
+      <div
+        className={cn(
+          "relative w-[170px] rounded-xl bg-card px-2 py-1.5 shadow-sm transition-shadow",
+          node.online
+            ? "ring-1 ring-line-2"
+            : "opacity-70 outline outline-1 outline-dashed outline-line-2",
+          selected && "shadow-md ring-2 ring-brand"
+        )}
+        title={[node.hostname, node.virtualIpv4, node.natType].filter(Boolean).join(" · ")}
+      >
+        <Handle className="!opacity-0" position={Position.Left} type="target" />
+        <Handle className="!opacity-0" position={Position.Right} type="source" />
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="relative grid size-9 flex-none place-items-center rounded-[9px] bg-surface-2 text-fg-2 ring-1 ring-line">
+            <ServerIcon aria-hidden="true" className="size-4" />
+            <span
+              aria-hidden="true"
+              className={cn(
+                "absolute right-0 bottom-0 size-2 rounded-full ring-2 ring-card",
+                node.online ? "bg-ok-dot" : "bg-fg-3"
+              )}
+            />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13px] leading-4 font-semibold">
+              {node.hostname || node.id}
+            </span>
+            <span className="block truncate font-mono text-[11.5px] leading-4 text-fg-3">
+              {node.virtualIpv4 ?? t("common.none")}
+            </span>
+          </span>
+          {node.relayCapable ? (
+            <span
+              className="absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full bg-relay text-white ring-2 ring-card"
+              title={t("topology.relayCapable")}
+            >
+              <RadioTowerIcon aria-hidden="true" className="size-3" />
+            </span>
+          ) : null}
+        </div>
+        {exitNode !== "none" ? (
+          <span className="absolute -bottom-2 left-2 bg-card">
+            <ExitNodeBadge className="px-1.5 py-0 text-[9px]" state={exitNode} />
+          </span>
+        ) : null}
+      </div>
+    )
+  }
+
   const tooltip = [
     node.hostname,
     node.virtualIpv4 ? `IP ${node.virtualIpv4}` : null,
@@ -63,7 +120,8 @@ export function TopologyNodeCard({
   return (
     <div
       className={cn(
-        "w-[180px] rounded-lg border bg-card px-3 py-2 shadow-sm transition-shadow",
+        "rounded-lg border bg-card shadow-sm transition-shadow",
+        compact ? "w-[136px] px-2.5 py-1.5" : "w-[180px] px-3 py-2",
         node.online ? "border-border" : "border-dashed border-muted-foreground/40 opacity-70",
         node.relayCapable && "border-violet-500/70 ring-1 ring-violet-500/40",
         selected && "shadow-md ring-2 ring-primary"
@@ -90,10 +148,13 @@ export function TopologyNodeCard({
           />
         ) : null}
       </div>
-      <div className="mt-1 font-mono text-[10px] text-muted-foreground">
-        {node.virtualIpv4 ?? t("common.none")}
-        {node.peerId ? ` · #${node.peerId}` : ""}
-      </div>
+      {!compact ? (
+        <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+          {node.virtualIpv4 ?? t("common.none")}
+          {node.peerId ? ` · #${node.peerId}` : ""}
+        </div>
+      ) : null}
+      {!compact ? (
       <div className="mt-1.5 flex flex-wrap items-center gap-1">
         <Badge className="px-1.5 py-0 text-[9px]" variant="outline">
           {node.natType}
@@ -114,6 +175,7 @@ export function TopologyNodeCard({
           </Badge>
         ) : null}
       </div>
+      ) : null}
     </div>
   )
 }
@@ -121,9 +183,11 @@ export function TopologyNodeCard({
 function DeviceNode({ data, selected }: NodeProps<Node<DeviceNodeData, "device">>) {
   return (
     <TopologyNodeCard
+      compact={data.compact}
       exitNode={data.exitNode}
       node={data.node}
       selected={Boolean(selected)}
+      slim={data.slim}
     />
   )
 }
@@ -134,6 +198,16 @@ export interface TopologyMapProps {
   selectedNodeId: string | null
   onSelectNode: (nodeId: string | null) => void
   onSelectLink?: (linkId: string | null) => void
+  /** Height comes from the page; the map fills whatever box it is given. */
+  className?: string
+  /** The network map uses the side panel instead of a minimap. */
+  minimap?: boolean
+  /** Short latency labels (design "ping pills") instead of full edge text. */
+  pingLabels?: boolean
+  /** Phones: smaller cards with only the hostname, status and relay mark. */
+  compact?: boolean
+  /** Network map: the design's 52px node card (name, address, relay mark). */
+  slim?: boolean
   /** Exit-node badge per device id (declared proposals from the routes API). */
   exitNodeByDeviceId?: Record<string, ExitNodeState>
 }
@@ -145,6 +219,11 @@ export function TopologyMap({
   selectedNodeId,
   onSelectNode,
   onSelectLink,
+  className,
+  minimap = true,
+  pingLabels = false,
+  compact = false,
+  slim = false,
   exitNodeByDeviceId,
 }: TopologyMapProps) {
   const { t } = useTranslation()
@@ -159,9 +238,17 @@ export function TopologyMap({
           relayCapable: node.relayCapable,
           online: node.online,
         })),
-        links
+        links,
+        compact
+          ? {
+              baseRadius: 150,
+              ringGap: 170,
+              minSpacing: 150,
+              nodeWidth: 120,
+            }
+          : undefined
       ),
-    [nodes, links]
+    [nodes, links, compact]
   )
 
   const flowNodes = useMemo<Node<DeviceNodeData, "device">[]>(
@@ -174,6 +261,8 @@ export function TopologyMap({
           position,
           data: {
             node,
+            compact,
+            slim,
             exitNode: node.deviceId
               ? (exitNodeByDeviceId?.[node.deviceId] ?? "none")
               : "none",
@@ -181,31 +270,43 @@ export function TopologyMap({
           selected: selectedNodeId === node.id,
         }
       }),
-    [nodes, overrides, positions, selectedNodeId, exitNodeByDeviceId]
+    [nodes, overrides, positions, selectedNodeId, compact, slim, exitNodeByDeviceId]
   )
 
   const flowEdges = useMemo<Edge[]>(
     () =>
       links.map((link) => {
         const relayed = link.kind === "relayed"
-        const label = relayed
-          ? `${link.viaHostname ?? t("topology.relay")} · ${t("topology.hops", { count: link.cost ?? "?" })}${
-              link.protocolIsFirstHop ? ` · ${link.protocol}` : ""
-            }`
-          : [
-              link.protocol,
-              link.latencyMs !== null ? `${link.latencyMs} ms` : null,
-              link.lossPercent !== null && link.lossPercent > 0
-                ? `${link.lossPercent}% loss`
-                : null,
-            ]
-              .filter(Boolean)
-              .join(" · ")
+        // The network map uses ping pills: protocol and loss stay in the side
+        // panel, where there is room to read them.
+        const label = pingLabels
+          ? relayed
+            ? `${link.viaHostname ?? t("topology.relay")} · ${t("topology.hops", { count: link.cost ?? "?" })}`
+            : link.latencyMs !== null
+              ? `${link.latencyMs} ms`
+              : link.protocol
+          : relayed
+            ? `${link.viaHostname ?? t("topology.relay")} · ${t("topology.hops", { count: link.cost ?? "?" })}${
+                link.protocolIsFirstHop ? ` · ${link.protocol}` : ""
+              }`
+            : [
+                link.protocol,
+                link.latencyMs !== null ? `${link.latencyMs} ms` : null,
+                link.lossPercent !== null && link.lossPercent > 0
+                  ? `${link.lossPercent}% loss`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")
+        const from = positions.get(link.source)
+        const to = positions.get(link.target)
+        const short =
+          from && to ? Math.hypot(from.x - to.x, from.y - to.y) < 230 : false
         return {
           id: link.id,
           source: link.source,
           target: link.target,
-          label,
+          label: pingLabels && short ? "" : label,
           animated: false,
           markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 },
           style: {
@@ -220,7 +321,7 @@ export function TopologyMap({
           data: { link },
         }
       }),
-    [links, t]
+    [links, pingLabels, positions, t]
   )
 
   const handleNodesChange: OnNodesChange<Node<DeviceNodeData, "device">> = useCallback(
@@ -242,10 +343,16 @@ export function TopologyMap({
   )
 
   return (
-    <div className="h-[68vh] min-h-96 w-full rounded-lg border bg-muted/20">
+    <div
+      className={cn(
+        "h-[68vh] min-h-96 w-full rounded-lg border border-line bg-surface-2/40",
+        className
+      )}
+    >
       <ReactFlow
         edges={flowEdges}
         fitView
+        fitViewOptions={{ padding: 0.08 }}
         minZoom={0.15}
         nodeTypes={nodeTypes}
         nodes={flowNodes}
@@ -260,15 +367,17 @@ export function TopologyMap({
       >
         <Background gap={24} size={1} />
         <Controls showInteractive={false} />
-        <MiniMap
-          className="!bg-card"
-          maskColor="rgb(0 0 0 / 0.08)"
-          nodeColor={(node) =>
-            (node.data as DeviceNodeData).node.online ? "#10b981" : "#9ca3af"
-          }
-          pannable
-          zoomable
-        />
+        {minimap ? (
+          <MiniMap
+            className="!bg-card"
+            maskColor="rgb(0 0 0 / 0.08)"
+            nodeColor={(node) =>
+              (node.data as DeviceNodeData).node.online ? "#10b981" : "#9ca3af"
+            }
+            pannable
+            zoomable
+          />
+        ) : null}
       </ReactFlow>
     </div>
   )

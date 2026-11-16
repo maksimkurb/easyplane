@@ -31,7 +31,7 @@ describe("network access card", () => {
     expect(screen.getByText(/Anchors online: 0 of 1/)).toBeInTheDocument()
     expect(screen.getByText(/No anchor is online/)).toBeInTheDocument()
     expect(screen.getByText(/Only one anchor/)).toBeInTheDocument()
-    expect(screen.getByText("Removing a device")).toBeInTheDocument()
+    expect(screen.getAllByText("Removing a device").length).toBeGreaterThan(0)
   })
 
   it("renders the same card in Russian", async () => {

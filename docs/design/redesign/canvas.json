@@ -1,0 +1,626 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Audit.dc.html": {
+      "h": 900,
+      "title": "Audit log (light)",
+      "w": 1440,
+      "x": 3040,
+      "y": 10880
+    },
+    "DesignSystem.dc.html": {
+      "h": 1700,
+      "title": "Design system: tokens, type, components, status badges",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "DeviceDetail.dc.html": {
+      "h": 1200,
+      "title": "Device detail (light)",
+      "w": 1440,
+      "x": 1520,
+      "y": 8300
+    },
+    "DeviceDetailDark.dc.html": {
+      "h": 1200,
+      "title": "Device detail (dark)",
+      "w": 1440,
+      "x": 3040,
+      "y": 8300
+    },
+    "Devices.dc.html": {
+      "h": 900,
+      "title": "Devices (light)",
+      "w": 1440,
+      "x": 0,
+      "y": 7160
+    },
+    "DevicesDark.dc.html": {
+      "h": 900,
+      "title": "Devices (dark)",
+      "w": 1440,
+      "x": 1520,
+      "y": 7160
+    },
+    "DevicesMobile.dc.html": {
+      "h": 844,
+      "title": "Devices (mobile)",
+      "w": 390,
+      "x": 3040,
+      "y": 7160
+    },
+    "Dialogs.dc.html": {
+      "h": 900,
+      "title": "Invite dialog with QR + command (light)",
+      "w": 1440,
+      "x": 0,
+      "y": 12320
+    },
+    "DialogsDark.dc.html": {
+      "h": 900,
+      "title": "Dialogs: create network, rename, confirm (dark)",
+      "w": 1440,
+      "x": 1520,
+      "y": 12320
+    },
+    "Handoff.dc.html": {
+      "h": 1700,
+      "title": "Handoff: screen to source map",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "Import.dc.html": {
+      "h": 900,
+      "title": "Import network: TOML + empty preview (light)",
+      "w": 1440,
+      "x": 0,
+      "y": 6020
+    },
+    "ImportDevice.dc.html": {
+      "h": 900,
+      "title": "Import network: from device, empty state (dark)",
+      "w": 1440,
+      "x": 1520,
+      "y": 6020
+    },
+    "Login.dc.html": {
+      "h": 900,
+      "title": "Login (light)",
+      "w": 1440,
+      "x": 0,
+      "y": 2000
+    },
+    "LoginDark.dc.html": {
+      "h": 900,
+      "title": "Login (dark)",
+      "w": 1440,
+      "x": 1520,
+      "y": 2000
+    },
+    "LoginMobile.dc.html": {
+      "h": 844,
+      "title": "Login (mobile)",
+      "w": 390,
+      "x": 3040,
+      "y": 2000
+    },
+    "Main.dc.html": {
+      "h": 900,
+      "title": "Start here: how this canvas maps to apps/web",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "NetworkDetail.dc.html": {
+      "h": 1500,
+      "title": "Network detail (light)",
+      "w": 1440,
+      "x": 0,
+      "y": 4280
+    },
+    "NetworkDetailDark.dc.html": {
+      "h": 1500,
+      "title": "Network detail (dark)",
+      "w": 1440,
+      "x": 1520,
+      "y": 4280
+    },
+    "Networks.dc.html": {
+      "h": 900,
+      "title": "Networks (light)",
+      "w": 1440,
+      "x": 0,
+      "y": 3140
+    },
+    "NetworksDark.dc.html": {
+      "h": 900,
+      "title": "Networks (dark)",
+      "w": 1440,
+      "x": 1520,
+      "y": 3140
+    },
+    "NetworksMobile.dc.html": {
+      "h": 844,
+      "title": "Networks (mobile)",
+      "w": 390,
+      "x": 3040,
+      "y": 3140
+    },
+    "Pending.dc.html": {
+      "h": 900,
+      "title": "Pending approvals (light)",
+      "w": 1440,
+      "x": 0,
+      "y": 8300
+    },
+    "Policy.dc.html": {
+      "h": 1200,
+      "title": "Policy editor + reachability test (light)",
+      "w": 1440,
+      "x": 0,
+      "y": 10880
+    },
+    "PolicyDark.dc.html": {
+      "h": 1200,
+      "title": "Policy editor (dark)",
+      "w": 1440,
+      "x": 1520,
+      "y": 10880
+    },
+    "Routes.dc.html": {
+      "h": 1000,
+      "title": "Routes approval (light)",
+      "w": 1440,
+      "x": 3040,
+      "y": 4280
+    },
+    "States.dc.html": {
+      "h": 900,
+      "title": "Empty, error and loading states",
+      "w": 1440,
+      "x": 3040,
+      "y": 12320
+    },
+    "Topology.dc.html": {
+      "h": 900,
+      "title": "Topology map (light)",
+      "w": 1440,
+      "x": 0,
+      "y": 9740
+    },
+    "TopologyDark.dc.html": {
+      "h": 900,
+      "title": "Topology map + device drawer (dark)",
+      "w": 1440,
+      "x": 1520,
+      "y": 9740
+    },
+    "V2Access.dc.html": {
+      "expand": "fill",
+      "h": 1000,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Network › Access",
+      "w": 1440,
+      "x": 1520,
+      "y": 2720
+    },
+    "V2AccessPhone.dc.html": {
+      "expand": "fill",
+      "h": 1900,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Access 390",
+      "w": 390,
+      "x": 0,
+      "y": 12400
+    },
+    "V2AddDevice.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Add device: Join (EasyTier already installed)",
+      "w": 1440,
+      "x": 1520,
+      "y": 4580
+    },
+    "V2AddDeviceInstall.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Add device: Install",
+      "w": 1440,
+      "x": 3040,
+      "y": 4580
+    },
+    "V2AddDevicePhone.dc.html": {
+      "expand": "fill",
+      "h": 844,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Add device 390 (sheet)",
+      "w": 390,
+      "x": 848,
+      "y": 11200
+    },
+    "V2AddDeviceTablet.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Add device 768",
+      "w": 768,
+      "x": 0,
+      "y": 11200
+    },
+    "V2Device.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Device",
+      "w": 1440,
+      "x": 0,
+      "y": 4580
+    },
+    "V2DevicePhone.dc.html": {
+      "expand": "fill",
+      "h": 2100,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Device 390",
+      "w": 390,
+      "x": 848,
+      "y": 8900
+    },
+    "V2DeviceTablet.dc.html": {
+      "expand": "fill",
+      "h": 1700,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Device 768",
+      "w": 768,
+      "x": 0,
+      "y": 8900
+    },
+    "V2Devices.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Network › Devices, approvals inline",
+      "w": 1440,
+      "x": 0,
+      "y": 1260
+    },
+    "V2DevicesDark.dc.html": {
+      "expand": "fill",
+      "h": 1100,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Network › Devices (dark)",
+      "w": 1440,
+      "x": 1520,
+      "y": 1260
+    },
+    "V2DevicesTablet.dc.html": {
+      "expand": "fill",
+      "h": 1300,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Devices 768",
+      "w": 768,
+      "x": 0,
+      "y": 7400
+    },
+    "V2MDevices.dc.html": {
+      "expand": "fill",
+      "h": 1500,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Devices 390",
+      "w": 390,
+      "x": 3040,
+      "y": 1260
+    },
+    "V2MMap.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Network › Map (mobile, node sheet)",
+      "w": 390,
+      "x": 4560,
+      "y": 2720
+    },
+    "V2MNetworks.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Networks 390",
+      "w": 390,
+      "x": 1520,
+      "y": 0
+    },
+    "V2Map.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Network › Map",
+      "w": 1440,
+      "x": 0,
+      "y": 2720
+    },
+    "V2MapTablet.dc.html": {
+      "expand": "fill",
+      "h": 1200,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Map 768",
+      "w": 768,
+      "x": 940,
+      "y": 12400
+    },
+    "V2Networks.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Networks",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "V2NetworksTablet.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Networks 768",
+      "w": 768,
+      "x": 0,
+      "y": 6300
+    },
+    "V2Settings.dc.html": {
+      "expand": "fill",
+      "h": 1500,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Network › Settings",
+      "w": 1440,
+      "x": 3040,
+      "y": 2720
+    },
+    "V2SettingsPhone.dc.html": {
+      "expand": "fill",
+      "h": 2300,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "Settings 390",
+      "w": 390,
+      "x": 470,
+      "y": 12400
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-15T12:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "page": "v2",
+    "view": "canvas"
+  },
+  "noteOrder": [
+    "t-ds",
+    "t-auth",
+    "t-net",
+    "t-nd",
+    "t-imp",
+    "t-dev",
+    "t-dd",
+    "t-top",
+    "t-pol",
+    "t-dlg",
+    "v2-t1",
+    "v2-t2",
+    "v2-t3",
+    "v2-t4",
+    "v2-r1"
+  ],
+  "notes": {
+    "t-auth": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Sign in",
+      "w": 240,
+      "x": 0,
+      "y": 1760
+    },
+    "t-dd": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Pending approvals and device detail",
+      "w": 240,
+      "x": 0,
+      "y": 8060
+    },
+    "t-dev": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Devices",
+      "w": 240,
+      "x": 0,
+      "y": 6920
+    },
+    "t-dlg": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Dialogs and states",
+      "w": 240,
+      "x": 0,
+      "y": 12080
+    },
+    "t-ds": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "EasyPlane: current UI, as built in apps/web",
+      "w": 240,
+      "x": 0,
+      "y": -240
+    },
+    "t-imp": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Import network",
+      "w": 240,
+      "x": 0,
+      "y": 5780
+    },
+    "t-nd": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Network detail and routes",
+      "w": 240,
+      "x": 0,
+      "y": 4040
+    },
+    "t-net": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Networks",
+      "w": 240,
+      "x": 0,
+      "y": 2900
+    },
+    "t-pol": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Policy and audit",
+      "w": 240,
+      "x": 0,
+      "y": 10640
+    },
+    "t-top": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Topology",
+      "w": 240,
+      "x": 0,
+      "y": 9500
+    },
+    "v2-r1": {
+      "kind": "title1",
+      "maxW": 1700,
+      "page": "v2",
+      "text": "Responsive: same pages at 768 and 390 (1440 versions are above)",
+      "w": 240,
+      "x": 0,
+      "y": 6040
+    },
+    "v2-t1": {
+      "kind": "title1",
+      "maxW": 1910,
+      "page": "v2",
+      "text": "Redesign: networks",
+      "w": 240,
+      "x": 0,
+      "y": -260
+    },
+    "v2-t2": {
+      "kind": "title1",
+      "maxW": 3430,
+      "page": "v2",
+      "text": "Inside a network: devices and approvals",
+      "w": 240,
+      "x": 0,
+      "y": 1000
+    },
+    "v2-t3": {
+      "kind": "title1",
+      "maxW": 4950,
+      "page": "v2",
+      "text": "Map, access and settings live in the same network",
+      "w": 240,
+      "x": 0,
+      "y": 2460
+    },
+    "v2-t4": {
+      "kind": "title1",
+      "maxW": 4480,
+      "page": "v2",
+      "text": "Device and adding a device",
+      "w": 240,
+      "x": 0,
+      "y": 4320
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "DesignSystem.dc.html",
+    "Handoff.dc.html",
+    "Login.dc.html",
+    "LoginDark.dc.html",
+    "LoginMobile.dc.html",
+    "Networks.dc.html",
+    "NetworksDark.dc.html",
+    "NetworksMobile.dc.html",
+    "NetworkDetail.dc.html",
+    "NetworkDetailDark.dc.html",
+    "Routes.dc.html",
+    "Import.dc.html",
+    "ImportDevice.dc.html",
+    "Devices.dc.html",
+    "DevicesDark.dc.html",
+    "DevicesMobile.dc.html",
+    "Pending.dc.html",
+    "DeviceDetail.dc.html",
+    "DeviceDetailDark.dc.html",
+    "Topology.dc.html",
+    "TopologyDark.dc.html",
+    "Policy.dc.html",
+    "PolicyDark.dc.html",
+    "Audit.dc.html",
+    "Dialogs.dc.html",
+    "DialogsDark.dc.html",
+    "States.dc.html",
+    "V2Networks.dc.html",
+    "V2MNetworks.dc.html",
+    "V2Devices.dc.html",
+    "V2DevicesDark.dc.html",
+    "V2MDevices.dc.html",
+    "V2Map.dc.html",
+    "V2Access.dc.html",
+    "V2Settings.dc.html",
+    "V2MMap.dc.html",
+    "V2Device.dc.html",
+    "V2AddDevice.dc.html",
+    "V2AddDeviceInstall.dc.html",
+    "V2NetworksTablet.dc.html",
+    "V2DevicesTablet.dc.html",
+    "V2DeviceTablet.dc.html",
+    "V2DevicePhone.dc.html",
+    "V2AddDeviceTablet.dc.html",
+    "V2AddDevicePhone.dc.html",
+    "V2AccessPhone.dc.html",
+    "V2SettingsPhone.dc.html",
+    "V2MapTablet.dc.html"
+  ],
+  "pages": [
+    {
+      "id": "current",
+      "name": "Current UI"
+    },
+    {
+      "id": "v2",
+      "name": "Redesign"
+    }
+  ],
+  "title": "EasyPlane UI Design"
+}

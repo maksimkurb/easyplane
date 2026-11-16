@@ -15,7 +15,6 @@ import {
   getGetNetworkTopologyQueryKey,
   getNetworkTopology,
   useGetNetworkTopology,
-  useListNetworkRoutes,
   useListNetworks,
 } from "@/api/generated/easyplane"
 import type {
@@ -25,6 +24,7 @@ import type {
 import { DeviceDrawer } from "@/components/topology/device-drawer"
 import { TopologyMap } from "@/components/topology/topology-map"
 import { OptionSelect } from "@/components/shared/option-select"
+import { PageContainer } from "@/components/layout/page-container"
 import { PageHeader } from "@/components/shared/page-header"
 import { SectionCard } from "@/components/shared/section-card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { applyRealtimeEvent } from "@/realtime/apply-event"
+import { useExitNodeStates } from "@/hooks/use-exit-node-states"
 import { useEventStream } from "@/realtime/use-event-stream"
 import { cn } from "@/lib/utils"
 
@@ -65,20 +66,7 @@ export function TopologyPage() {
   const topologyQuery = useGetNetworkTopology(networkId || "", undefined, {
     query: { enabled: Boolean(networkId) },
   })
-  const routesQuery = useListNetworkRoutes(networkId || "", {
-    query: { enabled: Boolean(networkId) },
-  })
-  const exitNodeByDeviceId = useMemo(() => {
-    const states: Record<string, "none" | "proposed" | "approved"> = {}
-    for (const route of routesQuery.data?.data.routes ?? []) {
-      if (route.kind !== "exit_node" || route.state === "rejected") continue
-      if (route.state === "approved") states[route.deviceId] = "approved"
-      else if (route.source === "device_declared" && states[route.deviceId] !== "approved") {
-        states[route.deviceId] = "proposed"
-      }
-    }
-    return states
-  }, [routesQuery.data])
+  const exitNodeByDeviceId = useExitNodeStates(networkId)
   const snapshot = topologyQuery.data?.data
   const stream = useEventStream({
     networkId: networkId || undefined,
@@ -123,7 +111,8 @@ export function TopologyPage() {
     now - Date.parse(snapshot.collectedAt) > 60_000
 
   return (
-    <>
+    <PageContainer className="py-6 sm:py-8">
+      <>
       <PageHeader
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -267,7 +256,8 @@ export function TopologyPage() {
         open={Boolean(selectedNode)}
         node={selectedNode}
       />
-    </>
+      </>
+    </PageContainer>
   )
 }
 

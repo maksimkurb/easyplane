@@ -117,8 +117,8 @@ describe("NetworkPeersCard", () => {
       screen.getByText("tcp://legacy.example.com:11010")
     ).toBeInTheDocument()
     expect(screen.getByText(/exactly matches the endpoint/i)).toBeInTheDocument()
-    // Hubs and external URLs are distinguished.
-    expect(screen.getByText("Device")).toBeInTheDocument()
+    // Device-backed hubs and external URLs are distinguished.
+    expect(screen.getByText("Hub")).toBeInTheDocument()
     expect(screen.getByText("External")).toBeInTheDocument()
     // Admin affordances.
     expect(

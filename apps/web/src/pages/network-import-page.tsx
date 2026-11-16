@@ -24,11 +24,13 @@ import type { PreviewNetworkImport200 } from "@/api/generated/model"
 import { useAuth } from "@/auth/auth-context"
 import { Field, FieldDescription, FieldLabel } from "@/components/shared/field"
 import { OptionSelect } from "@/components/shared/option-select"
+import { PageContainer } from "@/components/layout/page-container"
 import { PageHeader } from "@/components/shared/page-header"
 import { SectionCard } from "@/components/shared/section-card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { LinkButton } from "@/components/shared/link-button"
 import {
   Empty,
   EmptyDescription,
@@ -169,7 +171,8 @@ export function NetworkImportPage() {
   }
 
   return (
-    <>
+    <PageContainer className="py-6 sm:py-8">
+      <>
       <PageHeader
         actions={
           <Button onClick={reset} type="button" variant="outline">
@@ -590,13 +593,9 @@ export function NetworkImportPage() {
               ) : null}
 
               <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-3">
-                <Button
-                  render={<Link href="/networks" />}
-                  type="button"
-                  variant="ghost"
-                >
+                <LinkButton href="/networks" type="button" variant="ghost">
                   {t("common.cancel")}
-                </Button>
+                </LinkButton>
                 <Button
                   disabled={
                     commitMutation.isPending ||
@@ -620,6 +619,7 @@ export function NetworkImportPage() {
           )}
         </SectionCard>
       </div>
-    </>
+      </>
+    </PageContainer>
   )
 }

@@ -21,7 +21,7 @@ function DropdownMenuContent({
       >
         <Menu.Popup
           className={cn(
-            "max-h-(--available-height) w-56 max-w-[min(var(--available-width),calc(100vw-1rem))] overflow-y-auto rounded-lg border bg-popover p-1 text-popover-foreground shadow-md outline-none",
+            "max-h-(--available-height) w-60 max-w-[min(var(--available-width),calc(100vw-1rem))] overflow-y-auto rounded-xl border border-line bg-popover p-1.5 text-popover-foreground shadow-lg outline-none",
             className
           )}
           {...props}
@@ -41,7 +41,7 @@ function DropdownMenuItem({
   return (
     <Menu.Item
       className={cn(
-        "flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-sm outline-none select-none hover:bg-accent active:bg-accent data-highlighted:bg-accent data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",
+        "flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-[13px] outline-none select-none hover:bg-accent active:bg-accent data-highlighted:bg-accent data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0",
         destructive
           ? "text-destructive"
           : "hover:text-accent-foreground active:text-accent-foreground data-highlighted:text-accent-foreground",
@@ -60,7 +60,7 @@ function DropdownMenuCheckboxItem({
   return (
     <Menu.CheckboxItem
       className={cn(
-        "flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-sm outline-none select-none hover:bg-accent hover:text-accent-foreground data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+        "flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-[13px] outline-none select-none hover:bg-accent hover:text-accent-foreground data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
         className
       )}
       {...props}

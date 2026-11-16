@@ -19,6 +19,7 @@ import { AnchorRemovalDialog } from "@/components/anchor-removal-dialog"
 import { DeviceStatusBadges } from "@/components/device-status"
 import { ExitNodeBadge } from "@/components/exit-node-badge"
 import { DeviceRoleBadge } from "@/components/network-access-card"
+import { PageContainer } from "@/components/layout/page-container"
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import {
@@ -114,7 +115,8 @@ export function DevicesPage({ pendingOnly = false }: { pendingOnly?: boolean }) 
   )
 
   return (
-    <>
+    <PageContainer className="py-6 sm:py-8">
+      <>
       <PageHeader
         description={
           pendingOnly ? t("devices.pendingDescription") : t("devices.description")
@@ -399,6 +401,7 @@ export function DevicesPage({ pendingOnly = false }: { pendingOnly?: boolean }) 
         pending={block.isPending || remove.isPending}
         useRendezvous={anchorTarget?.useRendezvous ?? false}
       />
-    </>
+      </>
+    </PageContainer>
   )
 }

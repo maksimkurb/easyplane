@@ -4,126 +4,156 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * EasyPlane "redesign" tokens (docs/design/redesign/v2.css).
+ *
+ * Quiet chrome, one surface per page, status colour only when it needs
+ * attention. The names on the right of each alias are the design names; the
+ * shadcn names on the left are what the components in ui/ already use.
+ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  /* Logo background (src/assets/logo.svg); the same in both themes. */
-  --brand: oklch(0.47 0.11019 245.361);
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f2f3f5;
+  --surface-3: #e9ebee;
+  --fg: #16181d;
+  --fg-2: #4a4f59;
+  --fg-3: #6b7079;
+  --line: #e3e5e9;
+  --line-2: #cfd3d9;
+  --brand: #1d5f9b;
+  --brand-hover: #174f82;
+  --brand-fg: #ffffff;
+  --brand-soft: #e7eff8;
+  --brand-text: #1d5f9b;
+  --ok: #157a3d;
+  --ok-dot: #22a356;
+  --ok-soft: #e5f5eb;
+  --warn: #9a4a06;
+  --warn-soft: #fff6e0;
+  --warn-line: #f3d48a;
+  --err: #b42318;
+  --err-soft: #fdecea;
+  --err-line: #f5c2bd;
+  --relay: #6d3fd6;
+  --relay-soft: #efe9fc;
+  --scrim: rgb(17 24 39 / 0.38);
+
+  --background: var(--bg);
+  --foreground: var(--fg);
+  --card: var(--surface);
+  --card-foreground: var(--fg);
+  --popover: var(--surface);
+  --popover-foreground: var(--fg);
   --primary: var(--brand);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: var(--brand);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(1 0 0);
-  --warning: oklch(0.769 0.188 70.08);
-  --warning-foreground: oklch(52.354% 0.12011 59.695);
-  --success: lab(59.0978% -58.6621 41.2579);
-  --success-foreground: oklch(0.98 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --primary-foreground: var(--brand-fg);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--fg);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--fg-3);
+  --accent: var(--surface-2);
+  --accent-foreground: var(--fg);
+  --destructive: var(--err);
+  --destructive-foreground: #ffffff;
+  --warning: var(--warn);
+  --warning-foreground: var(--warn);
+  --success: var(--ok);
+  --success-foreground: #ffffff;
+  --border: var(--line);
+  --input: var(--line-2);
+  --ring: var(--brand);
+  --chart-1: var(--brand);
+  --chart-2: var(--ok-dot);
+  --chart-3: var(--warn);
+  --chart-4: var(--relay);
+  --chart-5: var(--err);
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--fg);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-fg);
+  --sidebar-accent: var(--surface-2);
+  --sidebar-accent-foreground: var(--fg);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--brand);
 
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
-  --radius: 0.45rem;
-  --shadow-2xs: 0 1px 4.5px 0px hsl(213.75 37.5% 25.098% / 0.07);
-  --shadow-xs: 0 1px 4.5px 0px hsl(213.75 37.5% 25.098% / 0.07);
-  --shadow-sm:
-    0 1px 4.5px 0px hsl(213.75 37.5% 25.098% / 0.14),
-    0 1px 2px -1px hsl(213.75 37.5% 25.098% / 0.14);
-  --shadow:
-    0 1px 4.5px 0px hsl(213.75 37.5% 25.098% / 0.14),
-    0 1px 2px -1px hsl(213.75 37.5% 25.098% / 0.14);
-  --shadow-md:
-    0 1px 4.5px 0px hsl(213.75 37.5% 25.098% / 0.14),
-    0 2px 4px -1px hsl(213.75 37.5% 25.098% / 0.14);
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  --radius: 8px;
+  --shadow-2xs: 0 1px 2px rgb(17 24 39 / 0.05);
+  --shadow-xs: 0 1px 2px rgb(17 24 39 / 0.05);
+  --shadow-sm: 0 1px 2px rgb(17 24 39 / 0.05);
+  --shadow: 0 1px 2px rgb(17 24 39 / 0.05);
+  --shadow-md: 0 2px 6px rgb(17 24 39 / 0.07);
   --shadow-lg:
-    0 1px 4.5px 0px hsl(213.75 37.5% 25.098% / 0.14),
-    0 4px 6px -1px hsl(213.75 37.5% 25.098% / 0.14);
+    0 16px 40px rgb(17 24 39 / 0.16), 0 2px 8px rgb(17 24 39 / 0.08);
   --shadow-xl:
-    0 1px 4.5px 0px hsl(213.75 37.5% 25.098% / 0.14),
-    0 8px 10px -1px hsl(213.75 37.5% 25.098% / 0.14);
-  --shadow-2xl: 0 1px 4.5px 0px hsl(213.75 37.5% 25.098% / 0.35);
+    0 16px 40px rgb(17 24 39 / 0.16), 0 2px 8px rgb(17 24 39 / 0.08);
+  --shadow-2xl:
+    0 16px 40px rgb(17 24 39 / 0.16), 0 2px 8px rgb(17 24 39 / 0.08);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: var(--brand);
-  --secondary: oklch(0.5 0.07 226.84);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --warning: oklch(0.8 0.18 90);
-  --warning-foreground: oklch(86.616% 0.13654 92.109);
-  --success: oklch(0.696 0.17 162.48);
-  --success-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --bg: #0e0f12;
+  --surface: #16181c;
+  --surface-2: #1d2025;
+  --surface-3: #262a30;
+  --fg: #f2f3f5;
+  --fg-2: #c3c7ce;
+  --fg-3: #969ba4;
+  --line: #272a30;
+  --line-2: #363a42;
+  --brand: #5ea3e6;
+  --brand-hover: #7db6ec;
+  --brand-fg: #0a1622;
+  --brand-soft: rgb(94 163 230 / 0.14);
+  --brand-text: #86bcef;
+  --ok: #5fd38d;
+  --ok-dot: #34c26c;
+  --ok-soft: rgb(52 194 108 / 0.13);
+  --warn: #f5c35b;
+  --warn-soft: rgb(245 195 91 / 0.1);
+  --warn-line: rgb(245 195 91 / 0.32);
+  --err: #ff8a80;
+  --err-soft: rgb(255 138 128 / 0.11);
+  --err-line: rgb(255 138 128 / 0.32);
+  --relay: #b69cff;
+  --relay-soft: rgb(182 156 255 / 0.14);
+  --scrim: rgb(0 0 0 / 0.55);
 
-  --shadow-2xs: 0 1px 4.5px 0px hsl(0 0% 0% / 0.07);
-  --shadow-xs: 0 1px 4.5px 0px hsl(0 0% 0% / 0.07);
-  --shadow-sm:
-    0 1px 4.5px 0px hsl(0 0% 0% / 0.14), 0 1px 2px -1px hsl(0 0% 0% / 0.14);
-  --shadow:
-    0 1px 4.5px 0px hsl(0 0% 0% / 0.14), 0 1px 2px -1px hsl(0 0% 0% / 0.14);
-  --shadow-md:
-    0 1px 4.5px 0px hsl(0 0% 0% / 0.14), 0 2px 4px -1px hsl(0 0% 0% / 0.14);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-fg);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--fg);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--fg-3);
+  --accent: var(--surface-2);
+  --accent-foreground: var(--fg);
+  --destructive: var(--err);
+  --destructive-foreground: #0a1622;
+  --warning: var(--warn);
+  --warning-foreground: var(--warn);
+  --success: var(--ok);
+  --success-foreground: #0a1622;
+  --border: var(--line);
+  --input: var(--line-2);
+  --ring: var(--brand);
+
+  --shadow-2xs: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 2px 6px rgb(0 0 0 / 0.45);
   --shadow-lg:
-    0 1px 4.5px 0px hsl(0 0% 0% / 0.14), 0 4px 6px -1px hsl(0 0% 0% / 0.14);
+    0 16px 40px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.4);
   --shadow-xl:
-    0 1px 4.5px 0px hsl(0 0% 0% / 0.14), 0 8px 10px -1px hsl(0 0% 0% / 0.14);
-  --shadow-2xl: 0 1px 4.5px 0px hsl(0 0% 0% / 0.35);
+    0 16px 40px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.4);
+  --shadow-2xl:
+    0 16px 40px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.4);
 }
 
 @theme inline {
@@ -136,6 +166,9 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-fg);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-text: var(--brand-text);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -164,6 +197,28 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Redesign surface/status tokens. */
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-ok: var(--ok);
+  --color-ok-dot: var(--ok-dot);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-line: var(--warn-line);
+  --color-err: var(--err);
+  --color-err-soft: var(--err-soft);
+  --color-err-line: var(--err-line);
+  --color-relay: var(--relay);
+  --color-relay-soft: var(--relay-soft);
+  --color-scrim: var(--scrim);
+
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
@@ -218,6 +273,57 @@
   body {
     position: relative;
     @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
     overflow-x: clip;
   }
+
+  /* The redesign keeps every control at least 40px tall on desktop and 44px
+     on touch; inputs use 16px text on phones so iOS does not zoom. */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  @media (min-width: 640px) {
+    input,
+    textarea,
+    select {
+      font-size: 14px;
+    }
+  }
+}
+
+/* React Flow ships light chrome; the map needs the panel's surfaces. */
+.react-flow__controls {
+  overflow: hidden !important;
+  border-radius: 10px !important;
+  background: var(--surface) !important;
+  box-shadow: 0 0 0 1px var(--line), var(--shadow-sm) !important;
+}
+
+.react-flow__controls-button {
+  width: 40px !important;
+  height: 40px !important;
+  background: var(--surface) !important;
+  border-bottom: 1px solid var(--line) !important;
+  color: var(--fg-2) !important;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--surface-2) !important;
+}
+
+.react-flow__controls-button svg {
+  fill: currentColor !important;
+}
+
+.react-flow__attribution {
+  background: var(--surface) !important;
+  color: var(--fg-3) !important;
+  border-radius: 6px 0 0 0;
+}
+
+.react-flow__attribution a {
+  color: var(--fg-3) !important;
 }

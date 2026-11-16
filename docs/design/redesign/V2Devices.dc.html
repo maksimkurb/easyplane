@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home lab devices</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./v2.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="v2 {{tc}}" style="min-height:900px">
+  <header class="top">
+    <a class="btn ghost icon back" href="V2Networks.dc.html" aria-label="Back to networks"><i class="ic i-chev-l s20"></i></a>
+    <a class="brand" href="V2Networks.dc.html"><span class="logo"><svg viewBox="0 0 512 512" fill="none" aria-hidden="true"><path d="M308,120 H182 Q136,120 136,166 V346 Q136,392 182,392 H308 M136,256 H348" fill="none" stroke="currentColor" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="336" cy="120" r="50" fill="currentColor"></circle><circle cx="376" cy="256" r="50" fill="currentColor"></circle><circle cx="336" cy="392" r="50" fill="currentColor"></circle></svg></span>EasyPlane</a>
+    <nav class="crumbs" aria-label="Breadcrumb"><span class="sep">/</span><a href="V2Networks.dc.html">Networks</a><span class="sep">/</span><span class="cur">Home lab</span></nav>
+    <span class="spacer"></span>
+    <a class="tlink" href="Audit.dc.html"><i class="ic i-history s16"></i>Audit log</a>
+    <button class="avatar" aria-label="Account, language and theme"><span>MK</span></button>
+  </header>
+
+  <section class="hero">
+    <div class="wrap">
+      <div class="nh">
+        <div class="nh-main">
+          <h1>Home lab</h1>
+          <div class="meta">
+            <button class="copy mono" aria-label="Copy EasyTier network name">homelab-7f3a91<i class="ic i-copy s14"></i></button>
+            <span class="mono">10.144.144.0/24</span>
+            <span class="row" style="gap:6px"><span class="dot on"></span>{{onlineText}}</span>
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn sec icon" aria-label="Network actions"><i class="ic i-more"></i></button>
+          <a class="btn pri" href="V2AddDevice.dc.html"><i class="ic i-plus s16"></i>Add device</a>
+        </div>
+      </div>
+      <nav class="tabs" aria-label="Network sections">
+        <a class="tab on" href="V2Devices.dc.html" aria-current="page">Devices <span class="cnt {{tabCntCls}}">{{tabCnt}}</span></a>
+        <a class="tab" href="V2Map.dc.html">Map</a>
+        <a class="tab" href="V2Access.dc.html">Access</a>
+        <a class="tab" href="V2Settings.dc.html">Settings</a>
+      </nav>
+    </div>
+  </section>
+
+  <div class="wrap content">
+    <sc-if value="{{hasAsk}}" hint-placeholder-val="{{true}}">
+      <section class="ask" aria-label="Needs approval">
+        <div class="ask-h"><i class="ic i-alert s16"></i>Needs your approval<span class="cnt warn">{{askCount}}</span></div>
+        <sc-if value="{{showDevAsk}}" hint-placeholder-val="{{true}}">
+          <div class="ask-r">
+            <span class="dicon"><i class="ic i-phone"></i></span>
+            <div class="grow">
+              <div class="dname"><span class="n">pixel-8</span><span class="t3">wants to join</span></div>
+              <div class="dsub">Android 15 · invite “Family phones” · 2 min ago</div>
+            </div>
+            <div class="acts">
+              <button class="btn sec" onClick="{{rejectDev}}">Reject</button>
+              <button class="btn pri" onClick="{{approveDev}}"><i class="ic i-check s16"></i>Approve</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{showRouteAsk}}" hint-placeholder-val="{{true}}">
+          <div class="ask-r">
+            <span class="dicon"><i class="ic i-route"></i></span>
+            <div class="grow">
+              <div class="dname"><span class="n">rpi-garage</span><span class="t3">wants to share a subnet</span><span class="chip mono" style="font-size:11.5px">192.168.50.0/24</span></div>
+              <div class="dsub">Other devices will reach this LAN through rpi-garage · 1 h ago</div>
+            </div>
+            <div class="acts">
+              <button class="btn sec" onClick="{{rejectRoute}}">Reject</button>
+              <button class="btn pri" onClick="{{approveRoute}}"><i class="ic i-check s16"></i>Approve</button>
+            </div>
+          </div>
+        </sc-if>
+      </section>
+    </sc-if>
+
+    <div class="tbar">
+      <div class="input search"><i class="ic i-search s16"></i><span class="ph">Search name, IP or tag</span></div>
+      <div class="seg" role="group" aria-label="Filter devices">
+        <button class="{{fAll}}" onClick="{{setAll}}">All <span class="n">{{nAll}}</span></button>
+        <button class="{{fOn}}" onClick="{{setOn}}">Online <span class="n">{{nOn}}</span></button>
+        <button class="{{fIss}}" onClick="{{setIss}}">Issues <span class="n">{{nIss}}</span></button>
+      </div>
+    </div>
+
+    <div class="list ov">
+      <div class="lh gdev"><span>Device</span><span class="c-ip">Address</span><span class="c-os">System</span><span>Last seen</span><span></span></div>
+      <sc-for list="{{devices}}" as="d" hint-placeholder-count="7">
+        <div class="lr hov gdev {{d.rowCls}}">
+          <div class="row" style="gap:14px;min-width:0">
+            <span class="dicon"><i class="ic {{d.icon}}"></i></span>
+            <div style="min-width:0">
+              <div class="dname"><a class="n stretch" href="V2Device.dc.html">{{d.name}}</a>
+                <sc-for list="{{d.chips}}" as="c" hint-placeholder-count="1"><span class="chip {{c.c}}">{{c.t}}</span></sc-for>
+              </div>
+              <div class="dsub">
+                <span class="mono md-only" style="font-size:12px">{{d.ip}}</span>
+                <sc-if value="{{d.offline}}" hint-placeholder-val="{{false}}"><span class="sm-only">· {{d.seen}}</span></sc-if>
+                <sc-if value="{{d.owner}}" hint-placeholder-val="{{true}}"><span class="md-hide">{{d.owner}}</span></sc-if>
+                <sc-for list="{{d.tagList}}" as="tg" hint-placeholder-count="1"><span class="chip tag md-hide">{{tg.t}}</span></sc-for>
+              </div>
+            </div>
+          </div>
+          <span class="c-ip mono t2">{{d.ip}}</span>
+          <div class="c-os"><div class="sm">{{d.os}}</div><div class="xs t3">{{d.ver}}</div></div>
+          <span class="status"><span class="dot {{d.dot}}"></span><span class="tx">{{d.seen}}</span></span>
+          <div class="end">
+            <button class="btn ghost icon" aria-label="Actions for {{d.name}}" onClick="{{d.toggle}}"><i class="ic i-more"></i></button>
+            <sc-if value="{{d.menuOpen}}" hint-placeholder-val="{{false}}">
+              <div class="menu" role="menu" style="right:0;top:44px">
+                <button class="mi" role="menuitem"><i class="ic i-refresh s16"></i>Push config again</button>
+                <button class="mi" role="menuitem"><i class="ic i-pencil s16"></i>Rename</button>
+                <button class="mi" role="menuitem"><i class="ic i-tag s16"></i>Edit tags</button>
+                <button class="mi" role="menuitem"><i class="ic i-tower s16"></i>Use as hub<span class="k"><i class="ic i-check s14" style="color:var(--brand-text)"></i></span></button>
+                <div class="msep"></div>
+                <button class="mi" role="menuitem"><i class="ic i-ban s16"></i>Block</button>
+                <button class="mi red" role="menuitem"><i class="ic i-trash s16"></i>Remove from network</button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+      <sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+        <div class="lr" style="justify-content:center;display:flex;min-height:120px;color:var(--fg-3)">No devices need attention.</div>
+      </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{toast}}" hint-placeholder-val="{{false}}">
+    <div class="toast" role="status" style="position:fixed"><i class="ic i-check s16"></i>{{toast}}<button class="btn ghost" onClick="{{undo}}">Undo</button></div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"menu":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { dev: 'ask', route: 'ask', menuFor: undefined, filter: 'all', toast: '', last: null }; }
+  renderVals() {
+    const s = this.state;
+    const menuFor = s.menuFor === undefined ? (this.props.menu ? 'relay' : null) : s.menuFor;
+    const base = [
+      { id: 'nas', name: 'nas-01', icon: 'i-server', chips: [{ t: 'Hub', c: 'brand' }, { t: 'Subnet', c: '' }], owner: '', tags: ['tag:server'], ip: '10.144.144.2', os: 'Debian 12', ver: 'EasyTier 2.4.2', on: true, seen: 'Connected' },
+      { id: 'relay', name: 'relay-fra', icon: 'i-server', chips: [{ t: 'Config not applied', c: 'warn' }, { t: 'Hub', c: 'brand' }], owner: '', tags: ['tag:relay', 'tag:eu'], ip: '10.144.144.3', os: 'Ubuntu 24.04', ver: 'EasyTier 2.4.2', on: true, seen: 'Connected', issue: true },
+      { id: 'desk', name: 'desktop', icon: 'i-monitor', chips: [], owner: 'maxim@acme.test', tags: [], ip: '10.144.144.5', os: 'Windows 11', ver: 'EasyTier 2.4.2', on: true, seen: 'Connected' },
+      { id: 'media', name: 'media-pc', icon: 'i-monitor', chips: [], owner: 'maxim@acme.test', tags: [], ip: '10.144.144.8', os: 'Ubuntu 22.04', ver: 'EasyTier 2.4.1', on: true, seen: 'Connected' },
+      { id: 'rpi', name: 'rpi-garage', icon: 'i-cpu', chips: s.route === 'ok' ? [{ t: 'Subnet', c: '' }] : [], owner: '', tags: ['tag:iot'], ip: '10.144.144.6', os: 'Raspberry Pi OS', ver: 'EasyTier 2.4.2', on: true, seen: 'Connected' },
+      { id: 'anna', name: 'phone-anna', icon: 'i-phone', chips: [], owner: 'anna@acme.test', tags: [], ip: '10.144.144.9', os: 'Android 14', ver: 'EasyTier 2.4.0', on: true, seen: 'Connected' },
+      { id: 'lap', name: 'laptop-maxim', icon: 'i-laptop', chips: [{ t: 'Push failed', c: 'err' }], owner: 'maxim@acme.test', tags: [], ip: '10.144.144.7', os: 'Windows 11', ver: 'EasyTier 2.4.1', on: false, seen: '3 hours ago', issue: true }
+    ];
+    if (s.dev === 'ok') base.splice(0, 0, { id: 'pix', name: 'pixel-8', icon: 'i-phone', chips: [{ t: 'New', c: 'ok' }], owner: 'anna@acme.test', tags: [], ip: '10.144.144.10', os: 'Android 15', ver: 'EasyTier 2.4.2', on: true, seen: 'Connected' });
+    const nAll = base.length, nOn = base.filter(d => d.on).length, nIss = base.filter(d => d.issue).length;
+    const shown = base.filter(d => s.filter === 'all' || (s.filter === 'on' ? d.on : d.issue));
+    const devices = shown.map(d => ({
+      ...d,
+      dot: d.on ? 'on' : '', offline: !d.on,
+      tagList: d.tags.map(t => ({ t: t })),
+      menuOpen: menuFor === d.id,
+      rowCls: menuFor === d.id ? 'sel' : '',
+      toggle: () => this.setState({ menuFor: menuFor === d.id ? null : d.id })
+    }));
+    const askCount = (s.dev === 'ask' ? 1 : 0) + (s.route === 'ask' ? 1 : 0);
+    const done = (key, val, msg) => () => this.setState({ [key]: val, toast: msg, last: key });
+    return {
+      tc: this.props.theme === 'dark' ? 'dark' : '',
+      onlineText: nOn + ' of ' + nAll + ' online',
+      tabCnt: askCount ? askCount + ' waiting' : String(nAll),
+      tabCntCls: askCount ? 'warn' : '',
+      hasAsk: askCount > 0, askCount: askCount,
+      showDevAsk: s.dev === 'ask', showRouteAsk: s.route === 'ask',
+      approveDev: done('dev', 'ok', 'pixel-8 approved and receiving config'),
+      rejectDev: done('dev', 'no', 'pixel-8 rejected'),
+      approveRoute: done('route', 'ok', 'Subnet 192.168.50.0/24 approved'),
+      rejectRoute: done('route', 'no', 'Subnet request rejected'),
+      undo: () => this.setState({ [s.last]: 'ask', toast: '' }),
+      toast: s.toast,
+      nAll: nAll, nOn: nOn, nIss: nIss,
+      fAll: s.filter === 'all' ? 'on' : '', fOn: s.filter === 'on' ? 'on' : '', fIss: s.filter === 'iss' ? 'on' : '',
+      setAll: () => this.setState({ filter: 'all' }), setOn: () => this.setState({ filter: 'on' }), setIss: () => this.setState({ filter: 'iss' }),
+      devices: devices, empty: devices.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>

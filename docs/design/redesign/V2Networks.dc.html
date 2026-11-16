@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Networks</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./v2.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="v2 {{tc}}" style="min-height:900px">
+  <header class="top">
+    <a class="brand" href="V2Networks.dc.html"><span class="logo"><svg viewBox="0 0 512 512" fill="none" aria-hidden="true"><path d="M308,120 H182 Q136,120 136,166 V346 Q136,392 182,392 H308 M136,256 H348" fill="none" stroke="currentColor" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="336" cy="120" r="50" fill="currentColor"></circle><circle cx="376" cy="256" r="50" fill="currentColor"></circle><circle cx="336" cy="392" r="50" fill="currentColor"></circle></svg></span>EasyPlane</a>
+    <span class="spacer"></span>
+    <a class="tlink" href="Audit.dc.html"><i class="ic i-history s16"></i>Audit log</a>
+    <button class="avatar" aria-label="Account, language and theme"><span>MK</span></button>
+  </header>
+
+  <div class="wrap content" style="padding-top:40px">
+    <div class="nh" style="margin-bottom:24px">
+      <div class="nh-main">
+        <h1>Networks</h1>
+        <p class="lead">3 networks · 25 devices</p>
+      </div>
+      <div class="row">
+        <a class="btn sec" href="Import.dc.html"><i class="ic i-upload s16"></i>Import</a>
+        <button class="btn pri"><i class="ic i-plus s16"></i>New network</button>
+      </div>
+    </div>
+
+    <div class="list">
+      <div class="lh gnet"><span>Network</span><span class="c-range">Address range</span><span>Devices</span><span></span></div>
+
+      <a class="lr gnet" href="V2Devices.dc.html">
+        <div class="row" style="gap:14px;min-width:0">
+          <span class="dicon"><i class="ic i-network"></i></span>
+          <div style="min-width:0"><div class="dname"><span class="n">Home lab</span></div><div class="dsub"><span class="mono sm-hide" style="font-size:12px">homelab-7f3a91</span><span class="status sm-only"><span class="dot on"></span>6 of 7 online</span></div></div>
+        </div>
+        <span class="c-range mono t2">10.144.144.0/24</span>
+        <div class="row" style="gap:10px;flex-wrap:nowrap;justify-content:flex-end"><span class="status sm-hide"><span class="dot on"></span>6 of 7 online</span><span class="chip warn">1 waiting</span></div>
+        <span class="end t3"><i class="ic i-chev-r"></i></span>
+      </a>
+
+      <a class="lr gnet" href="V2Devices.dc.html">
+        <div class="row" style="gap:14px;min-width:0">
+          <span class="dicon"><i class="ic i-network"></i></span>
+          <div style="min-width:0"><div class="dname"><span class="n">Office</span></div><div class="dsub"><span class="mono sm-hide" style="font-size:12px">acme-office-02</span><span class="status sm-only"><span class="dot on"></span>11 of 13 online</span></div></div>
+        </div>
+        <span class="c-range mono t2">10.10.0.0/22</span>
+        <div class="row" style="gap:10px;flex-wrap:nowrap;justify-content:flex-end"><span class="status sm-hide"><span class="dot on"></span>11 of 13 online</span></div>
+        <span class="end t3"><i class="ic i-chev-r"></i></span>
+      </a>
+
+      <a class="lr gnet" href="V2Devices.dc.html">
+        <div class="row" style="gap:14px;min-width:0">
+          <span class="dicon"><i class="ic i-network"></i></span>
+          <div style="min-width:0"><div class="dname"><span class="n">Edge relays</span></div><div class="dsub"><span class="mono sm-hide" style="font-size:12px">edge-relays-eu</span><span class="status sm-only"><span class="dot on"></span>3 of 5 online</span></div></div>
+        </div>
+        <span class="c-range mono t2">172.20.8.0/24</span>
+        <div class="row" style="gap:10px;flex-wrap:nowrap;justify-content:flex-end"><span class="status sm-hide"><span class="dot on"></span>3 of 5 online</span><span class="chip warn">2 waiting</span></div>
+        <span class="end t3"><i class="ic i-chev-r"></i></span>
+      </a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic { renderVals() { return { tc: this.props.theme === 'dark' ? 'dark' : '' }; } }
+</script>
+</body>
+</html>
