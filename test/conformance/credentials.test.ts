@@ -9,11 +9,13 @@ import {
   RENDEZVOUS_TOPOLOGY,
   execInAsync,
   openRelayPool,
-  requireDockerConformanceEnvironment,
+  prepareDockerConformanceEnvironment,
+  safeStringify,
   startRendezvous,
   startRendezvousRelay,
   startRvCore,
   stopAllCores,
+  underlayBlockList,
   type CoreHandle,
   type RendezvousHandle,
 } from "./helpers/index.js";
@@ -74,6 +76,21 @@ const LATE = {
   hostname: "core-rv-direct-a",
 } as const;
 
+type LeafKind = "anchor" | "member" | "late";
+
+/**
+ * Leaves of this test must reach each other only through the node: the
+ * no-anchor assertion ("a fresh member cannot be admitted, so it cannot reach
+ * the other member") is meaningless if the underlay gives them a direct path.
+ * Each leaf therefore prohibits the other leaves' docker addresses before
+ * easytier starts (see `underlayBlockList`).
+ */
+const ISOLATED_PEERS: Record<LeafKind, ReadonlyArray<keyof typeof RENDEZVOUS_TOPOLOGY.leaf>> = {
+  anchor: ["iso-b", "direct-a"],
+  member: ["iso-a", "direct-a"],
+  late: ["iso-a", "iso-b"],
+};
+
 const NODE_ENDPOINTS = [
   `tcp://${RENDEZVOUS_TOPOLOGY.node.direct}:11010`,
   `tcp://${RENDEZVOUS_TOPOLOGY.node.a}:11010`,
@@ -101,7 +118,7 @@ async function poll<T>(
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
   throw new Error(
-    `${label}: condition not met within ${timeoutMs}ms; last=${JSON.stringify(last)}; ` +
+    `${label}: condition not met within ${timeoutMs}ms; last=${safeStringify(last)}; ` +
       `error=${lastError instanceof Error ? lastError.message : String(lastError ?? "none")}`,
   );
 }
@@ -183,7 +200,11 @@ describe("credential conformance: anchor, member, revoke, no-anchor window", () 
         16,
       )),
     );
-    cores[kind] = await startRvCore(leaf.service, url);
+    cores[kind] = await startRvCore(
+      leaf.service,
+      url,
+      underlayBlockList(ISOLATED_PEERS[kind]),
+    );
   }
 
   async function invite(role: "anchor" | "member"): Promise<string> {
@@ -231,7 +252,7 @@ describe("credential conformance: anchor, member, revoke, no-anchor window", () 
   }
 
   beforeAll(async () => {
-    requireDockerConformanceEnvironment();
+    prepareDockerConformanceEnvironment();
     test = await createTestApp({
       oidc: false,
       env: {
@@ -255,6 +276,12 @@ describe("credential conformance: anchor, member, revoke, no-anchor window", () 
     admin = await bootstrapAdmin(test);
     node = await startRendezvous({ EASYPLANE_RV_RELAY_DATA: "true" });
     await startRendezvousRelay();
+    await poll(
+      "node reports relay ON",
+      async () => (await node.logs()).includes("rendezvous: data relay ENABLED"),
+      Boolean,
+      30_000,
+    );
   });
 
   afterAll(async () => {

@@ -18,6 +18,34 @@ import {
 export const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const COMPOSE_FILE = join(REPO_ROOT, "docker-compose.test.yml");
 
+/**
+ * `JSON.stringify` for diagnostics built by the conformance helpers/poll loops.
+ *
+ * EasyTier protobuf payloads carry int64 fields as `BigInt` (route costs, peer
+ * ids, timestamps), and `JSON.stringify` throws `Do not know how to serialize a
+ * BigInt` on them -- turning a "condition not met" poll timeout into an
+ * unrelated TypeError that hides the real failure. BigInts become strings,
+ * Errors keep their message and cycles are marked instead of throwing.
+ */
+export function safeStringify(value: unknown): string {
+  const seen = new WeakSet<object>();
+  try {
+    return (
+      JSON.stringify(value, (_key, entry: unknown) => {
+        if (typeof entry === "bigint") return entry.toString();
+        if (entry instanceof Error) return `${entry.name}: ${entry.message}`;
+        if (typeof entry === "object" && entry !== null) {
+          if (seen.has(entry)) return "[circular]";
+          seen.add(entry);
+        }
+        return entry;
+      }) ?? String(value)
+    );
+  } catch (error) {
+    return `<unserializable: ${error instanceof Error ? error.message : String(error)}>`;
+  }
+}
+
 /** Fixed test ports; each conformance file owns one to avoid cross-talk. */
 export const PORTS = {
   ws: 22080,
@@ -53,6 +81,18 @@ export const RENDEZVOUS_TOPOLOGY = {
     a: "172.29.1.10",
     b: "172.29.2.10",
   },
+  /**
+   * Fixed underlay addresses of the leaf containers: the data network the leaf
+   * shares with the node, and the private control network that carries only its
+   * config-server tunnel. Tests use them to forbid leaf-to-leaf underlay
+   * traffic (see `underlayBlockList`).
+   */
+  leaf: {
+    "direct-a": { data: "172.29.0.11", control: "172.32.1.11" },
+    "direct-b": { data: "172.29.0.12", control: "172.32.2.11" },
+    "iso-a": { data: "172.29.1.11", control: "172.32.3.11" },
+    "iso-b": { data: "172.29.2.11", control: "172.32.4.11" },
+  },
   /** Relay address on the per-leaf control networks (config-server tunnels). */
   relay: {
     a: "172.32.1.10",
@@ -64,6 +104,12 @@ export const RENDEZVOUS_TOPOLOGY = {
   clientPort: { a: 23021, b: 23022, c: 23023, d: 23024 },
   /** Relay host-pool ports the vitest process dials. */
   hostPort: { a: 23031, b: 23032, c: 23033, d: 23034 },
+  /** Explicitly named compose networks (docker-compose.test.yml). */
+  network: {
+    direct: "easyplane-conformance-rv-direct",
+    a: "easyplane-conformance-rv-a",
+    b: "easyplane-conformance-rv-b",
+  },
   secret: "rv-conformance-secret",
   networkName: "rv-node-net",
 } as const;
@@ -143,6 +189,36 @@ export function requireDockerConformanceEnvironment(): void {
   if (!existsSync("/dev/net/tun")) {
     throw new Error("missing /dev/net/tun; the conformance client needs a TUN device");
   }
+}
+
+/**
+ * Tears the conformance compose project down (containers, networks, volumes).
+ *
+ * Conformance files run sequentially in one vitest process and every file uses
+ * the same compose project, so a file that crashes mid-way (or an aborted CI
+ * job) can leave containers, networks and their subnets behind for the next
+ * file. Every file therefore starts from an *empty* project: leftover
+ * containers cannot serve a stale config (e.g. a rendezvous node still created
+ * with relay enabled) and leftover networks cannot satisfy an `up` with
+ * different ipam settings. `-v` is what makes the teardown complete; without it
+ * the project's volumes survive and `down` is not the inverse of `up`.
+ */
+export function resetConformanceProject(): void {
+  try {
+    dockerCompose(["down", "-v", "--remove-orphans", "--timeout", "5"]);
+  } catch {
+    // Nothing to remove, or docker is already unhappy; the tests below report
+    // a real failure with their own message.
+  }
+}
+
+/**
+ * Checks the docker/TUN prerequisites and gives the file a clean compose
+ * project. Every conformance file calls this once from `beforeAll`.
+ */
+export function prepareDockerConformanceEnvironment(): void {
+  requireDockerConformanceEnvironment();
+  resetConformanceProject();
 }
 
 export interface CoreHandle {
@@ -306,6 +382,102 @@ export async function openRelayPool(
   return sockets;
 }
 
+/**
+ * The `EASYPLANE_UNDERLAY_BLOCK` value that forbids this leaf from reaching the
+ * *underlay* addresses (docker data and control addresses) of the given peer
+ * leaves.
+ *
+ * Why the test has to do this itself: "the isolated pair cannot reach each
+ * other directly" is the premise of the relay-off/on assertions, and it used to
+ * be provided implicitly by the docker daemon's inter-bridge isolation rules
+ * (`DOCKER-ISOLATION-STAGE-*`). That is ambient kernel/daemon state outside the
+ * test: when those rules are missing or not effective on a runner, two
+ * containers on different bridges route to each other and easytier establishes
+ * a *direct* peer (`cost=1`), so relay-off traffic passes and the suite fails on
+ * a runner-dependent detail instead of on the node's relay behaviour.
+ *
+ * The address list is applied by `test/conformance/rendezvous/leaf-entrypoint.sh`
+ * inside the leaf's own network namespace *before* easytier starts, so no direct
+ * peer connection can ever form. Nothing else is affected: the node's own
+ * addresses stay reachable, and relayed data arrives from the node's address
+ * (not from the peer), so relay ON still works.
+ */
+export function underlayBlockList(
+  peers: ReadonlyArray<keyof typeof RENDEZVOUS_TOPOLOGY.leaf>,
+): string {
+  const addresses = new Set<string>();
+  for (const peer of peers) {
+    const entry = RENDEZVOUS_TOPOLOGY.leaf[peer];
+    addresses.add(`${entry.data}/32`);
+    addresses.add(`${entry.control}/32`);
+  }
+  return [...addresses].join(",");
+}
+
+/** True when `service` can reach the underlay `address` (ICMP). */
+export async function underlayReachable(service: string, address: string): Promise<boolean> {
+  const result = await execInAsync(service, ["ping", "-c", "1", "-W", "1", address], {
+    allowFailure: true,
+  });
+  return result.status === 0;
+}
+
+/**
+ * Reports whether the docker daemon's inter-bridge isolation is effective on
+ * this host: a throwaway container on `fromNetwork` pings an address that lives
+ * on another conformance bridge. `true` means the ambient premise the old
+ * rendezvous test relied on is broken here (bridges route to each other), which
+ * is exactly the condition the leaves now neutralise themselves.
+ *
+ * Diagnostic only: never asserted, and it cannot mask a test failure.
+ */
+export async function probeDockerBridgeIsolation(
+  fromNetwork: string,
+  toAddress: string,
+): Promise<boolean> {
+  try {
+    await execFileAsync(
+      "docker",
+      [
+        "run", "--rm",
+        "--network", fromNetwork,
+        "--entrypoint", "ping",
+        "easyplane/easytier-core-test:2.6.4-81487c36",
+        "-c", "1", "-W", "1", toAddress,
+      ],
+      { encoding: "utf8", timeout: 60_000 },
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Diagnostic bundle for the rendezvous data-path assertions: each leaf's own
+ * addresses and routing table, which shows whether the `prohibit` isolation from
+ * `EASYPLANE_UNDERLAY_BLOCK` is in place and whether an unexpected route to the
+ * other leaf exists.
+ */
+export async function underlayDiagnostics(
+  services: ReadonlyArray<{ label: string; service: string }>,
+): Promise<string> {
+  const parts: string[] = [];
+  for (const { label, service } of services) {
+    const addresses = await execInAsync(service, ["ip", "-brief", "addr"], {
+      allowFailure: true,
+    });
+    const routes = await execInAsync(service, ["ip", "route", "show"], {
+      allowFailure: true,
+    });
+    parts.push(
+      `--- ${label} (${service}) addresses:\n${addresses.stdout.trim()}\n` +
+        `--- ${label} (${service}) routes:\n${routes.stdout.trim()}`,
+    );
+  }
+  return parts.join("\n");
+}
+
 /** Starts the test-only relay that carries the rendezvous config-server tunnels. */
 export async function startRendezvousRelay(): Promise<void> {
   await dockerComposeAsync(["up", "-d", "--force-recreate", "rv-relay"]);
@@ -364,6 +536,7 @@ export async function stopRendezvous(
 export async function startRvCore(
   service: string,
   url: string,
+  underlayBlock = "",
 ): Promise<CoreHandle> {
   const envKey = composeUrlEnv(service);
   const handle: CoreHandle = {
@@ -375,6 +548,7 @@ export async function startRvCore(
   };
   await dockerComposeAsync(["up", "-d", "--force-recreate", service], {
     [envKey]: url,
+    EASYPLANE_RV_UNDERLAY_BLOCK: underlayBlock,
   });
   return handle;
 }
@@ -503,7 +677,7 @@ export function execDetached(service: string, command: string[]): void {
 
 export function stopAllCores(): void {
   try {
-    dockerCompose(["down", "--remove-orphans", "--timeout", "5"]);
+    dockerCompose(["down", "-v", "--remove-orphans", "--timeout", "5"]);
   } catch {
     // Best-effort teardown; a failed test already reported its own error.
   }
@@ -661,7 +835,7 @@ export async function assertM0ClientBehaviour(client: ManagedClient): Promise<M0
   }
   if (!info?.running) {
     throw new Error(
-      `network instance did not reach running=true; last info: ${JSON.stringify(info)}; ` +
+      `network instance did not reach running=true; last info: ${safeStringify(info)}; ` +
         `client error: ${info?.errorMsg ?? "none"}`,
     );
   }

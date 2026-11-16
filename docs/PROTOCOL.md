@@ -833,6 +833,16 @@ selection and hole-punch coordination, plus control-plane liveness. It forwards
 each other through the node with `cost=2` / `next_hop=PublicServer_…` while an
 HTTP request times out]
 
+> The conformance leaves make their own isolation explicit: each isolated leaf
+> installs `prohibit` routes for the *other* leaf's docker addresses
+> (`test/conformance/rendezvous/leaf-entrypoint.sh`) before `easytier-core`
+> starts, and the test asserts the underlay is unreachable. "Disjoint Docker
+> bridges cannot reach each other" is the docker daemon's
+> `DOCKER-ISOLATION-STAGE-*` state, not a property of the node; when a runner
+> does not apply it, two leaves pair directly (`cost=1`) and relay OFF passes
+> traffic for a reason unrelated to the relay flag. The suite therefore measures
+> the node, not the host's iptables.
+
 ### 14.2 `disable_relay_data`: rendezvous only
 
 `FlagsInConfig.disable_relay_data` (`easytier-proto/proto/common.proto` field

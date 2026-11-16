@@ -12,12 +12,17 @@ import {
   execInAsync,
   ipv4ToU32,
   openRelayPool,
-  requireDockerConformanceEnvironment,
+  prepareDockerConformanceEnvironment,
+  probeDockerBridgeIsolation,
+  safeStringify,
   startRendezvous,
   startRendezvousRelay,
   startRvCore,
   stopAllCores,
   stopRendezvous,
+  underlayBlockList,
+  underlayDiagnostics,
+  underlayReachable,
   type CoreHandle,
   type RendezvousHandle,
 } from "./helpers/index.js";
@@ -97,6 +102,19 @@ const LEAVES = {
 
 type LeafName = keyof typeof LEAVES;
 
+/**
+ * Leaves that must not reach each other over the docker underlay. The direct
+ * pair is expected to be a direct neighbour (that is the relay-OFF control
+ * case), so it blocks nothing; the isolated pair must only meet through the
+ * node.
+ */
+const ISOLATED_PEERS: Record<LeafName, LeafName[]> = {
+  "direct-a": [],
+  "direct-b": [],
+  "iso-a": ["iso-b"],
+  "iso-b": ["iso-a"],
+};
+
 const NODE_ENDPOINTS = [
   `tcp://${RENDEZVOUS_TOPOLOGY.node.direct}:11010`,
   `tcp://${RENDEZVOUS_TOPOLOGY.node.a}:11010`,
@@ -124,7 +142,7 @@ async function poll<T>(
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   throw new Error(
-    `${label}: condition not met within ${timeoutMs}ms; last=${JSON.stringify(last)}; ` +
+    `${label}: condition not met within ${timeoutMs}ms; last=${safeStringify(last)}; ` +
       `error=${lastError instanceof Error ? lastError.message : String(lastError ?? "none")}`,
   );
 }
@@ -232,8 +250,29 @@ describe("rendezvous conformance: private public node, relay off/on", () => {
     return haystack.split(needle).length - 1;
   }
 
+  /**
+   * Fails with the underlay state when the "isolated" pair passes traffic.
+   *
+   * A bare `expect(status).not.toBe(200)` cannot distinguish "the node relayed
+   * data it was told not to" from "the pair was never isolated": the message
+   * alone costs a full investigation cycle on a black-box runner.
+   */
+  async function failIsolatedTrafficPassed(label: string): Promise<never> {
+    const routes = await routesFor("iso-a").catch((error: unknown) =>
+      error instanceof Error ? `error: ${error.message}` : String(error),
+    );
+    throw new Error(
+      `${label}, but iso-a reached iso-b over the overlay (HTTP 200); ` +
+        `iso-a routes=${safeStringify(routes)}\n` +
+        (await underlayDiagnostics([
+          { label: "iso-a", service: LEAVES["iso-a"].service },
+          { label: "iso-b", service: LEAVES["iso-b"].service },
+        ])),
+    );
+  }
+
   beforeAll(async () => {
-    requireDockerConformanceEnvironment();
+    prepareDockerConformanceEnvironment();
     test = await createTestApp({
       oidc: false,
       env: {
@@ -309,8 +348,51 @@ describe("rendezvous conformance: private public node, relay off/on", () => {
     for (const letter of Object.keys(LEAVES) as LeafName[]) {
       const leaf = LEAVES[letter];
       const url = `ws://${RENDEZVOUS_TOPOLOGY.relay[leaf.relay]}:${RENDEZVOUS_TOPOLOGY.clientPort[leaf.relay]}/${encodeURIComponent(tokenByNetwork.get(leaf.network)!)}`;
-      cores[letter] = await startRvCore(leaf.service, url);
+      // The isolated pair must have NO direct underlay path, or "relay OFF drops
+      // the traffic" is not a statement about the node at all. That premise used
+      // to come implicitly from the docker daemon's inter-bridge isolation
+      // rules; each isolated leaf now prohibits the other leaf's addresses
+      // before its own easytier starts (rendezvous/leaf-entrypoint.sh), so the
+      // assertion cannot flip when a runner's iptables state differs. The direct
+      // pair must stay directly reachable: that is what the same test proves.
+      cores[letter] = await startRvCore(
+        leaf.service,
+        url,
+        underlayBlockList(ISOLATED_PEERS[letter]),
+      );
     }
+
+    // Prove the premise instead of assuming it.
+    expect(
+      await underlayReachable(
+        LEAVES["iso-a"].service,
+        RENDEZVOUS_TOPOLOGY.leaf["iso-b"].data,
+      ),
+      "iso-a must not reach iso-b's underlay address; the isolated pair is not isolated",
+    ).toBe(false);
+
+    // Record the ambient docker isolation state for this host. It is not
+    // asserted (the leaves enforce the premise themselves), but when it is
+    // broken the log says so instead of leaving the next failure unexplained.
+    const ambientLeak = await probeDockerBridgeIsolation(
+      RENDEZVOUS_TOPOLOGY.network.a,
+      RENDEZVOUS_TOPOLOGY.leaf["iso-b"].data,
+    );
+    console.log(
+      `[rendezvous] docker bridge isolation rv-a -> rv-b: ` +
+        (ambientLeak ? "BROKEN (rv-a can reach rv-b's leaf directly)" : "effective"),
+    );
+
+    // The node's effective mode comes from its own log: a stale or wrongly
+    // configured container must fail here, not as a mysterious data assertion.
+    await poll(
+      "node reports relay OFF",
+      async () =>
+        (await node.logs()).includes("rendezvous: data relay disabled (rendezvous only)"),
+      Boolean,
+      30_000,
+    );
+    expect(await node.logs()).not.toContain("rendezvous: data relay ENABLED");
 
     await poll(
       "four client sessions",
@@ -461,7 +543,9 @@ describe("rendezvous conformance: private public node, relay off/on", () => {
       if (lastStatus === 200) break;
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    expect(lastStatus, "relay OFF must drop isolated traffic").not.toBe(200);
+    if (lastStatus === 200) {
+      await failIsolatedTrafficPassed("relay OFF must drop isolated traffic");
+    }
     const isoRoutes = await routesFor("iso-a");
     const isoRoute = isoRoutes.find(
       (route) => route.ipv4Addr?.address?.addr === ipv4ToU32(isoIp),
@@ -477,6 +561,12 @@ describe("rendezvous conformance: private public node, relay off/on", () => {
 
     await stopRendezvousNode();
     await startRendezvous({ EASYPLANE_RV_RELAY_DATA: "true" });
+    await poll(
+      "node reports relay ON",
+      async () => (await node.logs()).includes("rendezvous: data relay ENABLED"),
+      Boolean,
+      30_000,
+    );
 
     // Wait for the leaves to reconnect and the data path to come up.
     await poll(
@@ -536,9 +626,15 @@ describe("rendezvous conformance: private public node, relay off/on", () => {
       90_000,
     );
     const isoIp = (await getDevice("iso-b")).virtualIpv4!;
-    expect(await httpStatus(LEAVES["iso-a"].service, `http://${isoIp}:8080/`)).not.toBe(
-      200,
+    const whitelistedStatus = await httpStatus(
+      LEAVES["iso-a"].service,
+      `http://${isoIp}:8080/`,
     );
+    if (whitelistedStatus === 200) {
+      await failIsolatedTrafficPassed(
+        "a non-whitelisted network must not get data relay",
+      );
+    }
 
     // relay_all_peer_rpc=true admits them for rendezvous/peer RPC but still does
     // not forward data: relay stays limited to whitelisted networks.

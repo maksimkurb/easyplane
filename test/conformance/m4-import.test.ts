@@ -2,7 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   PORTS,
-  requireDockerConformanceEnvironment,
+  prepareDockerConformanceEnvironment,
+  safeStringify,
   startCore,
   stopAllCores,
   type CoreHandle,
@@ -37,7 +38,7 @@ async function poll<T>(
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   throw new Error(
-    `${label}: condition not met within ${timeoutMs}ms; last=${JSON.stringify(last)}`,
+    `${label}: condition not met within ${timeoutMs}ms; last=${safeStringify(last)}`,
   );
 }
 
@@ -59,7 +60,7 @@ describe("M4 conformance: adopt a running config from a real client", () => {
   }
 
   beforeAll(async () => {
-    requireDockerConformanceEnvironment();
+    prepareDockerConformanceEnvironment();
     test = await createTestApp({
       oidc: false,
       env: {

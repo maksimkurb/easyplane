@@ -5,7 +5,8 @@ import { instanceIdFor } from "@easyplane/server";
 
 import {
   PORTS,
-  requireDockerConformanceEnvironment,
+  prepareDockerConformanceEnvironment,
+  safeStringify,
   startCore,
   stopAllCores,
   type CoreHandle,
@@ -50,7 +51,7 @@ async function poll<T>(
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   throw new Error(
-    `${label}: condition not met within ${timeoutMs}ms; last=${JSON.stringify(last)}`,
+    `${label}: condition not met within ${timeoutMs}ms; last=${safeStringify(last)}`,
   );
 }
 
@@ -89,7 +90,7 @@ describe("M1 conformance: invite -> pending -> approve -> config -> status -> bl
   }
 
   beforeAll(async () => {
-    requireDockerConformanceEnvironment();
+    prepareDockerConformanceEnvironment();
     test = await createTestApp({
       oidc: false,
       env: {

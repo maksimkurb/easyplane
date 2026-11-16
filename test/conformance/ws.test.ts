@@ -9,7 +9,7 @@ import {
   conformanceNetworkConfig,
   ipv4ToU32,
   largeConformanceNetworkConfig,
-  requireDockerConformanceEnvironment,
+  prepareDockerConformanceEnvironment,
   startCore,
   startTestServer,
   stopAllCores,
@@ -23,7 +23,7 @@ let harness: TestServer | undefined;
 let core: CoreHandle | undefined;
 
 beforeAll(() => {
-  requireDockerConformanceEnvironment();
+  prepareDockerConformanceEnvironment();
 });
 
 afterAll(async () => {

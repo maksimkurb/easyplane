@@ -9,7 +9,8 @@ import {
   execDetached,
   execIn,
   openM2RelayPool,
-  requireDockerConformanceEnvironment,
+  prepareDockerConformanceEnvironment,
+  safeStringify,
   startCore,
   startM2Relay,
   stopAllCores,
@@ -92,7 +93,7 @@ async function poll<T>(
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   throw new Error(
-    `${label}: condition not met within ${timeoutMs}ms; last=${JSON.stringify(last)}`,
+    `${label}: condition not met within ${timeoutMs}ms; last=${safeStringify(last)}`,
   );
 }
 
@@ -149,7 +150,7 @@ describe("M2 conformance: ACL enforcement, MagicDNS and routes on real easytier-
   }
 
   beforeAll(async () => {
-    requireDockerConformanceEnvironment();
+    prepareDockerConformanceEnvironment();
     test = await createTestApp({
       oidc: false,
       // Containers reach the server through host.docker.internal, so it must

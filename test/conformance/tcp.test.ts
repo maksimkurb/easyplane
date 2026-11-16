@@ -5,7 +5,7 @@ import {
   PORTS,
   assertM0ClientBehaviour,
   ipv4ToU32,
-  requireDockerConformanceEnvironment,
+  prepareDockerConformanceEnvironment,
   startCore,
   startTestServer,
   stopAllCores,
@@ -21,7 +21,7 @@ let harness: TestServer | undefined;
 let core: CoreHandle | undefined;
 
 beforeAll(() => {
-  requireDockerConformanceEnvironment();
+  prepareDockerConformanceEnvironment();
 });
 
 afterAll(async () => {

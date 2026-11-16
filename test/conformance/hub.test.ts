@@ -7,7 +7,8 @@ import {
   M2_TUNNEL_PORTS,
   PORTS,
   openM2RelayPool,
-  requireDockerConformanceEnvironment,
+  prepareDockerConformanceEnvironment,
+  safeStringify,
   startCore,
   startM2Relay,
   stopAllCores,
@@ -66,7 +67,7 @@ async function poll<T>(
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   throw new Error(
-    `${label}: condition not met within ${timeoutMs}ms; last=${JSON.stringify(last)}`,
+    `${label}: condition not met within ${timeoutMs}ms; last=${safeStringify(last)}`,
   );
 }
 
@@ -123,7 +124,7 @@ describe("hub conformance: a hub does not dial itself", () => {
   }
 
   beforeAll(async () => {
-    requireDockerConformanceEnvironment();
+    prepareDockerConformanceEnvironment();
     test = await createTestApp({
       oidc: false,
       env: {

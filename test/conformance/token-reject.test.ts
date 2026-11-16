@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   PORTS,
-  requireDockerConformanceEnvironment,
+  prepareDockerConformanceEnvironment,
   startCore,
   startTestServer,
   stopAllCores,
@@ -16,7 +16,7 @@ let harness: TestServer | undefined;
 let core: CoreHandle | undefined;
 
 beforeAll(() => {
-  requireDockerConformanceEnvironment();
+  prepareDockerConformanceEnvironment();
 });
 
 afterAll(async () => {

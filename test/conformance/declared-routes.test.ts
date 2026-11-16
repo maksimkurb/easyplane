@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -17,7 +18,8 @@ import {
   execInAsync,
   openM2RelayPool,
   openRelayPool,
-  requireDockerConformanceEnvironment,
+  prepareDockerConformanceEnvironment,
+  safeStringify,
   startCore,
   startM2Relay,
   stopAllCores,
@@ -123,7 +125,7 @@ async function poll<T>(
     if (predicate(last)) return last;
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
-  throw new Error(`${label}: condition not met within ${timeoutMs}ms; last=${JSON.stringify(last)}`);
+  throw new Error(`${label}: condition not met within ${timeoutMs}ms; last=${safeStringify(last)}`);
 }
 
 function dockerCopyFrom(container: string, path: string, destination: string): void {
@@ -153,6 +155,7 @@ describe("declared routes: one config-dir instance, real easytier-core", () => {
   const cores: Partial<Record<"a" | "b" | "c", CoreHandle>> = {};
   const devices: Partial<Record<"a" | "b" | "c", DeviceDto>> = {};
   const tunnels: import("node:net").Socket[] = [];
+  let scratchDir = "";
 
   function headers(extra: Record<string, string> = {}): Record<string, string> {
     return authed(admin, { "x-csrf-token": admin.csrfToken, ...extra });
@@ -234,15 +237,15 @@ describe("declared routes: one config-dir instance, real easytier-core", () => {
   }
 
   function readPersisted(letter: "a" | "b" | "c"): string {
-    const local = join("/tmp/opencode", `persisted-${letter}.toml`);
+    const local = join(scratchDir, `persisted-${letter}.toml`);
     dockerCopyFrom(CONTAINERS[letter], `/cfg/${instanceId(letter)}.toml`, local);
     return readFileSync(local, "utf8");
   }
 
   function writePersisted(name: string, contents: string): string {
-    const local = join("/tmp/opencode", name);
+    const local = join(scratchDir, name);
     try {
-      execFileSync("chmod", ["0644", local]);
+      execFileSync("chmod", ["0644", local], { stdio: "ignore" });
     } catch {
       // Created below.
     }
@@ -251,12 +254,16 @@ describe("declared routes: one config-dir instance, real easytier-core", () => {
   }
 
   beforeAll(async () => {
-    requireDockerConformanceEnvironment();
+    prepareDockerConformanceEnvironment();
     forceRemove(READ_ONLY_CONTAINER);
     for (const dir of Object.values(CFG_DIRS)) {
       rmSync(dir, { recursive: true, force: true });
       mkdirSync(dir, { recursive: true, mode: 0o755 });
     }
+    // Host-side scratch for `docker cp`: a fresh directory per run, because a
+    // fixed path does not exist on a CI runner and a stale file from an earlier
+    // run would be read back as if it were the client's persisted config.
+    scratchDir = mkdtempSync(join(tmpdir(), "easyplane-declared-routes-"));
     test = await createTestApp({
       oidc: false,
       env: {
@@ -284,6 +291,7 @@ describe("declared routes: one config-dir instance, real easytier-core", () => {
     for (const socket of tunnels) socket.destroy();
     forceRemove(READ_ONLY_CONTAINER);
     stopAllCores();
+    if (scratchDir) rmSync(scratchDir, { recursive: true, force: true });
     await test?.context.push.stop();
     await test?.context.controlPlane.stop();
     await test?.stop();
@@ -468,9 +476,16 @@ describe("declared routes: one config-dir instance, real easytier-core", () => {
 
   it("distributes only approved declarations and keeps exit-node egress client-side", async () => {
     const rows = await networkRoutes();
-    const approvedSubnet = rows.find((route) => route.cidr === SUBNET_APPROVED)!;
-    const rejectedSubnet = rows.find((route) => route.cidr === SUBNET_REJECTED)!;
-    const exitNode = rows.find((route) => route.kind === "exit_node")!;
+    const requireRoute = (label: string, match: (route: RouteDto) => boolean): RouteDto => {
+      const route = rows.find(match);
+      if (!route) {
+        throw new Error(`${label} route is missing; routes=${safeStringify(rows)}`);
+      }
+      return route;
+    };
+    const approvedSubnet = requireRoute("approved subnet", (route) => route.cidr === SUBNET_APPROVED);
+    const rejectedSubnet = requireRoute("rejected subnet", (route) => route.cidr === SUBNET_REJECTED);
+    const exitNode = requireRoute("exit node", (route) => route.kind === "exit_node");
     for (const [route, state] of [
       [approvedSubnet, "approved"],
       [rejectedSubnet, "rejected"],

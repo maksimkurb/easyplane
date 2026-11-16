@@ -59,9 +59,16 @@ x-rv-leaf: &rv-leaf
   cap_add: ["NET_ADMIN"]
   devices: ["/dev/net/tun:/dev/net/tun"]
   restart: "no"
+  # Forbids the underlay addresses listed in EASYPLANE_UNDERLAY_BLOCK before the
+  # client starts, so "these leaves are isolated" is enforced by the leaf itself
+  # instead of by the docker daemon's inter-bridge iptables state.
+  entrypoint: ["/bin/sh", "/opt/rv/leaf-entrypoint.sh"]
+  volumes:
+    - ./test/conformance/rendezvous/leaf-entrypoint.sh:/opt/rv/leaf-entrypoint.sh:ro
   environment:
     RUST_LOG: ${EASYPLANE_CORE_LOG:-info}
     ET_LOG: ${EASYPLANE_CORE_LOG:-info}
+    EASYPLANE_UNDERLAY_BLOCK: ${EASYPLANE_RV_UNDERLAY_BLOCK:-}
 
 
 services:

@@ -5,7 +5,7 @@ import {
   assertM0ClientBehaviour,
   generateSelfSignedCert,
   removeCert,
-  requireDockerConformanceEnvironment,
+  prepareDockerConformanceEnvironment,
   startCore,
   startTestServer,
   stopAllCores,
@@ -20,7 +20,7 @@ let core: CoreHandle | undefined;
 let certDir: string | undefined;
 
 beforeAll(() => {
-  requireDockerConformanceEnvironment();
+  prepareDockerConformanceEnvironment();
 });
 
 afterAll(async () => {
