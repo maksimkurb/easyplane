@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home lab map</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./v2.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="v2 {{tc}}" style="min-height:900px">
+  <header class="top">
+    <a class="btn ghost icon back" href="V2Networks.dc.html" aria-label="Back to networks"><i class="ic i-chev-l s20"></i></a>
+    <a class="brand" href="V2Networks.dc.html"><span class="logo"><svg viewBox="0 0 512 512" fill="none" aria-hidden="true"><path d="M308,120 H182 Q136,120 136,166 V346 Q136,392 182,392 H308 M136,256 H348" fill="none" stroke="currentColor" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="336" cy="120" r="50" fill="currentColor"></circle><circle cx="376" cy="256" r="50" fill="currentColor"></circle><circle cx="336" cy="392" r="50" fill="currentColor"></circle></svg></span>EasyPlane</a>
+    <nav class="crumbs" aria-label="Breadcrumb"><span class="sep">/</span><a href="V2Networks.dc.html">Networks</a><span class="sep">/</span><span class="cur">Home lab</span></nav>
+    <span class="spacer"></span>
+    <a class="tlink" href="Audit.dc.html"><i class="ic i-history s16"></i>Audit log</a>
+    <button class="avatar" aria-label="Account, language and theme"><span>MK</span></button>
+  </header>
+
+  <section class="hero">
+    <div class="wrap">
+      <div class="nh">
+        <div class="nh-main">
+          <h1>Home lab</h1>
+          <div class="meta">
+            <button class="copy mono" aria-label="Copy EasyTier network name">homelab-7f3a91<i class="ic i-copy s14"></i></button>
+            <span class="mono">10.144.144.0/24</span>
+            <span class="row" style="gap:6px"><span class="dot on"></span>6 of 7 online</span>
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn sec icon" aria-label="Network actions"><i class="ic i-more"></i></button>
+          <a class="btn pri" href="V2AddDevice.dc.html"><i class="ic i-plus s16"></i>Add device</a>
+        </div>
+      </div>
+      <nav class="tabs" aria-label="Network sections">
+        <a class="tab" href="V2Devices.dc.html">Devices <span class="cnt warn">2 waiting</span></a>
+        <a class="tab on" href="V2Map.dc.html" aria-current="page">Map</a>
+        <a class="tab" href="V2Access.dc.html">Access</a>
+        <a class="tab" href="V2Settings.dc.html">Settings</a>
+      </nav>
+    </div>
+  </section>
+
+  <div class="wrap content">
+    <div class="maplay">
+      <div class="map">
+        <div class="mapcv">
+          <svg width="740" height="560" viewBox="0 0 740 560" style="position:absolute;inset:0" fill="none" aria-hidden="true">
+            <line x1="370" y1="280" x2="145" y2="106" style="stroke:var(--ok-dot)" stroke-width="2"></line>
+            <line x1="370" y1="280" x2="585" y2="106" style="stroke:var(--ok-dot)" stroke-width="2"></line>
+            <line x1="370" y1="280" x2="145" y2="456" style="stroke:var(--ok-dot)" stroke-width="2"></line>
+            <line x1="370" y1="280" x2="585" y2="456" style="stroke:var(--ok-dot)" stroke-width="2"></line>
+            <line x1="145" y1="106" x2="585" y2="106" style="stroke:var(--ok-dot)" stroke-width="2" opacity=".55"></line>
+            <line x1="145" y1="106" x2="105" y2="280" stroke="#e19a12" stroke-width="2" stroke-dasharray="6 5"></line>
+            <line x1="370" y1="280" x2="635" y2="280" stroke="#e19a12" stroke-width="2" stroke-dasharray="6 5"></line>
+          </svg>
+          <sc-for list="{{pings}}" as="p" hint-placeholder-count="6"><span class="ping {{p.cls}}" style="left:{{p.x}}px;top:{{p.y}}px"><span class="q"></span>{{p.t}}</span></sc-for>
+          <sc-for list="{{nodes}}" as="n" hint-placeholder-count="7">
+            <button class="node {{n.cls}}" style="left:{{n.x}}px;top:{{n.y}}px;width:170px" onClick="{{n.pick}}" aria-label="{{n.name}}, {{n.state}}">
+              <span class="dicon"><i class="ic {{n.icon}}"></i></span>
+              <span class="st"></span>
+              <span style="text-align:left;min-width:0"><span class="nn" style="display:block">{{n.name}}</span><span class="ip" style="display:block">{{n.ip}}</span></span>
+              <sc-if value="{{n.relay}}" hint-placeholder-val="{{false}}"><span class="pin" title="Relays traffic"><i class="ic i-tower"></i></span></sc-if>
+            </button>
+          </sc-for>
+        </div>
+        <div class="legend" style="left:16px;top:16px"><span class="row" style="gap:8px"><span class="ln"></span>Direct</span><span class="row" style="gap:8px"><span class="ln dash"></span>Relayed</span><span class="row" style="gap:8px"><span class="pin" style="position:static;width:18px;height:18px;border-radius:50%;background:var(--relay);color:#fff;display:grid;place-items:center"><i class="ic i-tower" style="width:11px;height:11px"></i></span>Relay</span><span class="row" style="gap:8px;padding-left:12px;border-left:1px solid var(--line)"><span class="ping" style="position:static;transform:none;height:20px"><span class="q"></span>ms</span>Ping</span></div>
+        <div class="legend" style="right:16px;top:16px;padding:0 4px 0 12px;gap:4px"><span class="t3">Updated 12 s ago</span><button class="btn ghost icon" style="width:32px;height:32px" aria-label="Refresh map"><i class="ic i-refresh s16"></i></button></div>
+        <div class="mapctl" style="right:16px;bottom:16px"><button aria-label="Zoom in"><i class="ic i-plus"></i></button><button aria-label="Zoom out"><i class="ic i-minus"></i></button><button aria-label="Fit to screen"><i class="ic i-fit s16"></i></button></div>
+      </div>
+
+      <aside class="card" aria-label="Selected device">
+        <div class="card-h" style="align-items:flex-start">
+          <span class="dicon lg"><i class="ic {{sel.icon}} s20"></i></span>
+          <div class="grow">
+            <div class="dname"><h2>{{sel.name}}</h2><sc-if value="{{sel.hub}}" hint-placeholder-val="{{true}}"><span class="chip brand">Hub</span></sc-if></div>
+            <div class="dsub"><span class="dot {{sel.dot}}"></span>{{sel.state}}<span>·</span><span class="mono" style="font-size:12px">{{sel.ip}}</span></div>
+          </div>
+        </div>
+        <div class="card-b">
+          <dl class="kv" style="grid-template-columns:110px minmax(0,1fr)">
+            <dt>NAT type</dt><dd>{{sel.nat}}</dd>
+            <dt>Public IP</dt><dd class="mono">{{sel.pub}}</dd>
+            <dt>Relays for</dt><dd>{{sel.relays}}</dd>
+          </dl>
+        </div>
+        <div style="padding:4px 20px 8px" class="xs t3 m">Connections</div>
+        <div>
+          <sc-for list="{{sel.links}}" as="l" hint-placeholder-count="4">
+            <div class="line" style="min-height:48px">
+              <span class="grow trunc m">{{l.peer}}</span>
+              <span class="chip {{l.c}}">{{l.kind}}</span>
+              <span class="mono t3" style="width:60px;text-align:right;font-size:12px">{{l.rtt}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <span class="spacer"></span>
+        <div style="padding:16px 20px 20px"><a class="btn sec full" href="V2Device.dc.html">Open device<i class="ic i-arrow-r s16"></i></a></div>
+      </aside>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { sel: 'nas' }; }
+  renderVals() {
+    const D = (peer, kind, rtt) => ({ peer: peer, kind: kind, rtt: rtt, c: kind === 'Direct' ? 'ok' : 'warn' });
+    const N = [
+      { id: 'nas', name: 'nas-01', icon: 'i-server', x: 285, y: 254, ip: '10.144.144.2', on: true, relay: true, hub: true, nat: 'Open internet', pub: '203.0.113.24', relays: 'phone-anna', links: [D('relay-fra', 'Direct', '14 ms'), D('desktop', 'Direct', '2 ms'), D('rpi-garage', 'Direct', '3 ms'), D('media-pc', 'Direct', '2 ms'), D('phone-anna', 'Relayed', '38 ms')] },
+      { id: 'relay', name: 'relay-fra', icon: 'i-server', x: 60, y: 80, ip: '10.144.144.3', on: true, relay: true, hub: true, nat: 'Open internet', pub: '198.51.100.7', relays: 'laptop-maxim', links: [D('nas-01', 'Direct', '14 ms'), D('desktop', 'Direct', '16 ms'), D('laptop-maxim', 'Relayed', '61 ms')] },
+      { id: 'desk', name: 'desktop', icon: 'i-monitor', x: 500, y: 80, ip: '10.144.144.5', on: true, nat: 'Port restricted', pub: '192.0.2.40', relays: '—', links: [D('nas-01', 'Direct', '2 ms'), D('relay-fra', 'Direct', '16 ms')] },
+      { id: 'lap', name: 'laptop-maxim', icon: 'i-laptop', x: 20, y: 254, ip: '10.144.144.7', on: false, nat: 'Symmetric', pub: '—', relays: '—', links: [D('relay-fra', 'Relayed', 'last 61 ms')] },
+      { id: 'anna', name: 'phone-anna', icon: 'i-phone', x: 550, y: 254, ip: '10.144.144.9', on: true, nat: 'Symmetric', pub: '100.64.12.9', relays: '—', links: [D('nas-01', 'Relayed', '38 ms')] },
+      { id: 'rpi', name: 'rpi-garage', icon: 'i-cpu', x: 60, y: 430, ip: '10.144.144.6', on: true, nat: 'Full cone', pub: '192.0.2.40', relays: '—', links: [D('nas-01', 'Direct', '3 ms')] },
+      { id: 'media', name: 'media-pc', icon: 'i-monitor', x: 500, y: 430, ip: '10.144.144.8', on: true, nat: 'Full cone', pub: '192.0.2.40', relays: '—', links: [D('nas-01', 'Direct', '2 ms')] }
+    ];
+    const P = (x, y, ms, relay) => ({ x: x, y: y, t: ms + ' ms', cls: (relay ? 'relay ' : '') + (ms >= 80 ? 'slow' : ms >= 20 ? 'mid' : '') });
+    const pings = [P(257, 193, 14), P(477, 193, 2), P(257, 368, 3), P(477, 368, 2), P(365, 106, 16), P(503, 280, 38, true)];
+    const selId = this.state.sel;
+    const nodes = N.map(n => ({ ...n, state: n.on ? 'Connected' : 'Offline', cls: (n.on ? '' : 'off ') + (n.id === selId ? 'sel' : ''), pick: () => this.setState({ sel: n.id }) }));
+    const s = nodes.find(n => n.id === selId) || nodes[0];
+    return {
+      tc: this.props.theme === 'dark' ? 'dark' : '',
+      nodes: nodes, pings: pings,
+      sel: { ...s, dot: s.on ? 'on' : '', hub: !!s.hub }
+    };
+  }
+}
+</script>
+</body>
+</html>

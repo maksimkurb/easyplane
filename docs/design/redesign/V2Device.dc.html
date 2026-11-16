@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>relay-fra device</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./v2.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="v2 {{tc}}" style="min-height:900px">
+  <header class="top">
+    <a class="btn ghost icon back" href="V2Devices.dc.html" aria-label="Back to Home lab"><i class="ic i-chev-l s20"></i></a>
+    <a class="brand" href="V2Networks.dc.html"><span class="logo"><svg viewBox="0 0 512 512" fill="none" aria-hidden="true"><path d="M308,120 H182 Q136,120 136,166 V346 Q136,392 182,392 H308 M136,256 H348" fill="none" stroke="currentColor" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="336" cy="120" r="50" fill="currentColor"></circle><circle cx="376" cy="256" r="50" fill="currentColor"></circle><circle cx="336" cy="392" r="50" fill="currentColor"></circle></svg></span>EasyPlane</a>
+    <nav class="crumbs" aria-label="Breadcrumb"><span class="sep">/</span><a href="V2Networks.dc.html">Networks</a><span class="sep">/</span><a href="V2Devices.dc.html">Home lab</a><span class="sep">/</span><span class="cur">relay-fra</span></nav>
+    <span class="spacer"></span>
+    <a class="tlink" href="Audit.dc.html"><i class="ic i-history s16"></i>Audit log</a>
+    <button class="avatar" aria-label="Account, language and theme"><span>MK</span></button>
+  </header>
+
+  <section class="hero">
+    <div class="wrap" style="padding-bottom:24px">
+      <div class="nh" style="align-items:center">
+        <span class="dicon lg"><i class="ic i-server s24"></i></span>
+        <div class="nh-main">
+          <div class="dname"><h1>relay-fra</h1><span class="chip brand">Hub</span><span class="chip brand">Exit node</span></div>
+          <div class="meta" style="margin-top:2px">
+            <span class="row" style="gap:6px"><span class="dot on"></span>Connected</span>
+            <button class="copy mono" aria-label="Copy virtual IP">10.144.144.3<i class="ic i-copy s14"></i></button>
+            <span class="sm-hide">Ubuntu 24.04</span>
+            <span class="sm-hide">EasyTier 2.4.2</span>
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn sec"><i class="ic i-refresh s16"></i>Push config</button>
+          <button class="btn sec icon" aria-label="Device actions"><i class="ic i-more"></i></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap content" style="display:flex;flex-direction:column;gap:20px">
+    <div class="banner err">
+      <i class="ic i-alert s20"></i>
+      <div class="grow"><div class="m">Config 24 isn’t applied — the device still runs 22</div><div class="t2">Listener <span class="mono">tcp://0.0.0.0:11010</span> is already in use on the device.</div></div>
+      <button class="btn sec">Retry</button>
+    </div>
+
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+      <div style="flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:20px">
+
+        <section class="card">
+          <div class="card-h"><div class="grow"><h2>Routes</h2><p class="sm t3">Networks this device shares with the mesh. Only approved routes are sent.</p></div></div>
+          <div class="line">
+            <span class="dicon"><i class="ic i-globe"></i></span>
+            <div class="grow"><div class="dname"><span class="n">Exit node</span><span class="mono t3" style="font-size:12px">0.0.0.0/0</span></div><div class="dsub">Approved · 2 devices use it</div></div>
+            <button class="tgl on" role="switch" aria-checked="true" aria-label="Exit node approved"></button>
+          </div>
+          <div class="line">
+            <span class="dicon"><i class="ic i-route"></i></span>
+            <div class="grow"><div class="dname"><span class="n">Subnet</span><span class="mono t3" style="font-size:12px">10.20.0.0/16</span><span class="chip warn">Requested</span></div><div class="dsub">Asked 2 hours ago</div></div>
+            <div class="acts"><button class="btn sec">Reject</button><button class="btn pri"><i class="ic i-check s16"></i>Approve</button></div>
+          </div>
+          <div class="line" style="border-radius:0 0 12px 12px">
+            <span class="chk on"><i class="ic i-check s14"></i></span>
+            <div class="grow"><div class="m">Use routes shared by other devices</div></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-h">
+            <div class="grow"><h2>Hub</h2><p class="sm t3">Every other device dials a hub directly.</p></div>
+            <button class="tgl on" role="switch" aria-checked="true" aria-label="Use as hub"></button>
+          </div>
+          <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+            <label class="field"><span class="label">Public endpoints</span><span class="input area mono focus" style="min-height:88px"><span class="ph">tcp://relay-fra.example.com:11010</span></span><span class="hint" style="color:var(--warn)">Add at least one address, otherwise nobody can dial this hub.</span></label>
+            <div><button class="btn sec">Save endpoints</button></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-h"><div class="grow"><h2>Config history</h2><p class="sm t3">Each change is a revision. Roll back to any of them.</p></div></div>
+          <div class="lh grev" style="border-top:1px solid var(--line)"><span>#</span><span>Change</span><span class="c-author">Author</span><span class="c-when">When</span><span></span></div>
+                <div class="lr grev" style="min-height:56px"><span class="m">24</span><span style="min-width:0"><span class="trunc " style="display:block">Enable accept routes</span><span class="xs t3 md-only blk trunc">maxim · today 10:12</span></span><span class="t2 trunc sm c-author">maxim</span><span class="t3 sm c-when">today 10:12</span><span class="end"><span class="chip warn">Not applied</span></span></div>
+          <div class="lr grev" style="min-height:56px"><span class="m">23</span><span style="min-width:0"><span class="trunc t2" style="display:block">Rollback to 21</span><span class="xs t3 md-only blk trunc">maxim · yesterday</span></span><span class="t2 trunc sm c-author">maxim</span><span class="t3 sm c-when">yesterday</span><span class="end"><button class="btn ghost">Roll back</button></span></div>
+          <div class="lr grev" style="min-height:56px;border-radius:0 0 12px 12px"><span class="m">22</span><span style="min-width:0"><span class="trunc t2" style="display:block">Approved by admin</span><span class="xs t3 md-only blk trunc">system · 3 days ago</span></span><span class="t2 trunc sm c-author">system</span><span class="t3 sm c-when">3 days ago</span><span class="end"><span class="chip ok">Running</span></span></div>
+        </section>
+      </div>
+
+      <div style="flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:20px">
+        <section class="card">
+          <div class="card-h" style="min-height:56px;padding-bottom:4px"><h2>Details</h2></div>
+          <div class="card-b">
+            <dl class="kv" style="grid-template-columns:110px minmax(0,1fr)">
+              <dt>Owner</dt><dd class="trunc">maxim@acme.test</dd>
+              <dt>Tags</dt><dd style="flex-wrap:wrap"><span class="chip tag">tag:relay</span><span class="chip tag">tag:eu</span><button class="btn ghost icon" style="width:32px;height:32px" aria-label="Edit tags"><i class="ic i-pencil s14"></i></button></dd>
+              <dt>DNS name</dt><dd class="mono trunc">relay-fra.et.net</dd>
+              <dt>Public IP</dt><dd class="mono">198.51.100.7</dd>
+              <dt>System</dt><dd>Ubuntu 24.04 · EasyTier 2.4.2</dd>
+              <dt>Machine ID</dt><dd class="mono trunc t2">a18c0f33-90de…</dd>
+              <dt>Joined</dt><dd>12 Oct 2026</dd>
+            </dl>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-h" style="min-height:56px;padding-bottom:4px"><div class="grow"><h2>Connections</h2></div><a class="btn ghost" href="V2Map.dc.html">Map<i class="ic i-arrow-r s16"></i></a></div>
+          <div class="line" style="min-height:48px"><span class="grow m">nas-01</span><span class="chip ok">Direct</span><span class="mono t3" style="font-size:12px;width:48px;text-align:right">14 ms</span></div>
+          <div class="line" style="min-height:48px"><span class="grow m">desktop</span><span class="chip ok">Direct</span><span class="mono t3" style="font-size:12px;width:48px;text-align:right">16 ms</span></div>
+          <div class="line" style="min-height:48px;border-radius:0 0 12px 12px"><span class="grow m">laptop-maxim</span><span class="chip warn">Relayed</span><span class="mono t3" style="font-size:12px;width:48px;text-align:right">61 ms</span></div>
+        </section>
+
+        <div class="pair"><button class="btn sec"><i class="ic i-ban s16"></i>Block</button><button class="btn danger"><i class="ic i-trash s16"></i>Remove</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic { renderVals() { return { tc: this.props.theme === 'dark' ? 'dark' : '' }; } }
+</script>
+</body>
+</html>

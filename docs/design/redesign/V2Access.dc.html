@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home lab access</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./v2.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="v2 {{tc}}" style="min-height:900px">
+  <header class="top">
+    <a class="btn ghost icon back" href="V2Networks.dc.html" aria-label="Back to networks"><i class="ic i-chev-l s20"></i></a>
+    <a class="brand" href="V2Networks.dc.html"><span class="logo"><svg viewBox="0 0 512 512" fill="none" aria-hidden="true"><path d="M308,120 H182 Q136,120 136,166 V346 Q136,392 182,392 H308 M136,256 H348" fill="none" stroke="currentColor" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="336" cy="120" r="50" fill="currentColor"></circle><circle cx="376" cy="256" r="50" fill="currentColor"></circle><circle cx="336" cy="392" r="50" fill="currentColor"></circle></svg></span>EasyPlane</a>
+    <nav class="crumbs" aria-label="Breadcrumb"><span class="sep">/</span><a href="V2Networks.dc.html">Networks</a><span class="sep">/</span><span class="cur">Home lab</span></nav>
+    <span class="spacer"></span>
+    <a class="tlink" href="Audit.dc.html"><i class="ic i-history s16"></i>Audit log</a>
+    <button class="avatar" aria-label="Account, language and theme"><span>MK</span></button>
+  </header>
+
+  <section class="hero">
+    <div class="wrap">
+      <div class="nh">
+        <div class="nh-main">
+          <h1>Home lab</h1>
+          <div class="meta">
+            <button class="copy mono" aria-label="Copy EasyTier network name">homelab-7f3a91<i class="ic i-copy s14"></i></button>
+            <span class="mono">10.144.144.0/24</span>
+            <span class="row" style="gap:6px"><span class="dot on"></span>6 of 7 online</span>
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn sec icon" aria-label="Network actions"><i class="ic i-more"></i></button>
+          <a class="btn pri" href="V2AddDevice.dc.html"><i class="ic i-plus s16"></i>Add device</a>
+        </div>
+      </div>
+      <nav class="tabs" aria-label="Network sections">
+        <a class="tab" href="V2Devices.dc.html">Devices <span class="cnt warn">2 waiting</span></a>
+        <a class="tab" href="V2Map.dc.html">Map</a>
+        <a class="tab on" href="V2Access.dc.html" aria-current="page">Access</a>
+        <a class="tab" href="V2Settings.dc.html">Settings</a>
+      </nav>
+    </div>
+  </section>
+
+  <div class="wrap content" style="display:flex;flex-direction:column;gap:20px">
+    <section class="card">
+      <div class="card-h">
+        <div class="grow"><h2>Rules</h2><p class="sm t3">Who can reach what. Anything not allowed here is blocked.</p></div>
+        <div class="tools"><button class="btn ghost">Edit as JSON</button><button class="btn sec"><i class="ic i-plus s16"></i>Add rule</button></div>
+      </div>
+      <div class="lh grule" style="border-top:1px solid var(--line)"><span></span><span>From</span><span class="c-x"></span><span class="c-x">To</span><span class="c-x">Protocol</span><span></span></div>
+      <div class="lr hov grule" style="min-height:56px"><span><span class="chip ok">Allow</span></span><span class="mono trunc c-x">group:admins</span><span class="c-x t3"><i class="ic i-arrow-r s14"></i></span><span class="c-x ">Any device</span><span class="c-x mono t2">Any</span><span class="md-only" style="min-width:0"><span class="trunc mono" style="display:block">group:admins <span class="t3">→</span> <span class="">Any device</span></span><span class="xs t3 trunc" style="display:block">Any protocol</span></span><span class="end"><button class="btn ghost icon" aria-label="Rule actions"><i class="ic i-more"></i></button></span></div>
+      <div class="lr hov grule" style="min-height:56px"><span><span class="chip ok">Allow</span></span><span class="mono trunc c-x">tag:eu</span><span class="c-x t3"><i class="ic i-arrow-r s14"></i></span><span class="c-x mono">tag:relay</span><span class="c-x mono t2">tcp 11010</span><span class="md-only" style="min-width:0"><span class="trunc mono" style="display:block">tag:eu <span class="t3">→</span> <span class="mono">tag:relay</span></span><span class="xs t3 trunc" style="display:block">tcp 11010</span></span><span class="end"><button class="btn ghost icon" aria-label="Rule actions"><i class="ic i-more"></i></button></span></div>
+      <div class="lr hov grule" style="min-height:56px"><span><span class="chip ok">Allow</span></span><span class=" trunc c-x">maxim@acme.test</span><span class="c-x t3"><i class="ic i-arrow-r s14"></i></span><span class="c-x ">nas-01</span><span class="c-x mono t2">tcp 443, 445</span><span class="md-only" style="min-width:0"><span class="trunc " style="display:block">maxim@acme.test <span class="t3">→</span> <span class="">nas-01</span></span><span class="xs t3 trunc" style="display:block">tcp 443, 445</span></span><span class="end"><button class="btn ghost icon" aria-label="Rule actions"><i class="ic i-more"></i></button></span></div>
+      <div class="lr hov grule" style="min-height:56px;border-radius:0 0 12px 12px"><span><span class="chip err">Block</span></span><span class=" trunc c-x">Everyone</span><span class="c-x t3"><i class="ic i-arrow-r s14"></i></span><span class="c-x ">nas-01</span><span class="c-x mono t2">tcp 22</span><span class="md-only" style="min-width:0"><span class="trunc " style="display:block">Everyone <span class="t3">→</span> <span class="">nas-01</span></span><span class="xs t3 trunc" style="display:block">tcp 22</span></span><span class="end"><button class="btn ghost icon" aria-label="Rule actions"><i class="ic i-more"></i></button></span></div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><div class="grow"><h2>Test access</h2><p class="sm t3">Check a connection before you change rules.</p></div></div>
+      <div class="card-b" style="display:flex;flex-direction:column;gap:16px">
+        <div class="g2">
+          <label class="field"><span class="label">From</span><span class="input"><i class="ic i-laptop s16 t3"></i><span class="grow">laptop-maxim</span><i class="ic i-chev-d s16 t3"></i></span></label>
+          <label class="field"><span class="label">To</span><span class="input"><i class="ic i-server s16 t3"></i><span class="grow">nas-01</span><i class="ic i-chev-d s16 t3"></i></span></label>
+        </div>
+        <div class="tform">
+          <div class="field proto"><span class="label">Protocol</span>
+            <div class="seg" role="radiogroup" aria-label="Protocol" style="padding:3px">
+              <sc-for list="{{protos}}" as="p" hint-placeholder-count="4"><button class="{{p.cls}}" role="radio" aria-checked="{{p.on}}" onClick="{{p.pick}}" style="min-width:64px;justify-content:center">{{p.label}}</button></sc-for>
+            </div>
+          </div>
+          <sc-if value="{{hasPort}}" hint-placeholder-val="{{true}}">
+            <label class="field port" style="width:120px"><span class="label">Port</span><span class="input mono">22</span></label>
+          </sc-if>
+          <sc-if value="{{noPort}}" hint-placeholder-val="{{false}}">
+            <div class="field"><span class="label">&nbsp;</span><span class="hint" style="height:40px;display:flex;align-items:center">{{noPortHint}}</span></div>
+          </sc-if>
+          <span class="sp"></span>
+          <button class="btn sec">Test</button>
+        </div>
+        <div class="banner {{res.cls}}"><i class="ic {{res.icon}} s20" style="color:{{res.color}}"></i><div class="grow"><div class="m">{{res.title}}</div><div class="t2">{{res.text}}</div></div></div>
+      </div>
+    </section>
+
+    <div class="g2 wide">
+      <section class="card">
+        <div class="card-h"><div class="grow"><h2>Tags</h2><p class="sm t3">Labels you use in rules. Owned by group:admins.</p></div><button class="btn ghost">Manage</button></div>
+        <div class="card-b row" style="flex-wrap:wrap;gap:8px"><span class="chip tag">tag:server</span><span class="chip tag">tag:relay</span><span class="chip tag">tag:eu</span><span class="chip tag">tag:iot</span></div>
+      </section>
+      <section class="card">
+        <div class="card-h"><div class="grow"><h2>Version 7</h2><p class="sm t3">Saved yesterday by maxim · “Block ssh to nas”</p></div><button class="btn ghost"><i class="ic i-history s16"></i>History</button></div>
+        <div class="card-b"><div class="row sm t2" style="gap:10px"><span class="dot on"></span>Applied to all 7 devices</div></div>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { proto: 'tcp' }; }
+  renderVals() {
+    const pr = this.state.proto;
+    const L = { tcp: 'TCP', udp: 'UDP', icmp: 'ICMP', icmp6: 'ICMPv6' };
+    const R = {
+      tcp: { cls: 'err', icon: 'i-ban', color: 'var(--err)', title: 'Blocked', text: 'Rule 4 blocks everyone from nas-01 on TCP 22.' },
+      udp: { cls: 'ok', icon: 'i-check', color: 'var(--ok)', title: 'Allowed', text: 'Rule 1 lets group:admins reach any device. maxim is in group:admins.' },
+      icmp: { cls: 'ok', icon: 'i-check', color: 'var(--ok)', title: 'Allowed', text: 'Ping works: rule 1 allows any protocol for group:admins.' },
+      icmp6: { cls: 'ok', icon: 'i-check', color: 'var(--ok)', title: 'Allowed', text: 'Ping works: rule 1 allows any protocol for group:admins.' }
+    };
+    const icmp = pr === 'icmp' || pr === 'icmp6';
+    return {
+      tc: this.props.theme === 'dark' ? 'dark' : '',
+      protos: Object.keys(L).map(k => ({ label: L[k], cls: k === pr ? 'on' : '', on: k === pr ? 'true' : 'false', pick: () => this.setState({ proto: k }) })),
+      hasPort: !icmp, noPort: icmp, noPortHint: 'Ping has no port — the whole host is tested.',
+      res: R[pr]
+    };
+  }
+}
+</script>
+</body>
+</html>
