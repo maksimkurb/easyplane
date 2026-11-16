@@ -210,6 +210,61 @@ services:
       - --tld-dns-zone
       - ${EASYPLANE_M2_DNS_ZONE:-ep.test.}
 
+  # --- Declared-routes SPIKE -------------------------------------------------
+  # One managed instance per device, persisted into --config-dir. The spike
+  # stops core-dr-a, edits /cfg/<instance-id>.toml on the device, and starts it
+  # again to see what a config-server managed instance does with a local edit.
+  core-dr-a:
+    <<: *m2-core
+    container_name: easyplane-core-dr-a
+    entrypoint: ["/bin/sh", "/opt/dr/entrypoint.sh"]
+    volumes:
+      - ./test/conformance/device-routes/entrypoint.sh:/opt/dr/entrypoint.sh:ro
+      - ./test/conformance/device-routes/cfg/a:/cfg
+    environment:
+      RUST_LOG: ${EASYPLANE_CORE_LOG:-info}
+      ET_LOG: ${EASYPLANE_CORE_LOG:-info}
+      EASYPLANE_DR_ROLE: router
+    command:
+      - --config-server
+      - ${EASYPLANE_DR_A_URL:-ws://m2-relay:23001/token-dr-a}
+      - --machine-id
+      - a1a1a1a1-1111-4111-8111-111111111111
+      - --hostname
+      - core-dr-a
+      - --config-dir
+      - /cfg
+
+  core-dr-b:
+    <<: *m2-core
+    container_name: easyplane-core-dr-b
+    volumes:
+      - ./test/conformance/device-routes/cfg/b:/cfg
+    command:
+      - --config-server
+      - ${EASYPLANE_DR_B_URL:-ws://m2-relay:23002/token-dr-b}
+      - --machine-id
+      - b1b1b1b1-2222-4222-8222-222222222222
+      - --hostname
+      - core-dr-b
+      - --config-dir
+      - /cfg
+
+  core-dr-c:
+    <<: *m2-core
+    container_name: easyplane-core-dr-c
+    volumes:
+      - ./test/conformance/device-routes/cfg/c:/cfg
+    command:
+      - --config-server
+      - ${EASYPLANE_DR_C_URL:-ws://m2-relay:23003/token-dr-c}
+      - --machine-id
+      - c1c1c1c1-3333-4333-8333-333333333333
+      - --hostname
+      - core-dr-c
+      - --config-dir
+      - /cfg
+
   # --- Rendezvous conformance ------------------------------------------------
   # The public node is attached to three isolated data networks; each leaf sees
   # only one of them, so leaf-to-leaf reachability is controlled by the test.

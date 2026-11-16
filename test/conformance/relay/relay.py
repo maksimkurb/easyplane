@@ -61,7 +61,11 @@ def listener(port: int) -> socket.socket:
 def run_pair(client_port: int, host_port: int) -> None:
     client_server = listener(client_port)
     host_server = listener(host_port)
-    host_connections: "queue.Queue[socket.socket]" = queue.Queue()
+    # LIFO: a client that is restarted pairs with the *newest* host socket.
+    # Older queued sockets may have been closed by the control plane's HTTP
+    # idle timeout, and a FIFO queue would make every restart burn through them
+    # (one failed WebSocket handshake per dead socket).
+    host_connections: "queue.LifoQueue[socket.socket]" = queue.LifoQueue()
 
     def accept_hosts() -> None:
         while True:

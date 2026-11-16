@@ -41,6 +41,8 @@ export const PORTS = {
   rendezvous: 22093,
   /** Credential mode: anchors, members, revoke and the no-anchor window. */
   credentials: 22094,
+  /** Declared-routes spike: one managed instance per device + config dir. */
+  dr: 22096,
 } as const;
 
 /** Fixed addresses of the rendezvous conformance topology (docker-compose.test.yml). */
@@ -193,6 +195,12 @@ function composeUrlEnv(service: string): string {
       return "EASYPLANE_M2_C_URL";
     case "core-m4":
       return "EASYPLANE_M4_URL";
+    case "core-dr-a":
+      return "EASYPLANE_DR_A_URL";
+    case "core-dr-b":
+      return "EASYPLANE_DR_B_URL";
+    case "core-dr-c":
+      return "EASYPLANE_DR_C_URL";
     case "core-rv-direct-a":
       return "EASYPLANE_RV_DIRECT_A_URL";
     case "core-rv-direct-b":
