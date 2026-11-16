@@ -5,6 +5,7 @@
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
  * OpenAPI spec version: 0.3.0-M3
  */
+import type { CommitNetworkImport201Access } from './commitNetworkImport201Access';
 import type { CommitNetworkImport201DefaultConfig } from './commitNetworkImport201DefaultConfig';
 import type { CommitNetworkImport201DeviceCounts } from './commitNetworkImport201DeviceCounts';
 import type { CommitNetworkImport201PeerPlan } from './commitNetworkImport201PeerPlan';
@@ -25,6 +26,7 @@ export type CommitNetworkImport201 = {
   policyVersion: number;
   useRendezvous: boolean;
   p2pOnly: boolean;
+  access: CommitNetworkImport201Access;
   rendezvous: CommitNetworkImport201Rendezvous;
   peerPlan: CommitNetworkImport201PeerPlan;
   createdAt: string;

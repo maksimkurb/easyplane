@@ -5,12 +5,14 @@
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
  * OpenAPI spec version: 0.3.0-M3
  */
+import type { RevokeInvite200Role } from './revokeInvite200Role';
 import type { RevokeInvite200Status } from './revokeInvite200Status';
 
 export type RevokeInvite200 = {
   id: string;
   networkId: string;
   label: string;
+  role: RevokeInvite200Role;
   createdAt: string;
   /** @nullable */
   expiresAt: string | null;

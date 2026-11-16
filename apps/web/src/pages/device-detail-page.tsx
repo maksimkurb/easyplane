@@ -21,6 +21,7 @@ import {
   useRollbackDeviceRevision,
 } from "@/api/generated/easyplane"
 import { useAuth } from "@/auth/auth-context"
+import { DeviceAccessCard } from "@/components/device-access-card"
 import { DevicePeersCard } from "@/components/device-peers-card"
 import { DevicePolicyCard } from "@/components/device-policy-card"
 import { DeviceStatusBadges } from "@/components/device-status"
@@ -144,6 +145,8 @@ export function DeviceDetailPage() {
             </p>
           ) : null}
         </SectionCard>
+
+        <DeviceAccessCard device={device} />
 
         <DevicePeersCard device={device} />
 

@@ -5,10 +5,12 @@
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
  * OpenAPI spec version: 0.3.0-M3
  */
+import type { CreateInviteBodyRole } from './createInviteBodyRole';
 
 export type CreateInviteBody = {
   /** @maxLength 120 */
   label?: string;
+  role?: CreateInviteBodyRole;
   /**
      * @minimum 1
      * @maximum 8760

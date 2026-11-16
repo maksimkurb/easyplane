@@ -8,4 +8,6 @@
 
 export type RotateNetworkSecret200 = {
   secret: string;
+  credentialsSurvive?: boolean;
+  rendezvousNote?: string;
 };

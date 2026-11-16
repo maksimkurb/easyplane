@@ -29,6 +29,7 @@ import type {
   ApproveDevice200,
   ApproveDeviceBody,
   BlockDevice200,
+  BlockDeviceBody,
   BootstrapAdmin200,
   BootstrapAdminBody,
   CheckDnsZone200,
@@ -48,6 +49,7 @@ import type {
   DecideDeviceRoute200,
   DecideDeviceRouteBody,
   DeleteDevice200,
+  DeleteDeviceBody,
   DeleteNetwork200,
   DeleteNetworkPeer200,
   DeleteNetworkPolicy200,
@@ -86,6 +88,8 @@ import type {
   ListTags200Item,
   ListUsers200Item,
   Logout200,
+  PreviewNetworkAccessMode200,
+  PreviewNetworkAccessModeBody,
   PreviewNetworkImport200,
   PreviewNetworkImportBody,
   PreviewNetworkPolicy200,
@@ -93,10 +97,12 @@ import type {
   PushDeviceConfig200,
   RenameDevice200,
   RenameDeviceBody,
+  RenewDeviceCredential200,
   RepushMagicDns200,
   RequestDeviceRoute201,
   RequestDeviceRouteBody,
   RevealNetworkSecret200,
+  RevokeDeviceCredential200,
   RevokeInvite200,
   RollbackDeviceRevision201,
   RotateNetworkSecret200,
@@ -104,9 +110,13 @@ import type {
   SaveNetworkPolicyBody,
   SetDeviceOwner200,
   SetDeviceOwnerBody,
+  SetDeviceRole200,
+  SetDeviceRoleBody,
   SetDeviceTags200,
   SetDeviceTagsBody,
   StartOidcLoginParams,
+  SwitchNetworkAccessMode200,
+  SwitchNetworkAccessModeBody,
   TestNetworkReachability200,
   TestNetworkReachabilityBody,
   UpdateDeviceEndpoints200,
@@ -1661,6 +1671,168 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getDeleteNetworkMutationOptions(options), queryClient);
+    }
+
+export type previewNetworkAccessModeResponse200 = {
+  data: PreviewNetworkAccessMode200
+  status: 200
+}
+
+export type previewNetworkAccessModeResponseSuccess = (previewNetworkAccessModeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type previewNetworkAccessModeResponse = (previewNetworkAccessModeResponseSuccess)
+
+export const getPreviewNetworkAccessModeUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/access-mode/preview`
+}
+
+export const previewNetworkAccessMode = async (networkId: string,
+    previewNetworkAccessModeBody: PreviewNetworkAccessModeBody, options?: Parameters<typeof apiFetch>[1]): Promise<previewNetworkAccessModeResponse> => {
+
+  return apiFetch<previewNetworkAccessModeResponse>(getPreviewNetworkAccessModeUrl(networkId),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(previewNetworkAccessModeBody)
+  }
+);}
+
+
+
+
+
+export const getPreviewNetworkAccessModeMutationKey = () => ['previewNetworkAccessMode'] as const;
+
+export const getPreviewNetworkAccessModeMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewNetworkAccessMode>>, TError,PreviewNetworkAccessModeMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewNetworkAccessMode>>, TError,PreviewNetworkAccessModeMutationVariables, TContext> => {
+
+const mutationKey = getPreviewNetworkAccessModeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewNetworkAccessMode>>, PreviewNetworkAccessModeMutationVariables> = (props) => {
+          const {networkId,data} = props ?? {};
+
+          return  previewNetworkAccessMode(networkId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewNetworkAccessModeMutationResult = NonNullable<Awaited<ReturnType<typeof previewNetworkAccessMode>>>
+    export type PreviewNetworkAccessModeMutationBody = PreviewNetworkAccessModeBody
+    export type PreviewNetworkAccessModeMutationError = unknown
+    export type PreviewNetworkAccessModeMutationVariables = {networkId: string;data: PreviewNetworkAccessModeBody}
+
+    export const usePreviewNetworkAccessMode = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewNetworkAccessMode>>, TError,PreviewNetworkAccessModeMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof previewNetworkAccessMode>>,
+        TError,
+        PreviewNetworkAccessModeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPreviewNetworkAccessModeMutationOptions(options), queryClient);
+    }
+
+export type switchNetworkAccessModeResponse200 = {
+  data: SwitchNetworkAccessMode200
+  status: 200
+}
+
+export type switchNetworkAccessModeResponseSuccess = (switchNetworkAccessModeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type switchNetworkAccessModeResponse = (switchNetworkAccessModeResponseSuccess)
+
+export const getSwitchNetworkAccessModeUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/access-mode`
+}
+
+export const switchNetworkAccessMode = async (networkId: string,
+    switchNetworkAccessModeBody: SwitchNetworkAccessModeBody, options?: Parameters<typeof apiFetch>[1]): Promise<switchNetworkAccessModeResponse> => {
+
+  return apiFetch<switchNetworkAccessModeResponse>(getSwitchNetworkAccessModeUrl(networkId),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(switchNetworkAccessModeBody)
+  }
+);}
+
+
+
+
+
+export const getSwitchNetworkAccessModeMutationKey = () => ['switchNetworkAccessMode'] as const;
+
+export const getSwitchNetworkAccessModeMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof switchNetworkAccessMode>>, TError,SwitchNetworkAccessModeMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof switchNetworkAccessMode>>, TError,SwitchNetworkAccessModeMutationVariables, TContext> => {
+
+const mutationKey = getSwitchNetworkAccessModeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof switchNetworkAccessMode>>, SwitchNetworkAccessModeMutationVariables> = (props) => {
+          const {networkId,data} = props ?? {};
+
+          return  switchNetworkAccessMode(networkId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SwitchNetworkAccessModeMutationResult = NonNullable<Awaited<ReturnType<typeof switchNetworkAccessMode>>>
+    export type SwitchNetworkAccessModeMutationBody = SwitchNetworkAccessModeBody
+    export type SwitchNetworkAccessModeMutationError = unknown
+    export type SwitchNetworkAccessModeMutationVariables = {networkId: string;data: SwitchNetworkAccessModeBody}
+
+    export const useSwitchNetworkAccessMode = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof switchNetworkAccessMode>>, TError,SwitchNetworkAccessModeMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof switchNetworkAccessMode>>,
+        TError,
+        SwitchNetworkAccessModeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSwitchNetworkAccessModeMutationOptions(options), queryClient);
     }
 
 export type alignNetworkRendezvousSecretResponse200 = {
@@ -3255,14 +3427,15 @@ export const getDeleteDeviceUrl = (deviceId: string,) => {
   return `/api/devices/${deviceId}`
 }
 
-export const deleteDevice = async (deviceId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteDeviceResponse> => {
+export const deleteDevice = async (deviceId: string,
+    deleteDeviceBody: DeleteDeviceBody, options?: Parameters<typeof apiFetch>[1]): Promise<deleteDeviceResponse> => {
 
   return apiFetch<deleteDeviceResponse>(getDeleteDeviceUrl(deviceId),
   {
     ...options,
-    method: 'DELETE'
-
-
+    method: 'DELETE',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(deleteDeviceBody)
   }
 );}
 
@@ -3287,9 +3460,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteDevice>>, DeleteDeviceMutationVariables> = (props) => {
-          const {deviceId} = props ?? {};
+          const {deviceId,data} = props ?? {};
 
-          return  deleteDevice(deviceId,requestOptions)
+          return  deleteDevice(deviceId,data,requestOptions)
         }
 
 
@@ -3300,9 +3473,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type DeleteDeviceMutationResult = NonNullable<Awaited<ReturnType<typeof deleteDevice>>>
-
+    export type DeleteDeviceMutationBody = DeleteDeviceBody
     export type DeleteDeviceMutationError = unknown
-    export type DeleteDeviceMutationVariables = {deviceId: string}
+    export type DeleteDeviceMutationVariables = {deviceId: string;data: DeleteDeviceBody}
 
     export const useDeleteDevice = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDevice>>, TError,DeleteDeviceMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
@@ -3416,14 +3589,15 @@ export const getBlockDeviceUrl = (deviceId: string,) => {
   return `/api/devices/${deviceId}/block`
 }
 
-export const blockDevice = async (deviceId: string, options?: Parameters<typeof apiFetch>[1]): Promise<blockDeviceResponse> => {
+export const blockDevice = async (deviceId: string,
+    blockDeviceBody: BlockDeviceBody, options?: Parameters<typeof apiFetch>[1]): Promise<blockDeviceResponse> => {
 
   return apiFetch<blockDeviceResponse>(getBlockDeviceUrl(deviceId),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(blockDeviceBody)
   }
 );}
 
@@ -3448,9 +3622,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof blockDevice>>, BlockDeviceMutationVariables> = (props) => {
-          const {deviceId} = props ?? {};
+          const {deviceId,data} = props ?? {};
 
-          return  blockDevice(deviceId,requestOptions)
+          return  blockDevice(deviceId,data,requestOptions)
         }
 
 
@@ -3461,9 +3635,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type BlockDeviceMutationResult = NonNullable<Awaited<ReturnType<typeof blockDevice>>>
-
+    export type BlockDeviceMutationBody = BlockDeviceBody
     export type BlockDeviceMutationError = unknown
-    export type BlockDeviceMutationVariables = {deviceId: string}
+    export type BlockDeviceMutationVariables = {deviceId: string;data: BlockDeviceBody}
 
     export const useBlockDevice = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof blockDevice>>, TError,BlockDeviceMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
@@ -3474,6 +3648,247 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getBlockDeviceMutationOptions(options), queryClient);
+    }
+
+export type renewDeviceCredentialResponse200 = {
+  data: RenewDeviceCredential200
+  status: 200
+}
+
+export type renewDeviceCredentialResponseSuccess = (renewDeviceCredentialResponse200) & {
+  headers: Headers;
+};
+;
+
+export type renewDeviceCredentialResponse = (renewDeviceCredentialResponseSuccess)
+
+export const getRenewDeviceCredentialUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/devices/${deviceId}/credential/renew`
+}
+
+export const renewDeviceCredential = async (deviceId: string, options?: Parameters<typeof apiFetch>[1]): Promise<renewDeviceCredentialResponse> => {
+
+  return apiFetch<renewDeviceCredentialResponse>(getRenewDeviceCredentialUrl(deviceId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRenewDeviceCredentialMutationKey = () => ['renewDeviceCredential'] as const;
+
+export const getRenewDeviceCredentialMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renewDeviceCredential>>, TError,RenewDeviceCredentialMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renewDeviceCredential>>, TError,RenewDeviceCredentialMutationVariables, TContext> => {
+
+const mutationKey = getRenewDeviceCredentialMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renewDeviceCredential>>, RenewDeviceCredentialMutationVariables> = (props) => {
+          const {deviceId} = props ?? {};
+
+          return  renewDeviceCredential(deviceId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenewDeviceCredentialMutationResult = NonNullable<Awaited<ReturnType<typeof renewDeviceCredential>>>
+
+    export type RenewDeviceCredentialMutationError = unknown
+    export type RenewDeviceCredentialMutationVariables = {deviceId: string}
+
+    export const useRenewDeviceCredential = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renewDeviceCredential>>, TError,RenewDeviceCredentialMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof renewDeviceCredential>>,
+        TError,
+        RenewDeviceCredentialMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRenewDeviceCredentialMutationOptions(options), queryClient);
+    }
+
+export type revokeDeviceCredentialResponse200 = {
+  data: RevokeDeviceCredential200
+  status: 200
+}
+
+export type revokeDeviceCredentialResponseSuccess = (revokeDeviceCredentialResponse200) & {
+  headers: Headers;
+};
+;
+
+export type revokeDeviceCredentialResponse = (revokeDeviceCredentialResponseSuccess)
+
+export const getRevokeDeviceCredentialUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/devices/${deviceId}/credential/revoke`
+}
+
+export const revokeDeviceCredential = async (deviceId: string, options?: Parameters<typeof apiFetch>[1]): Promise<revokeDeviceCredentialResponse> => {
+
+  return apiFetch<revokeDeviceCredentialResponse>(getRevokeDeviceCredentialUrl(deviceId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRevokeDeviceCredentialMutationKey = () => ['revokeDeviceCredential'] as const;
+
+export const getRevokeDeviceCredentialMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeDeviceCredential>>, TError,RevokeDeviceCredentialMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeDeviceCredential>>, TError,RevokeDeviceCredentialMutationVariables, TContext> => {
+
+const mutationKey = getRevokeDeviceCredentialMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeDeviceCredential>>, RevokeDeviceCredentialMutationVariables> = (props) => {
+          const {deviceId} = props ?? {};
+
+          return  revokeDeviceCredential(deviceId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeDeviceCredentialMutationResult = NonNullable<Awaited<ReturnType<typeof revokeDeviceCredential>>>
+
+    export type RevokeDeviceCredentialMutationError = unknown
+    export type RevokeDeviceCredentialMutationVariables = {deviceId: string}
+
+    export const useRevokeDeviceCredential = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeDeviceCredential>>, TError,RevokeDeviceCredentialMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof revokeDeviceCredential>>,
+        TError,
+        RevokeDeviceCredentialMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRevokeDeviceCredentialMutationOptions(options), queryClient);
+    }
+
+export type setDeviceRoleResponse200 = {
+  data: SetDeviceRole200
+  status: 200
+}
+
+export type setDeviceRoleResponseSuccess = (setDeviceRoleResponse200) & {
+  headers: Headers;
+};
+;
+
+export type setDeviceRoleResponse = (setDeviceRoleResponseSuccess)
+
+export const getSetDeviceRoleUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/devices/${deviceId}/role`
+}
+
+export const setDeviceRole = async (deviceId: string,
+    setDeviceRoleBody: SetDeviceRoleBody, options?: Parameters<typeof apiFetch>[1]): Promise<setDeviceRoleResponse> => {
+
+  return apiFetch<setDeviceRoleResponse>(getSetDeviceRoleUrl(deviceId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(setDeviceRoleBody)
+  }
+);}
+
+
+
+
+
+export const getSetDeviceRoleMutationKey = () => ['setDeviceRole'] as const;
+
+export const getSetDeviceRoleMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setDeviceRole>>, TError,SetDeviceRoleMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setDeviceRole>>, TError,SetDeviceRoleMutationVariables, TContext> => {
+
+const mutationKey = getSetDeviceRoleMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setDeviceRole>>, SetDeviceRoleMutationVariables> = (props) => {
+          const {deviceId,data} = props ?? {};
+
+          return  setDeviceRole(deviceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetDeviceRoleMutationResult = NonNullable<Awaited<ReturnType<typeof setDeviceRole>>>
+    export type SetDeviceRoleMutationBody = SetDeviceRoleBody
+    export type SetDeviceRoleMutationError = unknown
+    export type SetDeviceRoleMutationVariables = {deviceId: string;data: SetDeviceRoleBody}
+
+    export const useSetDeviceRole = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setDeviceRole>>, TError,SetDeviceRoleMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof setDeviceRole>>,
+        TError,
+        SetDeviceRoleMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetDeviceRoleMutationOptions(options), queryClient);
     }
 
 export type pushDeviceConfigResponse200 = {

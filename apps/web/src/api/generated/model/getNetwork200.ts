@@ -5,6 +5,7 @@
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
  * OpenAPI spec version: 0.3.0-M3
  */
+import type { GetNetwork200Access } from './getNetwork200Access';
 import type { GetNetwork200DefaultConfig } from './getNetwork200DefaultConfig';
 import type { GetNetwork200DeviceCounts } from './getNetwork200DeviceCounts';
 import type { GetNetwork200PeerPlan } from './getNetwork200PeerPlan';
@@ -25,6 +26,7 @@ export type GetNetwork200 = {
   policyVersion: number;
   useRendezvous: boolean;
   p2pOnly: boolean;
+  access: GetNetwork200Access;
   rendezvous: GetNetwork200Rendezvous;
   peerPlan: GetNetwork200PeerPlan;
   createdAt: string;

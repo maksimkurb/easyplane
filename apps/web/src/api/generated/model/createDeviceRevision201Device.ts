@@ -5,9 +5,13 @@
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
  * OpenAPI spec version: 0.3.0-M3
  */
+import type { CreateDeviceRevision201DeviceAccessMode } from './createDeviceRevision201DeviceAccessMode';
+import type { CreateDeviceRevision201DeviceCredential } from './createDeviceRevision201DeviceCredential';
+import type { CreateDeviceRevision201DeviceEffectiveRole } from './createDeviceRevision201DeviceEffectiveRole';
 import type { CreateDeviceRevision201DeviceOnline } from './createDeviceRevision201DeviceOnline';
 import type { CreateDeviceRevision201DeviceOs } from './createDeviceRevision201DeviceOs';
 import type { CreateDeviceRevision201DeviceReportedState } from './createDeviceRevision201DeviceReportedState';
+import type { CreateDeviceRevision201DeviceRole } from './createDeviceRevision201DeviceRole';
 import type { CreateDeviceRevision201DeviceState } from './createDeviceRevision201DeviceState';
 import type { CreateDeviceRevision201DeviceSync } from './createDeviceRevision201DeviceSync';
 
@@ -38,6 +42,12 @@ export type CreateDeviceRevision201Device = {
   ownerUserId: string | null;
   advertisedEndpoints: string[];
   isHub: boolean;
+  role: CreateDeviceRevision201DeviceRole;
+  effectiveRole: CreateDeviceRevision201DeviceEffectiveRole;
+  knowsSecret: boolean;
+  accessMode: CreateDeviceRevision201DeviceAccessMode;
+  /** @nullable */
+  credential: CreateDeviceRevision201DeviceCredential;
   tags: string[];
   reportedState: CreateDeviceRevision201DeviceReportedState;
   /** @nullable */

@@ -209,6 +209,145 @@ export const enTranslation = {
         "Remove this peer? Device entries also clear the device's hub flag.",
     },
   },
+  access: {
+    title: "Device authentication",
+    description:
+      "Choose how devices prove they belong to this network. The default (shared secret) is simpler; per-device credentials are revocable.",
+    mode: {
+      shared_secret: "Shared secret",
+      credentials: "Per-device credentials",
+    },
+    switchToCredentials: "Switch to per-device credentials",
+    switchToShared: "Switch back to a shared secret",
+    switched: "Access mode changed; devices are being repushed",
+    anchors: "Anchors online: {{online}} of {{total}}",
+    members: "Members: {{count}}",
+    credentials: "Active credentials: {{count}}",
+    role: "Role",
+    anchorBadge: "Anchor",
+    memberBadge: "Member",
+    knowsSecret: "knows the network secret",
+    knowsSecretLong: "This device holds the network secret and can never be revoked without rotating it.",
+    noSecretLong: "This device joins with its own credential and does not know the network secret.",
+    status: "Credential",
+    expiry: "Expires",
+    groups: "ACL groups",
+    publicKey: "Public key",
+    credentialStatus: {
+      active: "Active",
+      revoked: "Revoked",
+      expired: "Expired",
+    },
+    noCredential: "No credential yet. Approve the device to issue one.",
+    credentialNotActive: "This credential is not active; the device cannot join.",
+    sharedModeHint:
+      "Every device in a shared-secret network holds the same secret, so a device can only be removed by blocking it — and by rotating the secret if you need its access gone for good.",
+    noteShared:
+      "Simple and robust: one secret, no anchor dependency. Removing a device does not take the secret back, and one leaked device exposes the whole network.",
+    noteCredentials:
+      "Anchors (always-on nodes) hold the network secret and publish the trusted device list. Members join with a revocable credential and need at least one anchor online to connect through a rendezvous node.",
+    warning: {
+      no_anchor:
+        "No anchor is approved. A credentials network needs at least one device that holds the network secret.",
+      no_anchor_online:
+        "No anchor is online. Existing members keep talking for a short while, but new members cannot join through a rendezvous node until an anchor connects.",
+      only_one_anchor:
+        "Only one anchor. If it is offline, new members cannot connect through the rendezvous node; two always-on anchors are recommended.",
+      no_members:
+        "There are no regular devices yet. Invite one as a member to get the benefit of revocable access.",
+      rendezvous_needs_anchor:
+        "This network uses the bundled rendezvous node. That node learns the network's credentials from a connected anchor; without one, members cannot (re)connect through it.",
+      credentials_expiring:
+        "Some credentials expire soon; the panel renews them automatically before expiry.",
+    },
+    compare: {
+      aspect: "Aspect",
+      onboarding: "Adding a device",
+      onboardingShared: "Give the device the network secret (invite).",
+      onboardingCredentials: "The device gets its own credential; no secret on the device.",
+      revocation: "Removing a device",
+      revocationShared: "Block it; it still knows the secret.",
+      revocationCredentials: "Revoke its credential: it can no longer join.",
+      blastRadius: "Blast radius of a leak",
+      blastRadiusShared: "One leaked secret exposes every device.",
+      blastRadiusCredentials: "One leaked credential exposes one device.",
+      requirements: "Requirements",
+      requirementsShared: "Nothing extra.",
+      requirementsCredentials: "At least one anchor online for new members via a rendezvous node.",
+    },
+    dialog: {
+      credentialsHint:
+        "The selected devices keep the network secret and become anchors. Every other approved device becomes a member and receives a new credential.",
+      sharedHint:
+        "Every device receives the network secret again. This is the largest blast radius; credentials are revoked but already-deployed keys cannot be recalled.",
+      chooseAnchors: "Choose the anchors",
+      anchorHelp:
+        "An anchor is an always-on node (server, VPS) that holds the network secret and publishes the trusted credential list. Anchor knowledge cannot be revoked without rotating the secret.",
+      everyoneElseMember:
+        "Every other approved device becomes a member. Its credential can be revoked individually at any time.",
+      reverseWarning:
+        "Switching back to a shared secret gives every device the network secret. Any device you removed earlier would be able to join again until that secret is rotated.",
+      acknowledgeReverse: "I understand every device will receive the network secret.",
+      previewTitle: "Dry run",
+      previewAnchors: "Anchors: {{count}} ({{names}})",
+      previewMembers: "Devices becoming members: {{count}}",
+      previewRevoked: "Credentials revoked: {{count}}",
+      preview: "Preview",
+      apply: "Apply",
+    },
+    inviteRole: "What kind of device is this?",
+    inviteAnchor: "Anchor (always-on node)",
+    inviteAnchorHint:
+      "A server or VPS that stays online. It holds the network secret and publishes the trusted device list.",
+    inviteMember: "Regular device",
+    inviteMemberHint:
+      "A phone, laptop or other device that joins with its own revocable credential.",
+    inviteRoleHelp:
+      "The first device of a credentials network must be an anchor. At least one anchor must be online for new regular devices to connect through a rendezvous node; two always-on anchors are recommended.",
+    revoke: "Revoke access",
+    revokeConfirm:
+      "Revoke {{hostname}}'s credential and block it? It loses access immediately and needs a new credential to come back.",
+    revoked: "Credential revoked",
+    renewed: "Credential renewed",
+    renew: "Renew credential",
+    makeAnchor: "Make anchor",
+    makeMember: "Make member",
+    promoteConfirm:
+      "Make this device an anchor? It will receive the network secret permanently and can never be revoked without rotating the secret.",
+    demoteTitle: "Make this anchor a member?",
+    demoteBody:
+      "{{hostname}} already knows the network secret. Changing the role does not take that knowledge back.",
+    demoteWhy:
+      "After the change, rotate the network secret and re-enrol every remaining anchor. Until then the device can still join as a secret holder.",
+    demoteAck: "I understand this device keeps the network secret and will be rotated next.",
+    demoteConfirm: "Change role anyway",
+    roleChanged: "Role updated",
+    roleChangedRotate:
+      "Role updated. Rotate the network secret now — the demoted device still knows it.",
+    anchorBlockTitle: "Block an anchor?",
+    anchorDeleteTitle: "Delete an anchor?",
+    anchorRemovalBody:
+      "{{hostname}} holds this network's secret. Removing it from the panel does not revoke what it knows.",
+    anchorRemovalWhy:
+      "A removed anchor can still join anchors that use the same secret, and any device that still dials it. Removing the device also drops its endpoint from the peer list, but only a secret rotation makes its access really gone.",
+    rotateTitle: "Rotate the network secret",
+    rotateBody:
+      "Every anchor gets a new secret; members keep their credentials and do not need to re-enrol. If this network uses the bundled rendezvous node, update EASYPLANE_RENDEZVOUS_SECRET on the node too, or its private mode will reject the anchors.",
+    rotate: "Rotate secret",
+    rotateDone: "Secret rotated and devices repushed",
+    rotateNote:
+      "Store the new secret now: it is shown once. The old anchors can no longer join after they are repushed.",
+    removeAnywayTitle: "Remove anyway",
+    removeAnywayBody:
+      "The device keeps the secret until it is rotated. This is an acknowledged risk, recorded in the audit log.",
+    removeAnywayAck: "I accept that {{hostname}} still knows the network secret.",
+    removeAnyway: "Remove anyway",
+    createDefaultHint:
+      "New networks start with a shared secret: simple, and every device can join immediately. Create it, then switch to per-device credentials on the network page if you need revocable, individually expiring access.",
+    deviceTitle: "Access and credentials",
+    deviceHint:
+      "How this device authenticates, how long its credential is valid and what can be revoked.",
+  },
   invites: {
     title: "Invites",
     description: "A device presents its invite token as the config-server URL.",

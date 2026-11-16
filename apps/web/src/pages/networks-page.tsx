@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { useCreateNetwork, useListNetworks } from "@/api/generated/easyplane"
 import { useAuth } from "@/auth/auth-context"
 import { PageHeader } from "@/components/shared/page-header"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/shared/field"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -157,6 +158,9 @@ export function NetworksPage() {
                 />
                 <FieldDescription>{t("networks.cidrHint")}</FieldDescription>
               </Field>
+              <Alert>
+                <AlertDescription>{t("access.createDefaultHint")}</AlertDescription>
+              </Alert>
             </FieldGroup>
             <DialogFooter>
               <Button onClick={() => setOpen(false)} type="button" variant="outline">

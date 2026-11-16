@@ -27,6 +27,8 @@ import type { CreateInvite201 } from "@/api/generated/model"
 import { useAuth } from "@/auth/auth-context"
 import { CopyButton } from "@/components/copy-button"
 import { DeviceStatusBadges, InviteStatusBadge } from "@/components/device-status"
+import { NetworkAccessCard } from "@/components/network-access-card"
+import { DeviceRoleBadge } from "@/components/network-access-card"
 import { NetworkMagicDnsCard } from "@/components/network-magic-dns-card"
 import { NetworkPeersCard } from "@/components/network-peers-card"
 import { NetworkRendezvousCard } from "@/components/network-rendezvous-card"
@@ -69,6 +71,7 @@ export function NetworkDetailPage() {
   const [maxUses, setMaxUses] = useState("")
   const [expiresInHours, setExpiresInHours] = useState("24")
   const [hostname, setHostname] = useState("")
+  const [inviteRole, setInviteRole] = useState<"anchor" | "member">("anchor")
 
   const networkQuery = useGetNetwork(id)
   const devicesQuery = useListDevices({ networkId: id })
@@ -135,7 +138,12 @@ export function NetworkDetailPage() {
               </Button>
             ) : null}
             {canManage ? (
-              <Button onClick={() => setInviteOpen(true)}>
+              <Button
+                onClick={() => {
+                  setInviteRole(network.access.mode === "credentials" ? "member" : "anchor")
+                  setInviteOpen(true)
+                }}
+              >
                 <PlusIcon className="size-4" />
                 {t("invites.create")}
               </Button>
@@ -220,6 +228,9 @@ export function NetworkDetailPage() {
                   <TableRow>
                     <TableHead>{t("devices.hostname")}</TableHead>
                     <TableHead>{t("common.status")}</TableHead>
+                    {network.access.mode === "credentials" ? (
+                      <TableHead>{t("access.role")}</TableHead>
+                    ) : null}
                     <TableHead>{t("devices.virtualIp")}</TableHead>
                     <TableHead>{t("devices.desiredRevision")}</TableHead>
                     <TableHead>{t("devices.appliedRevision")}</TableHead>
@@ -246,6 +257,15 @@ export function NetworkDetailPage() {
                           sync={device.sync}
                         />
                       </TableCell>
+                      {network.access.mode === "credentials" ? (
+                        <TableCell>
+                          <DeviceRoleBadge
+                            expiresAt={device.credential?.expiry}
+                            role={device.effectiveRole}
+                            status={device.credential?.status}
+                          />
+                        </TableCell>
+                      ) : null}
                       <TableCell className="font-mono text-xs">
                         {device.virtualIpv4 ?? t("common.none")}
                       </TableCell>
@@ -258,6 +278,8 @@ export function NetworkDetailPage() {
             </div>
           )}
         </SectionCard>
+
+        <NetworkAccessCard network={network} />
 
         <NetworkMagicDnsCard networkId={network.id} />
 
@@ -279,6 +301,9 @@ export function NetworkDetailPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t("invites.label")}</TableHead>
+                    {network.access.mode === "credentials" ? (
+                      <TableHead>{t("access.role")}</TableHead>
+                    ) : null}
                     <TableHead>{t("common.status")}</TableHead>
                     <TableHead>{t("invites.uses")}</TableHead>
                     <TableHead>{t("invites.expires")}</TableHead>
@@ -289,6 +314,11 @@ export function NetworkDetailPage() {
                   {invites.map((invite) => (
                     <TableRow key={invite.id}>
                       <TableCell>{invite.label || t("common.none")}</TableCell>
+                      {network.access.mode === "credentials" ? (
+                        <TableCell>
+                          <DeviceRoleBadge role={invite.role} />
+                        </TableCell>
+                      ) : null}
                       <TableCell>
                         <InviteStatusBadge status={invite.status} />
                       </TableCell>
@@ -336,6 +366,7 @@ export function NetworkDetailPage() {
                 networkId: network.id,
                 data: {
                   label: label || undefined,
+                  role: inviteRole,
                   maxUses: maxUses === "" ? null : Number(maxUses),
                   expiresInHours:
                     expiresInHours === "" ? null : Number(expiresInHours),
@@ -348,6 +379,42 @@ export function NetworkDetailPage() {
               <DialogDescription>{t("invites.description")}</DialogDescription>
             </DialogHeader>
             <FieldGroup className="gap-4 py-4">
+              {network.access.mode === "credentials" ? (
+                <Field className="gap-2">
+                  <FieldLabel>{t("access.inviteRole")}</FieldLabel>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <button
+                      className={`rounded-lg border p-3 text-left text-sm transition-colors ${
+                        inviteRole === "anchor"
+                          ? "border-primary bg-primary/5"
+                          : "hover:bg-muted/50"
+                      }`}
+                      onClick={() => setInviteRole("anchor")}
+                      type="button"
+                    >
+                      <span className="font-medium">{t("access.inviteAnchor")}</span>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {t("access.inviteAnchorHint")}
+                      </span>
+                    </button>
+                    <button
+                      className={`rounded-lg border p-3 text-left text-sm transition-colors ${
+                        inviteRole === "member"
+                          ? "border-primary bg-primary/5"
+                          : "hover:bg-muted/50"
+                      }`}
+                      onClick={() => setInviteRole("member")}
+                      type="button"
+                    >
+                      <span className="font-medium">{t("access.inviteMember")}</span>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {t("access.inviteMemberHint")}
+                      </span>
+                    </button>
+                  </div>
+                  <FieldDescription>{t("access.inviteRoleHelp")}</FieldDescription>
+                </Field>
+              ) : null}
               <Field className="gap-2">
                 <FieldLabel htmlFor="invite-label">{t("invites.label")}</FieldLabel>
                 <Input

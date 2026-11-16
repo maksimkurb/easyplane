@@ -5,9 +5,13 @@
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
  * OpenAPI spec version: 0.3.0-M3
  */
+import type { RenameDevice200AccessMode } from './renameDevice200AccessMode';
+import type { RenameDevice200Credential } from './renameDevice200Credential';
+import type { RenameDevice200EffectiveRole } from './renameDevice200EffectiveRole';
 import type { RenameDevice200Online } from './renameDevice200Online';
 import type { RenameDevice200Os } from './renameDevice200Os';
 import type { RenameDevice200ReportedState } from './renameDevice200ReportedState';
+import type { RenameDevice200Role } from './renameDevice200Role';
 import type { RenameDevice200State } from './renameDevice200State';
 import type { RenameDevice200Sync } from './renameDevice200Sync';
 
@@ -38,6 +42,12 @@ export type RenameDevice200 = {
   ownerUserId: string | null;
   advertisedEndpoints: string[];
   isHub: boolean;
+  role: RenameDevice200Role;
+  effectiveRole: RenameDevice200EffectiveRole;
+  knowsSecret: boolean;
+  accessMode: RenameDevice200AccessMode;
+  /** @nullable */
+  credential: RenameDevice200Credential;
   tags: string[];
   reportedState: RenameDevice200ReportedState;
   /** @nullable */

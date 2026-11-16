@@ -11,10 +11,13 @@ import {
   useListDevices,
   useListNetworks,
   usePushDeviceConfig,
+  useRevokeDeviceCredential,
 } from "@/api/generated/easyplane"
 import type { ListDevicesState } from "@/api/generated/model"
 import { useAuth } from "@/auth/auth-context"
+import { AnchorRemovalDialog } from "@/components/anchor-removal-dialog"
 import { DeviceStatusBadges } from "@/components/device-status"
+import { DeviceRoleBadge } from "@/components/network-access-card"
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import {
@@ -50,6 +53,12 @@ export function DevicesPage({ pendingOnly = false }: { pendingOnly?: boolean }) 
   const [state, setState] = useState<ListDevicesState | "all">(
     pendingOnly ? "pending" : "all"
   )
+  const [anchorTarget, setAnchorTarget] = useState<{
+    deviceId: string
+    hostname: string
+    networkId: string
+    operation: "block" | "delete"
+  } | null>(null)
 
   const networksQuery = useListNetworks()
   const devicesQuery = useListDevices({
@@ -84,9 +93,19 @@ export function DevicesPage({ pendingOnly = false }: { pendingOnly?: boolean }) 
         toast.error(error instanceof Error ? error.message : t("common.error")),
     },
   })
+  const revoke = useRevokeDeviceCredential({
+    mutation: {
+      onSuccess: () => toast.success(t("access.revoked")),
+      onError: (error) =>
+        toast.error(error instanceof Error ? error.message : t("common.error")),
+    },
+  })
 
   const networks = networksQuery.data?.data
   const devices = devicesQuery.data?.data ?? []
+  const credentialsMode = (id: string) =>
+    (networks ?? []).find((network) => network.id === id)?.access.mode ===
+    "credentials"
   const networkNames = useMemo(
     () => new Map((networks ?? []).map((network) => [network.id, network.name])),
     [networks]
@@ -180,6 +199,7 @@ export function DevicesPage({ pendingOnly = false }: { pendingOnly?: boolean }) 
               <TableRow>
                 <TableHead>{t("devices.hostname")}</TableHead>
                 <TableHead>{t("common.status")}</TableHead>
+                <TableHead>{t("access.role")}</TableHead>
                 <TableHead>{t("networks.title")}</TableHead>
                 <TableHead>{t("devices.os")}</TableHead>
                 <TableHead>{t("devices.virtualIp")}</TableHead>
@@ -208,6 +228,22 @@ export function DevicesPage({ pendingOnly = false }: { pendingOnly?: boolean }) 
                       state={device.state}
                       sync={device.sync}
                     />
+                  </TableCell>
+                  <TableCell>
+                    <DeviceRoleBadge
+                      expiresAt={device.credential?.expiry}
+                      role={device.effectiveRole}
+                      status={device.credential?.status}
+                    />
+                    {device.knowsSecret ? (
+                      <div className="mt-1 text-[10px] text-muted-foreground">
+                        {t("access.knowsSecret")}
+                      </div>
+                    ) : device.credential ? (
+                      <div className="mt-1 text-[10px] text-muted-foreground">
+                        {t(`access.credentialStatus.${device.credential.status}`)}
+                      </div>
+                    ) : null}
                   </TableCell>
                   <TableCell>{networkNames.get(device.networkId) ?? t("common.none")}</TableCell>
                   <TableCell className="max-w-48 text-xs">
@@ -255,25 +291,66 @@ export function DevicesPage({ pendingOnly = false }: { pendingOnly?: boolean }) 
                           >
                             <RefreshCwIcon className="size-4" />
                           </Button>
-                          <Button
-                            onClick={() => {
-                              if (window.confirm(t("devices.blockConfirm"))) {
-                                block.mutate({ deviceId: device.id })
-                              }
-                            }}
-                            size="sm"
-                            variant="outline"
-                          >
-                            <ShieldBanIcon className="size-4" />
-                            {t("common.block")}
-                          </Button>
+                          {credentialsMode(device.networkId) &&
+                          device.effectiveRole === "member" ? (
+                            <Button
+                              disabled={revoke.isPending}
+                              onClick={() => {
+                                if (window.confirm(t("access.revokeConfirm", { hostname: device.hostname }))) {
+                                  revoke.mutate({ deviceId: device.id })
+                                }
+                              }}
+                              size="sm"
+                              variant="outline"
+                            >
+                              <ShieldBanIcon className="size-4" />
+                              {t("access.revoke")}
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={() => {
+                                if (
+                                  credentialsMode(device.networkId) &&
+                                  device.effectiveRole === "anchor"
+                                ) {
+                                  setAnchorTarget({
+                                    deviceId: device.id,
+                                    hostname: device.hostname,
+                                    networkId: device.networkId,
+                                    operation: "block",
+                                  })
+                                  return
+                                }
+                                if (window.confirm(t("devices.blockConfirm"))) {
+                                  block.mutate({ deviceId: device.id, data: {} })
+                                }
+                              }}
+                              size="sm"
+                              variant="outline"
+                            >
+                              <ShieldBanIcon className="size-4" />
+                              {t("common.block")}
+                            </Button>
+                          )}
                         </>
                       ) : null}
                       {canManage ? (
                         <Button
                           onClick={() => {
+                            if (
+                              credentialsMode(device.networkId) &&
+                              device.effectiveRole === "anchor"
+                            ) {
+                              setAnchorTarget({
+                                deviceId: device.id,
+                                hostname: device.hostname,
+                                networkId: device.networkId,
+                                operation: "delete",
+                              })
+                              return
+                            }
                             if (window.confirm(t("devices.deleteConfirm"))) {
-                              remove.mutate({ deviceId: device.id })
+                              remove.mutate({ deviceId: device.id, data: {} })
                             }
                           }}
                           size="sm"
@@ -290,6 +367,24 @@ export function DevicesPage({ pendingOnly = false }: { pendingOnly?: boolean }) 
           </Table>
         </div>
       )}
+
+      <AnchorRemovalDialog
+        hostname={anchorTarget?.hostname ?? ""}
+        networkId={anchorTarget?.networkId ?? ""}
+        onClose={() => setAnchorTarget(null)}
+        onConfirm={() => {
+          if (!anchorTarget) return
+          if (anchorTarget.operation === "block") {
+            block.mutate({ deviceId: anchorTarget.deviceId, data: { acknowledgeAnchorRisk: true } })
+          } else {
+            remove.mutate({ deviceId: anchorTarget.deviceId, data: { acknowledgeAnchorRisk: true } })
+          }
+          setAnchorTarget(null)
+        }}
+        open={anchorTarget !== null}
+        operation={anchorTarget?.operation ?? "block"}
+        pending={block.isPending || remove.isPending}
+      />
     </>
   )
 }

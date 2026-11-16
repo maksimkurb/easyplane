@@ -5,9 +5,13 @@
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
  * OpenAPI spec version: 0.3.0-M3
  */
+import type { SetDeviceTags200AccessMode } from './setDeviceTags200AccessMode';
+import type { SetDeviceTags200Credential } from './setDeviceTags200Credential';
+import type { SetDeviceTags200EffectiveRole } from './setDeviceTags200EffectiveRole';
 import type { SetDeviceTags200Online } from './setDeviceTags200Online';
 import type { SetDeviceTags200Os } from './setDeviceTags200Os';
 import type { SetDeviceTags200ReportedState } from './setDeviceTags200ReportedState';
+import type { SetDeviceTags200Role } from './setDeviceTags200Role';
 import type { SetDeviceTags200State } from './setDeviceTags200State';
 import type { SetDeviceTags200Sync } from './setDeviceTags200Sync';
 
@@ -38,6 +42,12 @@ export type SetDeviceTags200 = {
   ownerUserId: string | null;
   advertisedEndpoints: string[];
   isHub: boolean;
+  role: SetDeviceTags200Role;
+  effectiveRole: SetDeviceTags200EffectiveRole;
+  knowsSecret: boolean;
+  accessMode: SetDeviceTags200AccessMode;
+  /** @nullable */
+  credential: SetDeviceTags200Credential;
   tags: string[];
   reportedState: SetDeviceTags200ReportedState;
   /** @nullable */

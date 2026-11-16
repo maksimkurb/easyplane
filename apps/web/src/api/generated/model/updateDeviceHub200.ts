@@ -5,9 +5,13 @@
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
  * OpenAPI spec version: 0.3.0-M3
  */
+import type { UpdateDeviceHub200AccessMode } from './updateDeviceHub200AccessMode';
+import type { UpdateDeviceHub200Credential } from './updateDeviceHub200Credential';
+import type { UpdateDeviceHub200EffectiveRole } from './updateDeviceHub200EffectiveRole';
 import type { UpdateDeviceHub200Online } from './updateDeviceHub200Online';
 import type { UpdateDeviceHub200Os } from './updateDeviceHub200Os';
 import type { UpdateDeviceHub200ReportedState } from './updateDeviceHub200ReportedState';
+import type { UpdateDeviceHub200Role } from './updateDeviceHub200Role';
 import type { UpdateDeviceHub200State } from './updateDeviceHub200State';
 import type { UpdateDeviceHub200Sync } from './updateDeviceHub200Sync';
 
@@ -38,6 +42,12 @@ export type UpdateDeviceHub200 = {
   ownerUserId: string | null;
   advertisedEndpoints: string[];
   isHub: boolean;
+  role: UpdateDeviceHub200Role;
+  effectiveRole: UpdateDeviceHub200EffectiveRole;
+  knowsSecret: boolean;
+  accessMode: UpdateDeviceHub200AccessMode;
+  /** @nullable */
+  credential: UpdateDeviceHub200Credential;
   tags: string[];
   reportedState: UpdateDeviceHub200ReportedState;
   /** @nullable */

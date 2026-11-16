@@ -5,9 +5,13 @@
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
  * OpenAPI spec version: 0.3.0-M3
  */
+import type { RollbackDeviceRevision201DeviceAccessMode } from './rollbackDeviceRevision201DeviceAccessMode';
+import type { RollbackDeviceRevision201DeviceCredential } from './rollbackDeviceRevision201DeviceCredential';
+import type { RollbackDeviceRevision201DeviceEffectiveRole } from './rollbackDeviceRevision201DeviceEffectiveRole';
 import type { RollbackDeviceRevision201DeviceOnline } from './rollbackDeviceRevision201DeviceOnline';
 import type { RollbackDeviceRevision201DeviceOs } from './rollbackDeviceRevision201DeviceOs';
 import type { RollbackDeviceRevision201DeviceReportedState } from './rollbackDeviceRevision201DeviceReportedState';
+import type { RollbackDeviceRevision201DeviceRole } from './rollbackDeviceRevision201DeviceRole';
 import type { RollbackDeviceRevision201DeviceState } from './rollbackDeviceRevision201DeviceState';
 import type { RollbackDeviceRevision201DeviceSync } from './rollbackDeviceRevision201DeviceSync';
 
@@ -38,6 +42,12 @@ export type RollbackDeviceRevision201Device = {
   ownerUserId: string | null;
   advertisedEndpoints: string[];
   isHub: boolean;
+  role: RollbackDeviceRevision201DeviceRole;
+  effectiveRole: RollbackDeviceRevision201DeviceEffectiveRole;
+  knowsSecret: boolean;
+  accessMode: RollbackDeviceRevision201DeviceAccessMode;
+  /** @nullable */
+  credential: RollbackDeviceRevision201DeviceCredential;
   tags: string[];
   reportedState: RollbackDeviceRevision201DeviceReportedState;
   /** @nullable */
