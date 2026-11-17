@@ -67,7 +67,7 @@ export function AccessJsonEditor({
       <Textarea
         aria-invalid={error ? true : undefined}
         aria-label={t("policy.jsonMode")}
-        className="min-h-80 font-mono text-xs leading-5"
+        className="max-h-[60dvh] min-h-80 overflow-auto font-mono text-xs leading-5 [field-sizing:fixed]"
         onChange={(event) => {
           setText(event.target.value)
           setError(undefined)
