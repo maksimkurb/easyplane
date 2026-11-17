@@ -9,6 +9,7 @@ import type { AlignNetworkRendezvousSecret200Access } from './alignNetworkRendez
 import type { AlignNetworkRendezvousSecret200DefaultConfig } from './alignNetworkRendezvousSecret200DefaultConfig';
 import type { AlignNetworkRendezvousSecret200DeviceCounts } from './alignNetworkRendezvousSecret200DeviceCounts';
 import type { AlignNetworkRendezvousSecret200PeerPlan } from './alignNetworkRendezvousSecret200PeerPlan';
+import type { AlignNetworkRendezvousSecret200PolicyMode } from './alignNetworkRendezvousSecret200PolicyMode';
 import type { AlignNetworkRendezvousSecret200Rendezvous } from './alignNetworkRendezvousSecret200Rendezvous';
 
 export type AlignNetworkRendezvousSecret200 = {
@@ -24,6 +25,7 @@ export type AlignNetworkRendezvousSecret200 = {
      * @maximum 9007199254740991
      */
   policyVersion: number;
+  policyMode: AlignNetworkRendezvousSecret200PolicyMode;
   useRendezvous: boolean;
   p2pOnly: boolean;
   access: AlignNetworkRendezvousSecret200Access;

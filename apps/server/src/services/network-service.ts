@@ -61,7 +61,10 @@ export interface NetworkDto {
   defaultConfig: Record<string, unknown>;
   magicDnsEnabled: boolean;
   magicDnsZone: string;
+  /** Effective policy version (0 while the access mode is open). */
   policyVersion: number;
+  /** Access mode: open (no ACL pushed), rules or json. */
+  policyMode: "open" | "rules" | "json";
   /** Devices in this network dial the bundled rendezvous node. */
   useRendezvous: boolean;
   /** Every device is pushed `p2p_only` (advanced; no relay fallback). */
@@ -171,7 +174,8 @@ function toDto(
     defaultConfig: network.defaultConfig,
     magicDnsEnabled: network.magicDnsEnabled,
     magicDnsZone: network.magicDnsZone,
-    policyVersion: network.policyVersion,
+    policyVersion: network.policyMode === "open" ? 0 : network.policyVersion,
+    policyMode: network.policyMode,
     useRendezvous: network.useRendezvous,
     p2pOnly: network.p2pOnly,
     access,
@@ -454,6 +458,12 @@ export class NetworkService {
     const network = await getNetwork(this.db, orgId, id);
     if (!network) notFound("network not found");
     return this.dto(network, await networkDeviceCounts(this.db, network.id));
+  }
+
+  /** The organisation's first network, for org-scoped collections (tags). */
+  async firstNetwork(orgId: string): Promise<Network | undefined> {
+    const networks = await listNetworks(this.db, orgId);
+    return networks[0];
   }
 
   async requireNetwork(orgId: string, id: string): Promise<Network> {

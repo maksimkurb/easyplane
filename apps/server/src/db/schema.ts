@@ -15,6 +15,12 @@ import {
 /** Roles are global to an organisation in M1 (one organisation per deployment). */
 export const userRoleEnum = pgEnum("user_role", ["admin", "member", "viewer"]);
 
+/** Policy mode: open (no ACL pushed), rules (structured editor) or json. */
+export const policyModeEnum = pgEnum("policy_mode", ["open", "rules", "json"]);
+
+/** Where a user group's membership comes from. */
+export const userGroupSourceEnum = pgEnum("user_group_source", ["manual", "oidc"]);
+
 /** A device joins as `pending`, gets approved, or is blocked. */
 export const deviceStateEnum = pgEnum("device_state", [
   "pending",
@@ -191,6 +197,13 @@ export const networks = pgTable(
     magicDnsZone: text("magic_dns_zone").notNull().default("et.net."),
     /** Latest policy document version (0 = no policy, traffic unrestricted). */
     policyVersion: integer("policy_version").notNull().default(0),
+    /**
+     * Access editor mode. `open` pushes no ACL at all (EasyTier's filter is
+     * off); `rules` and `json` are the same document edited structurally or as
+     * HuJSON. The document is kept across an `open` switch, so toggling back
+     * does not lose rules.
+     */
+    policyMode: policyModeEnum("policy_mode").notNull().default("open"),
     /**
      * Network-level opt-in for the bundled rendezvous node. When on, the
      * configured `EASYPLANE_RENDEZVOUS_ENDPOINTS` are appended to every
@@ -498,11 +511,56 @@ export const tags = pgTable(
     orgId: uuid("org_id")
       .notNull()
       .references(() => organisations.id, { onDelete: "cascade" }),
+    /** Namespaced name (`tag:web`), which is also the EasyTier group name. */
     name: text("name").notNull(),
     color: text("color").notNull().default(""),
     createdAt,
   },
   (table) => [uniqueIndex("tags_org_name_uq").on(table.orgId, table.name)],
+);
+
+/**
+ * A group of people ("user groups"). Distinct from tags, which label devices.
+ *
+ * `manual` groups have explicit member emails; `oidc` groups mirror an identity
+ * provider claim value and are read-only (their members are derived from
+ * `users.groups` at read time, never stored).
+ */
+export const userGroups = pgTable(
+  "user_groups",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organisations.id, { onDelete: "cascade" }),
+    /** Bare name (`admins`); subjects are `group:admins`. */
+    name: text("name").notNull(),
+    source: userGroupSourceEnum("source").notNull().default("manual"),
+    /** IdP claim value for a synced group (`source = oidc`). */
+    oidcValue: text("oidc_value").notNull().default(""),
+    color: text("color").notNull().default(""),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt,
+  },
+  (table) => [uniqueIndex("user_groups_org_name_uq").on(table.orgId, table.name)],
+);
+
+/** A manual user-group member (an email address). */
+export const userGroupMembers = pgTable(
+  "user_group_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => userGroups.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex("user_group_members_group_email_uq").on(table.groupId, table.email),
+  ],
 );
 
 /** Table only in M1; the tag editor lands in M2. */
@@ -732,3 +790,5 @@ export type DeviceRoute = typeof deviceRoutes.$inferSelect;
 export type DeviceRouteKind = DeviceRoute["kind"];
 export type DeviceRouteState = DeviceRoute["state"];
 export type NetworkPeer = typeof networkPeers.$inferSelect;
+export type UserGroup = typeof userGroups.$inferSelect;
+export type UserGroupMember = typeof userGroupMembers.$inferSelect;

@@ -9,6 +9,7 @@ import type { GetNetwork200Access } from './getNetwork200Access';
 import type { GetNetwork200DefaultConfig } from './getNetwork200DefaultConfig';
 import type { GetNetwork200DeviceCounts } from './getNetwork200DeviceCounts';
 import type { GetNetwork200PeerPlan } from './getNetwork200PeerPlan';
+import type { GetNetwork200PolicyMode } from './getNetwork200PolicyMode';
 import type { GetNetwork200Rendezvous } from './getNetwork200Rendezvous';
 
 export type GetNetwork200 = {
@@ -24,6 +25,7 @@ export type GetNetwork200 = {
      * @maximum 9007199254740991
      */
   policyVersion: number;
+  policyMode: GetNetwork200PolicyMode;
   useRendezvous: boolean;
   p2pOnly: boolean;
   access: GetNetwork200Access;

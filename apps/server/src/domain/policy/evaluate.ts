@@ -17,7 +17,7 @@ import { ipv4ToHostCidr } from "../routes.js";
 export interface PacketQuery {
   srcIp: string;
   dstIp: string;
-  protocol: "tcp" | "udp" | "icmp";
+  protocol: "tcp" | "udp" | "icmp" | "icmpv6";
   dstPort?: number;
   srcPort?: number;
   /** Tag names of the sender, used when a rule has group criteria. */
@@ -39,6 +39,7 @@ const PROTOCOL_NUMBER = {
   tcp: acl.Protocol.TCP,
   udp: acl.Protocol.UDP,
   icmp: acl.Protocol.ICMP,
+  icmpv6: acl.Protocol.ICMPv6,
 } as const;
 
 function ipMatches(ranges: readonly string[], ip: string): boolean {
@@ -137,7 +138,7 @@ export function evaluateReachability(input: {
   dstAcl: acl.Acl;
   srcIp: string;
   dstIp: string;
-  protocol: "tcp" | "udp" | "icmp";
+  protocol: "tcp" | "udp" | "icmp" | "icmpv6";
   port?: number;
   srcTags?: string[];
   dstTags?: string[];
@@ -173,7 +174,7 @@ export function evaluateCidrReachability(input: {
   routerAcl: acl.Acl;
   srcIp: string;
   cidr: string;
-  protocol: "tcp" | "udp" | "icmp";
+  protocol: "tcp" | "udp" | "icmp" | "icmpv6";
   port?: number;
   srcTags?: string[];
 }): ReachabilityResult {

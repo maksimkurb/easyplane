@@ -49,13 +49,14 @@ describe("HuJSON reader", () => {
     const document = parsePolicyText(`{
       // Who may reach the database
       "tagOwners": { "tag:db": ["group:ops"] },
-      "acls": [
-        { "name": "web-db", "action": "accept",
-          "src": ["tag:web"], "dst": ["tag:db:5432"], "proto": "tcp" },
+      "rules": [
+        { "name": "web-db", "action": "allow",
+          "from": ["tag:web"], "to": ["tag:db"], "ports": ["5432"], "protocol": "tcp" },
       ],
     }`);
-    expect(document.acls).toHaveLength(1);
-    expect(document.acls[0]?.name).toBe("web-db");
+    expect(document.rules).toHaveLength(1);
+    expect(document.rules[0]?.name).toBe("web-db");
+    expect(document.rules[0]?.ports).toEqual(["5432"]);
   });
 });
 

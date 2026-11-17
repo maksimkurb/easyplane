@@ -9,6 +9,7 @@ import type { CommitNetworkImport201Access } from './commitNetworkImport201Acces
 import type { CommitNetworkImport201DefaultConfig } from './commitNetworkImport201DefaultConfig';
 import type { CommitNetworkImport201DeviceCounts } from './commitNetworkImport201DeviceCounts';
 import type { CommitNetworkImport201PeerPlan } from './commitNetworkImport201PeerPlan';
+import type { CommitNetworkImport201PolicyMode } from './commitNetworkImport201PolicyMode';
 import type { CommitNetworkImport201Rendezvous } from './commitNetworkImport201Rendezvous';
 
 export type CommitNetworkImport201 = {
@@ -24,6 +25,7 @@ export type CommitNetworkImport201 = {
      * @maximum 9007199254740991
      */
   policyVersion: number;
+  policyMode: CommitNetworkImport201PolicyMode;
   useRendezvous: boolean;
   p2pOnly: boolean;
   access: CommitNetworkImport201Access;

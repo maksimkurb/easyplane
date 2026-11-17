@@ -5,7 +5,6 @@ import { z } from "zod";
 import { requireAuth, requireRole } from "../app/auth-hooks.js";
 import type { AppContext } from "../app/context.js";
 import {
-  createTagSchema,
   deviceSchema,
   deviceTagsSchema,
   dnsNameSchema,
@@ -13,7 +12,6 @@ import {
   paramsDeviceSchema,
   paramsNetworkSchema,
   renameDeviceSchema,
-  tagSchema,
 } from "../app/schemas.js";
 import { DEFAULT_MAGIC_DNS_ZONE, normalizeDnsZone } from "../domain/magic-dns.js";
 import { pushNetworkDevices } from "../services/push-service.js";
@@ -93,60 +91,6 @@ export function registerDnsRoutes(
         request.params.deviceId,
         request.body.dnsName,
       );
-    },
-  );
-
-  typed.get(
-    "/api/tags",
-    {
-      schema: {
-        operationId: "listTags",
-        tags: ["policy"],
-        response: { 200: z.array(tagSchema) },
-      },
-    },
-    async (request) => {
-      const auth = requireAuth(request);
-      const tags = await context.db.query.tags.findMany({
-        where: (table, { eq }) => eq(table.orgId, auth.organisation.id),
-      });
-      const links = await context.db.query.deviceTags.findMany();
-      const counts = new Map<string, number>();
-      for (const link of links) {
-        counts.set(link.tagId, (counts.get(link.tagId) ?? 0) + 1);
-      }
-      return tags
-        .map((tag) => ({
-          id: tag.id,
-          name: tag.name,
-          color: tag.color,
-          deviceCount: counts.get(tag.id) ?? 0,
-        }))
-        .sort((left, right) => left.name.localeCompare(right.name));
-    },
-  );
-
-  typed.post(
-    "/api/tags",
-    {
-      schema: {
-        operationId: "createTag",
-        tags: ["policy"],
-        body: createTagSchema,
-        response: { 201: tagSchema },
-      },
-    },
-    async (request, reply) => {
-      const auth = requireRole(request, ["admin"]);
-      const raw = request.body.name.trim();
-      if (!/^tag:[a-z0-9][a-z0-9-]{0,62}$/i.test(raw)) {
-        invalid('tag names must look like "tag:server" (letters, digits, dashes)');
-      }
-      const tag = await context.policies.createTag(
-        { orgId: auth.organisation.id, userId: auth.user.id, role: auth.user.role },
-        { name: raw.toLowerCase(), color: request.body.color },
-      );
-      return reply.code(201).send({ ...tag, deviceCount: 0 });
     },
   );
 

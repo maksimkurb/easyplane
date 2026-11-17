@@ -9,6 +9,7 @@ import type { UpdateNetwork200Access } from './updateNetwork200Access';
 import type { UpdateNetwork200DefaultConfig } from './updateNetwork200DefaultConfig';
 import type { UpdateNetwork200DeviceCounts } from './updateNetwork200DeviceCounts';
 import type { UpdateNetwork200PeerPlan } from './updateNetwork200PeerPlan';
+import type { UpdateNetwork200PolicyMode } from './updateNetwork200PolicyMode';
 import type { UpdateNetwork200Rendezvous } from './updateNetwork200Rendezvous';
 
 export type UpdateNetwork200 = {
@@ -24,6 +25,7 @@ export type UpdateNetwork200 = {
      * @maximum 9007199254740991
      */
   policyVersion: number;
+  policyMode: UpdateNetwork200PolicyMode;
   useRendezvous: boolean;
   p2pOnly: boolean;
   access: UpdateNetwork200Access;

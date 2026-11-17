@@ -11,5 +11,7 @@ import type { ValidateNetworkPolicy200Summary } from './validateNetworkPolicy200
 export type ValidateNetworkPolicy200 = {
   warnings: string[];
   devices: ValidateNetworkPolicy200DevicesItem[];
+  /** @nullable */
   summary: ValidateNetworkPolicy200Summary;
+  upgradedFromV1: boolean;
 };

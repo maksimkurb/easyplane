@@ -727,6 +727,14 @@
                         "minimum": -9007199254740991,
                         "maximum": 9007199254740991
                       },
+                      "policyMode": {
+                        "type": "string",
+                        "enum": [
+                          "open",
+                          "rules",
+                          "json"
+                        ]
+                      },
                       "useRendezvous": {
                         "type": "boolean"
                       },
@@ -907,6 +915,7 @@
                       "magicDnsEnabled",
                       "magicDnsZone",
                       "policyVersion",
+                      "policyMode",
                       "useRendezvous",
                       "p2pOnly",
                       "access",
@@ -994,6 +1003,14 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "policyMode": {
+                      "type": "string",
+                      "enum": [
+                        "open",
+                        "rules",
+                        "json"
+                      ]
+                    },
                     "useRendezvous": {
                       "type": "boolean"
                     },
@@ -1174,6 +1191,7 @@
                     "magicDnsEnabled",
                     "magicDnsZone",
                     "policyVersion",
+                    "policyMode",
                     "useRendezvous",
                     "p2pOnly",
                     "access",
@@ -1244,6 +1262,14 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "policyMode": {
+                      "type": "string",
+                      "enum": [
+                        "open",
+                        "rules",
+                        "json"
+                      ]
+                    },
                     "useRendezvous": {
                       "type": "boolean"
                     },
@@ -1424,6 +1450,7 @@
                     "magicDnsEnabled",
                     "magicDnsZone",
                     "policyVersion",
+                    "policyMode",
                     "useRendezvous",
                     "p2pOnly",
                     "access",
@@ -1529,6 +1556,14 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "policyMode": {
+                      "type": "string",
+                      "enum": [
+                        "open",
+                        "rules",
+                        "json"
+                      ]
+                    },
                     "useRendezvous": {
                       "type": "boolean"
                     },
@@ -1709,6 +1744,7 @@
                     "magicDnsEnabled",
                     "magicDnsZone",
                     "policyVersion",
+                    "policyMode",
                     "useRendezvous",
                     "p2pOnly",
                     "access",
@@ -2045,6 +2081,14 @@
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
                         },
+                        "policyMode": {
+                          "type": "string",
+                          "enum": [
+                            "open",
+                            "rules",
+                            "json"
+                          ]
+                        },
                         "useRendezvous": {
                           "type": "boolean"
                         },
@@ -2225,6 +2269,7 @@
                         "magicDnsEnabled",
                         "magicDnsZone",
                         "policyVersion",
+                        "policyMode",
                         "useRendezvous",
                         "p2pOnly",
                         "access",
@@ -2427,6 +2472,14 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "policyMode": {
+                      "type": "string",
+                      "enum": [
+                        "open",
+                        "rules",
+                        "json"
+                      ]
+                    },
                     "useRendezvous": {
                       "type": "boolean"
                     },
@@ -2607,6 +2660,7 @@
                     "magicDnsEnabled",
                     "magicDnsZone",
                     "policyVersion",
+                    "policyMode",
                     "useRendezvous",
                     "p2pOnly",
                     "access",
@@ -4063,6 +4117,14 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "policyMode": {
+                      "type": "string",
+                      "enum": [
+                        "open",
+                        "rules",
+                        "json"
+                      ]
+                    },
                     "useRendezvous": {
                       "type": "boolean"
                     },
@@ -4243,6 +4305,7 @@
                     "magicDnsEnabled",
                     "magicDnsZone",
                     "policyVersion",
+                    "policyMode",
                     "useRendezvous",
                     "p2pOnly",
                     "access",
@@ -8801,6 +8864,14 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "open",
+                        "rules",
+                        "json"
+                      ]
+                    },
                     "policy": {
                       "nullable": true,
                       "type": "object",
@@ -8856,8 +8927,105 @@
                                 "type": "string"
                               }
                             },
+                            "subnets": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
                             "strictTags": {
                               "type": "boolean"
+                            },
+                            "strictGroups": {
+                              "type": "boolean"
+                            },
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "open",
+                                "rules",
+                                "json"
+                              ]
+                            },
+                            "chains": {
+                              "type": "object",
+                              "properties": {
+                                "inbound": {
+                                  "type": "object",
+                                  "properties": {
+                                    "default": {
+                                      "type": "string",
+                                      "enum": [
+                                        "allow",
+                                        "block"
+                                      ]
+                                    },
+                                    "enabled": {
+                                      "type": "boolean"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "default",
+                                    "enabled"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "outbound": {
+                                  "type": "object",
+                                  "properties": {
+                                    "default": {
+                                      "type": "string",
+                                      "enum": [
+                                        "allow",
+                                        "block"
+                                      ]
+                                    },
+                                    "enabled": {
+                                      "type": "boolean"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "default",
+                                    "enabled"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "forward": {
+                                  "type": "object",
+                                  "properties": {
+                                    "default": {
+                                      "type": "string",
+                                      "enum": [
+                                        "allow",
+                                        "block"
+                                      ]
+                                    },
+                                    "enabled": {
+                                      "type": "boolean"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "default",
+                                    "enabled"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "required": [
+                                "inbound",
+                                "outbound",
+                                "forward"
+                              ],
+                              "additionalProperties": false
                             }
                           },
                           "required": [
@@ -8865,7 +9033,11 @@
                             "tags",
                             "groups",
                             "hosts",
-                            "strictTags"
+                            "subnets",
+                            "strictTags",
+                            "strictGroups",
+                            "mode",
+                            "chains"
                           ],
                           "additionalProperties": false
                         }
@@ -8881,11 +9053,373 @@
                         "summary"
                       ],
                       "additionalProperties": false
+                    },
+                    "document": {
+                      "nullable": true,
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "rules": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "index": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "name": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "enabled": {
+                            "type": "boolean"
+                          },
+                          "action": {
+                            "type": "string",
+                            "enum": [
+                              "allow",
+                              "deny"
+                            ]
+                          },
+                          "protocol": {
+                            "type": "string"
+                          },
+                          "ports": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "sourcePorts": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "stateful": {
+                            "type": "boolean"
+                          },
+                          "rateLimit": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "burst": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "from": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "subject": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "any",
+                                    "device",
+                                    "tag",
+                                    "group",
+                                    "subnet",
+                                    "host",
+                                    "cidr"
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "display": {
+                                  "type": "string"
+                                },
+                                "detail": {
+                                  "type": "string"
+                                },
+                                "deviceCount": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "peopleCount": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "readOnly": {
+                                  "type": "boolean"
+                                },
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "manual",
+                                    "oidc"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "subject",
+                                "kind",
+                                "id",
+                                "name",
+                                "display",
+                                "deviceCount"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "to": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "subject": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "any",
+                                    "device",
+                                    "tag",
+                                    "group",
+                                    "subnet",
+                                    "host",
+                                    "cidr"
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "display": {
+                                  "type": "string"
+                                },
+                                "detail": {
+                                  "type": "string"
+                                },
+                                "deviceCount": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "peopleCount": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "readOnly": {
+                                  "type": "boolean"
+                                },
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "manual",
+                                    "oidc"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "subject",
+                                "kind",
+                                "id",
+                                "name",
+                                "display",
+                                "deviceCount"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "affectedDeviceCount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "index",
+                          "name",
+                          "enabled",
+                          "action",
+                          "protocol",
+                          "ports",
+                          "sourcePorts",
+                          "stateful",
+                          "rateLimit",
+                          "burst",
+                          "from",
+                          "to",
+                          "affectedDeviceCount"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "summary": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "statements": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "tags": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "hosts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "subnets": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "strictTags": {
+                          "type": "boolean"
+                        },
+                        "strictGroups": {
+                          "type": "boolean"
+                        },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "open",
+                            "rules",
+                            "json"
+                          ]
+                        },
+                        "chains": {
+                          "type": "object",
+                          "properties": {
+                            "inbound": {
+                              "type": "object",
+                              "properties": {
+                                "default": {
+                                  "type": "string",
+                                  "enum": [
+                                    "allow",
+                                    "block"
+                                  ]
+                                },
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "default",
+                                "enabled"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "outbound": {
+                              "type": "object",
+                              "properties": {
+                                "default": {
+                                  "type": "string",
+                                  "enum": [
+                                    "allow",
+                                    "block"
+                                  ]
+                                },
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "default",
+                                "enabled"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "forward": {
+                              "type": "object",
+                              "properties": {
+                                "default": {
+                                  "type": "string",
+                                  "enum": [
+                                    "allow",
+                                    "block"
+                                  ]
+                                },
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "default",
+                                "enabled"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "inbound",
+                            "outbound",
+                            "forward"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "statements",
+                        "tags",
+                        "groups",
+                        "hosts",
+                        "subnets",
+                        "strictTags",
+                        "strictGroups",
+                        "mode",
+                        "chains"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "deviceCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     }
                   },
                   "required": [
                     "version",
-                    "policy"
+                    "mode",
+                    "policy",
+                    "document",
+                    "rules",
+                    "summary",
+                    "deviceCount"
                   ],
                   "additionalProperties": false
                 }
@@ -8918,6 +9452,14 @@
                   "note": {
                     "type": "string",
                     "maxLength": 500
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "rules",
+                      "json"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -8999,8 +9541,105 @@
                                 "type": "string"
                               }
                             },
+                            "subnets": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
                             "strictTags": {
                               "type": "boolean"
+                            },
+                            "strictGroups": {
+                              "type": "boolean"
+                            },
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "open",
+                                "rules",
+                                "json"
+                              ]
+                            },
+                            "chains": {
+                              "type": "object",
+                              "properties": {
+                                "inbound": {
+                                  "type": "object",
+                                  "properties": {
+                                    "default": {
+                                      "type": "string",
+                                      "enum": [
+                                        "allow",
+                                        "block"
+                                      ]
+                                    },
+                                    "enabled": {
+                                      "type": "boolean"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "default",
+                                    "enabled"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "outbound": {
+                                  "type": "object",
+                                  "properties": {
+                                    "default": {
+                                      "type": "string",
+                                      "enum": [
+                                        "allow",
+                                        "block"
+                                      ]
+                                    },
+                                    "enabled": {
+                                      "type": "boolean"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "default",
+                                    "enabled"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "forward": {
+                                  "type": "object",
+                                  "properties": {
+                                    "default": {
+                                      "type": "string",
+                                      "enum": [
+                                        "allow",
+                                        "block"
+                                      ]
+                                    },
+                                    "enabled": {
+                                      "type": "boolean"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "default",
+                                    "enabled"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "required": [
+                                "inbound",
+                                "outbound",
+                                "forward"
+                              ],
+                              "additionalProperties": false
                             }
                           },
                           "required": [
@@ -9008,7 +9647,11 @@
                             "tags",
                             "groups",
                             "hosts",
-                            "strictTags"
+                            "subnets",
+                            "strictTags",
+                            "strictGroups",
+                            "mode",
+                            "chains"
                           ],
                           "additionalProperties": false
                         }
@@ -9029,11 +9672,24 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
+                    },
+                    "upgradedFromV1": {
+                      "type": "boolean"
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "open",
+                        "rules",
+                        "json"
+                      ]
                     }
                   },
                   "required": [
                     "policy",
-                    "revisionsCreated"
+                    "revisionsCreated",
+                    "upgradedFromV1",
+                    "mode"
                   ],
                   "additionalProperties": false
                 }
@@ -9170,8 +9826,105 @@
                               "type": "string"
                             }
                           },
+                          "subnets": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
                           "strictTags": {
                             "type": "boolean"
+                          },
+                          "strictGroups": {
+                            "type": "boolean"
+                          },
+                          "mode": {
+                            "type": "string",
+                            "enum": [
+                              "open",
+                              "rules",
+                              "json"
+                            ]
+                          },
+                          "chains": {
+                            "type": "object",
+                            "properties": {
+                              "inbound": {
+                                "type": "object",
+                                "properties": {
+                                  "default": {
+                                    "type": "string",
+                                    "enum": [
+                                      "allow",
+                                      "block"
+                                    ]
+                                  },
+                                  "enabled": {
+                                    "type": "boolean"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "default",
+                                  "enabled"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "outbound": {
+                                "type": "object",
+                                "properties": {
+                                  "default": {
+                                    "type": "string",
+                                    "enum": [
+                                      "allow",
+                                      "block"
+                                    ]
+                                  },
+                                  "enabled": {
+                                    "type": "boolean"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "default",
+                                  "enabled"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "forward": {
+                                "type": "object",
+                                "properties": {
+                                  "default": {
+                                    "type": "string",
+                                    "enum": [
+                                      "allow",
+                                      "block"
+                                    ]
+                                  },
+                                  "enabled": {
+                                    "type": "boolean"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "default",
+                                  "enabled"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "inbound",
+                              "outbound",
+                              "forward"
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -9179,7 +9932,11 @@
                           "tags",
                           "groups",
                           "hosts",
-                          "strictTags"
+                          "subnets",
+                          "strictTags",
+                          "strictGroups",
+                          "mode",
+                          "chains"
                         ],
                         "additionalProperties": false
                       }
@@ -9196,6 +9953,308 @@
                     ],
                     "additionalProperties": false
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/policy/subjects": {
+      "get": {
+        "operationId": "getPolicySubjects",
+        "tags": [
+          "policy"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "devices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          },
+                          "virtualIpv4": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string"
+                          },
+                          "tags": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "hostname",
+                          "virtualIpv4",
+                          "state",
+                          "tags"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "subject": {
+                            "type": "string"
+                          },
+                          "color": {
+                            "type": "string"
+                          },
+                          "deviceCount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "devices": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "hostname": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "hostname"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "subject",
+                          "color",
+                          "deviceCount",
+                          "devices"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "userGroups": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "subject": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "manual",
+                              "oidc"
+                            ]
+                          },
+                          "readOnly": {
+                            "type": "boolean"
+                          },
+                          "color": {
+                            "type": "string"
+                          },
+                          "members": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "email": {
+                                  "type": "string"
+                                },
+                                "displayName": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "inOrganisation": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "email",
+                                "displayName",
+                                "inOrganisation"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "peopleCount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "deviceCount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "devices": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "subject",
+                          "source",
+                          "readOnly",
+                          "color",
+                          "members",
+                          "peopleCount",
+                          "deviceCount",
+                          "devices"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "subnets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "display": {
+                            "type": "string"
+                          },
+                          "cidr": {
+                            "type": "string"
+                          },
+                          "viaDeviceId": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "viaHostname": {
+                            "type": "string"
+                          },
+                          "routeId": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "approved": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "display",
+                          "cidr",
+                          "viaDeviceId",
+                          "viaHostname",
+                          "routeId",
+                          "approved"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "hosts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "alias": {
+                            "type": "string"
+                          },
+                          "subject": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "alias",
+                          "subject",
+                          "value"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "devices",
+                    "tags",
+                    "userGroups",
+                    "subnets",
+                    "hosts"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -9228,6 +10287,14 @@
                   "note": {
                     "type": "string",
                     "maxLength": 500
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "rules",
+                      "json"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -9310,6 +10377,7 @@
                       }
                     },
                     "summary": {
+                      "nullable": true,
                       "type": "object",
                       "properties": {
                         "statements": {
@@ -9335,8 +10403,105 @@
                             "type": "string"
                           }
                         },
+                        "subnets": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
                         "strictTags": {
                           "type": "boolean"
+                        },
+                        "strictGroups": {
+                          "type": "boolean"
+                        },
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "open",
+                            "rules",
+                            "json"
+                          ]
+                        },
+                        "chains": {
+                          "type": "object",
+                          "properties": {
+                            "inbound": {
+                              "type": "object",
+                              "properties": {
+                                "default": {
+                                  "type": "string",
+                                  "enum": [
+                                    "allow",
+                                    "block"
+                                  ]
+                                },
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "default",
+                                "enabled"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "outbound": {
+                              "type": "object",
+                              "properties": {
+                                "default": {
+                                  "type": "string",
+                                  "enum": [
+                                    "allow",
+                                    "block"
+                                  ]
+                                },
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "default",
+                                "enabled"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "forward": {
+                              "type": "object",
+                              "properties": {
+                                "default": {
+                                  "type": "string",
+                                  "enum": [
+                                    "allow",
+                                    "block"
+                                  ]
+                                },
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "default",
+                                "enabled"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "inbound",
+                            "outbound",
+                            "forward"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
@@ -9344,15 +10509,357 @@
                         "tags",
                         "groups",
                         "hosts",
-                        "strictTags"
+                        "subnets",
+                        "strictTags",
+                        "strictGroups",
+                        "mode",
+                        "chains"
                       ],
                       "additionalProperties": false
+                    },
+                    "upgradedFromV1": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
                     "warnings",
                     "devices",
-                    "summary"
+                    "summary",
+                    "upgradedFromV1"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/policy/mode": {
+      "post": {
+        "operationId": "setNetworkPolicyMode",
+        "tags": [
+          "policy"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "rules",
+                      "json"
+                    ]
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "open",
+                        "rules",
+                        "json"
+                      ]
+                    },
+                    "revisionsCreated": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "version",
+                    "mode",
+                    "revisionsCreated"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/policy/compiled/{deviceId}": {
+      "get": {
+        "operationId": "getCompiledAcl",
+        "tags": [
+          "policy"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deviceId": {
+                      "type": "string"
+                    },
+                    "hostname": {
+                      "type": "string"
+                    },
+                    "virtualIpv4": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "policyVersion": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "open",
+                        "rules",
+                        "json"
+                      ]
+                    },
+                    "chains": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "chainType": {
+                            "type": "string",
+                            "enum": [
+                              "Inbound",
+                              "Outbound",
+                              "Forward"
+                            ]
+                          },
+                          "enabled": {
+                            "type": "boolean"
+                          },
+                          "defaultAction": {
+                            "type": "string",
+                            "enum": [
+                              "Allow",
+                              "Drop"
+                            ]
+                          },
+                          "rules": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "priority": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "protocol": {
+                                  "type": "string"
+                                },
+                                "ports": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "sourceIps": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "destinationIps": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "sourcePorts": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "action": {
+                                  "type": "string",
+                                  "enum": [
+                                    "Allow",
+                                    "Drop"
+                                  ]
+                                },
+                                "rateLimit": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "burstLimit": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "stateful": {
+                                  "type": "boolean"
+                                },
+                                "sourceGroups": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "destinationGroups": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "description",
+                                "priority",
+                                "enabled",
+                                "protocol",
+                                "ports",
+                                "sourceIps",
+                                "destinationIps",
+                                "sourcePorts",
+                                "action",
+                                "rateLimit",
+                                "burstLimit",
+                                "stateful",
+                                "sourceGroups",
+                                "destinationGroups"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "chainType",
+                          "enabled",
+                          "defaultAction",
+                          "rules"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "group": {
+                      "type": "object",
+                      "properties": {
+                        "declares": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "groupName": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "groupName"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "members": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "declares",
+                        "members"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "hash": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "deviceId",
+                    "hostname",
+                    "virtualIpv4",
+                    "enabled",
+                    "policyVersion",
+                    "mode",
+                    "chains",
+                    "group",
+                    "hash"
                   ],
                   "additionalProperties": false
                 }
@@ -9389,6 +10896,11 @@
                     "format": "uuid",
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   },
+                  "srcIp": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
                   "dstDeviceId": {
                     "type": "string",
                     "format": "uuid",
@@ -9396,11 +10908,11 @@
                   },
                   "dstCidr": {
                     "type": "string",
-                    "maxLength": 32
+                    "maxLength": 64
                   },
                   "port": {
                     "type": "integer",
-                    "minimum": 0,
+                    "minimum": 1,
                     "maximum": 65535
                   },
                   "protocol": {
@@ -9409,13 +10921,11 @@
                     "enum": [
                       "tcp",
                       "udp",
-                      "icmp"
+                      "icmp",
+                      "icmpv6"
                     ]
                   }
                 },
-                "required": [
-                  "srcDeviceId"
-                ],
                 "additionalProperties": false
               }
             }
@@ -9540,13 +11050,85 @@
                           "items": {
                             "type": "string"
                           }
+                        },
+                        "trace": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "deviceId": {
+                                "type": "string"
+                              },
+                              "hostname": {
+                                "type": "string"
+                              },
+                              "chain": {
+                                "type": "string",
+                                "enum": [
+                                  "Inbound",
+                                  "Outbound",
+                                  "Forward"
+                                ]
+                              },
+                              "action": {
+                                "type": "string"
+                              },
+                              "matchedRule": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "byDefault": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "deviceId",
+                              "hostname",
+                              "chain",
+                              "action",
+                              "matchedRule",
+                              "byDefault"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "decidedBy": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "deviceId": {
+                              "type": "string"
+                            },
+                            "hostname": {
+                              "type": "string"
+                            },
+                            "chain": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "deviceId",
+                            "hostname",
+                            "chain"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "srcIp": {
+                          "type": "string"
+                        },
+                        "dstIp": {
+                          "type": "string"
                         }
                       },
                       "required": [
                         "allowed",
                         "egress",
                         "ingress",
-                        "explanation"
+                        "explanation",
+                        "trace",
+                        "decidedBy",
+                        "srcIp",
+                        "dstIp"
                       ],
                       "additionalProperties": false
                     }
@@ -9582,6 +11164,11 @@
                     "format": "uuid",
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   },
+                  "srcIp": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
                   "dstDeviceId": {
                     "type": "string",
                     "format": "uuid",
@@ -9589,11 +11176,11 @@
                   },
                   "dstCidr": {
                     "type": "string",
-                    "maxLength": 32
+                    "maxLength": 64
                   },
                   "port": {
                     "type": "integer",
-                    "minimum": 0,
+                    "minimum": 1,
                     "maximum": 65535
                   },
                   "protocol": {
@@ -9602,13 +11189,11 @@
                     "enum": [
                       "tcp",
                       "udp",
-                      "icmp"
+                      "icmp",
+                      "icmpv6"
                     ]
                   }
                 },
-                "required": [
-                  "srcDeviceId"
-                ],
                 "additionalProperties": false
               }
             }
@@ -9733,13 +11318,85 @@
                           "items": {
                             "type": "string"
                           }
+                        },
+                        "trace": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "deviceId": {
+                                "type": "string"
+                              },
+                              "hostname": {
+                                "type": "string"
+                              },
+                              "chain": {
+                                "type": "string",
+                                "enum": [
+                                  "Inbound",
+                                  "Outbound",
+                                  "Forward"
+                                ]
+                              },
+                              "action": {
+                                "type": "string"
+                              },
+                              "matchedRule": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "byDefault": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "deviceId",
+                              "hostname",
+                              "chain",
+                              "action",
+                              "matchedRule",
+                              "byDefault"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "decidedBy": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "deviceId": {
+                              "type": "string"
+                            },
+                            "hostname": {
+                              "type": "string"
+                            },
+                            "chain": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "deviceId",
+                            "hostname",
+                            "chain"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "srcIp": {
+                          "type": "string"
+                        },
+                        "dstIp": {
+                          "type": "string"
                         }
                       },
                       "required": [
                         "allowed",
                         "egress",
                         "ingress",
-                        "explanation"
+                        "explanation",
+                        "trace",
+                        "decidedBy",
+                        "srcIp",
+                        "dstIp"
                       ],
                       "additionalProperties": false
                     },
@@ -9754,6 +11411,903 @@
                     "devices",
                     "reachability",
                     "policyVersion"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tags": {
+      "get": {
+        "operationId": "listTags",
+        "tags": [
+          "policy"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "subject": {
+                        "type": "string"
+                      },
+                      "color": {
+                        "type": "string"
+                      },
+                      "deviceCount": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "devices": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "hostname": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "hostname"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "subject",
+                      "color",
+                      "deviceCount",
+                      "devices"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createTag",
+        "tags": [
+          "policy"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "color": {
+                    "type": "string",
+                    "maxLength": 32
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "subject": {
+                      "type": "string"
+                    },
+                    "color": {
+                      "type": "string"
+                    },
+                    "deviceCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "devices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "hostname"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "subject",
+                    "color",
+                    "deviceCount",
+                    "devices"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tags/{tagId}": {
+      "delete": {
+        "operationId": "deleteTag",
+        "tags": [
+          "policy"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "tagId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tags/{tagId}/devices": {
+      "put": {
+        "operationId": "assignTagDevices",
+        "tags": [
+          "policy"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "deviceIds": {
+                    "maxItems": 10000,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  }
+                },
+                "required": [
+                  "deviceIds"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "tagId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "subject": {
+                      "type": "string"
+                    },
+                    "color": {
+                      "type": "string"
+                    },
+                    "deviceCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "devices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "hostname": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "hostname"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "subject",
+                    "color",
+                    "deviceCount",
+                    "devices"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user-groups": {
+      "get": {
+        "operationId": "listUserGroups",
+        "tags": [
+          "policy"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "subject": {
+                        "type": "string"
+                      },
+                      "source": {
+                        "type": "string",
+                        "enum": [
+                          "manual",
+                          "oidc"
+                        ]
+                      },
+                      "readOnly": {
+                        "type": "boolean"
+                      },
+                      "color": {
+                        "type": "string"
+                      },
+                      "members": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "email": {
+                              "type": "string"
+                            },
+                            "displayName": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "inOrganisation": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "email",
+                            "displayName",
+                            "inOrganisation"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "peopleCount": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "deviceCount": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "devices": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "subject",
+                      "source",
+                      "readOnly",
+                      "color",
+                      "members",
+                      "peopleCount",
+                      "deviceCount",
+                      "devices"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createUserGroup",
+        "tags": [
+          "policy"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "members": {
+                    "maxItems": 2000,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 253
+                    }
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "manual",
+                      "oidc"
+                    ]
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "subject": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "manual",
+                        "oidc"
+                      ]
+                    },
+                    "readOnly": {
+                      "type": "boolean"
+                    },
+                    "color": {
+                      "type": "string"
+                    },
+                    "members": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "email": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "inOrganisation": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "email",
+                          "displayName",
+                          "inOrganisation"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "peopleCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "deviceCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "devices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "subject",
+                    "source",
+                    "readOnly",
+                    "color",
+                    "members",
+                    "peopleCount",
+                    "deviceCount",
+                    "devices"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user-groups/{groupId}": {
+      "delete": {
+        "operationId": "deleteUserGroup",
+        "tags": [
+          "policy"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "in": "path",
+            "name": "groupId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user-groups/{groupId}/members": {
+      "post": {
+        "operationId": "addUserGroupMember",
+        "tags": [
+          "policy"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 253
+                  }
+                },
+                "required": [
+                  "email"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "in": "path",
+            "name": "groupId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "subject": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "manual",
+                        "oidc"
+                      ]
+                    },
+                    "readOnly": {
+                      "type": "boolean"
+                    },
+                    "color": {
+                      "type": "string"
+                    },
+                    "members": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "email": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "inOrganisation": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "email",
+                          "displayName",
+                          "inOrganisation"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "peopleCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "deviceCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "devices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "subject",
+                    "source",
+                    "readOnly",
+                    "color",
+                    "members",
+                    "peopleCount",
+                    "deviceCount",
+                    "devices"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user-groups/{groupId}/members/{email}": {
+      "delete": {
+        "operationId": "removeUserGroupMember",
+        "tags": [
+          "policy"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "in": "path",
+            "name": "groupId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 253
+            },
+            "in": "path",
+            "name": "email",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "subject": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "manual",
+                        "oidc"
+                      ]
+                    },
+                    "readOnly": {
+                      "type": "boolean"
+                    },
+                    "color": {
+                      "type": "string"
+                    },
+                    "members": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "email": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "inOrganisation": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "email",
+                          "displayName",
+                          "inOrganisation"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "peopleCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "deviceCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "devices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "subject",
+                    "source",
+                    "readOnly",
+                    "color",
+                    "members",
+                    "peopleCount",
+                    "deviceCount",
+                    "devices"
                   ],
                   "additionalProperties": false
                 }
@@ -10229,118 +12783,6 @@
                     "approvedAt",
                     "blockedAt",
                     "createdAt"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/tags": {
-      "get": {
-        "operationId": "listTags",
-        "tags": [
-          "policy"
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "name": {
-                        "type": "string"
-                      },
-                      "color": {
-                        "type": "string"
-                      },
-                      "deviceCount": {
-                        "type": "integer",
-                        "minimum": -9007199254740991,
-                        "maximum": 9007199254740991
-                      }
-                    },
-                    "required": [
-                      "id",
-                      "name",
-                      "color",
-                      "deviceCount"
-                    ],
-                    "additionalProperties": false
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "operationId": "createTag",
-        "tags": [
-          "policy"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 120
-                  },
-                  "color": {
-                    "type": "string",
-                    "maxLength": 32
-                  }
-                },
-                "required": [
-                  "name"
-                ],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "color": {
-                      "type": "string"
-                    },
-                    "deviceCount": {
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "name",
-                    "color",
-                    "deviceCount"
                   ],
                   "additionalProperties": false
                 }

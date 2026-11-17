@@ -5,12 +5,19 @@
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
  * OpenAPI spec version: 0.3.0-M3
  */
+import type { PreviewNetworkPolicy200ReachabilityDecidedBy } from './previewNetworkPolicy200ReachabilityDecidedBy';
 import type { PreviewNetworkPolicy200ReachabilityEgress } from './previewNetworkPolicy200ReachabilityEgress';
 import type { PreviewNetworkPolicy200ReachabilityIngress } from './previewNetworkPolicy200ReachabilityIngress';
+import type { PreviewNetworkPolicy200ReachabilityTraceItem } from './previewNetworkPolicy200ReachabilityTraceItem';
 
 export type PreviewNetworkPolicy200Reachability = {
   allowed: boolean;
   egress: PreviewNetworkPolicy200ReachabilityEgress;
   ingress: PreviewNetworkPolicy200ReachabilityIngress;
   explanation: string[];
+  trace: PreviewNetworkPolicy200ReachabilityTraceItem[];
+  /** @nullable */
+  decidedBy: PreviewNetworkPolicy200ReachabilityDecidedBy;
+  srcIp: string;
+  dstIp: string;
 };

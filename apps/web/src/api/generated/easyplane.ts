@@ -25,9 +25,13 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AddUserGroupMember200,
+  AddUserGroupMemberBody,
   AlignNetworkRendezvousSecret200,
   ApproveDevice200,
   ApproveDeviceBody,
+  AssignTagDevices200,
+  AssignTagDevicesBody,
   BlockDevice200,
   BlockDeviceBody,
   BootstrapAdmin200,
@@ -46,6 +50,8 @@ import type {
   CreateNetworkPeerBody,
   CreateTag201,
   CreateTagBody,
+  CreateUserGroup201,
+  CreateUserGroupBody,
   DecideDeviceRoute200,
   DecideDeviceRouteBody,
   DeleteDevice200,
@@ -53,10 +59,13 @@ import type {
   DeleteNetwork200,
   DeleteNetworkPeer200,
   DeleteNetworkPolicy200,
+  DeleteTag200,
+  DeleteUserGroup200,
   ExportNetworkConfig200,
   ExportNetworkConfigParams,
   FinishOidcLoginParams,
   GetAppConfig200,
+  GetCompiledAcl200,
   GetDevice200,
   GetDeviceTopology200,
   GetDeviceTopologyParams,
@@ -66,6 +75,7 @@ import type {
   GetNetworkTopology200,
   GetNetworkTopologyParams,
   GetOrganisation200,
+  GetPolicySubjects200,
   GetRendezvous200,
   Health200,
   Health503,
@@ -86,6 +96,7 @@ import type {
   ListNetworkRoutes200,
   ListNetworks200Item,
   ListTags200Item,
+  ListUserGroups200Item,
   ListUsers200Item,
   Logout200,
   PreviewNetworkAccessMode200,
@@ -95,6 +106,7 @@ import type {
   PreviewNetworkPolicy200,
   PreviewNetworkPolicyBody,
   PushDeviceConfig200,
+  RemoveUserGroupMember200,
   RenameDevice200,
   RenameDeviceBody,
   RenewDeviceCredential200,
@@ -114,6 +126,8 @@ import type {
   SetDeviceRoleBody,
   SetDeviceTags200,
   SetDeviceTagsBody,
+  SetNetworkPolicyMode200,
+  SetNetworkPolicyModeBody,
   StartOidcLoginParams,
   SwitchNetworkAccessMode200,
   SwitchNetworkAccessModeBody,
@@ -4775,6 +4789,112 @@ export function useListNetworkPolicyVersions<TData = Awaited<ReturnType<typeof l
 
 
 
+export type getPolicySubjectsResponse200 = {
+  data: GetPolicySubjects200
+  status: 200
+}
+
+export type getPolicySubjectsResponseSuccess = (getPolicySubjectsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getPolicySubjectsResponse = (getPolicySubjectsResponseSuccess)
+
+export const getGetPolicySubjectsUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/policy/subjects`
+}
+
+export const getPolicySubjects = async (networkId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getPolicySubjectsResponse> => {
+
+  return apiFetch<getPolicySubjectsResponse>(getGetPolicySubjectsUrl(networkId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPolicySubjectsQueryKey = (networkId: string,) => {
+    return [
+    `/api/networks/${networkId}/policy/subjects`
+    ] as const;
+    }
+
+
+export const getGetPolicySubjectsQueryOptions = <TData = Awaited<ReturnType<typeof getPolicySubjects>>, TError = unknown>(networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPolicySubjects>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPolicySubjectsQueryKey(networkId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPolicySubjects>>> = ({ signal }) => getPolicySubjects(networkId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: networkId !== null && networkId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPolicySubjects>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPolicySubjectsQueryResult = NonNullable<Awaited<ReturnType<typeof getPolicySubjects>>>
+export type GetPolicySubjectsQueryError = unknown
+
+
+export function useGetPolicySubjects<TData = Awaited<ReturnType<typeof getPolicySubjects>>, TError = unknown>(
+ networkId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPolicySubjects>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPolicySubjects>>,
+          TError,
+          Awaited<ReturnType<typeof getPolicySubjects>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPolicySubjects<TData = Awaited<ReturnType<typeof getPolicySubjects>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPolicySubjects>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPolicySubjects>>,
+          TError,
+          Awaited<ReturnType<typeof getPolicySubjects>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPolicySubjects<TData = Awaited<ReturnType<typeof getPolicySubjects>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPolicySubjects>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPolicySubjects<TData = Awaited<ReturnType<typeof getPolicySubjects>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPolicySubjects>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPolicySubjectsQueryOptions(networkId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export type validateNetworkPolicyResponse200 = {
   data: ValidateNetworkPolicy200
   status: 200
@@ -4855,6 +4975,201 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getValidateNetworkPolicyMutationOptions(options), queryClient);
     }
+
+export type setNetworkPolicyModeResponse200 = {
+  data: SetNetworkPolicyMode200
+  status: 200
+}
+
+export type setNetworkPolicyModeResponseSuccess = (setNetworkPolicyModeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type setNetworkPolicyModeResponse = (setNetworkPolicyModeResponseSuccess)
+
+export const getSetNetworkPolicyModeUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/policy/mode`
+}
+
+export const setNetworkPolicyMode = async (networkId: string,
+    setNetworkPolicyModeBody: SetNetworkPolicyModeBody, options?: Parameters<typeof apiFetch>[1]): Promise<setNetworkPolicyModeResponse> => {
+
+  return apiFetch<setNetworkPolicyModeResponse>(getSetNetworkPolicyModeUrl(networkId),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(setNetworkPolicyModeBody)
+  }
+);}
+
+
+
+
+
+export const getSetNetworkPolicyModeMutationKey = () => ['setNetworkPolicyMode'] as const;
+
+export const getSetNetworkPolicyModeMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setNetworkPolicyMode>>, TError,SetNetworkPolicyModeMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setNetworkPolicyMode>>, TError,SetNetworkPolicyModeMutationVariables, TContext> => {
+
+const mutationKey = getSetNetworkPolicyModeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setNetworkPolicyMode>>, SetNetworkPolicyModeMutationVariables> = (props) => {
+          const {networkId,data} = props ?? {};
+
+          return  setNetworkPolicyMode(networkId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetNetworkPolicyModeMutationResult = NonNullable<Awaited<ReturnType<typeof setNetworkPolicyMode>>>
+    export type SetNetworkPolicyModeMutationBody = SetNetworkPolicyModeBody
+    export type SetNetworkPolicyModeMutationError = unknown
+    export type SetNetworkPolicyModeMutationVariables = {networkId: string;data: SetNetworkPolicyModeBody}
+
+    export const useSetNetworkPolicyMode = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setNetworkPolicyMode>>, TError,SetNetworkPolicyModeMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof setNetworkPolicyMode>>,
+        TError,
+        SetNetworkPolicyModeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetNetworkPolicyModeMutationOptions(options), queryClient);
+    }
+
+export type getCompiledAclResponse200 = {
+  data: GetCompiledAcl200
+  status: 200
+}
+
+export type getCompiledAclResponseSuccess = (getCompiledAclResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getCompiledAclResponse = (getCompiledAclResponseSuccess)
+
+export const getGetCompiledAclUrl = (networkId: string,
+    deviceId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/policy/compiled/${deviceId}`
+}
+
+export const getCompiledAcl = async (networkId: string,
+    deviceId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getCompiledAclResponse> => {
+
+  return apiFetch<getCompiledAclResponse>(getGetCompiledAclUrl(networkId,deviceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCompiledAclQueryKey = (networkId: string,
+    deviceId: string,) => {
+    return [
+    `/api/networks/${networkId}/policy/compiled/${deviceId}`
+    ] as const;
+    }
+
+
+export const getGetCompiledAclQueryOptions = <TData = Awaited<ReturnType<typeof getCompiledAcl>>, TError = unknown>(networkId: string,
+    deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompiledAcl>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCompiledAclQueryKey(networkId,deviceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCompiledAcl>>> = ({ signal }) => getCompiledAcl(networkId,deviceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: networkId !== null && networkId !== undefined && deviceId !== null && deviceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCompiledAcl>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetCompiledAclQueryResult = NonNullable<Awaited<ReturnType<typeof getCompiledAcl>>>
+export type GetCompiledAclQueryError = unknown
+
+
+export function useGetCompiledAcl<TData = Awaited<ReturnType<typeof getCompiledAcl>>, TError = unknown>(
+ networkId: string,
+    deviceId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompiledAcl>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCompiledAcl>>,
+          TError,
+          Awaited<ReturnType<typeof getCompiledAcl>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCompiledAcl<TData = Awaited<ReturnType<typeof getCompiledAcl>>, TError = unknown>(
+ networkId: string,
+    deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompiledAcl>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCompiledAcl>>,
+          TError,
+          Awaited<ReturnType<typeof getCompiledAcl>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCompiledAcl<TData = Awaited<ReturnType<typeof getCompiledAcl>>, TError = unknown>(
+ networkId: string,
+    deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompiledAcl>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCompiledAcl<TData = Awaited<ReturnType<typeof getCompiledAcl>>, TError = unknown>(
+ networkId: string,
+    deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCompiledAcl>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCompiledAclQueryOptions(networkId,deviceId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export type previewNetworkPolicyResponse200 = {
   data: PreviewNetworkPolicy200
@@ -5016,6 +5331,782 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getTestNetworkReachabilityMutationOptions(options), queryClient);
+    }
+
+export type listTagsResponse200 = {
+  data: ListTags200Item[]
+  status: 200
+}
+
+export type listTagsResponseSuccess = (listTagsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listTagsResponse = (listTagsResponseSuccess)
+
+export const getListTagsUrl = () => {
+
+
+
+
+  return `/api/tags`
+}
+
+export const listTags = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listTagsResponse> => {
+
+  return apiFetch<listTagsResponse>(getListTagsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTagsQueryKey = () => {
+    return [
+    `/api/tags`
+    ] as const;
+    }
+
+
+export const getListTagsQueryOptions = <TData = Awaited<ReturnType<typeof listTags>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTagsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTags>>> = ({ signal }) => listTags({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListTagsQueryResult = NonNullable<Awaited<ReturnType<typeof listTags>>>
+export type ListTagsQueryError = unknown
+
+
+export function useListTags<TData = Awaited<ReturnType<typeof listTags>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listTags>>,
+          TError,
+          Awaited<ReturnType<typeof listTags>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListTags<TData = Awaited<ReturnType<typeof listTags>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listTags>>,
+          TError,
+          Awaited<ReturnType<typeof listTags>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListTags<TData = Awaited<ReturnType<typeof listTags>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListTags<TData = Awaited<ReturnType<typeof listTags>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListTagsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type createTagResponse201 = {
+  data: CreateTag201
+  status: 201
+}
+
+export type createTagResponseSuccess = (createTagResponse201) & {
+  headers: Headers;
+};
+;
+
+export type createTagResponse = (createTagResponseSuccess)
+
+export const getCreateTagUrl = () => {
+
+
+
+
+  return `/api/tags`
+}
+
+export const createTag = async (createTagBody: CreateTagBody, options?: Parameters<typeof apiFetch>[1]): Promise<createTagResponse> => {
+
+  return apiFetch<createTagResponse>(getCreateTagUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(createTagBody)
+  }
+);}
+
+
+
+
+
+export const getCreateTagMutationKey = () => ['createTag'] as const;
+
+export const getCreateTagMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTag>>, TError,CreateTagMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTag>>, TError,CreateTagMutationVariables, TContext> => {
+
+const mutationKey = getCreateTagMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTag>>, CreateTagMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createTag(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTagMutationResult = NonNullable<Awaited<ReturnType<typeof createTag>>>
+    export type CreateTagMutationBody = CreateTagBody
+    export type CreateTagMutationError = unknown
+    export type CreateTagMutationVariables = {data: CreateTagBody}
+
+    export const useCreateTag = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTag>>, TError,CreateTagMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createTag>>,
+        TError,
+        CreateTagMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateTagMutationOptions(options), queryClient);
+    }
+
+export type deleteTagResponse200 = {
+  data: DeleteTag200
+  status: 200
+}
+
+export type deleteTagResponseSuccess = (deleteTagResponse200) & {
+  headers: Headers;
+};
+;
+
+export type deleteTagResponse = (deleteTagResponseSuccess)
+
+export const getDeleteTagUrl = (tagId: string,) => {
+
+
+
+
+  return `/api/tags/${tagId}`
+}
+
+export const deleteTag = async (tagId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteTagResponse> => {
+
+  return apiFetch<deleteTagResponse>(getDeleteTagUrl(tagId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteTagMutationKey = () => ['deleteTag'] as const;
+
+export const getDeleteTagMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTag>>, TError,DeleteTagMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTag>>, TError,DeleteTagMutationVariables, TContext> => {
+
+const mutationKey = getDeleteTagMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTag>>, DeleteTagMutationVariables> = (props) => {
+          const {tagId} = props ?? {};
+
+          return  deleteTag(tagId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTagMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTag>>>
+
+    export type DeleteTagMutationError = unknown
+    export type DeleteTagMutationVariables = {tagId: string}
+
+    export const useDeleteTag = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTag>>, TError,DeleteTagMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTag>>,
+        TError,
+        DeleteTagMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteTagMutationOptions(options), queryClient);
+    }
+
+export type assignTagDevicesResponse200 = {
+  data: AssignTagDevices200
+  status: 200
+}
+
+export type assignTagDevicesResponseSuccess = (assignTagDevicesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type assignTagDevicesResponse = (assignTagDevicesResponseSuccess)
+
+export const getAssignTagDevicesUrl = (tagId: string,) => {
+
+
+
+
+  return `/api/tags/${tagId}/devices`
+}
+
+export const assignTagDevices = async (tagId: string,
+    assignTagDevicesBody: AssignTagDevicesBody, options?: Parameters<typeof apiFetch>[1]): Promise<assignTagDevicesResponse> => {
+
+  return apiFetch<assignTagDevicesResponse>(getAssignTagDevicesUrl(tagId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(assignTagDevicesBody)
+  }
+);}
+
+
+
+
+
+export const getAssignTagDevicesMutationKey = () => ['assignTagDevices'] as const;
+
+export const getAssignTagDevicesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignTagDevices>>, TError,AssignTagDevicesMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof assignTagDevices>>, TError,AssignTagDevicesMutationVariables, TContext> => {
+
+const mutationKey = getAssignTagDevicesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof assignTagDevices>>, AssignTagDevicesMutationVariables> = (props) => {
+          const {tagId,data} = props ?? {};
+
+          return  assignTagDevices(tagId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AssignTagDevicesMutationResult = NonNullable<Awaited<ReturnType<typeof assignTagDevices>>>
+    export type AssignTagDevicesMutationBody = AssignTagDevicesBody
+    export type AssignTagDevicesMutationError = unknown
+    export type AssignTagDevicesMutationVariables = {tagId: string;data: AssignTagDevicesBody}
+
+    export const useAssignTagDevices = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignTagDevices>>, TError,AssignTagDevicesMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof assignTagDevices>>,
+        TError,
+        AssignTagDevicesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAssignTagDevicesMutationOptions(options), queryClient);
+    }
+
+export type listUserGroupsResponse200 = {
+  data: ListUserGroups200Item[]
+  status: 200
+}
+
+export type listUserGroupsResponseSuccess = (listUserGroupsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listUserGroupsResponse = (listUserGroupsResponseSuccess)
+
+export const getListUserGroupsUrl = () => {
+
+
+
+
+  return `/api/user-groups`
+}
+
+export const listUserGroups = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listUserGroupsResponse> => {
+
+  return apiFetch<listUserGroupsResponse>(getListUserGroupsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListUserGroupsQueryKey = () => {
+    return [
+    `/api/user-groups`
+    ] as const;
+    }
+
+
+export const getListUserGroupsQueryOptions = <TData = Awaited<ReturnType<typeof listUserGroups>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUserGroups>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListUserGroupsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listUserGroups>>> = ({ signal }) => listUserGroups({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listUserGroups>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListUserGroupsQueryResult = NonNullable<Awaited<ReturnType<typeof listUserGroups>>>
+export type ListUserGroupsQueryError = unknown
+
+
+export function useListUserGroups<TData = Awaited<ReturnType<typeof listUserGroups>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUserGroups>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listUserGroups>>,
+          TError,
+          Awaited<ReturnType<typeof listUserGroups>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListUserGroups<TData = Awaited<ReturnType<typeof listUserGroups>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUserGroups>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listUserGroups>>,
+          TError,
+          Awaited<ReturnType<typeof listUserGroups>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListUserGroups<TData = Awaited<ReturnType<typeof listUserGroups>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUserGroups>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListUserGroups<TData = Awaited<ReturnType<typeof listUserGroups>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUserGroups>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListUserGroupsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type createUserGroupResponse201 = {
+  data: CreateUserGroup201
+  status: 201
+}
+
+export type createUserGroupResponseSuccess = (createUserGroupResponse201) & {
+  headers: Headers;
+};
+;
+
+export type createUserGroupResponse = (createUserGroupResponseSuccess)
+
+export const getCreateUserGroupUrl = () => {
+
+
+
+
+  return `/api/user-groups`
+}
+
+export const createUserGroup = async (createUserGroupBody: CreateUserGroupBody, options?: Parameters<typeof apiFetch>[1]): Promise<createUserGroupResponse> => {
+
+  return apiFetch<createUserGroupResponse>(getCreateUserGroupUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(createUserGroupBody)
+  }
+);}
+
+
+
+
+
+export const getCreateUserGroupMutationKey = () => ['createUserGroup'] as const;
+
+export const getCreateUserGroupMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUserGroup>>, TError,CreateUserGroupMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createUserGroup>>, TError,CreateUserGroupMutationVariables, TContext> => {
+
+const mutationKey = getCreateUserGroupMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createUserGroup>>, CreateUserGroupMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createUserGroup(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateUserGroupMutationResult = NonNullable<Awaited<ReturnType<typeof createUserGroup>>>
+    export type CreateUserGroupMutationBody = CreateUserGroupBody
+    export type CreateUserGroupMutationError = unknown
+    export type CreateUserGroupMutationVariables = {data: CreateUserGroupBody}
+
+    export const useCreateUserGroup = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUserGroup>>, TError,CreateUserGroupMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createUserGroup>>,
+        TError,
+        CreateUserGroupMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateUserGroupMutationOptions(options), queryClient);
+    }
+
+export type deleteUserGroupResponse200 = {
+  data: DeleteUserGroup200
+  status: 200
+}
+
+export type deleteUserGroupResponseSuccess = (deleteUserGroupResponse200) & {
+  headers: Headers;
+};
+;
+
+export type deleteUserGroupResponse = (deleteUserGroupResponseSuccess)
+
+export const getDeleteUserGroupUrl = (groupId: string,) => {
+
+
+
+
+  return `/api/user-groups/${groupId}`
+}
+
+export const deleteUserGroup = async (groupId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteUserGroupResponse> => {
+
+  return apiFetch<deleteUserGroupResponse>(getDeleteUserGroupUrl(groupId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteUserGroupMutationKey = () => ['deleteUserGroup'] as const;
+
+export const getDeleteUserGroupMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUserGroup>>, TError,DeleteUserGroupMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteUserGroup>>, TError,DeleteUserGroupMutationVariables, TContext> => {
+
+const mutationKey = getDeleteUserGroupMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteUserGroup>>, DeleteUserGroupMutationVariables> = (props) => {
+          const {groupId} = props ?? {};
+
+          return  deleteUserGroup(groupId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteUserGroupMutationResult = NonNullable<Awaited<ReturnType<typeof deleteUserGroup>>>
+
+    export type DeleteUserGroupMutationError = unknown
+    export type DeleteUserGroupMutationVariables = {groupId: string}
+
+    export const useDeleteUserGroup = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUserGroup>>, TError,DeleteUserGroupMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteUserGroup>>,
+        TError,
+        DeleteUserGroupMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteUserGroupMutationOptions(options), queryClient);
+    }
+
+export type addUserGroupMemberResponse200 = {
+  data: AddUserGroupMember200
+  status: 200
+}
+
+export type addUserGroupMemberResponseSuccess = (addUserGroupMemberResponse200) & {
+  headers: Headers;
+};
+;
+
+export type addUserGroupMemberResponse = (addUserGroupMemberResponseSuccess)
+
+export const getAddUserGroupMemberUrl = (groupId: string,) => {
+
+
+
+
+  return `/api/user-groups/${groupId}/members`
+}
+
+export const addUserGroupMember = async (groupId: string,
+    addUserGroupMemberBody: AddUserGroupMemberBody, options?: Parameters<typeof apiFetch>[1]): Promise<addUserGroupMemberResponse> => {
+
+  return apiFetch<addUserGroupMemberResponse>(getAddUserGroupMemberUrl(groupId),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(addUserGroupMemberBody)
+  }
+);}
+
+
+
+
+
+export const getAddUserGroupMemberMutationKey = () => ['addUserGroupMember'] as const;
+
+export const getAddUserGroupMemberMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addUserGroupMember>>, TError,AddUserGroupMemberMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addUserGroupMember>>, TError,AddUserGroupMemberMutationVariables, TContext> => {
+
+const mutationKey = getAddUserGroupMemberMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addUserGroupMember>>, AddUserGroupMemberMutationVariables> = (props) => {
+          const {groupId,data} = props ?? {};
+
+          return  addUserGroupMember(groupId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddUserGroupMemberMutationResult = NonNullable<Awaited<ReturnType<typeof addUserGroupMember>>>
+    export type AddUserGroupMemberMutationBody = AddUserGroupMemberBody
+    export type AddUserGroupMemberMutationError = unknown
+    export type AddUserGroupMemberMutationVariables = {groupId: string;data: AddUserGroupMemberBody}
+
+    export const useAddUserGroupMember = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addUserGroupMember>>, TError,AddUserGroupMemberMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addUserGroupMember>>,
+        TError,
+        AddUserGroupMemberMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddUserGroupMemberMutationOptions(options), queryClient);
+    }
+
+export type removeUserGroupMemberResponse200 = {
+  data: RemoveUserGroupMember200
+  status: 200
+}
+
+export type removeUserGroupMemberResponseSuccess = (removeUserGroupMemberResponse200) & {
+  headers: Headers;
+};
+;
+
+export type removeUserGroupMemberResponse = (removeUserGroupMemberResponseSuccess)
+
+export const getRemoveUserGroupMemberUrl = (groupId: string,
+    email: string,) => {
+
+
+
+
+  return `/api/user-groups/${groupId}/members/${email}`
+}
+
+export const removeUserGroupMember = async (groupId: string,
+    email: string, options?: Parameters<typeof apiFetch>[1]): Promise<removeUserGroupMemberResponse> => {
+
+  return apiFetch<removeUserGroupMemberResponse>(getRemoveUserGroupMemberUrl(groupId,email),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveUserGroupMemberMutationKey = () => ['removeUserGroupMember'] as const;
+
+export const getRemoveUserGroupMemberMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeUserGroupMember>>, TError,RemoveUserGroupMemberMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeUserGroupMember>>, TError,RemoveUserGroupMemberMutationVariables, TContext> => {
+
+const mutationKey = getRemoveUserGroupMemberMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeUserGroupMember>>, RemoveUserGroupMemberMutationVariables> = (props) => {
+          const {groupId,email} = props ?? {};
+
+          return  removeUserGroupMember(groupId,email,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveUserGroupMemberMutationResult = NonNullable<Awaited<ReturnType<typeof removeUserGroupMember>>>
+
+    export type RemoveUserGroupMemberMutationError = unknown
+    export type RemoveUserGroupMemberMutationVariables = {groupId: string;email: string}
+
+    export const useRemoveUserGroupMember = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeUserGroupMember>>, TError,RemoveUserGroupMemberMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeUserGroupMember>>,
+        TError,
+        RemoveUserGroupMemberMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveUserGroupMemberMutationOptions(options), queryClient);
     }
 
 export type listMagicDnsNamesResponse200 = {
@@ -5203,192 +6294,6 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getRenameDeviceMutationOptions(options), queryClient);
-    }
-
-export type listTagsResponse200 = {
-  data: ListTags200Item[]
-  status: 200
-}
-
-export type listTagsResponseSuccess = (listTagsResponse200) & {
-  headers: Headers;
-};
-;
-
-export type listTagsResponse = (listTagsResponseSuccess)
-
-export const getListTagsUrl = () => {
-
-
-
-
-  return `/api/tags`
-}
-
-export const listTags = async ( options?: Parameters<typeof apiFetch>[1]): Promise<listTagsResponse> => {
-
-  return apiFetch<listTagsResponse>(getListTagsUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getListTagsQueryKey = () => {
-    return [
-    `/api/tags`
-    ] as const;
-    }
-
-
-export const getListTagsQueryOptions = <TData = Awaited<ReturnType<typeof listTags>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListTagsQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTags>>> = ({ signal }) => listTags({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ListTagsQueryResult = NonNullable<Awaited<ReturnType<typeof listTags>>>
-export type ListTagsQueryError = unknown
-
-
-export function useListTags<TData = Awaited<ReturnType<typeof listTags>>, TError = unknown>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listTags>>,
-          TError,
-          Awaited<ReturnType<typeof listTags>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListTags<TData = Awaited<ReturnType<typeof listTags>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listTags>>,
-          TError,
-          Awaited<ReturnType<typeof listTags>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListTags<TData = Awaited<ReturnType<typeof listTags>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListTags<TData = Awaited<ReturnType<typeof listTags>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTags>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getListTagsQueryOptions(options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
-export type createTagResponse201 = {
-  data: CreateTag201
-  status: 201
-}
-
-export type createTagResponseSuccess = (createTagResponse201) & {
-  headers: Headers;
-};
-;
-
-export type createTagResponse = (createTagResponseSuccess)
-
-export const getCreateTagUrl = () => {
-
-
-
-
-  return `/api/tags`
-}
-
-export const createTag = async (createTagBody: CreateTagBody, options?: Parameters<typeof apiFetch>[1]): Promise<createTagResponse> => {
-
-  return apiFetch<createTagResponse>(getCreateTagUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
-    body: JSON.stringify(createTagBody)
-  }
-);}
-
-
-
-
-
-export const getCreateTagMutationKey = () => ['createTag'] as const;
-
-export const getCreateTagMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTag>>, TError,CreateTagMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createTag>>, TError,CreateTagMutationVariables, TContext> => {
-
-const mutationKey = getCreateTagMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTag>>, CreateTagMutationVariables> = (props) => {
-          const {data} = props ?? {};
-
-          return  createTag(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateTagMutationResult = NonNullable<Awaited<ReturnType<typeof createTag>>>
-    export type CreateTagMutationBody = CreateTagBody
-    export type CreateTagMutationError = unknown
-    export type CreateTagMutationVariables = {data: CreateTagBody}
-
-    export const useCreateTag = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTag>>, TError,CreateTagMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof createTag>>,
-        TError,
-        CreateTagMutationVariables,
-        TContext
-      > => {
-      return useMutation(getCreateTagMutationOptions(options), queryClient);
     }
 
 export type setDeviceTagsResponse200 = {

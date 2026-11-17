@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.3.0-M3
  */
 import type { ValidateNetworkPolicyBodyDocument } from './validateNetworkPolicyBodyDocument';
+import type { ValidateNetworkPolicyBodyMode } from './validateNetworkPolicyBodyMode';
 
 export type ValidateNetworkPolicyBody = {
   document?: ValidateNetworkPolicyBodyDocument;
@@ -16,4 +17,5 @@ export type ValidateNetworkPolicyBody = {
   text?: string;
   /** @maxLength 500 */
   note?: string;
+  mode?: ValidateNetworkPolicyBodyMode;
 };

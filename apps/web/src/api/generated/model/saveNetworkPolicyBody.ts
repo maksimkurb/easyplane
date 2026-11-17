@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.3.0-M3
  */
 import type { SaveNetworkPolicyBodyDocument } from './saveNetworkPolicyBodyDocument';
+import type { SaveNetworkPolicyBodyMode } from './saveNetworkPolicyBodyMode';
 
 export type SaveNetworkPolicyBody = {
   document?: SaveNetworkPolicyBodyDocument;
@@ -16,4 +17,5 @@ export type SaveNetworkPolicyBody = {
   text?: string;
   /** @maxLength 500 */
   note?: string;
+  mode?: SaveNetworkPolicyBodyMode;
 };

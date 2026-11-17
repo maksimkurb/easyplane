@@ -13,4 +13,5 @@ export const PreviewNetworkPolicyBodyProtocol = {
   tcp: 'tcp',
   udp: 'udp',
   icmp: 'icmp',
+  icmpv6: 'icmpv6',
 } as const;

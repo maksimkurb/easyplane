@@ -9,6 +9,7 @@ import type { ListNetworks200ItemAccess } from './listNetworks200ItemAccess';
 import type { ListNetworks200ItemDefaultConfig } from './listNetworks200ItemDefaultConfig';
 import type { ListNetworks200ItemDeviceCounts } from './listNetworks200ItemDeviceCounts';
 import type { ListNetworks200ItemPeerPlan } from './listNetworks200ItemPeerPlan';
+import type { ListNetworks200ItemPolicyMode } from './listNetworks200ItemPolicyMode';
 import type { ListNetworks200ItemRendezvous } from './listNetworks200ItemRendezvous';
 
 export type ListNetworks200Item = {
@@ -24,6 +25,7 @@ export type ListNetworks200Item = {
      * @maximum 9007199254740991
      */
   policyVersion: number;
+  policyMode: ListNetworks200ItemPolicyMode;
   useRendezvous: boolean;
   p2pOnly: boolean;
   access: ListNetworks200ItemAccess;

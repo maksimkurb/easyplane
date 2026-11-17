@@ -112,6 +112,7 @@ export const networkSchema = z.object({
   magicDnsEnabled: z.boolean(),
   magicDnsZone: z.string(),
   policyVersion: z.number().int(),
+  policyMode: z.enum(["open", "rules", "json"]),
   useRendezvous: z.boolean(),
   p2pOnly: z.boolean(),
   access: networkAccessSchema,
@@ -456,12 +457,28 @@ export const paramsRouteSchema = z.object({ routeId: z.string().uuid() });
 // M2: policy, MagicDNS, tags and routes
 // ---------------------------------------------------------------------------
 
+export const policyModeSchema = z.enum(["open", "rules", "json"]);
+
+export const policyChainConfigSchema = z.object({
+  default: z.enum(["allow", "block"]),
+  enabled: z.boolean(),
+  name: z.string().optional(),
+});
+
 export const policySummarySchema = z.object({
   statements: z.number().int(),
   tags: z.array(z.string()),
   groups: z.array(z.string()),
   hosts: z.array(z.string()),
+  subnets: z.array(z.string()),
   strictTags: z.boolean(),
+  strictGroups: z.boolean(),
+  mode: policyModeSchema,
+  chains: z.object({
+    inbound: policyChainConfigSchema,
+    outbound: policyChainConfigSchema,
+    forward: policyChainConfigSchema,
+  }),
 });
 
 export const policyVersionSchema = z.object({
@@ -475,9 +492,104 @@ export const policyVersionSchema = z.object({
   summary: policySummarySchema,
 });
 
+export const subjectViewSchema = z.object({
+  subject: z.string(),
+  kind: z.enum(["any", "device", "tag", "group", "subnet", "host", "cidr"]),
+  id: z.string(),
+  name: z.string(),
+  display: z.string(),
+  detail: z.string().optional(),
+  deviceCount: z.number().int(),
+  peopleCount: z.number().int().optional(),
+  readOnly: z.boolean().optional(),
+  source: z.enum(["manual", "oidc"]).optional(),
+});
+
+export const policyRuleViewSchema = z.object({
+  index: z.number().int(),
+  name: z.string().nullable(),
+  enabled: z.boolean(),
+  action: z.enum(["allow", "deny"]),
+  protocol: z.string(),
+  ports: z.array(z.string()),
+  sourcePorts: z.array(z.string()),
+  stateful: z.boolean(),
+  rateLimit: z.number().int().nullable(),
+  burst: z.number().int().nullable(),
+  from: z.array(subjectViewSchema),
+  to: z.array(subjectViewSchema),
+  affectedDeviceCount: z.number().int(),
+});
+
 export const policyStateSchema = z.object({
   version: z.number().int(),
+  mode: policyModeSchema,
   policy: policyVersionSchema.nullable(),
+  /** The active document after the v1 upgrade and collection enrichment. */
+  document: z.record(z.string(), z.unknown()).nullable(),
+  rules: z.array(policyRuleViewSchema),
+  summary: policySummarySchema.nullable(),
+  deviceCount: z.number().int(),
+});
+
+export const policyTagSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  subject: z.string(),
+  color: z.string(),
+  deviceCount: z.number().int(),
+  devices: z.array(
+    z.object({ id: z.string(), name: z.string(), hostname: z.string() }),
+  ),
+});
+
+export const policyUserGroupSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  subject: z.string(),
+  source: z.enum(["manual", "oidc"]),
+  readOnly: z.boolean(),
+  color: z.string(),
+  members: z.array(
+    z.object({
+      email: z.string(),
+      displayName: z.string().nullable(),
+      inOrganisation: z.boolean(),
+    }),
+  ),
+  peopleCount: z.number().int(),
+  deviceCount: z.number().int(),
+  devices: z.array(z.object({ id: z.string(), name: z.string() })),
+});
+
+export const policySubnetSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  display: z.string(),
+  cidr: z.string(),
+  viaDeviceId: z.string().nullable(),
+  viaHostname: z.string(),
+  routeId: z.string().nullable(),
+  approved: z.boolean(),
+});
+
+export const policyCatalogSchema = z.object({
+  devices: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      hostname: z.string(),
+      virtualIpv4: z.string().nullable(),
+      state: z.string(),
+      tags: z.array(z.string()),
+    }),
+  ),
+  tags: z.array(policyTagSchema),
+  userGroups: z.array(policyUserGroupSchema),
+  subnets: z.array(policySubnetSchema),
+  hosts: z.array(
+    z.object({ alias: z.string(), subject: z.string(), value: z.string() }),
+  ),
 });
 
 export const compiledAclSummarySchema = z.object({
@@ -488,6 +600,56 @@ export const compiledAclSummarySchema = z.object({
   forwardRules: z.number().int(),
   declaredGroups: z.array(z.string()),
   hash: z.string(),
+});
+
+export const compiledAclSchema = z.object({
+  deviceId: z.string(),
+  hostname: z.string(),
+  virtualIpv4: z.string().nullable(),
+  enabled: z.boolean(),
+  policyVersion: z.number().int(),
+  mode: policyModeSchema,
+  chains: z.array(
+    z.object({
+      name: z.string(),
+      chainType: z.enum(["Inbound", "Outbound", "Forward"]),
+      enabled: z.boolean(),
+      defaultAction: z.enum(["Allow", "Drop"]),
+      rules: z.array(
+        z.object({
+          name: z.string(),
+          description: z.string(),
+          priority: z.number().int(),
+          enabled: z.boolean(),
+          protocol: z.string(),
+          ports: z.array(z.string()),
+          sourceIps: z.array(z.string()),
+          destinationIps: z.array(z.string()),
+          sourcePorts: z.array(z.string()),
+          action: z.enum(["Allow", "Drop"]),
+          rateLimit: z.number().int(),
+          burstLimit: z.number().int(),
+          stateful: z.boolean(),
+          sourceGroups: z.array(z.string()),
+          destinationGroups: z.array(z.string()),
+        }),
+      ),
+    }),
+  ),
+  group: z.object({
+    declares: z.array(z.object({ groupName: z.string() })),
+    members: z.array(z.string()),
+  }),
+  hash: z.string(),
+});
+
+export const reachabilityTraceSchema = z.object({
+  deviceId: z.string(),
+  hostname: z.string(),
+  chain: z.enum(["Inbound", "Outbound", "Forward"]),
+  action: z.string(),
+  matchedRule: z.string().nullable(),
+  byDefault: z.boolean(),
 });
 
 export const reachabilitySchema = z.object({
@@ -501,6 +663,13 @@ export const reachabilitySchema = z.object({
     matchedRule: z.string().nullable(),
   }),
   explanation: z.array(z.string()),
+  /** Best-effort per-hop trace; limits are documented in POLICY.md. */
+  trace: z.array(reachabilityTraceSchema),
+  decidedBy: z
+    .object({ deviceId: z.string(), hostname: z.string(), chain: z.string() })
+    .nullable(),
+  srcIp: z.string(),
+  dstIp: z.string(),
 });
 
 export const previewSchema = z.object({
@@ -516,6 +685,8 @@ export const savePolicySchema = z
     /** HuJSON/JSON text; comments and trailing commas are allowed. */
     text: z.string().min(1).max(1_000_000).optional(),
     note: z.string().max(500).optional(),
+    /** Optional explicit mode; defaults to the document's mode. */
+    mode: policyModeSchema.optional(),
   })
   .strict()
   .refine(
@@ -525,7 +696,7 @@ export const savePolicySchema = z
 
 export const savePolicyTextSchema = z
   .object({
-    /** HuJSON/JSON text; parsed with comments and trailing commas allowed. */
+    /** HuJSON/JSON text; comments and trailing commas allowed. */
     text: z.string().min(1).max(1_000_000),
     note: z.string().max(500).optional(),
   })
@@ -536,22 +707,53 @@ export const previewInputSchema = z
     document: z.record(z.string(), z.unknown()).optional(),
     /** HuJSON text of an unsaved document (advanced editor). */
     text: z.string().min(1).max(1_000_000).optional(),
-    srcDeviceId: z.string().uuid(),
+    srcDeviceId: z.string().uuid().optional(),
+    /** Raw source IP or CIDR, for a host that is not an EasyPlane device. */
+    srcIp: z.string().min(1).max(64).optional(),
     dstDeviceId: z.string().uuid().optional(),
-    dstCidr: z.string().max(32).optional(),
-    port: z.number().int().min(0).max(65535).optional(),
-    protocol: z.enum(["tcp", "udp", "icmp"]).default("tcp"),
+    dstCidr: z.string().max(64).optional(),
+    port: z.number().int().min(1).max(65535).optional(),
+    protocol: z.enum(["tcp", "udp", "icmp", "icmpv6"]).default("tcp"),
   })
-  .strict();
+  .strict()
+  .refine(
+    (value) => (value.srcDeviceId === undefined) !== (value.srcIp === undefined),
+    "provide exactly one of srcDeviceId or srcIp",
+  );
 
 export const testReachabilitySchema = z
   .object({
-    srcDeviceId: z.string().uuid(),
+    srcDeviceId: z.string().uuid().optional(),
+    srcIp: z.string().min(1).max(64).optional(),
     dstDeviceId: z.string().uuid().optional(),
-    dstCidr: z.string().max(32).optional(),
-    port: z.number().int().min(0).max(65535).optional(),
-    protocol: z.enum(["tcp", "udp", "icmp"]).default("tcp"),
+    dstCidr: z.string().max(64).optional(),
+    port: z.number().int().min(1).max(65535).optional(),
+    protocol: z.enum(["tcp", "udp", "icmp", "icmpv6"]).default("tcp"),
   })
+  .strict()
+  .refine(
+    (value) => (value.srcDeviceId === undefined) !== (value.srcIp === undefined),
+    "provide exactly one of srcDeviceId or srcIp",
+  );
+
+export const policyModeInputSchema = z
+  .object({ mode: policyModeSchema })
+  .strict();
+
+export const createUserGroupSchema = z
+  .object({
+    name: z.string().min(1).max(64),
+    members: z.array(z.string().min(1).max(253)).max(2_000).optional(),
+    source: z.enum(["manual", "oidc"]).optional(),
+  })
+  .strict();
+
+export const userGroupMemberSchema = z
+  .object({ email: z.string().min(3).max(253) })
+  .strict();
+
+export const assignTagSchema = z
+  .object({ deviceIds: z.array(z.string().uuid()).max(10_000) })
   .strict();
 
 export const dnsNameSchema = z.object({
@@ -576,8 +778,12 @@ export const deviceTagsSchema = z
 export const tagSchema = z.object({
   id: z.string(),
   name: z.string(),
+  subject: z.string(),
   color: z.string(),
   deviceCount: z.number().int(),
+  devices: z.array(
+    z.object({ id: z.string(), name: z.string(), hostname: z.string() }),
+  ),
 });
 
 export const createTagSchema = z

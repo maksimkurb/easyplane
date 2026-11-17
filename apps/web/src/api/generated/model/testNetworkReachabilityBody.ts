@@ -9,13 +9,18 @@ import type { TestNetworkReachabilityBodyProtocol } from './testNetworkReachabil
 
 export type TestNetworkReachabilityBody = {
   /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
-  srcDeviceId: string;
+  srcDeviceId?: string;
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
+  srcIp?: string;
   /** @pattern ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$ */
   dstDeviceId?: string;
-  /** @maxLength 32 */
+  /** @maxLength 64 */
   dstCidr?: string;
   /**
-     * @minimum 0
+     * @minimum 1
      * @maximum 65535
      */
   port?: number;

@@ -32,6 +32,18 @@ export interface RealtimeEventData {
     networkId: string;
     version: number;
     revisionsCreated: number;
+    mode?: "open" | "rules" | "json";
+  };
+  "tag.updated": {
+    tagId: string;
+    name?: string;
+    deviceCount?: number;
+    deleted?: boolean;
+  };
+  "user_group.updated": {
+    groupId: string;
+    name?: string;
+    deleted?: boolean;
   };
   "route.updated": { networkId: string; routeId?: string; deviceId?: string };
   "topology.updated": {
@@ -87,6 +99,8 @@ export function defaultTopics(type: RealtimeEventType): RealtimeTopic[] {
     case "network.deleted":
       return ["network"];
     case "policy.updated":
+    case "tag.updated":
+    case "user_group.updated":
       return ["policy", "devices"];
     case "route.updated":
       return ["routes", "devices"];

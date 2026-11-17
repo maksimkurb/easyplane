@@ -9,6 +9,7 @@ import type { SwitchNetworkAccessMode200NetworkAccess } from './switchNetworkAcc
 import type { SwitchNetworkAccessMode200NetworkDefaultConfig } from './switchNetworkAccessMode200NetworkDefaultConfig';
 import type { SwitchNetworkAccessMode200NetworkDeviceCounts } from './switchNetworkAccessMode200NetworkDeviceCounts';
 import type { SwitchNetworkAccessMode200NetworkPeerPlan } from './switchNetworkAccessMode200NetworkPeerPlan';
+import type { SwitchNetworkAccessMode200NetworkPolicyMode } from './switchNetworkAccessMode200NetworkPolicyMode';
 import type { SwitchNetworkAccessMode200NetworkRendezvous } from './switchNetworkAccessMode200NetworkRendezvous';
 
 export type SwitchNetworkAccessMode200Network = {
@@ -24,6 +25,7 @@ export type SwitchNetworkAccessMode200Network = {
      * @maximum 9007199254740991
      */
   policyVersion: number;
+  policyMode: SwitchNetworkAccessMode200NetworkPolicyMode;
   useRendezvous: boolean;
   p2pOnly: boolean;
   access: SwitchNetworkAccessMode200NetworkAccess;

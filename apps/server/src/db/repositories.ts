@@ -16,6 +16,8 @@ import {
   organisations,
   sessions,
   tags,
+  userGroupMembers,
+  userGroups,
   userIdentities,
   users,
   type Device,
@@ -332,6 +334,7 @@ export async function updateNetwork(
       | "magicDnsEnabled"
       | "magicDnsZone"
       | "policyVersion"
+      | "policyMode"
       | "useRendezvous"
       | "p2pOnly"
       | "accessMode"
@@ -778,6 +781,178 @@ export async function setDeviceTags(
   const values = rows.map((row) => ({ deviceId, tagId: row.id }));
   if (values.length === 0) return;
   await db.insert(deviceTags).values(values).onConflictDoNothing();
+}
+
+export async function deleteTag(db: DbExecutor, orgId: string, tagId: string): Promise<boolean> {
+  const rows = await db
+    .delete(tags)
+    .where(and(eq(tags.orgId, orgId), eq(tags.id, tagId)))
+    .returning({ id: tags.id });
+  return rows.length > 0;
+}
+
+/**
+ * Bulk assignment: sets exactly `deviceIds` for one tag. The caller has already
+ * checked that every device belongs to the organisation.
+ */
+export async function setTagDevices(
+  db: DbExecutor,
+  tagId: string,
+  deviceIds: string[],
+): Promise<void> {
+  await db.delete(deviceTags).where(eq(deviceTags.tagId, tagId));
+  if (deviceIds.length === 0) return;
+  await db
+    .insert(deviceTags)
+    .values([...new Set(deviceIds)].map((deviceId) => ({ deviceId, tagId })))
+    .onConflictDoNothing();
+}
+
+export async function listUserGroups(
+  db: DbExecutor,
+  orgId: string,
+): Promise<(typeof userGroups.$inferSelect)[]> {
+  return db
+    .select()
+    .from(userGroups)
+    .where(eq(userGroups.orgId, orgId))
+    .orderBy(asc(userGroups.name));
+}
+
+export async function getUserGroup(
+  db: DbExecutor,
+  orgId: string,
+  id: string,
+): Promise<typeof userGroups.$inferSelect | undefined> {
+  const rows = await db
+    .select()
+    .from(userGroups)
+    .where(and(eq(userGroups.orgId, orgId), eq(userGroups.id, id)))
+    .limit(1);
+  return rows[0];
+}
+
+export async function getUserGroupByName(
+  db: DbExecutor,
+  orgId: string,
+  name: string,
+): Promise<typeof userGroups.$inferSelect | undefined> {
+  const rows = await db
+    .select()
+    .from(userGroups)
+    .where(and(eq(userGroups.orgId, orgId), eq(userGroups.name, name)))
+    .limit(1);
+  return rows[0];
+}
+
+export async function upsertUserGroup(
+  db: DbExecutor,
+  values: {
+    orgId: string;
+    name: string;
+    source?: "manual" | "oidc";
+    oidcValue?: string;
+    color?: string;
+    createdBy?: string | null;
+  },
+): Promise<typeof userGroups.$inferSelect> {
+  const rows = await db
+    .insert(userGroups)
+    .values({
+      orgId: values.orgId,
+      name: values.name,
+      source: values.source ?? "manual",
+      oidcValue: values.oidcValue ?? "",
+      color: values.color ?? "",
+      createdBy: values.createdBy ?? null,
+    })
+    .onConflictDoUpdate({
+      target: [userGroups.orgId, userGroups.name],
+      set: {
+        source: values.source ?? "manual",
+        oidcValue: values.oidcValue ?? "",
+        color: values.color ?? "",
+      },
+    })
+    .returning();
+  if (!rows[0]) throw new Error("failed to upsert user group");
+  return rows[0];
+}
+
+export async function deleteUserGroup(
+  db: DbExecutor,
+  orgId: string,
+  id: string,
+): Promise<boolean> {
+  const rows = await db
+    .delete(userGroups)
+    .where(and(eq(userGroups.orgId, orgId), eq(userGroups.id, id)))
+    .returning({ id: userGroups.id });
+  return rows.length > 0;
+}
+
+export interface UserGroupMemberRow {
+  groupId: string;
+  email: string;
+}
+
+export async function listUserGroupMembers(
+  db: DbExecutor,
+  orgId: string,
+): Promise<UserGroupMemberRow[]> {
+  const rows = await db
+    .select({ groupId: userGroupMembers.groupId, email: userGroupMembers.email })
+    .from(userGroupMembers)
+    .innerJoin(userGroups, eq(userGroups.id, userGroupMembers.groupId))
+    .where(eq(userGroups.orgId, orgId))
+    .orderBy(asc(userGroupMembers.email));
+  return rows;
+}
+
+export async function addUserGroupMember(
+  db: DbExecutor,
+  groupId: string,
+  email: string,
+): Promise<void> {
+  await db
+    .insert(userGroupMembers)
+    .values({ groupId, email: email.trim().toLowerCase() })
+    .onConflictDoNothing();
+}
+
+export async function removeUserGroupMember(
+  db: DbExecutor,
+  groupId: string,
+  email: string,
+): Promise<boolean> {
+  const rows = await db
+    .delete(userGroupMembers)
+    .where(
+      and(
+        eq(userGroupMembers.groupId, groupId),
+        eq(userGroupMembers.email, email.trim().toLowerCase()),
+      ),
+    )
+    .returning({ id: userGroupMembers.id });
+  return rows.length > 0;
+}
+
+export async function replaceUserGroupMembers(
+  db: DbExecutor,
+  groupId: string,
+  emails: string[],
+): Promise<void> {
+  await db.delete(userGroupMembers).where(eq(userGroupMembers.groupId, groupId));
+  if (emails.length === 0) return;
+  await db
+    .insert(userGroupMembers)
+    .values(
+      [...new Set(emails.map((email) => email.trim().toLowerCase()))].map((email) => ({
+        groupId,
+        email,
+      })),
+    )
+    .onConflictDoNothing();
 }
 
 export async function getNetworkPolicyVersion(

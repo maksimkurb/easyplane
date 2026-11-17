@@ -5,7 +5,11 @@
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
  * OpenAPI spec version: 0.3.0-M3
  */
+import type { GetNetworkPolicy200Document } from './getNetworkPolicy200Document';
+import type { GetNetworkPolicy200Mode } from './getNetworkPolicy200Mode';
 import type { GetNetworkPolicy200Policy } from './getNetworkPolicy200Policy';
+import type { GetNetworkPolicy200RulesItem } from './getNetworkPolicy200RulesItem';
+import type { GetNetworkPolicy200Summary } from './getNetworkPolicy200Summary';
 
 export type GetNetworkPolicy200 = {
   /**
@@ -13,6 +17,17 @@ export type GetNetworkPolicy200 = {
      * @maximum 9007199254740991
      */
   version: number;
+  mode: GetNetworkPolicy200Mode;
   /** @nullable */
   policy: GetNetworkPolicy200Policy;
+  /** @nullable */
+  document: GetNetworkPolicy200Document;
+  rules: GetNetworkPolicy200RulesItem[];
+  /** @nullable */
+  summary: GetNetworkPolicy200Summary;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  deviceCount: number;
 };

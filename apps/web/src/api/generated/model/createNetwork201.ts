@@ -9,6 +9,7 @@ import type { CreateNetwork201Access } from './createNetwork201Access';
 import type { CreateNetwork201DefaultConfig } from './createNetwork201DefaultConfig';
 import type { CreateNetwork201DeviceCounts } from './createNetwork201DeviceCounts';
 import type { CreateNetwork201PeerPlan } from './createNetwork201PeerPlan';
+import type { CreateNetwork201PolicyMode } from './createNetwork201PolicyMode';
 import type { CreateNetwork201Rendezvous } from './createNetwork201Rendezvous';
 
 export type CreateNetwork201 = {
@@ -24,6 +25,7 @@ export type CreateNetwork201 = {
      * @maximum 9007199254740991
      */
   policyVersion: number;
+  policyMode: CreateNetwork201PolicyMode;
   useRendezvous: boolean;
   p2pOnly: boolean;
   access: CreateNetwork201Access;
