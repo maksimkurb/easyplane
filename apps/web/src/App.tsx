@@ -12,7 +12,6 @@ import { NetworkDevicesPage } from "@/pages/network-devices-page"
 import { NetworkImportPage } from "@/pages/network-import-page"
 import { NetworkSettingsPage } from "@/pages/network-settings-page"
 import { NetworksPage } from "@/pages/networks-page"
-import { PolicyPage } from "@/pages/policy-page"
 import { useTranslation } from "react-i18next"
 
 // The map pulls in @xyflow/react; load it only when a map is opened so the
@@ -45,7 +44,9 @@ function App() {
           <Route path="/networks/:id/settings">
             {(params) => <NetworkSettingsPage networkId={params.id ?? ""} />}
           </Route>
-          <Route component={PolicyPage} path="/networks/:id/policy" />
+          <Route path="/networks/:id/policy">
+            {(params) => <Redirect to={`/networks/${params.id ?? ""}/access`} />}
+          </Route>
           <Route path="/networks/:id">
             {(params) => <NetworkDevicesPage networkId={params.id ?? ""} />}
           </Route>

@@ -11,6 +11,8 @@ export type RealtimeEventType =
   | "network.updated"
   | "network.deleted"
   | "policy.updated"
+  | "tag.updated"
+  | "user_group.updated"
   | "route.updated"
   | "topology.updated"
 
@@ -53,6 +55,8 @@ const EVENT_TYPES: RealtimeEventType[] = [
   "network.updated",
   "network.deleted",
   "policy.updated",
+  "tag.updated",
+  "user_group.updated",
   "route.updated",
   "topology.updated",
 ]

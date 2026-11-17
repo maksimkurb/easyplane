@@ -41,6 +41,14 @@ export function applyRealtimeEvent(
       invalidateByPrefix(queryClient, "/api/devices")
       return
     }
+    case "tag.updated":
+    case "user_group.updated": {
+      invalidateByPrefix(queryClient, "/api/tags")
+      invalidateByPrefix(queryClient, "/api/user-groups")
+      invalidateByPrefix(queryClient, "/api/networks")
+      invalidateByPrefix(queryClient, "/api/devices")
+      return
+    }
     case "route.updated": {
       invalidateByPrefix(queryClient, "/api/networks")
       invalidateByPrefix(queryClient, "/api/devices")

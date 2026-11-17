@@ -24,6 +24,7 @@ function clientWithData() {
   client.setQueryData(["/api/networks"], { data: [] })
   client.setQueryData(["/api/networks/n1/policy"], { data: { version: 1 } })
   client.setQueryData(["/api/tags"], { data: [] })
+  client.setQueryData(["/api/user-groups"], { data: [] })
   return client
 }
 
@@ -54,6 +55,24 @@ describe("realtime event -> query cache", () => {
       event({ type: "policy.updated", networkId: "n1", data: { version: 2 } })
     )
     expect(client.getQueryState(["/api/networks/n1/policy"])?.isInvalidated).toBe(true)
+  })
+
+  it("invalidates tag and user-group collections with their events", () => {
+    const client = clientWithData()
+    applyRealtimeEvent(
+      client,
+      event({ type: "tag.updated", data: { tagId: "t1" } })
+    )
+    expect(client.getQueryState(["/api/tags"])?.isInvalidated).toBe(true)
+    expect(client.getQueryState(["/api/networks/n1/policy"])?.isInvalidated).toBe(true)
+
+    const second = clientWithData()
+    applyRealtimeEvent(
+      second,
+      event({ type: "user_group.updated", data: { groupId: "g1" } })
+    )
+    expect(second.getQueryState(["/api/user-groups"])?.isInvalidated).toBe(true)
+    expect(second.getQueryState(["/api/networks/n1/policy"])?.isInvalidated).toBe(true)
   })
 
   it("patches a topology snapshot in place instead of refetching", () => {
