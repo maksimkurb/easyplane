@@ -71,6 +71,8 @@ export const PORTS = {
   credentials: 22094,
   /** Declared-routes spike: one managed instance per device + config dir. */
   dr: 22096,
+  /** Policy spike: LAN host behind a subnet router, raw ACL matrix. */
+  sp: 22097,
 } as const;
 
 /** Fixed addresses of the rendezvous conformance topology (docker-compose.test.yml). */
@@ -285,6 +287,12 @@ function composeUrlEnv(service: string): string {
       return "EASYPLANE_RV_ISO_A_URL";
     case "core-rv-iso-b":
       return "EASYPLANE_RV_ISO_B_URL";
+    case "core-sp-a":
+      return "EASYPLANE_SP_A_URL";
+    case "core-sp-b":
+      return "EASYPLANE_SP_B_URL";
+    case "core-sp-r":
+      return "EASYPLANE_SP_R_URL";
     default:
       throw new Error(`unknown compose service: ${service}`);
   }

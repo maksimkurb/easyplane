@@ -272,6 +272,85 @@ services:
       - --config-dir
       - /cfg
 
+  # --- Policy spike: LAN host behind a subnet router -------------------------
+  # core-sp-a = source, core-sp-b = destination service, core-sp-r = router that
+  # proxies the LAN 192.168.55.0/24. The "LAN host" is a network namespace
+  # inside the router container (veth 192.168.55.1 <-> 192.168.55.16), so the
+  # test measures real kernel forwarding and EasyTier's subnet proxy, not a
+  # synthetic mock. See test/conformance/policy-spike.test.ts.
+  sp-relay:
+    image: easyplane/easytier-core-test:2.6.4-81487c36
+    profiles: ["test"]
+    container_name: easyplane-sp-relay
+    entrypoint: ["python3", "/relay.py"]
+    volumes:
+      - ./test/conformance/relay/relay.py:/relay.py:ro
+    environment:
+      EASYPLANE_RELAY_PAIRS: 23041:23051,23042:23052,23043:23053
+    networks:
+      sp:
+        ipv4_address: 172.30.0.10
+    restart: "no"
+
+  core-sp-a:
+    <<: *m2-core
+    container_name: easyplane-core-sp-a
+    networks: ["sp"]
+    command:
+      - --config-server
+      - ${EASYPLANE_SP_A_URL:-ws://sp-relay:23041/token-sp-a}
+      - --machine-id
+      - d1d1d1d1-1111-4111-8111-111111111111
+      - --hostname
+      - core-sp-a
+
+  core-sp-b:
+    <<: *m2-core
+    container_name: easyplane-core-sp-b
+    networks: ["sp"]
+    volumes:
+      - ./test/conformance/policy-spike/peer-probe.py:/opt/sp/peer-probe.py:ro
+    command:
+      - --config-server
+      - ${EASYPLANE_SP_B_URL:-ws://sp-relay:23042/token-sp-b}
+      - --machine-id
+      - d2d2d2d2-2222-4222-8222-222222222222
+      - --hostname
+      - core-sp-b
+
+  core-sp-r:
+    <<: *m2-core
+    container_name: easyplane-core-sp-r
+    entrypoint: ["/bin/sh", "/opt/sp/router-entrypoint.sh"]
+    volumes:
+      - ./test/conformance/policy-spike/router-entrypoint.sh:/opt/sp/router-entrypoint.sh:ro
+    networks:
+      sp:
+      lan:
+        ipv4_address: 192.168.55.2
+    sysctls:
+      net.ipv4.ip_forward: "1"
+    command:
+      - --config-server
+      - ${EASYPLANE_SP_R_URL:-ws://sp-relay:23043/token-sp-r}
+      - --machine-id
+      - d3d3d3d3-3333-4333-8333-333333333333
+      - --hostname
+      - core-sp-r
+
+  # The "PC behind the router": no EasyTier, just a default route through the
+  # router device. It must reach the overlay only through core-sp-r.
+  core-sp-lan:
+    <<: *m2-core
+    container_name: easyplane-core-sp-lan
+    entrypoint: ["/bin/sh", "/opt/sp/lan-entrypoint.sh"]
+    volumes:
+      - ./test/conformance/policy-spike/lan-entrypoint.sh:/opt/sp/lan-entrypoint.sh:ro
+    networks:
+      lan:
+        ipv4_address: 192.168.55.16
+    command: []
+
   # --- Rendezvous conformance ------------------------------------------------
   # The public node is attached to three isolated data networks; each leaf sees
   # only one of them, so leaf-to-leaf reachability is controlled by the test.
@@ -404,6 +483,18 @@ networks:
       config:
         - subnet: 172.28.0.0/24
           gateway: 172.28.0.1
+  sp:
+    name: easyplane-conformance-sp
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+          gateway: 172.30.0.1
+  lan:
+    name: easyplane-conformance-lan
+    ipam:
+      config:
+        - subnet: 192.168.55.0/24
+          gateway: 192.168.55.1
   rv-direct:
     name: easyplane-conformance-rv-direct
     ipam:
