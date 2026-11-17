@@ -1,0 +1,430 @@
+/* Variant A: one compact responsive page.
+   .ax is a size container, so the page answers to its own width (not the window):
+   >=900 desktop · <=899 tablet · <=560 phone.
+   Tokens, chips, buttons and icons come from v2.css / access.css. */
+
+.i-arrow-u{--m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m5 12 7-7 7 7'/><path d='M12 19V5'/></svg>")}
+.i-chev-u{--m:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m18 15-6-6-6 6'/></svg>")}
+
+.ax{container:ax / inline-size;overflow-x:clip}
+.ax .ax-in{min-width:0;font-size:14px;line-height:20px}
+.ax .v-c,.ax .v-p{display:none}
+.ax h2{margin:0}
+
+/* ---------- top bar ---------- */
+.ax .ax-bar{height:56px;display:flex;align-items:center;gap:12px;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--line)}
+.ax .ax-back,.ax .ax-ttl,.ax .ax-netmore{display:none}
+.ax .ax-t1{font-weight:600;font-size:16px;line-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ax .ax-t2{display:flex;align-items:center;gap:8px;font-size:12.5px;line-height:16px;color:var(--fg-3)}
+.ax .ax-det{display:none}
+
+/* ---------- page frame ---------- */
+.ax .ax-wrap{max-width:1180px;margin:0 auto;padding-inline:32px}
+.ax .ax-hero{background:var(--surface);border-bottom:1px solid var(--line)}
+.ax .ax-hero .ax-wrap{padding-top:14px}
+.ax .ax-nh{display:flex;align-items:center;gap:12px}
+.ax .ax-nh-main{flex:1 1 0;min-width:0}
+.ax .ax-nh h1{font-size:20px;line-height:28px;min-width:0;overflow-wrap:anywhere}
+.ax .ax-meta{display:flex;align-items:center;flex-wrap:wrap;gap:2px 14px;margin-top:2px;color:var(--fg-3);font-size:12.5px;line-height:18px}
+.ax .ax-meta .mono{font-size:12.5px}
+.ax .ax-nh-act{display:flex;gap:8px;flex:none}
+.ax .ax-nh-act .btn{height:36px}
+.ax .ax-nh-act .btn.icon{width:36px}
+.ax .ax-tabs{display:flex;gap:2px;margin-top:8px;overflow-x:auto;scrollbar-width:none}
+.ax .ax-tab{height:40px;display:flex;align-items:center;gap:6px;padding:0 12px;color:var(--fg-3);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.ax .ax-tab:hover{color:var(--fg)}
+.ax .ax-tab.on{color:var(--fg);border-bottom-color:var(--fg)}
+.ax .ax-content{display:flex;flex-direction:column;gap:12px;padding-top:12px;padding-bottom:24px}
+.ax .sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- mode switch: 36px segmented control + one line ---------- */
+.ax .ax-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px 20px}
+.ax .ax-mleft{display:flex;flex-direction:column;min-width:0}
+.ax .modes{padding:3px;gap:2px;border-radius:10px}
+.ax .modes button{height:30px;padding:0 12px;border-radius:7px;font-size:13.5px}
+.ax .ax-mdesc{display:none;margin:6px 2px 0;font-size:13px;line-height:18px;color:var(--fg-2)}
+.ax .ax-meta2{display:flex;align-items:center;flex-wrap:wrap;gap:4px 14px;min-height:36px;font-size:12.5px;line-height:18px;color:var(--fg-2)}
+
+/* ---------- grouped list container (native settings look) ---------- */
+.ax .ax-list{background:var(--surface);border-radius:12px;box-shadow:0 0 0 1px var(--line),var(--shadow);min-width:0}
+.ax .ax-pad{padding:12px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.ax .ax-pad .sm{font-size:12.5px;line-height:18px}
+.ax .ax-pad .btn,.ax .ax-pad .ax-code{margin-top:2px}
+.ax .ax-code{white-space:pre;line-height:18px;overflow-x:auto;align-self:stretch;font-size:12.5px}
+
+/* ---------- rules: ONE dense row each ---------- */
+.ax .ax-rules{min-width:0}
+.ax .ax-rh{display:flex;align-items:baseline;gap:10px;padding:0 2px 8px;min-height:28px}
+.ax .ax-rh h2{font-size:14px;line-height:20px;font-weight:600;flex:none}
+.ax .ax-rh .hint{flex:1 1 0;min-width:0;font-size:12.5px;line-height:18px;color:var(--fg-3)}
+.ax .ax-prev{height:32px;padding:0 10px;font-size:13px;align-self:center}
+
+.ax .rule{position:relative;display:grid;grid-template-columns:24px 20px minmax(0,1fr) 44px 32px 44px;align-items:center;column-gap:6px;padding:6px 4px 6px 8px;min-height:44px;border-bottom:1px solid var(--line);background:var(--surface)}
+.ax .r-grip{display:grid;place-items:center;height:28px;width:24px;border-radius:6px;color:var(--fg-3);cursor:grab}
+.ax button.r-grip:hover{background:var(--surface-2);color:var(--fg)}
+.ax .r-n{font-variant-numeric:tabular-nums;font-size:12.5px;line-height:20px;font-weight:500;color:var(--fg-3);text-align:center}
+.ax .r-hit{display:none}
+.ax .rule .sent{min-width:0;gap:4px 6px;font-size:14px;line-height:20px}
+.ax .r-vb{height:24px;min-width:52px;padding:0 8px;justify-content:center;font-size:12.5px;line-height:16px}
+.ax .sx{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%}
+.ax .sx .arw{color:var(--fg-3);flex:none;width:14px;height:14px}
+.ax .off-pill,.ax .prio-pill{height:18px;padding:0 6px;border-radius:9px;font-size:12px;line-height:18px;font-weight:600;display:inline-flex;align-items:center;flex:none;font-variant-numeric:tabular-nums}
+.ax .off-pill{background:var(--surface-3);color:var(--fg-2)}
+.ax .prio-pill{background:var(--relay-soft);color:var(--relay);font-family:var(--mono);font-weight:500}
+.ax .rule.off .sent .pk,.ax .rule.off .sent .vb,.ax .rule.off .sent .arw{opacity:.5}
+
+/* chips: 24px high, one line on desktop, wrap on small screens */
+.ax .pk{height:24px;padding:0 8px;gap:5px;border-radius:7px;font-size:14px;line-height:20px}
+.ax .pk .ic{width:14px;height:14px}
+.ax .pk .ic.cv{width:12px;height:12px}
+.ax .pk .s{font-size:12.5px}
+.ax .pk .nm{min-width:0}
+.ax .pk .nm.mono{font-size:12.5px}
+.ax .pk.port{background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+.ax .pk .av{width:18px;height:18px;font-size:9px;margin-left:-3px;box-shadow:none}
+
+/* expand + trash: visual size small, hit area 44px by pseudo-element, no layout growth */
+.ax .r-exp{position:relative;z-index:2;width:28px;height:28px;border-radius:7px;display:grid;place-items:center;justify-self:center;color:var(--fg-3)}
+.ax .r-exp::after{content:"";position:absolute;inset:-8px}
+.ax .r-exp:hover{background:var(--surface-2);color:var(--fg)}
+.ax .r-del{position:relative;z-index:2;justify-self:center;width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--fg-3)}
+.ax .r-del::after{content:"";position:absolute;inset:-6px}
+.ax .r-del:hover{background:var(--err-soft);color:var(--err)}
+.ax .r-del svg{width:18px;height:18px;display:block}
+
+/* default action per direction: footer line of the list */
+.ax .rule-foot{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-height:40px;padding:4px 4px 4px 12px;background:var(--surface-2);border-radius:0 0 12px 12px;font-size:12.5px;line-height:18px;color:var(--fg-2)}
+.ax .rule-foot.open{border-radius:0}
+.ax .rule-foot .ic.lead{color:var(--fg-3);flex:none}
+.ax .rf-t{font-weight:500}
+.ax .rf-chips{display:flex;flex-wrap:wrap;gap:4px}
+.ax .rf-c{height:22px;font-size:12.5px;gap:4px}
+.ax .rf-c b{font-weight:600;color:var(--fg)}
+.ax .rf-more{margin-left:auto;position:relative;width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--fg-2)}
+.ax .rf-more::after{content:"";position:absolute;inset:-6px}
+.ax .rf-more:hover{background:var(--surface-3)}
+.ax .rf-more-p{display:none}
+.ax .def-panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:8px;padding:10px 12px 12px;border-top:1px solid var(--line);background:var(--surface-2);border-radius:0 0 12px 12px}
+.ax .dc{padding:8px 10px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);display:flex;flex-direction:column;gap:6px;min-width:0}
+.ax .dc-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ax .dc-h .m{font-size:14px}
+
+/* add rule: small floating pill, sticks to the bottom while the rules are on screen */
+.ax .ax-fab{position:sticky;bottom:12px;z-index:8;display:flex;justify-content:flex-end;margin-top:8px;pointer-events:none}
+.ax .ax-add{pointer-events:auto;height:44px;padding:0 18px 0 14px;border-radius:22px;box-shadow:var(--shadow-lg)}
+
+/* ---------- accordion rows in one grouped list ---------- */
+.ax .ax-ai{border-bottom:1px solid var(--line)}
+.ax .ax-ai.last{border-bottom:0}
+.ax .ax-acch{margin:0}
+.ax .ax-accb{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 12px;text-align:left;font:inherit;border-radius:12px}
+.ax .ax-accb .ic.lead{color:var(--fg-3)}
+.ax .ax-acc-t{font-weight:500;font-size:14px;line-height:20px}
+.ax .ax-acc-s{margin-left:auto;font-weight:400;font-size:12.5px;line-height:18px;color:var(--fg-3);white-space:nowrap}
+.ax .ax-accb .chev{margin-left:auto}
+.ax .ax-acc-s + .chev{margin-left:0}
+.ax .ax-accbody{display:flex;flex-direction:column;gap:10px;padding:2px 12px 12px}
+.ax .ax-subn{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px}
+.ax .ax-cidr{overflow-wrap:anywhere}
+.ax .ax-subd{font-size:12.5px;line-height:18px;overflow-wrap:anywhere}
+.ax .ax-chips{display:flex;flex-wrap:wrap;gap:6px}
+.ax .ax-gb{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:8px}
+.ax .ax-g{padding:8px 10px;border-radius:10px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);min-width:0}
+.ax .ax-gn{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 8px;margin-bottom:6px}
+.ax .ax-gtag{overflow-wrap:anywhere;font-size:12.5px}
+.ax .ax-gm{display:flex;flex-wrap:wrap;gap:6px}
+.ax .ax-gm .pk{background:var(--surface);padding:0 8px 0 4px}
+.ax .ax-gm .pk.ax-addm{padding:0 8px;color:var(--fg-2)}
+.ax .ax-newg{align-self:flex-start;height:32px;padding:0 10px;font-size:13px}
+.ax .ax-tf{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr));gap:8px}
+.ax .ax-lb{display:block;font-size:12.5px;line-height:16px;font-weight:500;color:var(--fg-2);margin-bottom:4px}
+.ax .ax-fv{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:4px 10px;border-radius:9px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-2);text-align:left}
+.ax .ax-fv .grow{min-width:0;overflow-wrap:anywhere}
+.ax .ax-fv .ic{color:var(--fg-3)}
+.ax .ax-run{align-self:flex-start;height:36px;padding:0 14px}
+.ax .ax-res{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:9px;background:var(--err-soft);box-shadow:inset 0 0 0 1px var(--err-line);color:var(--err);font-size:13px;line-height:18px}
+.ax .ax-res .t{color:var(--fg);min-width:0;overflow-wrap:anywhere}
+.ax .ax-hist{align-self:flex-start;height:32px;padding:0 10px;font-size:13px}
+
+/* ---------- tag input: values become pills as you type ---------- */
+.ax .tg{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:5px 6px;min-height:36px;border-radius:8px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-2);cursor:text;min-width:0}
+.ax .tg:focus-within{box-shadow:inset 0 0 0 1.5px var(--brand),0 0 0 3px var(--brand-soft)}
+.ax .tg.bad{box-shadow:inset 0 0 0 1.5px var(--err)}
+.ax .tg.off{background:var(--surface-2);cursor:not-allowed}
+.ax .tp{display:inline-flex;align-items:center;height:24px;padding:0 0 0 8px;border-radius:6px;background:var(--surface-3);color:var(--fg);font-family:var(--mono);font-size:12.5px;line-height:24px;max-width:100%;min-width:0}
+.ax .tp .t{min-width:0;overflow-wrap:anywhere}
+.ax .tp.range{background:var(--brand-soft);color:var(--brand-text);outline:1px dashed color-mix(in srgb,var(--brand) 55%,transparent);outline-offset:-1px}
+.ax .tp.bad{background:var(--err-soft);color:var(--err);box-shadow:inset 0 0 0 1px var(--err-line)}
+.ax .tp-x{position:relative;width:24px;height:24px;display:grid;place-items:center;color:inherit;opacity:.75;flex:none;border-radius:0 6px 6px 0}
+.ax .tp-x::after{content:"";position:absolute;inset:0}
+.ax .tp-x:hover{opacity:1}
+.ax .tp-x svg{width:12px;height:12px;display:block}
+.ax .tg-in{flex:1 1 72px;min-width:72px;height:24px;border:0;outline:0;background:transparent;font-family:var(--mono);font-size:13px;color:var(--fg);padding:0 4px}
+.ax .tg-in:disabled{cursor:not-allowed}
+.ax .tg-in::placeholder{color:var(--fg-3)}
+.ax .tg-v{margin-top:4px;font-size:12.5px;line-height:18px;color:var(--fg-2)}
+.ax .tg-v:empty{display:none}
+.ax .tg-v.err{color:var(--err)}
+.ax .tg-v.ok{color:var(--ok)}
+
+/* ---------- editor fields shared by the inline panel and the phone sheets ---------- */
+.ax .r-panel{grid-column:1 / -1;margin:4px 0 2px;padding:12px;border-radius:10px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);display:flex;flex-direction:column;gap:12px;min-width:0;cursor:default}
+.ax .pn-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:12px 20px;align-items:start}
+.ax .pn-col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.ax .pf-lbl{display:block;font-size:12.5px;line-height:16px;font-weight:500;color:var(--fg-2);margin-bottom:4px;white-space:nowrap}
+.ax .pn-name{display:block;max-width:420px}
+.ax .pf-lbl .t3{font-weight:400}
+.ax .pf-seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:2px;padding:3px;border-radius:10px;background:var(--surface-3)}
+.ax .pf-seg button{height:30px;padding:0 4px;border-radius:7px;font-weight:500;font-size:13px;color:var(--fg-2);white-space:nowrap}
+.ax .pf-seg button.on{background:var(--surface);color:var(--fg);box-shadow:var(--shadow),0 0 0 1px var(--line)}
+.ax .pf-seg.sm button{height:24px;font-size:12.5px;padding:0 10px}
+.ax .pf-in,.ax .pf-sel{width:100%;height:36px;padding:0 10px;border:0;border-radius:8px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-2);font:inherit;font-size:14px;color:var(--fg);min-width:0}
+.ax .pf-in:focus,.ax .pf-sel:focus{outline:0;box-shadow:inset 0 0 0 1.5px var(--brand),0 0 0 3px var(--brand-soft)}
+.ax .pf-in:disabled{background:var(--surface-2);color:var(--fg-3);cursor:not-allowed}
+.ax .pf-in[aria-invalid="true"]{box-shadow:inset 0 0 0 1.5px var(--err)}
+.ax .pf-v{margin-top:4px;font-size:12.5px;line-height:18px;min-height:18px;color:var(--fg-2)}
+.ax .pf-v.err{color:var(--err)}
+.ax .pf-chips{display:flex;flex-wrap:wrap;gap:6px}
+.ax .pf-chip{height:28px;padding:0 10px;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-2);font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.ax .pf-chip:hover{background:var(--surface-3)}
+.ax .pf-chip .mono{font-size:12.5px;color:var(--fg-3);font-weight:400}
+.ax .pf-chk{display:flex;align-items:center;gap:10px;min-height:32px;font-size:14px;cursor:pointer}
+.ax .pf-chk input{width:18px;height:18px;margin:0;accent-color:var(--brand)}
+.ax .pf-box{display:flex;flex-direction:column;gap:6px;padding:4px 10px 8px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);min-width:0}
+.ax .pf-sw{display:flex;align-items:center;gap:12px;width:100%;min-height:36px;text-align:left}
+.ax .pf-sw .grow{min-width:0}
+.ax .pf-sw .h{display:block;font-size:12.5px;line-height:18px;color:var(--fg-2)}
+.ax .pf-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ax .pf-advt{display:flex;align-items:center;gap:8px;width:100%;min-height:36px;text-align:left;font-weight:500;font-size:14px}
+.ax .pf-advt .t3{font-weight:400;font-size:12.5px;margin-left:auto}
+.ax .pf-adv{display:flex;flex-direction:column;gap:12px}
+.ax .pf-advg{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr));gap:12px 16px;align-items:start}
+.ax .pf-ro{margin:0;font-size:12.5px;line-height:18px;color:var(--fg-2);overflow-wrap:anywhere}
+.ax .pf-ro b{font-weight:600;color:var(--fg)}
+.ax .pf-cmp{margin:0;padding:8px 10px;border-radius:8px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);font-family:var(--mono);font-size:12.5px;line-height:18px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--fg)}
+
+/* ====================== tablet and phone ====================== */
+@container ax (max-width:899px){
+  .ax .v-d{display:none}
+  .ax .v-c{display:contents}
+  .ax .ax-wrap{padding-inline:16px}
+  .ax .ax-bar{padding:0 12px 0 16px}
+  .ax .ax-content{padding-top:12px;padding-bottom:24px}
+  .ax .ax-mdesc{display:block}
+  .ax .r-grip{display:none}
+  .ax .rule{grid-template-columns:20px minmax(0,1fr) 44px 32px 36px;padding:6px 2px 6px 10px;column-gap:4px}
+  .ax .r-del{justify-self:end}
+  .ax .rule-foot{padding-left:12px}
+  /* chips may wrap instead of truncating */
+  /* wrap by block: a chip never breaks inside, the verb+from group, the to chip and the ports group each move to a new line whole */
+  .ax .pk{height:24px;padding:0 8px;white-space:nowrap;flex:0 1 auto;min-width:0;text-align:left;overflow:hidden}
+  .ax .pk .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ax .pk .s{flex:none}
+  .ax .rule .sent .sx{flex:0 1 auto}
+  .ax .ax-gm .pk,.ax .axe-pick .pk{height:auto;min-height:24px}
+}
+
+/* ====================== phone ====================== */
+@container ax (max-width:560px){
+  .ax .v-np{display:none}
+  .ax .v-p{display:contents}
+  .ax .ax-wrap{padding-inline:12px}
+
+  /* one compact bar + tab strip right below */
+  .ax .ax-bar{height:48px;padding:0 2px;gap:0}
+  .ax .ax-brand,.ax .ax-crumbs,.ax .ax-audit,.ax .ax-avatar,.ax .ax-sp,.ax .ax-nh{display:none}
+  .ax .ax-back,.ax .ax-netmore{display:inline-flex}
+  .ax .ax-ttl{display:flex;align-items:baseline;gap:8px;flex:1 1 0;min-width:0;padding:0 4px}
+  .ax .ax-t1{flex:none;max-width:60%}
+  .ax .ax-t2{min-width:0;white-space:nowrap;overflow:hidden}
+  .ax .ax-det{display:flex;flex-direction:column;gap:0;padding:2px 12px 10px;background:var(--surface);border-bottom:1px solid var(--line)}
+  .ax .ax-kv{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+  .ax .ax-copy{display:inline-flex;align-items:center;gap:8px;min-height:44px;min-width:0;max-width:100%;padding:0 4px;border-radius:8px;color:var(--fg-2);overflow-wrap:anywhere;text-align:right}
+  .ax .ax-det .btn{height:44px}
+  .ax .ax-hero .ax-wrap{padding:0}
+  .ax .ax-tabs{margin-top:0}
+  .ax .ax-tab{height:44px;padding:0 12px;font-size:14px}
+  .ax .ax-content{gap:12px;padding-top:12px;padding-bottom:16px}
+  .ax .ax-accb{min-height:48px}
+
+  /* 36px segmented control (3 equal parts) + a 13px line */
+  .ax .ax-top{display:block}
+  .ax .ax-mleft{width:100%}
+  .ax .ax-meta2{display:none}
+  .ax .modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;width:100%}
+  .ax .modes button{height:30px;padding:0 4px;justify-content:center;font-size:13.5px}
+  .ax .modes .ic{display:none}
+
+  .ax .ax-prev{display:none}
+  .ax .ax-rh{padding-bottom:6px}
+
+  /* dense rule rows: number, pill + from -> to + ports wrapping to two lines, trash top-right; the row opens the sheet */
+  .ax .rule{grid-template-columns:20px minmax(0,1fr) 36px;align-items:start;padding:7px 2px 7px 8px}
+  .ax .r-n{line-height:24px}
+  .ax .r-exp,.ax .r-sw{display:none}
+  .ax .r-hit{display:block;position:absolute;inset:0;z-index:1}
+  .ax .rule .pk{pointer-events:none}
+  .ax .rule .sent{gap:4px 6px}
+  .ax .r-del{margin-top:-4px}
+  .ax .r-vb{min-width:46px;padding:0 6px}
+  .ax .ax-fab{bottom:10px}
+  .ax .rf-chips{flex:1 1 100%;order:3}
+  .ax .rf-more{display:none}
+  .ax .rf-more-p{display:grid}
+
+  .ax .ax-acc-s{display:none}
+  .ax .ax-acc-s + .chev{margin-left:auto}
+  .ax .ax-tf{grid-template-columns:1fr}
+  .ax .ax-fv{min-height:44px}
+  .ax .ax-run{height:44px}
+  .ax .ax-hist,.ax .ax-newg{height:36px}
+  .ax .ax-gb{grid-template-columns:1fr}
+
+  /* touch sizes for the editor fields (sheets) */
+  .ax .pf-seg button{height:38px;font-size:13.5px}
+  .ax .pf-seg.sm button{height:32px;font-size:13px}
+  .ax .pf-in,.ax .pf-sel{height:48px;font-size:16px}
+  .ax .pf-chip{height:36px;padding:0 12px}
+  .ax .pf-chk{min-height:48px}
+  .ax .pf-sw{min-height:48px}
+  .ax .pf-advt{min-height:48px}
+  .ax .tg{min-height:48px;padding:7px 8px}
+  .ax .tg-in{height:32px;font-size:16px}
+  .ax .tp-x::after{inset:-10px}
+}
+
+/* ====================== phone sheets (separate boards) ====================== */
+.ax.axe{height:844px;overflow:hidden}
+.ax .axe-hl{background:var(--brand-soft)}
+.ax .axe-scrim{position:absolute;inset:0;background:var(--scrim);z-index:30}
+.ax .axe-sheet{position:absolute;left:0;right:0;bottom:0;z-index:31;display:flex;flex-direction:column;max-height:calc(100% - 32px);background:var(--surface);border-radius:20px 20px 0 0;box-shadow:var(--shadow-lg);font-size:14px;line-height:20px}
+.ax .axe-sheet.full{top:28px;max-height:none}
+.ax .axe-sheet.def{max-height:calc(100% - 96px)}
+.ax .axe-grab{flex:none;width:40px;height:5px;border-radius:3px;background:var(--line-2);margin:8px auto 0}
+.ax .axe-h{flex:none;display:flex;align-items:center;gap:4px;padding:4px 8px 4px 16px;min-height:52px}
+.ax .axe-ht{flex:1 1 0;min-width:0}
+.ax .axe-ht h2{font-size:16px;line-height:22px}
+.ax .axe-ht .sub{font-size:12.5px;line-height:16px;color:var(--fg-3)}
+.ax .axe-ib{width:40px;height:40px;border-radius:9px;display:grid;place-items:center;color:var(--fg-2);flex:none}
+.ax .axe-ib:hover{background:var(--surface-2)}
+.ax .axe-ib.red{color:var(--err)}
+.ax .axe-ib .ic{width:20px;height:20px}
+.ax .axe-b{flex:1 1 auto;min-height:0;overflow-y:auto;padding:4px 16px 12px;display:flex;flex-direction:column;gap:10px}
+.ax .axe-act{display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:3px;border-radius:10px;background:var(--surface-3)}
+.ax .axe-act button{height:36px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:500;color:var(--fg-2);font-size:14px}
+.ax .axe-act button.on{background:var(--surface);box-shadow:var(--shadow),0 0 0 1px var(--line)}
+.ax .axe-act button.on.allow{color:var(--ok)}
+.ax .axe-act button.on.deny{color:var(--err)}
+.ax .axe-pick{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:4px 12px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-2);text-align:left;font-size:14px}
+.ax .axe-pick .ic{color:var(--fg-3)}
+.ax .axe-pick .grow{min-width:0}
+.ax .axe-pick[aria-expanded="true"]{box-shadow:inset 0 0 0 1.5px var(--brand),0 0 0 3px var(--brand-soft)}
+.ax .axe-v{display:block;font-weight:500;overflow-wrap:anywhere}
+.ax .axe-sub{display:block;color:var(--fg-3);font-size:12.5px;line-height:16px;overflow-wrap:anywhere}
+.ax .axe-opts{margin-top:4px;border-radius:10px;background:var(--surface-2);max-height:272px;overflow-y:auto}
+.ax .axe-oh{padding:8px 12px 2px;font-size:12.5px;line-height:16px;font-weight:600;color:var(--fg-2)}
+.ax .axe-opt{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:4px 12px;text-align:left;border-top:1px solid var(--line);font-size:14px}
+.ax .axe-opt .grow{min-width:0;overflow-wrap:anywhere}
+.ax .axe-opt .ic{color:var(--fg-3)}
+.ax .axe-opt.sel{background:var(--brand-soft);color:var(--brand-text);font-weight:500}
+.ax .axe-opt.sel .ic{color:var(--brand-text)}
+.ax .axe-prev2{border-radius:10px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line);padding:8px 10px}
+.ax .axe-foot{flex:none;display:grid;grid-template-columns:1fr 1.4fr;gap:8px;padding:10px 16px 16px;border-top:1px solid var(--line);background:var(--surface)}
+.ax .axe-foot.one{grid-template-columns:1fr}
+.ax .axe-foot .btn{height:44px}
+.ax .axe-bg{pointer-events:none}
+.ax .btn.off{opacity:.45;pointer-events:none}
+
+/* rule name on the row, enabled switch, rate limit (nothing in these wraps) */
+.ax .r-main{min-width:0}
+.ax .r-name{font-weight:600;font-size:13.5px;line-height:18px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ax .rule.off .r-name{opacity:.5}
+.ax .r-sw{position:relative;z-index:2;justify-self:center;width:32px;height:24px;display:grid;place-items:center}
+.ax .r-sw::after{content:"";position:absolute;inset:-10px -6px}
+.ax .tgl.sm{width:32px;height:18px;border-radius:9px}
+.ax .tgl.sm::after{top:2px;left:2px;width:14px;height:14px}
+.ax .tgl.sm.on::after{left:16px}
+.ax .pf-row{display:flex;align-items:center;gap:8px;min-height:36px}
+.ax .pf-row .m{flex:1 1 auto;white-space:nowrap;min-width:0}
+.ax .pf-i{width:28px;height:28px;display:grid;place-items:center;color:var(--fg-3);border-radius:7px;flex:none}
+.ax .pf-i:hover{background:var(--surface-2);color:var(--fg)}
+.ax .tgl-btn{display:grid;place-items:center;min-width:44px;min-height:36px;flex:none}
+.ax .pf-rate{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(120px,100%),1fr));gap:8px}
+.ax .pf-rate .rf{display:block;min-width:0}
+.ax .sfx{display:flex;align-items:center;min-width:96px;height:36px;border-radius:8px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-2);white-space:nowrap}
+.ax .sfx:focus-within{box-shadow:inset 0 0 0 1.5px var(--brand),0 0 0 3px var(--brand-soft)}
+.ax .sfx.bad{box-shadow:inset 0 0 0 1.5px var(--err)}
+.ax .sfx input{flex:1 1 auto;min-width:0;width:100%;height:100%;border:0;outline:0;background:transparent;padding:0 4px 0 10px;font:inherit;font-size:14px;color:var(--fg);font-variant-numeric:tabular-nums}
+.ax .sfx-t{padding:0 10px 0 2px;color:var(--fg-3);font-size:12.5px;white-space:nowrap;flex:none}
+.ax .pf-v.nw{white-space:nowrap}
+.ax .axe-top{display:flex;align-items:center;gap:10px}
+.ax .axe-top .axe-act{flex:1 1 0;min-width:0}
+.ax .axe-en{display:flex;align-items:center;gap:2px;white-space:nowrap;font-size:14px;font-weight:500}
+@container ax (max-width:560px){
+  .ax .sfx{height:48px}
+  .ax .sfx input{font-size:16px}
+  .ax .tgl-btn{min-height:48px}
+  .ax .pf-row{min-height:48px}
+  .ax .pf-i{width:36px;height:36px}
+}
+.ax .dc .pf-sw{min-height:40px}
+.ax .dc .pf-seg.sm button{min-width:56px}
+/* pickers inside the inline panel are tighter than in the phone sheet */
+.ax .pn-col .axe-pick{min-height:40px;padding:2px 10px}
+.ax .pn-col .axe-opt{min-height:40px}
+.ax .pn-col .axe-opts{max-height:240px}
+
+/* ---------- tags label DEVICES, user groups contain PEOPLE ---------- */
+/* tag: tag icon, squared corners, light blue-grey fill, dark teal text.
+   user group: users icon, pill corners, indigo fill that is clearly darker, deep indigo text. */
+.ax{--tag-bg:#e8f1f3;--tag-fg:#0d4f59;--tag-line:#b7d2d8;--ug-bg:#d8d0f5;--ug-fg:#3b2891}
+.v2.dark.ax{--tag-bg:rgba(120,190,200,.14);--tag-fg:#8fd0da;--tag-line:rgba(120,190,200,.38);--ug-bg:rgba(150,130,240,.28);--ug-fg:#cfc5ff}
+.ax .pk.tag{background:var(--tag-bg);color:var(--tag-fg);box-shadow:inset 0 0 0 1px var(--tag-line);border-radius:4px}
+.ax .pk.tag .ic{color:var(--tag-fg)}
+.ax .pk.grp{background:var(--ug-bg);color:var(--ug-fg);box-shadow:none;border-radius:12px}
+.ax .pk.grp .ic,.ax .pk.grp .s{color:var(--ug-fg)}
+.ax .tmini{display:inline-flex;align-items:center;gap:3px;height:18px;padding:0 5px;border-radius:3px;background:var(--tag-bg);color:var(--tag-fg);box-shadow:inset 0 0 0 1px var(--tag-line);font-size:12.5px;line-height:18px;flex:none}
+.ax .tmini .ic{width:11px;height:11px}
+.ax .pk.dev{gap:5px;padding-right:4px}
+.ax .ax-accb .ic.tagic{color:var(--tag-fg)}
+.ax .ax-accb .ic.ugic{color:var(--ug-fg)}
+.ax .ug-n{font-size:12.5px;line-height:18px;color:var(--fg-2)}
+.ax .ug-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.ax .ug-src{height:20px;padding:0 7px;border-radius:5px;font-size:12.5px;font-weight:600;background:var(--surface-3);color:var(--fg-2);display:inline-flex;align-items:center;white-space:nowrap}
+.ax .ug-m{display:flex;flex-direction:column;gap:2px;margin:8px 0}
+.ax .ug-p{display:flex;align-items:center;gap:8px;min-height:28px;font-size:12.5px;line-height:18px;overflow-wrap:anywhere}
+.ax .ug-p .av{width:22px;height:22px;font-size:9px;box-shadow:none}
+.ax .ug-sync{display:flex;align-items:center;gap:6px;font-size:12.5px;line-height:18px;color:var(--fg-2)}
+.ax .ax-assign{height:32px;padding:0 10px;font-size:13px;margin-top:8px}
+.ax .ug-p .ro{margin-left:auto;display:inline-grid;place-items:center;color:var(--fg-3);flex:none}
+.ax .asg{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:0 10px;margin-top:8px;padding-top:6px;border-top:1px solid var(--line)}
+.ax .asg .pf-chk{min-height:36px}
+
+/* pickers: search on top, labelled sections with counts */
+.ax .axe-pop{margin-top:4px;border-radius:10px;background:var(--surface-2);overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
+.ax .axe-pop .axe-opts{margin-top:0;border-radius:0}
+.ax .axe-search{display:flex;align-items:center;gap:8px;padding:0 12px;min-height:44px;color:var(--fg-3);background:var(--surface);border-bottom:1px solid var(--line)}
+.ax .axe-search input{flex:1 1 auto;min-width:0;height:36px;border:0;outline:0;background:transparent;font:inherit;font-size:14px;color:var(--fg)}
+.ax .axe-oh{display:flex;align-items:center;justify-content:space-between;gap:8px;text-transform:uppercase;letter-spacing:.05em;font-size:12.5px;line-height:16px;color:var(--fg-2)}
+.ax .axe-oh .n{font-variant-numeric:tabular-nums;letter-spacing:0}
+.ax .axe-none{padding:12px;font-size:13px;color:var(--fg-2)}
+.ax .oc{font-weight:500}
+.ax .oc.tag{display:inline-block;padding:1px 7px;border-radius:4px;background:var(--tag-bg);color:var(--tag-fg);box-shadow:inset 0 0 0 1px var(--tag-line)}
+.ax .oc.grp{display:inline-block;padding:1px 9px;border-radius:12px;background:var(--ug-bg);color:var(--ug-fg)}
+.ax .axe-opt.kt .ic{color:var(--tag-fg)}
+.ax .axe-opt.kg .ic{color:var(--ug-fg)}
+.ax .axe-opt.sel{background:var(--surface)}
+
+/* compiled viewer: group reference legend */
+.ax .cmp-legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px}
+.ax .cl{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--fg-2);white-space:nowrap}
+.ax .cl .mono{font-size:12.5px;color:var(--fg)}
+.ax .cl .arw{color:var(--fg-3);width:14px;height:14px}
+.ax .cl .lbl{display:inline-block;height:18px;line-height:18px;padding:0 6px;border-radius:3px;background:var(--surface-3);color:var(--fg-2);font-size:12.5px;font-weight:600}
+@container ax (max-width:560px){
+  .ax .axe-search{min-height:48px}
+  .ax .axe-search input{height:40px;font-size:16px}
+  .ax .ax-assign{height:40px}
+  .ax .asg{grid-template-columns:1fr}
+  .ax .asg .pf-chk{min-height:44px}
+}

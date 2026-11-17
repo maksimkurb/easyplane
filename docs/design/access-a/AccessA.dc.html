@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Access A sentences and subnets</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./v2.css">
+<link rel="stylesheet" href="./access.css">
+<link rel="stylesheet" href="./access-a.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="v2 ax" style="min-height:{{minH}}">
+<div class="ax-in">
+  <header class="ax-bar">
+    <a class="btn ghost icon lg ax-back" href="#" aria-label="Back to networks"><i class="ic i-chev-l s20"></i></a>
+    <a class="brand ax-brand" href="#"><span class="logo"><svg viewBox="0 0 512 512" fill="none" aria-hidden="true"><path d="M308,120 H182 Q136,120 136,166 V346 Q136,392 182,392 H308 M136,256 H348" fill="none" stroke="currentColor" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="336" cy="120" r="50" fill="currentColor"></circle><circle cx="376" cy="256" r="50" fill="currentColor"></circle><circle cx="336" cy="392" r="50" fill="currentColor"></circle></svg></span>EasyPlane</a>
+    <nav class="crumbs ax-crumbs" aria-label="Breadcrumb"><span class="sep">/</span><a href="#">Networks</a><span class="sep">/</span><span class="cur">Home lab</span></nav>
+    <div class="ax-ttl"><div class="ax-t1">Home lab</div><div class="ax-t2"><span class="dot on"></span>7 of 8 online</div></div>
+    <span class="spacer ax-sp"></span>
+    <a class="tlink ax-audit" href="#"><i class="ic i-history s16"></i>Audit log</a>
+    <button class="avatar ax-avatar" aria-label="Account, language and theme"><span>MK</span></button>
+    <button class="btn ghost icon lg ax-netmore" aria-label="Network name, range and actions" aria-expanded="{{detailsAria}}" onClick="{{toggleDetails}}"><i class="ic i-more"></i></button>
+  </header>
+
+  <sc-if value="{{details}}" hint-placeholder-val="{{false}}">
+    <section class="ax-det" aria-label="Network details">
+      <div class="ax-kv"><span class="t3">Network name</span><button class="ax-copy mono" aria-label="Copy EasyTier network name">homelab-7f3a91<i class="ic i-copy s16"></i></button></div>
+      <div class="ax-kv"><span class="t3">Address range</span><span class="mono">10.144.144.0/24</span></div>
+      <a class="btn pri full" href="#"><i class="ic i-plus s16"></i>Add device</a>
+    </section>
+  </sc-if>
+
+  <section class="ax-hero">
+    <div class="ax-wrap">
+      <div class="ax-nh">
+        <div class="ax-nh-main">
+          <h1>Home lab</h1>
+          <div class="ax-meta">
+            <button class="copy mono" aria-label="Copy EasyTier network name">homelab-7f3a91<i class="ic i-copy s14"></i></button>
+            <span class="mono">10.144.144.0/24</span>
+            <span class="row" style="gap:6px"><span class="dot on"></span>7 of 8 online</span>
+          </div>
+        </div>
+        <div class="ax-nh-act">
+          <button class="btn sec icon" aria-label="Network actions"><i class="ic i-more"></i></button>
+          <a class="btn pri" href="#"><i class="ic i-plus s16"></i>Add device</a>
+        </div>
+      </div>
+      <nav class="ax-tabs" aria-label="Network sections">
+        <a class="ax-tab" href="#">Devices <span class="cnt">8</span></a>
+        <a class="ax-tab" href="#">Map</a>
+        <a class="ax-tab on" href="#" aria-current="page">Access</a>
+        <a class="ax-tab" href="#">Settings</a>
+      </nav>
+    </div>
+  </section>
+
+  <div class="ax-wrap ax-content">
+    <div class="ax-top">
+      <div class="ax-mleft">
+        <div class="modes" role="radiogroup" aria-label="Access mode">
+          <sc-for list="{{modes}}" as="m" hint-placeholder-count="3"><button class="{{m.cls}}" role="radio" aria-checked="{{m.on}}" onClick="{{m.pick}}"><i class="ic {{m.icon}} s16"></i><span class="v-np">{{m.long}}</span><span class="v-p">{{m.short}}</span></button></sc-for>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{isOpen}}" hint-placeholder-val="{{false}}">
+      <section class="ax-list ax-pad">
+        <div class="m">Nothing is blocked</div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{isJson}}" hint-placeholder-val="{{false}}">
+      <section class="ax-list ax-pad">
+        <pre class="code ax-code">{
+  "version": 8,
+  "subnets": { "home-lan": { "cidr": "192.168.55.0/24", "via": "router-01" } },
+  "tags": { "us": ["laptop-maxim"], "eu": ["vps-fra", "phone-anna"], "home": ["desktop", "nas-01", "media-pc", "router-01", "rpi-garage"], "work": ["laptop-maxim"], "server": ["nas-01", "vps-fra", "rpi-garage"] },
+  "userGroups": { "admins": { "source": "manual", "members": ["maxim@home.example", "olga@home.example"] }, "family": { "source": "oidc:groups", "members": ["anna@home.example", "ivan@home.example"] } },
+  "chains": { "inbound": "drop", "outbound": "allow", "forward": "drop" },
+  "rules": [
+    { "action": "allow", "src": ["group:admins"], "dst": ["*"], "ports": "*" },
+    { "name": "Family media", "action": "allow", "src": ["group:family"], "dst": ["media-pc"], "ports": "tcp:8096,32400", "enabled": false },
+    { "name": "LAN to VPS", "action": "allow", "src": ["subnet:home-lan"], "dst": ["vps-fra"], "ports": "*" },
+    { "name": "Block SSH to NAS", "action": "deny", "src": ["*"], "dst": ["nas-01"], "ports": "tcp:22" },
+    { "name": "EU to home HTTPS", "action": "allow", "src": ["tag:eu"], "dst": ["tag:home"], "ports": "tcp:443" },
+    { "action": "allow", "src": ["*"], "dst": ["*"], "ports": "*" }
+  ]
+}</pre>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{isRules}}" hint-placeholder-val="{{true}}">
+      <section class="ax-rules" aria-labelledby="rules-h">
+        <h2 id="rules-h" class="sr">Rules</h2>
+
+        <div class="ax-list">
+          <sc-for list="{{rules}}" as="r" hint-placeholder-count="6">
+            <article class="rule {{r.cls}}" id="{{r.dom}}">
+              <button class="r-grip" aria-label="{{r.gripLabel}}"><i class="ic i-grip s16"></i></button>
+              <span class="r-n">{{r.n}}</span>
+              <div class="r-main">
+                <sc-if value="{{r.hasName}}" hint-placeholder-val="{{false}}"><div class="r-name">{{r.name}}</div></sc-if>
+                <div class="sent" role="group" aria-label="{{r.aria}}">
+                  <span class="sx"><span class="vb r-vb {{r.vcls}}">{{r.vlabel}}</span><button class="pk {{r.src.cls}}"><i class="ic {{r.src.ic}}"></i><span class="nm {{r.src.nm}}">{{r.src.t}}</span><sc-if value="{{r.src.hasS}}" hint-placeholder-val="{{false}}"><span class="s">{{r.src.s}}</span></sc-if><i class="ic i-chev-d cv"></i></button><i class="ic i-arrow-r arw" aria-hidden="true"></i></span>
+                  <button class="pk {{r.dst.cls}}"><i class="ic {{r.dst.ic}}"></i><span class="nm {{r.dst.nm}}">{{r.dst.t}}</span><sc-if value="{{r.dst.hasS}}" hint-placeholder-val="{{false}}"><span class="s">{{r.dst.s}}</span></sc-if><i class="ic i-chev-d cv"></i></button>
+                  <span class="sx"><button class="pk port"><span class="nm {{r.port.cls}}">{{r.port.t}}</span><i class="ic i-chev-d cv"></i></button><sc-if value="{{r.off}}" hint-placeholder-val="{{false}}"><span class="off-pill">Off</span></sc-if></span>
+                </div>
+              </div>
+              <button class="r-sw" role="switch" aria-checked="{{r.enAria}}" aria-label="{{r.enLabel}}" onClick="{{r.toggleOn}}"><span class="tgl sm {{r.enCls}}"></span></button>
+              <button class="r-exp" aria-label="{{r.expLabel}}" aria-expanded="{{r.expAria}}" onClick="{{r.toggleExp}}"><i class="ic {{r.expChev}} s16"></i></button>
+              <button class="r-del" aria-label="Remove rule" onClick="{{r.del}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></button>
+              <a class="r-hit" href="{{r.hit}}" aria-label="{{r.hitLabel}}"></a>
+
+              <sc-if value="{{r.isExp}}" hint-placeholder-val="{{false}}">
+                <div class="r-panel">
+                  <label class="pn-name"><span class="pf-lbl">Rule name</span><input class="pf-in" type="text" placeholder="e.g. Block SSH to NAS" value="{{r.px.rname}}" onInput="{{r.px.onName}}"></label>
+                  <div class="pn-grid">
+                    <div class="pn-col">
+                      <sc-for list="{{r.px.pickers}}" as="p" hint-placeholder-count="2">
+                        <div>
+                          <span class="pf-lbl">{{p.label}}</span>
+                          <button class="axe-pick" aria-expanded="{{p.open}}" onClick="{{p.toggle}}"><i class="ic {{p.ic}} s16"></i><span class="grow"><span class="axe-v">{{p.value}}</span></span><i class="ic {{p.chev}} s16 t3"></i></button>
+                          <sc-if value="{{p.isOpen}}" hint-placeholder-val="{{false}}">
+                            <div class="axe-pop">
+                              <label class="axe-search"><i class="ic i-search s16"></i><input type="search" autocomplete="off" aria-label="Search {{p.label}}" placeholder="Search devices, tags, groups" value="{{p.q}}" onInput="{{p.onSearch}}"></label>
+                              <div class="axe-opts" role="listbox" aria-label="{{p.label}}">
+                                <sc-for list="{{p.options}}" as="o" hint-placeholder-count="6">
+                                  <sc-if value="{{o.head}}" hint-placeholder-val="{{false}}"><div class="axe-oh"><span>{{o.t}}</span><span class="n">{{o.n}}</span></div></sc-if>
+                                  <sc-if value="{{o.isOpt}}" hint-placeholder-val="{{true}}"><button class="axe-opt {{o.cls}}" role="option" aria-selected="{{o.selAria}}" onClick="{{o.pick}}"><i class="ic {{o.ic}} s16"></i><span class="grow"><span class="oc {{o.kind}}">{{o.t}}</span><sc-if value="{{o.hasS}}" hint-placeholder-val="{{false}}"> <span class="mono t3">{{o.s}}</span></sc-if></span><sc-if value="{{o.sel}}" hint-placeholder-val="{{false}}"><i class="ic i-check s16"></i></sc-if></button></sc-if>
+                                </sc-for>                              </div>
+                            </div>
+                          </sc-if>
+                          <sc-if value="{{p.custom}}" hint-placeholder-val="{{false}}">
+                            <div style="margin-top:6px">
+                              <div class="tg {{p.tg.fcls}}"><sc-for list="{{p.tg.pills}}" as="t" hint-placeholder-count="2"><span class="tp {{t.cls}}"><span class="t">{{t.t}}</span><button class="tp-x" aria-label="{{t.label}}" onClick="{{t.remove}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button></span></sc-for><input class="tg-in" type="text" autocomplete="off" spellcheck="false" aria-label="{{p.label}} IP addresses or CIDRs" aria-invalid="{{p.tg.bad}}" placeholder="IPv4, IPv6 or CIDR" value="{{p.tg.draft}}" onInput="{{p.tg.onInput}}" onKeyDown="{{p.tg.onKeyDown}}" onPaste="{{p.tg.onPaste}}" onBlur="{{p.tg.onBlur}}"></div>
+                              <div class="tg-v {{p.tg.lineCls}}" role="status">{{p.tg.line}}</div>
+                            </div>
+                          </sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+
+                    <div class="pn-col">
+                      <div>
+                        <span class="pf-lbl">Protocol</span>
+                        <div class="pf-seg" role="radiogroup" aria-label="Protocol"><sc-for list="{{r.px.protos}}" as="q" hint-placeholder-count="5"><button class="{{q.cls}}" role="radio" aria-checked="{{q.on}}" onClick="{{q.pick}}">{{q.label}}</button></sc-for></div>
+                      </div>
+                      <div>
+                        <span class="pf-lbl">Destination ports</span>
+                        <div class="tg {{r.px.dp.fcls}}"><sc-for list="{{r.px.dp.pills}}" as="t" hint-placeholder-count="3"><span class="tp {{t.cls}}"><span class="t">{{t.t}}</span><button class="tp-x" aria-label="{{t.label}}" onClick="{{t.remove}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button></span></sc-for><input class="tg-in" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" aria-label="Destination ports" aria-invalid="{{r.px.dp.bad}}" placeholder="Add port" value="{{r.px.dp.draft}}" disabled="{{r.px.dp.off}}" onInput="{{r.px.dp.onInput}}" onKeyDown="{{r.px.dp.onKeyDown}}" onPaste="{{r.px.dp.onPaste}}" onBlur="{{r.px.dp.onBlur}}"></div>
+                        <div class="tg-v {{r.px.dp.lineCls}}" role="status">{{r.px.dp.line}}</div>
+                      </div>
+                      <label class="pf-chk"><input type="checkbox" checked="{{r.px.anyPort}}" disabled="{{r.px.noPorts}}" onChange="{{r.px.toggleAny}}"><span>Any port</span></label>
+                      <sc-if value="{{r.px.showSp}}" hint-placeholder-val="{{true}}">
+                        <div>
+                          <span class="pf-lbl">Source ports</span>
+                          <div class="tg {{r.px.sp.fcls}}"><sc-for list="{{r.px.sp.pills}}" as="t" hint-placeholder-count="2"><span class="tp {{t.cls}}"><span class="t">{{t.t}}</span><button class="tp-x" aria-label="{{t.label}}" onClick="{{t.remove}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button></span></sc-for><input class="tg-in" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" aria-label="Source ports" aria-invalid="{{r.px.sp.bad}}" placeholder="Add port" value="{{r.px.sp.draft}}" onInput="{{r.px.sp.onInput}}" onKeyDown="{{r.px.sp.onKeyDown}}" onPaste="{{r.px.sp.onPaste}}" onBlur="{{r.px.sp.onBlur}}"></div>
+                          <div class="tg-v {{r.px.sp.lineCls}}" role="status">{{r.px.sp.line}}</div>
+                        </div>
+                      </sc-if>
+                    </div>
+
+                    <div class="pn-col">
+                      <span class="pf-lbl">Quick add</span>
+                      <div class="pf-chips"><sc-for list="{{r.px.presets}}" as="q" hint-placeholder-count="6"><button class="pf-chip" onClick="{{q.pick}}">{{q.label}} <span class="mono">{{q.hint}}</span></button></sc-for></div>
+                    </div>
+                  </div>
+
+                  <button class="pf-advt" aria-expanded="{{r.px.advAria}}" onClick="{{r.px.toggleAdv}}"><span>Advanced</span><i class="ic {{r.px.advChev}} s16 t3"></i></button>
+                  <sc-if value="{{r.px.adv}}" hint-placeholder-val="{{false}}">
+                    <div class="pf-adv">
+                      <div class="pf-advg">
+                        <div class="pf-box">
+                          <div class="pf-row"><span class="m">Track connections (stateful)</span><button class="tgl-btn" role="switch" aria-label="Track connections (stateful)" aria-checked="{{r.px.stAria}}" onClick="{{r.px.toggleSt}}"><span class="tgl {{r.px.stCls}}"></span></button></div>
+                        </div>
+                        <div class="pf-box">
+                          <div class="pf-row"><span class="m">Limit rate</span><button class="tgl-btn" role="switch" aria-label="Limit rate" aria-checked="{{r.px.limAria}}" onClick="{{r.px.toggleLim}}"><span class="tgl {{r.px.limCls}}"></span></button></div>
+                          <sc-if value="{{r.px.limit}}" hint-placeholder-val="{{false}}">
+                            <div class="pf-rate">
+                              <label class="rf"><span class="pf-lbl">Rate</span><span class="sfx"><input type="text" inputmode="numeric" aria-label="Rate in packets per second" value="{{r.px.pps}}" onInput="{{r.px.onPps}}"><span class="sfx-t">pkt/s</span></span></label>
+                              <label class="rf"><span class="pf-lbl">Burst</span><span class="sfx {{r.px.burstCls}}"><input type="text" inputmode="numeric" aria-label="Burst in packets" aria-invalid="{{r.px.burstBad}}" value="{{r.px.burst}}" onInput="{{r.px.onBurst}}"><span class="sfx-t">pkts</span></span></label>
+                            </div>
+                            <sc-if value="{{r.px.burstErr}}" hint-placeholder-val="{{false}}"><div class="pf-v err nw" role="status">Burst required</div></sc-if>
+                          </sc-if>
+                        </div>
+                      </div>
+                      <button class="pf-advt" aria-expanded="{{r.px.cmpAria}}" onClick="{{r.px.toggleCmp}}"><span>Show compiled rule</span><i class="ic {{r.px.cmpChev}} s16 t3"></i></button>
+                      <sc-if value="{{r.px.cmp}}" hint-placeholder-val="{{false}}">
+                        <pre class="pf-cmp">{{r.px.cmpText}}</pre>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </article>
+          </sc-for>
+
+          <div class="rule-foot {{defCls}}">
+            <i class="ic i-lock s14 lead"></i><span class="rf-t"><span class="v-np">Default action per direction</span><span class="v-p">Default action</span></span>
+            <span class="rf-chips"><sc-for list="{{defChips}}" as="d" hint-placeholder-count="3"><span class="chip rf-c"><span class="v-np">{{d.label}}</span><span class="v-p">{{d.short}}</span><b>{{d.val}}</b></span></sc-for></span>
+            <button class="rf-more" aria-label="Edit default actions" aria-expanded="{{defAria}}" onClick="{{toggleDef}}"><i class="ic i-more s16"></i></button>
+            <a class="rf-more rf-more-p" href="AccessAPhoneDefaults.dc.html" aria-label="Edit default actions"><i class="ic i-more s16"></i></a>
+          </div>
+          <sc-if value="{{defOpen}}" hint-placeholder-val="{{false}}">
+            <div class="def-panel">
+              <sc-for list="{{chainsM}}" as="c" hint-placeholder-count="3">
+                <div class="dc">
+                  <div class="dc-h"><span class="m">{{c.title}}</span><div class="pf-seg sm" role="radiogroup" aria-label="{{c.title}} default action"><sc-for list="{{c.opts}}" as="q" hint-placeholder-count="2"><button class="{{q.cls}}" role="radio" aria-checked="{{q.on}}" onClick="{{q.pick}}">{{q.label}}</button></sc-for></div></div>
+                  <button class="pf-sw" role="switch" aria-checked="{{c.enAria}}" onClick="{{c.toggleEn}}"><span class="grow"><span class="m">Enabled</span></span><span class="tgl {{c.enCls}}"></span></button>
+                  <input class="pf-in" type="text" aria-label="{{c.title}} chain name" placeholder="Name" value="{{c.name}}" onInput="{{c.onName}}">
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+
+        <div class="ax-fab"><button class="btn pri ax-add"><i class="ic i-plus s16"></i>Add rule</button></div>
+      </section>
+
+      <div class="ax-list ax-accs">
+        <div class="ax-ai">
+          <h2 class="ax-acch"><button class="ax-accb" aria-expanded="{{acc.subnets.aria}}" onClick="{{acc.subnets.toggle}}"><i class="ic i-network s16 lead"></i><span class="ax-acc-t">Subnets</span><span class="chip">1</span><i class="ic {{acc.subnets.chev}} s16 t3 chev"></i></button></h2>
+          <sc-if value="{{acc.subnets.open}}" hint-placeholder-val="{{false}}">
+            <div class="ax-accbody">
+              <div class="ax-subn"><span class="m">Home LAN</span><span class="mono t3 ax-cidr">192.168.55.0/24</span><span class="t3">via router-01</span></div>
+            </div>
+          </sc-if>
+        </div>
+        <div class="ax-ai">
+          <h2 class="ax-acch"><button class="ax-accb" aria-expanded="{{acc.tags.aria}}" onClick="{{acc.tags.toggle}}"><i class="ic i-tag s16 lead tagic"></i><span class="ax-acc-t">Tags</span><span class="chip">5</span><i class="ic {{acc.tags.chev}} s16 t3 chev"></i></button></h2>
+          <sc-if value="{{acc.tags.open}}" hint-placeholder-val="{{false}}">
+            <div class="ax-accbody">
+              <div class="ax-gb">
+                <sc-for list="{{tagCards}}" as="g" hint-placeholder-count="5">
+                  <div class="ax-g">
+                    <div class="ax-gn"><span class="pk tag"><i class="ic i-tag"></i><span class="nm">{{g.name}}</span></span><span class="ug-n">{{g.count}}</span></div>
+                    <div class="ax-gm">
+                      <sc-for list="{{g.devs}}" as="d" hint-placeholder-count="2"><span class="pk"><i class="ic {{d.ic}}"></i><span class="nm">{{d.n}}</span></span></sc-for>
+                      <button class="pk ax-addm" aria-expanded="{{g.aria}}" onClick="{{g.toggleAsg}}"><i class="ic i-plus"></i>Assign to devices</button>
+                    </div>
+                    <sc-if value="{{g.open}}" hint-placeholder-val="{{false}}">
+                      <div class="asg"><sc-for list="{{g.opts}}" as="o" hint-placeholder-count="8"><label class="pf-chk"><input type="checkbox" checked="{{o.on}}" onChange="{{o.toggle}}"><i class="ic {{o.ic}} s16 t3"></i><span>{{o.n}}</span></label></sc-for></div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <button class="btn sec ax-newg"><i class="ic i-plus s14"></i>New tag</button>
+            </div>
+          </sc-if>
+        </div>
+        <div class="ax-ai">
+          <h2 class="ax-acch"><button class="ax-accb" aria-expanded="{{acc.ugroups.aria}}" onClick="{{acc.ugroups.toggle}}"><i class="ic i-users s16 lead ugic"></i><span class="ax-acc-t">User groups</span><span class="chip">2</span><i class="ic {{acc.ugroups.chev}} s16 t3 chev"></i></button></h2>
+          <sc-if value="{{acc.ugroups.open}}" hint-placeholder-val="{{false}}">
+            <div class="ax-accbody">
+              <div class="ax-gb">
+                <sc-for list="{{ugCards}}" as="g" hint-placeholder-count="2">
+                  <div class="ax-g">
+                    <div class="ug-h"><span class="pk grp"><i class="ic i-users"></i><span class="nm">{{g.name}}</span></span><span class="ug-src">{{g.src}}</span></div>
+                    <div class="ug-m"><sc-for list="{{g.people}}" as="pp" hint-placeholder-count="2"><div class="ug-p"><span class="av {{pp.c}}" aria-hidden="true">{{pp.i}}</span><span class="grow">{{pp.e}}</span><sc-if value="{{pp.ro}}" hint-placeholder-val="{{false}}"><span class="ro" role="img" aria-label="Read-only"><i class="ic i-lock s14"></i></span></sc-if></div></sc-for></div>
+                    <sc-if value="{{g.manual}}" hint-placeholder-val="{{true}}"><button class="btn sec ax-assign"><i class="ic i-plus s14"></i>Add member</button></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <button class="btn sec ax-newg"><i class="ic i-plus s14"></i>New user group</button>
+            </div>
+          </sc-if>
+        </div>
+        <div class="ax-ai">
+          <h2 class="ax-acch"><button class="ax-accb" aria-expanded="{{acc.test.aria}}" onClick="{{acc.test.toggle}}"><i class="ic i-play s16 lead"></i><span class="ax-acc-t">Test access</span><i class="ic {{acc.test.chev}} s16 t3 chev"></i></button></h2>
+          <sc-if value="{{acc.test.open}}" hint-placeholder-val="{{false}}">
+            <div class="ax-accbody">
+              <div class="ax-tf">
+                <div><span class="ax-lb">From</span><button class="ax-fv"><span class="grow t3">Select</span><i class="ic i-chev-d s16"></i></button></div>
+                <div><span class="ax-lb">To</span><button class="ax-fv"><span class="grow t3">Select</span><i class="ic i-chev-d s16"></i></button></div>
+                <div><span class="ax-lb">Ports and protocol</span><button class="ax-fv"><span class="grow t3">Select</span><i class="ic i-chev-d s16"></i></button></div>
+              </div>
+              <button class="btn pri ax-run"><i class="ic i-play s16"></i>Test</button>            </div>
+          </sc-if>
+        </div>
+        <div class="ax-ai">
+          <h2 class="ax-acch"><button class="ax-accb" aria-expanded="{{acc.cmp.aria}}" onClick="{{acc.cmp.toggle}}"><i class="ic i-code s16 lead"></i><span class="ax-acc-t">Compiled ACL</span><i class="ic {{acc.cmp.chev}} s16 t3 chev"></i></button></h2>
+          <sc-if value="{{acc.cmp.open}}" hint-placeholder-val="{{false}}">
+            <div class="ax-accbody">
+              <pre class="pf-cmp">{{cmpAcl}}</pre>
+            </div>
+          </sc-if>
+        </div>
+        <div class="ax-ai last">
+          <h2 class="ax-acch"><button class="ax-accb" aria-expanded="{{acc.ver.aria}}" onClick="{{acc.ver.toggle}}"><i class="ic i-history s16 lead"></i><span class="ax-acc-t">Policy version 8</span><i class="ic {{acc.ver.chev}} s16 t3 chev"></i></button></h2>
+          <sc-if value="{{acc.ver.open}}" hint-placeholder-val="{{false}}">
+            <div class="ax-accbody">
+              <p class="sm t2">“Enable policy” · maxim · a minute ago</p>
+              <button class="btn sec ax-hist"><i class="ic i-history s16"></i>History</button>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"variant":{"editor":"enum","options":["desktop","tablet","phone"],"default":"desktop","section":"Layout"},"$preview":{"width":1440,"height":1800}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    const L = this.lib();
+    this.state = { mode: 'rules', details: false, pick: null, q: '', asg: null, defOpen: false, cmp: false, drafts: { dp: '', sp: '', fr: '', to: '' }, chains: L.CH0, rules: L.R0, tagdev: L.TAGDEV0 };
+  }
+
+  lib() {
+    if (this._l) return this._l;
+    const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+    const KIND = {
+      port: (v) => {
+        let m = /^(\d{1,5})$/.exec(v);
+        if (m) { const n = parseInt(m[1], 10); return n >= 1 && n <= 65535 ? { ok: true } : { ok: false, reason: 'Port must be 1-65535' }; }
+        m = /^(\d{1,5})-(\d{1,5})$/.exec(v);
+        if (m) {
+          const a = parseInt(m[1], 10), b = parseInt(m[2], 10);
+          if (a < 1 || a > 65535 || b < 1 || b > 65535) return { ok: false, reason: 'Port must be 1-65535' };
+          if (a >= b) return { ok: false, reason: 'Range must go from low to high' };
+          return { ok: true, range: true };
+        }
+        return { ok: false, reason: 'Port must be 1-65535' };
+      },
+      addr: (v) => {
+        const bad = { ok: false, reason: 'Not an IP or CIDR' };
+        const cm = /^([^/]+)(?:\/(\d{1,3}))?$/.exec(v);
+        if (!cm) return bad;
+        const ip = cm[1], pre = cm[2] === undefined ? null : parseInt(cm[2], 10);
+        const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
+        if (v4) {
+          for (let i = 1; i <= 4; i++) { if (parseInt(v4[i], 10) > 255) return bad; }
+          if (pre !== null && pre > 32) return { ok: false, reason: 'IPv4 prefix must be 0-32' };
+          return { ok: true, cidr: pre !== null };
+        }
+        if (ip.indexOf(':') >= 0) {
+          const segs = ip.split(':').length;
+          if (!/^[0-9a-fA-F:.]+$/.test(ip) || segs < 3 || segs > 9) return bad;
+          if (pre !== null && pre > 128) return { ok: false, reason: 'IPv6 prefix must be 0-128' };
+          return { ok: true, cidr: pre !== null };
+        }
+        return bad;
+      }
+    };
+    const COUNT = {
+      port: (tags) => {
+        let p = 0, r = 0;
+        tags.forEach((t) => { const c = KIND.port(t); if (c.ok) { if (c.range) { r++; } else { p++; } } });
+        const b = [];
+        if (p) b.push(plural(p, 'port'));
+        if (r) b.push(plural(r, 'range'));
+        return b.join(', ');
+      },
+      addr: (tags) => {
+        let a = 0, c = 0;
+        tags.forEach((t) => { const k = KIND.addr(t); if (k.ok) { if (k.cidr) { c++; } else { a++; } } });
+        const b = [];
+        if (a) b.push(plural(a, 'address'));
+        if (c) b.push(plural(c, 'CIDR'));
+        return b.join(', ');
+      }
+    };
+    const split = (str) => String(str || '').split(/[\s,]+/).map((x) => x.trim()).filter((x) => x);
+    const merge = (tags, parts) => { const out = tags.slice(); parts.forEach((p) => { if (out.indexOf(p) < 0) out.push(p); }); return out; };
+
+    /* devices, tags (label devices) and user groups (contain people, apply to the devices they own) */
+    const DEVICES = [
+      { id: 'desktop', t: 'desktop', ic: 'i-monitor', ip: '10.144.144.2' },
+      { id: 'laptop', t: 'laptop-maxim', ic: 'i-laptop', ip: '10.144.144.3' },
+      { id: 'phone', t: 'phone-anna', ic: 'i-phone', ip: '10.144.144.4' },
+      { id: 'nas', t: 'nas-01', ic: 'i-server', ip: '10.144.144.5' },
+      { id: 'media', t: 'media-pc', ic: 'i-monitor', ip: '10.144.144.6' },
+      { id: 'router', t: 'router-01', ic: 'i-router', ip: '10.144.144.1' },
+      { id: 'vps', t: 'vps-fra', ic: 'i-server', ip: '10.144.144.7' },
+      { id: 'rpi', t: 'rpi-garage', ic: 'i-cpu', ip: '10.144.144.8' }
+    ];
+    const dev = (id) => DEVICES.filter((d) => d.id === id)[0];
+    const TAGNAMES = ['us', 'eu', 'home', 'work', 'server'];
+    const TAGDEV0 = { us: ['laptop'], eu: ['vps', 'phone'], home: ['desktop', 'nas', 'media', 'router', 'rpi'], work: ['laptop'], server: ['nas', 'vps', 'rpi'] };
+    const UG = [
+      { id: 'admins', name: 'Admins', oidc: false, src: 'Manual', devs: ['desktop', 'laptop', 'router', 'vps', 'rpi'], people: [{ i: 'MK', c: '', e: 'maxim@home.example' }, { i: 'OL', c: 'r', e: 'olga@home.example' }] },
+      { id: 'family', name: 'Family', oidc: true, src: 'OIDC claim: groups', devs: ['phone', 'media'], people: [{ i: 'AN', c: 'w', e: 'anna@home.example' }, { i: 'IV', c: 'g', e: 'ivan@home.example' }] }
+    ];
+    const ugOf = (id) => UG.filter((g) => g.id === id)[0];
+    const SECS = ['Devices', 'Tags', 'User groups', 'Subnets', 'Hosts', 'Custom', 'Any'];
+    const E = (id, sec, t, ic, extra) => Object.assign({ id: id, sec: sec, t: t, ic: ic, cls: '', s: '' }, extra || {});
+    const ENT = [].concat(
+      DEVICES.map((d) => E(d.id, 'Devices', d.t, d.ic, { ip: d.ip })),
+      TAGNAMES.map((t) => E('tag-' + t, 'Tags', t, 'i-tag', { cls: 'tag', tag: t })),
+      UG.map((g) => E(g.id, 'User groups', g.name, 'i-users', { cls: 'grp', ug: g.id })),
+      [
+        E('home', 'Subnets', 'Home LAN', 'i-network', { cls: 'net', s: '192.168.55.0/24', ip: '192.168.55.0/24' }),
+        E('pc16', 'Hosts', '192.168.55.16', 'i-laptop', { s: 'behind router-01', ip: '192.168.55.16/32', mono: true }),
+        E('custom', 'Custom', 'Custom…', 'i-terminal', { s: 'IP or CIDR list' }),
+        E('anyone', 'Any', 'Anyone', 'i-globe', { s: 'any source', side: 'from' }),
+        E('any', 'Any', 'Anywhere', 'i-globe', { s: 'any destination', side: 'to' })
+      ]
+    );
+    const find = (id) => ENT.filter((x) => x.id === id)[0];
+    const devsOf = (e, mem) => e.tag ? mem[e.tag] : (e.ug ? ugOf(e.ug).devs : []);
+    const sub = (e, mem) => {
+      if (e.tag) return plural(mem[e.tag].length, 'device');
+      if (e.ug) { const g = ugOf(e.ug); return g.people.length + (g.people.length === 1 ? ' person' : ' people') + ', ' + plural(g.devs.length, 'device'); }
+      return e.s;
+    };
+    const chip = (side) => {
+      if (side.id === 'custom') {
+        const n = side.tags.length;
+        const t = n ? side.tags[0] + (n > 1 ? ' +' + (n - 1) : '') : 'Custom';
+        return { t: t, a: t, ic: 'i-terminal', cls: '', s: '', hasS: false, nm: 'mono', kind: '' };
+      }
+      const e = find(side.id);
+      return { t: e.t, a: (e.tag ? 'tag ' : (e.ug ? 'user group ' : '')) + e.t, ic: e.ic, cls: e.cls, s: e.s, hasS: e.cls === 'net', nm: e.mono ? 'mono' : '', kind: e.cls };
+    };
+    const resolve = (side) => {
+      if (side.id === 'custom') return { ips: side.tags.filter((t) => KIND.addr(t).ok), groups: [], kinds: [] };
+      const e = find(side.id);
+      if (e.tag) return { ips: [], groups: ['tag:' + e.tag], kinds: ['tag'] };
+      if (e.ug) return { ips: [], groups: ['group:' + e.ug], kinds: ['user group'] };
+      if (e.ip) return { ips: [e.ip], groups: [], kinds: [] };
+      return { ips: [], groups: [], kinds: [] };
+    };
+    const PN = { any: 'Any', tcp: 'TCP', udp: 'UDP', icmp: 'ICMP', icmpv6: 'ICMPv6' };
+    const portLabel = (r) => {
+      const ok = r.dports.filter((t) => KIND.port(t).ok);
+      if (r.proto === 'any') return { t: 'any port', mono: false };
+      if (r.proto === 'icmp' || r.proto === 'icmpv6') return { t: r.proto, mono: false };
+      if (r.anyPort || !ok.length) return { t: r.proto + ', any port', mono: false };
+      const shown = ok.slice(0, 3).join(', ') + (ok.length > 3 ? ' +' + (ok.length - 3) : '');
+      return { t: r.proto + ' ' + shown, mono: true };
+    };
+    const autoPrio = (n) => 10000 - n * 100;
+    const q = (arr) => '[' + arr.map((x) => '"' + x + '"').join(', ') + ']';
+    /* chain placement is derived: inbound on the destination, outbound on the source for deny rules, forward on the subnet router */
+    const hits = (side, d, mem) => {
+      const id = side.id;
+      if (id === 'anyone' || id === 'any' || id === 'custom') return true;
+      const e = find(id);
+      if (e.tag || e.ug) return devsOf(e, mem).indexOf(d) >= 0;
+      return id === d;
+    };
+    const lan = (side) => side.id === 'anyone' || side.id === 'any' || side.id === 'custom' || side.id === 'home' || side.id === 'pc16';
+    const place = (r, d, mem) => {
+      const out = [];
+      if (hits(r.dst, d, mem)) out.push('Inbound');
+      if (r.deny && hits(r.src, d, mem) && r.dst.id !== d) out.push('Outbound');
+      if (d === 'router' && (lan(r.src) || lan(r.dst))) out.push('Forward');
+      return out;
+    };
+    const ref = (side) => { const x = resolve(side); const a = x.ips.concat(x.groups.map((g, i) => g + ' (' + x.kinds[i] + ')')); return a.length ? a.join(', ') : 'any'; };
+    const okPorts = (r) => (r.proto === 'tcp' || r.proto === 'udp') && !r.anyPort ? r.dports.filter((t) => KIND.port(t).ok) : [];
+    const brief = (r) => '#' + r.n + ' ' + (r.deny ? 'Drop ' : 'Allow') + ' ' + PN[r.proto] + (okPorts(r).length ? ' ' + okPorts(r).join(',') : '') + '  ' + ref(r.src) + ' -> ' + ref(r.dst) + (r.off ? '  (off)' : '');
+    const deviceText = (d, rules, chains, mem) => {
+      const lines = [dev(d).t];
+      [['Inbound', 'inb'], ['Outbound', 'out'], ['Forward', 'fwd']].forEach((c) => {
+        if (c[0] === 'Forward' && d !== 'router') return;
+        const ch = chains[c[1]];
+        lines.push(c[0] + '  enabled: ' + (ch.en ? 'true' : 'false') + '  default_action: ' + (ch.def === 'block' ? 'Drop' : 'Allow'));
+        const rs = rules.filter((r) => place(r, d, mem).indexOf(c[0]) >= 0);
+        if (!rs.length) { lines.push('  (no rules)'); } else { rs.forEach((r) => lines.push('  ' + brief(r))); }
+      });
+      return lines.join('\n');
+    };
+    const note = (x) => x.kinds.length ? '  # ' + x.kinds.join(', ') : '';
+    const compile = (r, mem) => {
+      const a = resolve(r.src), b = resolve(r.dst);
+      const tu = r.proto === 'tcp' || r.proto === 'udp';
+      const sp = tu ? r.sports.filter((t) => KIND.port(t).ok) : [];
+      const lim = r.limit ? (parseInt(r.pps, 10) || 0) : 0;
+      const bur = r.limit ? (parseInt(r.burst, 10) || 0) : 0;
+      return [
+        'name:               "' + (r.rname || 'rule-' + r.n) + '"',
+        'description:        ""',
+        'priority:           ' + autoPrio(r.n) + '  (list order)',
+        'enabled:            ' + (r.off ? 'false' : 'true'),
+        'protocol:           ' + PN[r.proto],
+        'ports:              ' + q(okPorts(r)),
+        'source_ips:         ' + q(a.ips),
+        'destination_ips:    ' + q(b.ips),
+        'source_ports:       ' + q(sp),
+        'action:             ' + (r.deny ? 'Drop' : 'Allow'),
+        'rate_limit:         ' + lim,
+        'burst_limit:        ' + bur,
+        'stateful:           ' + (r.stateful ? 'true' : 'false'),
+        'source_groups:      ' + q(a.groups) + note(a),
+        'destination_groups: ' + q(b.groups) + note(b),
+        '',
+        'derived placement',
+        'nas-01     ' + (place(r, 'nas', mem).join(', ') || 'not needed'),
+        'router-01  ' + (place(r, 'router', mem).join(', ') || 'not needed')
+      ].join('\n');
+    };
+    const D = { proto: 'any', dports: [], anyPort: true, sports: [], off: false, stateful: true, rname: '', limit: false, pps: '', burst: '' };
+    const R = (patch) => Object.assign({}, D, patch);
+    const S = (id) => ({ id: id, tags: [] });
+    const R0 = [
+      R({ n: 1, deny: false, src: S('admins'), dst: S('any'), aff: 'affects 8 devices, 1 subnet' }),
+      R({ n: 2, deny: false, src: S('family'), dst: S('media'), proto: 'tcp', dports: ['8096', '32400'], anyPort: false, off: true, rname: 'Family media', aff: 'affects 2 devices' }),
+      R({ n: 3, deny: false, src: S('home'), dst: S('vps'), rname: 'LAN to VPS', aff: 'affects 4 devices' }),
+      R({ n: 4, deny: true, src: S('anyone'), dst: S('nas'), proto: 'tcp', dports: ['22'], anyPort: false, rname: 'Block SSH to NAS', aff: 'affects 5 devices' }),
+      R({ n: 5, deny: false, src: S('tag-eu'), dst: S('tag-home'), proto: 'tcp', dports: ['443'], anyPort: false, rname: 'EU to home HTTPS', aff: 'affects 7 devices' }),
+      R({ n: 6, deny: false, src: S('anyone'), dst: S('any'), aff: 'affects 8 devices, 1 subnet' })
+    ];
+    const CH0 = {
+      inb: { title: 'Inbound', short: 'In', def: 'block', en: true, name: '' },
+      out: { title: 'Outbound', short: 'Out', def: 'allow', en: true, name: '' },
+      fwd: { title: 'Forward', short: 'Fwd', def: 'block', en: true, name: '' }
+    };
+    const PRESETS = [
+      { label: 'SSH', hint: '22', proto: 'tcp', ports: ['22'] },
+      { label: 'HTTP/S', hint: '80,443', proto: 'tcp', ports: ['80', '443'] },
+      { label: 'RDP', hint: '3389', proto: 'tcp', ports: ['3389'] },
+      { label: 'SMB', hint: '445', proto: 'tcp', ports: ['445'] },
+      { label: 'DNS', hint: '53', proto: 'udp', ports: ['53'] },
+      { label: 'Ping', hint: 'ICMP', proto: 'icmp', ports: [] }
+    ];
+    this._l = { plural, KIND, COUNT, split, merge, DEVICES, dev, TAGNAMES, TAGDEV0, UG, SECS, ENT, find, devsOf, sub, chip, resolve, PN, portLabel, autoPrio, q, compile, deviceText, R0, CH0, PRESETS };
+    return this._l;
+  }
+
+  tag(kind, tags, dkey, setTags, off, emptyText) {
+    const L = this.lib(), s = this.state;
+    const draft = s.drafts[dkey] || '';
+    const put = (nt, nd) => {
+      const d = Object.assign({}, s.drafts);
+      d[dkey] = nd;
+      this.setState(Object.assign(setTags(nt), { drafts: d }));
+    };
+    let bad = '';
+    const pills = tags.map((t) => {
+      const c = L.KIND[kind](t);
+      if (!c.ok && !bad) bad = c.reason;
+      return { t: t, cls: c.ok ? (c.range ? 'range' : '') : 'bad', title: c.ok ? '' : c.reason, label: 'Remove ' + t, remove: () => put(tags.filter((x) => x !== t), draft) };
+    });
+    const commit = (txt) => { const parts = L.split(txt); if (parts.length) put(L.merge(tags, parts), ''); };
+    return {
+      pills: pills, draft: draft, off: !!off, bad: bad ? 'true' : 'false',
+      fcls: bad ? 'bad' : (off ? 'off' : ''),
+      line: bad, lineCls: bad ? 'err' : '',
+      onInput: (e) => {
+        const v = e.target.value;
+        if (/[,\s]/.test(v)) {
+          const ends = /[,\s]$/.test(v);
+          const parts = L.split(v);
+          const keep = ends ? '' : (parts.pop() || '');
+          put(L.merge(tags, parts), keep);
+        } else { put(tags, v); }
+      },
+      onKeyDown: (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); commit(draft); }
+        else if (e.key === 'Backspace' && !draft && tags.length) { put(tags.slice(0, -1), ''); }
+      },
+      onPaste: (e) => {
+        const cd = e.clipboardData || window.clipboardData;
+        if (!cd) return;
+        e.preventDefault();
+        put(L.merge(tags, L.split(draft + ' ' + cd.getData('text'))), '');
+      },
+      onBlur: () => commit(draft)
+    };
+  }
+
+  picker(side, label, sel, setSel, dkey) {
+    const L = this.lib(), s = this.state;
+    const mem = s.tagdev;
+    const isOpen = s.pick === side;
+    const chip = L.chip(sel);
+    const e = L.find(sel.id);
+    const needle = (s.q || '').toLowerCase();
+    const ents = L.ENT.filter((x) => (!x.side || x.side === side) && (!needle || (x.t + ' ' + L.sub(x, mem) + ' ' + x.sec).toLowerCase().indexOf(needle) >= 0));
+    const opts = [];
+    L.SECS.forEach((sec) => {
+      const items = ents.filter((x) => x.sec === sec);
+      if (!items.length) return;
+      opts.push({ head: true, isOpt: false, t: sec === 'Any' ? (side === 'from' ? 'Anyone' : 'Anywhere') : sec, n: items.length });
+      items.forEach((x) => {
+        const sb = x.sec === 'Any' ? '' : L.sub(x, mem);
+        opts.push({
+          head: false, isOpt: true, t: x.t, s: sb, hasS: !!sb, ic: x.ic, kind: x.cls,
+          sel: sel.id === x.id, selAria: sel.id === x.id ? 'true' : 'false',
+          cls: (sel.id === x.id ? 'sel ' : '') + (x.cls === 'tag' ? 'kt' : (x.cls === 'grp' ? 'kg' : '')),
+          pick: () => this.setState(Object.assign(setSel(x.id, x.id === 'custom' ? sel.tags : []), { pick: null, q: '' }))
+        });
+      });
+    });
+    return {
+      label: label, ic: chip.ic, value: sel.id === 'custom' ? chip.t : e.t, sub: sel.id === 'custom' ? 'IP or CIDR list' : (e.sec === 'Any' ? e.s : L.sub(e, mem)), hasSub: sel.id === 'custom' || !!(e.sec === 'Any' ? e.s : L.sub(e, mem)),
+      isOpen: isOpen, open: isOpen ? 'true' : 'false', chev: isOpen ? 'i-chev-d' : 'i-chev-r',
+      toggle: () => this.setState({ pick: isOpen ? null : side, q: '' }),
+      q: s.q || '', onSearch: (ev) => this.setState({ q: ev.target.value }), none: opts.length === 0,
+      options: opts, custom: sel.id === 'custom',
+      tg: this.tag('addr', sel.tags, dkey, (nt) => setSel('custom', nt), false, 'Add an IPv4, IPv6 or CIDR')
+    };
+  }
+
+  renderVals() {
+    const s = this.state, L = this.lib();
+    const mem = s.tagdev;
+    const v = (this.props && this.props.variant) || 'desktop';
+    const exp = s.exp === undefined ? (v === 'phone' ? null : 4) : s.exp;
+    const adv = s.adv === undefined ? v === 'desktop' : s.adv;
+    const accOpen = s.acc === undefined ? null : s.acc;
+    const M = [
+      { id: 'open', long: 'Open network', short: 'Open', icon: 'i-globe' },
+      { id: 'rules', long: 'Groups & rules', short: 'Rules', icon: 'i-users' },
+      { id: 'json', long: 'Advanced JSON', short: 'JSON', icon: 'i-code' }
+    ];
+    const DESC = {
+      open: 'No rules. Every device and subnet is connected.',
+      rules: 'Who can connect to what, with a default per direction.',
+      json: 'The same policy as text. Edits show as rules.'
+    };
+    const A = (id) => ({
+      open: accOpen === id, aria: accOpen === id ? 'true' : 'false', chev: accOpen === id ? 'i-chev-d' : 'i-chev-r',
+      toggle: () => this.setState({ acc: accOpen === id ? null : id })
+    });
+    const tagsOf = (id) => L.TAGNAMES.filter((t) => mem[t].indexOf(id) >= 0).map((t) => ({ t: t }));
+    const cur = s.rules.filter((r) => r.n === exp)[0] || s.rules[0] || L.R0[0];
+    const upd = (patch) => ({ rules: s.rules.map((r) => r.n === cur.n ? Object.assign({}, r, patch) : r) });
+    const set = (patch) => this.setState(upd(patch));
+    const sw = (key) => () => { const o = {}; o[key] = !cur[key]; set(o); };
+    const txt = (key) => (e) => { const o = {}; o[key] = e.target.value; set(o); };
+    const noPorts = cur.proto === 'any' || cur.proto === 'icmp' || cur.proto === 'icmpv6';
+    const portsOff = noPorts || cur.anyPort;
+    const PROTOS = [['any', 'Any'], ['tcp', 'TCP'], ['udp', 'UDP'], ['icmp', 'ICMP'], ['icmpv6', 'ICMPv6']];
+    const dp = this.tag('port', cur.dports, 'dp', (nt) => upd({ dports: nt, anyPort: false }), portsOff, 'Empty: matches any port');
+    const sp = this.tag('port', cur.sports, 'sp', (nt) => upd({ sports: nt }), false, 'Empty: matches any source port');
+    const setSrc = (id, tags) => upd({ src: { id: id, tags: tags || [] } });
+    const setDst = (id, tags) => upd({ dst: { id: id, tags: tags || [] } });
+    const burstErr = cur.limit && cur.pps !== '' && cur.burst === '';
+    const px = {
+      rname: cur.rname, onName: txt('rname'),
+      pickers: [this.picker('from', 'From', cur.src, setSrc, 'fr'), this.picker('to', 'To', cur.dst, setDst, 'to')],
+      protos: PROTOS.map((p) => ({ label: p[1], cls: cur.proto === p[0] ? 'on' : '', on: cur.proto === p[0] ? 'true' : 'false', pick: () => set({ proto: p[0] }) })),
+      dp: dp, noPorts: noPorts, anyPort: noPorts || cur.anyPort,
+      toggleAny: () => set(cur.anyPort ? { anyPort: false } : { anyPort: true, dports: [] }),
+      showSp: !noPorts, sp: sp,
+      presets: L.PRESETS.map((p) => ({
+        label: p.label, hint: p.hint,
+        pick: () => set(p.proto === 'icmp' ? { proto: 'icmp', dports: [], anyPort: true } : { proto: p.proto, dports: L.merge(cur.proto === p.proto ? cur.dports : [], p.ports), anyPort: false })
+      })),
+      adv: adv, advAria: adv ? 'true' : 'false', advChev: adv ? 'i-chev-u' : 'i-chev-d',
+      toggleAdv: () => this.setState({ adv: !adv }),
+      stAria: cur.stateful ? 'true' : 'false', stCls: cur.stateful ? 'on' : '', toggleSt: sw('stateful'),
+      limit: cur.limit, limAria: cur.limit ? 'true' : 'false', limCls: cur.limit ? 'on' : '', toggleLim: sw('limit'),
+      pps: cur.pps, onPps: txt('pps'), burst: cur.burst, onBurst: txt('burst'),
+      burstErr: burstErr, burstBad: burstErr ? 'true' : 'false', burstCls: burstErr ? 'bad' : '',
+      cmp: s.cmp, cmpAria: s.cmp ? 'true' : 'false', cmpChev: s.cmp ? 'i-chev-u' : 'i-chev-d', toggleCmp: () => this.setState({ cmp: !s.cmp }),
+      cmpText: L.compile(cur, mem)
+    };
+    const rules = s.rules.map((r) => {
+      const src = L.chip(r.src), dst = L.chip(r.dst), pl = L.portLabel(r);
+      const aria = (r.rname ? r.rname + '. ' : '') + (r.deny ? 'Deny: ' : 'Allow: ') + src.a + ' to ' + dst.a + ' on ' + pl.t + (r.off ? ' (off)' : '');
+      const isExp = exp === r.n;
+      return {
+        n: r.n, src: src, dst: dst, port: { t: pl.t, cls: pl.mono ? 'mono' : '' },
+        hasName: !!r.rname, name: r.rname,
+        tip: (r.rname ? r.rname + ' · ' : '') + r.aff, nTitle: r.rname || 'Rule ' + r.n,
+        dom: 'rule-' + r.n, cls: r.off ? 'off' : '', off: r.off,
+        enAria: r.off ? 'false' : 'true', enCls: r.off ? '' : 'on', enLabel: 'Enabled' + (r.rname ? ': ' + r.rname : ', rule ' + r.n),
+        toggleOn: () => this.setState({ rules: s.rules.map((x) => x.n === r.n ? Object.assign({}, x, { off: !x.off }) : x) }),
+        vcls: r.deny ? 'deny' : 'allow', vlabel: r.deny ? 'Deny' : 'Allow',
+        aria: aria, gripLabel: 'Drag to reorder rule ' + r.n,
+        hitLabel: 'Edit rule ' + r.n + ': ' + aria,
+        hit: r.n === 4 ? 'AccessAPhoneEdit.dc.html' : '#rule-' + r.n,
+        isExp: isExp, expAria: isExp ? 'true' : 'false', expChev: isExp ? 'i-chev-u' : 'i-chev-d',
+        expLabel: 'Protocol, ports and advanced options for rule ' + r.n,
+        toggleExp: () => this.setState({ exp: isExp ? null : r.n, pick: null, q: '', drafts: { dp: '', sp: '', fr: '', to: '' } }),
+        del: () => this.setState({ rules: s.rules.filter((x) => x.n !== r.n).map((x, i) => Object.assign({}, x, { n: i + 1 })), exp: null }),
+        px: px
+      };
+    });
+    const chainKeys = ['inb', 'out', 'fwd'];
+    const setCh = (k, patch) => { const c = Object.assign({}, s.chains); c[k] = Object.assign({}, c[k], patch); this.setState({ chains: c }); };
+    const cmpAcl = L.deviceText('router', s.rules, s.chains, mem) + '\n\n' + L.deviceText('nas', s.rules, s.chains, mem);
+    const tagCards = L.TAGNAMES.map((t) => {
+      const ids = mem[t], open = s.asg === t;
+      return {
+        name: t, count: L.plural(ids.length, 'device'),
+        devs: ids.map((id) => ({ n: L.dev(id).t, ic: L.dev(id).ic })),
+        open: open, aria: open ? 'true' : 'false', toggleAsg: () => this.setState({ asg: open ? null : t }),
+        opts: L.DEVICES.map((d) => ({
+          n: d.t, ic: d.ic, on: ids.indexOf(d.id) >= 0,
+          toggle: () => { const m = Object.assign({}, mem); m[t] = ids.indexOf(d.id) >= 0 ? ids.filter((x) => x !== d.id) : ids.concat([d.id]); this.setState({ tagdev: m }); }
+        }))
+      };
+    });
+    const ugCards = L.UG.map((g) => ({
+      name: g.name, src: g.src, people: g.people.map((p) => Object.assign({}, p, { ro: g.oidc })), manual: !g.oidc
+    }));
+    return {
+      minH: v === 'phone' ? '1120px' : (v === 'tablet' ? '1500px' : '1500px'),
+      modes: M.map((m) => ({ long: m.long, short: m.short, icon: m.icon, cls: m.id === s.mode ? 'on' : '', on: m.id === s.mode ? 'true' : 'false', pick: () => this.setState({ mode: m.id }) })),
+      modeDesc: DESC[s.mode],
+      isOpen: s.mode === 'open', isRules: s.mode === 'rules', isJson: s.mode === 'json',
+      toRules: () => this.setState({ mode: 'rules' }),
+      details: s.details, detailsAria: s.details ? 'true' : 'false',
+      toggleDetails: () => this.setState({ details: !s.details }),
+      rules: rules,
+      defChips: chainKeys.map((k) => ({ label: s.chains[k].title, short: s.chains[k].short, val: s.chains[k].def === 'block' ? 'Block' : 'Allow' })),
+      defOpen: s.defOpen, defAria: s.defOpen ? 'true' : 'false', defCls: s.defOpen ? 'open' : '',
+      toggleDef: () => this.setState({ defOpen: !s.defOpen }),
+      chainsM: chainKeys.map((k) => {
+        const c = s.chains[k];
+        return {
+          title: c.title, name: c.name,
+          opts: [['block', 'Block'], ['allow', 'Allow']].map((o) => ({ label: o[1], cls: c.def === o[0] ? 'on' : '', on: c.def === o[0] ? 'true' : 'false', pick: () => setCh(k, { def: o[0] }) })),
+          enAria: c.en ? 'true' : 'false', enCls: c.en ? 'on' : '', toggleEn: () => setCh(k, { en: !c.en }),
+          onName: (e) => setCh(k, { name: e.target.value })
+        };
+      }),
+      tagCards: tagCards, ugCards: ugCards,
+      cmpAcl: cmpAcl,
+      acc: { subnets: A('subnets'), tags: A('tags'), ugroups: A('ugroups'), test: A('test'), cmp: A('cmp'), ver: A('ver') }
+    };
+  }
+}
+</script>
+</body>
+</html>

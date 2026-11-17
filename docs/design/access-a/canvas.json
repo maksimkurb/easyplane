@@ -1,0 +1,85 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "AccessA.dc.html": {
+      "expand": "fill",
+      "h": 1500,
+      "is_interactive": true,
+      "title": "A / Sentences + subnets as objects",
+      "w": 1440,
+      "x": 0,
+      "y": 1890
+    },
+    "AccessAPhone.dc.html": {
+      "expand": "fill",
+      "h": 1120,
+      "is_interactive": true,
+      "title": "A mobile",
+      "w": 390,
+      "x": 1520,
+      "y": 1890
+    },
+    "AccessAPhoneDefaults.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "A mobile: default actions",
+      "w": 390,
+      "x": 2930,
+      "y": 1890
+    },
+    "AccessAPhoneEdit.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "A mobile: edit rule",
+      "w": 390,
+      "x": 1990,
+      "y": 1890
+    },
+    "AccessAPhonePorts.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "A mobile: ports and protocol",
+      "w": 390,
+      "x": 2460,
+      "y": 1890
+    },
+    "AccessATablet.dc.html": {
+      "expand": "fill",
+      "h": 1500,
+      "is_interactive": true,
+      "title": "A tablet 768",
+      "w": 768,
+      "x": 3400,
+      "y": 1890
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-17T12:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "nA": {
+      "kind": "title1",
+      "maxW": 4168,
+      "text": "A. Sentences + subnets as objects",
+      "w": 240,
+      "x": 0,
+      "y": 1650
+    }
+  },
+  "order": [
+    "AccessA.dc.html",
+    "AccessAPhone.dc.html",
+    "AccessAPhoneEdit.dc.html",
+    "AccessAPhonePorts.dc.html",
+    "AccessAPhoneDefaults.dc.html",
+    "AccessATablet.dc.html"
+  ],
+  "pages": [],
+  "title": "EasyPlane Access: options"
+}

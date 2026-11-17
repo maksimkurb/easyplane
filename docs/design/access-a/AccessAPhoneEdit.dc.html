@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Access A phone edit rule</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./v2.css">
+<link rel="stylesheet" href="./access.css">
+<link rel="stylesheet" href="./access-a.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="v2 ax axe" style="width:390px;height:844px">
+  <div class="ax-in axe-bg" aria-hidden="true">
+    <header class="ax-bar">
+      <span class="btn ghost icon lg ax-back"><i class="ic i-chev-l s20"></i></span>
+      <div class="ax-ttl"><div class="ax-t1">Home lab</div><div class="ax-t2"><span class="dot on"></span>7 of 8 online</div></div>
+      <span class="btn ghost icon lg ax-netmore"><i class="ic i-more"></i></span>
+    </header>
+    <section class="ax-hero"><div class="ax-wrap"><nav class="ax-tabs"><span class="ax-tab">Devices <span class="cnt">8</span></span><span class="ax-tab">Map</span><span class="ax-tab on">Access</span><span class="ax-tab">Settings</span></nav></div></section>
+    <div class="ax-wrap ax-content">
+      <div class="ax-list">
+        <article class="rule">
+          <span class="r-n">3</span>
+          <div class="r-main"><div class="r-name">LAN to VPS</div><div class="sent"><span class="sx"><span class="vb r-vb allow">Allow</span><span class="pk net"><i class="ic i-network"></i><span class="nm">Home LAN</span><span class="s">192.168.55.0/24</span></span><i class="ic i-arrow-r arw"></i></span><span class="pk"><i class="ic i-server"></i><span class="nm">vps-fra</span></span><span class="pk port"><span class="nm">any port</span></span></div></div>
+          <span class="r-del"></span>
+        </article>
+        <article class="rule axe-hl">
+          <span class="r-n">4</span>
+          <div class="r-main"><div class="r-name">Block SSH to NAS</div><div class="sent"><span class="sx"><span class="vb r-vb deny">Deny</span><span class="pk"><i class="ic i-globe"></i><span class="nm">Anyone</span></span><i class="ic i-arrow-r arw"></i></span><span class="pk"><i class="ic i-server"></i><span class="nm">nas-01</span></span><span class="pk port"><span class="nm mono">tcp 22</span></span></div></div>
+          <span class="r-del"></span>
+        </article>
+        <article class="rule">
+          <span class="r-n">5</span>
+          <div class="r-main"><div class="r-name">EU to home HTTPS</div><div class="sent"><span class="sx"><span class="vb r-vb allow">Allow</span><span class="pk tag"><i class="ic i-tag"></i><span class="nm">eu</span></span><i class="ic i-arrow-r arw"></i></span><span class="pk tag"><i class="ic i-tag"></i><span class="nm">home</span></span><span class="pk port"><span class="nm mono">tcp 443</span></span></div></div>
+          <span class="r-del"></span>
+        </article>
+      </div>
+    </div>
+  </div>
+
+  <div class="axe-scrim"></div>
+  <section class="axe-sheet" role="dialog" aria-modal="true" aria-labelledby="axe-t">
+    <div class="axe-grab"></div>
+    <div class="axe-h">
+      <div class="axe-ht"><h2 id="axe-t">Edit rule 4</h2></div>
+      <button class="axe-ib" aria-label="Move rule up"><i class="ic i-arrow-u"></i></button>
+      <button class="axe-ib" aria-label="Move rule down"><i class="ic i-arrow-d"></i></button>
+      <button class="axe-ib" aria-label="Duplicate rule"><i class="ic i-copy"></i></button>
+      <button class="axe-ib red" aria-label="Delete rule"><i class="ic i-trash"></i></button>
+    </div>
+    <div class="axe-b">
+      <label><span class="pf-lbl">Rule name</span><input class="pf-in" type="text" placeholder="e.g. Block SSH to NAS" value="{{rname}}" onInput="{{onName}}"></label>
+
+      <div class="axe-top">
+        <div class="axe-act" role="radiogroup" aria-label="Action">
+          <button class="{{allowCls}}" role="radio" aria-checked="{{allowOn}}" onClick="{{setAllow}}"><i class="ic i-check s16"></i>Allow</button>
+          <button class="{{denyCls}}" role="radio" aria-checked="{{denyOn}}" onClick="{{setDeny}}"><i class="ic i-ban s16"></i>Deny</button>
+        </div>
+        <div class="axe-en"><span>Enabled</span><button class="tgl-btn" role="switch" aria-label="Enabled" aria-checked="{{enAria}}" onClick="{{toggleEn}}"><span class="tgl {{enCls}}"></span></button></div>
+      </div>
+
+      <sc-for list="{{pickers}}" as="p" hint-placeholder-count="2">
+        <div>
+          <span class="pf-lbl">{{p.label}}</span>
+          <button class="axe-pick" aria-expanded="{{p.open}}" onClick="{{p.toggle}}"><i class="ic {{p.ic}} s20"></i><span class="grow"><span class="axe-v">{{p.value}}</span></span><i class="ic {{p.chev}} s16 t3"></i></button>
+          <sc-if value="{{p.isOpen}}" hint-placeholder-val="{{false}}">
+            <div class="axe-pop">
+              <label class="axe-search"><i class="ic i-search s16"></i><input type="search" autocomplete="off" aria-label="Search {{p.label}}" placeholder="Search devices, tags, groups" value="{{p.q}}" onInput="{{p.onSearch}}"></label>
+              <div class="axe-opts" role="listbox" aria-label="{{p.label}}">
+                <sc-for list="{{p.options}}" as="o" hint-placeholder-count="6">
+                  <sc-if value="{{o.head}}" hint-placeholder-val="{{false}}"><div class="axe-oh"><span>{{o.t}}</span><span class="n">{{o.n}}</span></div></sc-if>
+                  <sc-if value="{{o.isOpt}}" hint-placeholder-val="{{true}}"><button class="axe-opt {{o.cls}}" role="option" aria-selected="{{o.selAria}}" onClick="{{o.pick}}"><i class="ic {{o.ic}} s16"></i><span class="grow"><span class="oc {{o.kind}}">{{o.t}}</span><sc-if value="{{o.hasS}}" hint-placeholder-val="{{false}}"> <span class="mono t3">{{o.s}}</span></sc-if></span><sc-if value="{{o.sel}}" hint-placeholder-val="{{false}}"><i class="ic i-check s16"></i></sc-if></button></sc-if>
+                </sc-for>              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{p.custom}}" hint-placeholder-val="{{false}}">
+            <div style="margin-top:6px">
+              <div class="tg {{p.tg.fcls}}"><sc-for list="{{p.tg.pills}}" as="t" hint-placeholder-count="2"><span class="tp {{t.cls}}"><span class="t">{{t.t}}</span><button class="tp-x" aria-label="{{t.label}}" onClick="{{t.remove}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button></span></sc-for><input class="tg-in" type="text" autocomplete="off" spellcheck="false" aria-label="{{p.label}} IP addresses or CIDRs" aria-invalid="{{p.tg.bad}}" placeholder="IPv4, IPv6 or CIDR" value="{{p.tg.draft}}" onInput="{{p.tg.onInput}}" onKeyDown="{{p.tg.onKeyDown}}" onPaste="{{p.tg.onPaste}}" onBlur="{{p.tg.onBlur}}"></div>
+              <div class="tg-v {{p.tg.lineCls}}" role="status">{{p.tg.line}}</div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+
+      <div>
+        <span class="pf-lbl">Ports and protocol</span>
+        <a class="axe-pick" href="AccessAPhonePorts.dc.html" aria-label="Ports and protocol: {{portsSummary}}. Edit"><i class="ic i-terminal s20"></i><span class="grow"><span class="axe-v">{{portsSummary}}</span></span><i class="ic i-chev-r s16 t3"></i></a>
+      </div>
+
+      <button class="pf-advt" aria-expanded="{{advAria}}" onClick="{{toggleAdv}}"><span>Advanced</span><i class="ic {{advChev}} s16 t3"></i></button>
+      <sc-if value="{{adv}}" hint-placeholder-val="{{false}}">
+        <div class="pf-adv">
+          <div class="pf-advg">
+            <div class="pf-box">
+              <div class="pf-row"><span class="m">Track connections (stateful)</span><button class="tgl-btn" role="switch" aria-label="Track connections (stateful)" aria-checked="{{stAria}}" onClick="{{toggleSt}}"><span class="tgl {{stCls}}"></span></button></div>
+            </div>
+            <div class="pf-box">
+              <div class="pf-row"><span class="m">Limit rate</span><button class="tgl-btn" role="switch" aria-label="Limit rate" aria-checked="{{limAria}}" onClick="{{toggleLim}}"><span class="tgl {{limCls}}"></span></button></div>
+              <sc-if value="{{limit}}" hint-placeholder-val="{{false}}">
+                <div class="pf-rate">
+                  <label class="rf"><span class="pf-lbl">Rate</span><span class="sfx"><input type="text" inputmode="numeric" aria-label="Rate in packets per second" value="{{pps}}" onInput="{{onPps}}"><span class="sfx-t">pkt/s</span></span></label>
+                  <label class="rf"><span class="pf-lbl">Burst</span><span class="sfx {{burstCls}}"><input type="text" inputmode="numeric" aria-label="Burst in packets" aria-invalid="{{burstBad}}" value="{{burst}}" onInput="{{onBurst}}"><span class="sfx-t">pkts</span></span></label>
+                </div>
+                <sc-if value="{{burstErr}}" hint-placeholder-val="{{false}}"><div class="pf-v err nw" role="status">Burst required</div></sc-if>
+              </sc-if>
+            </div>
+          </div>
+          <button class="pf-advt" aria-expanded="{{cmpAria}}" onClick="{{toggleCmp}}"><span>Show compiled rule</span><i class="ic {{cmpChev}} s16 t3"></i></button>
+          <sc-if value="{{cmp}}" hint-placeholder-val="{{false}}">
+            <pre class="pf-cmp">{{cmpText}}</pre>          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+    <div class="axe-foot"><button class="btn sec">Cancel</button><button class="btn pri">Save rule</button></div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    const L = this.lib();
+    this.state = {
+      pick: null, q: '', adv: false, cmp: false, drafts: { fr: '', to: '' }, tagdev: L.TAGDEV0,
+      r: { n: 4, deny: true, src: { id: 'anyone', tags: [] }, dst: { id: 'nas', tags: [] }, proto: 'tcp', dports: ['22'], anyPort: false, sports: [], off: false, stateful: true, rname: 'Block SSH to NAS', limit: false, pps: '', burst: '' }
+    };
+  }
+
+  lib() {
+    if (this._l) return this._l;
+    const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+    const KIND = {
+      port: (v) => {
+        let m = /^(\d{1,5})$/.exec(v);
+        if (m) { const n = parseInt(m[1], 10); return n >= 1 && n <= 65535 ? { ok: true } : { ok: false, reason: 'Port must be 1-65535' }; }
+        m = /^(\d{1,5})-(\d{1,5})$/.exec(v);
+        if (m) {
+          const a = parseInt(m[1], 10), b = parseInt(m[2], 10);
+          if (a < 1 || a > 65535 || b < 1 || b > 65535) return { ok: false, reason: 'Port must be 1-65535' };
+          if (a >= b) return { ok: false, reason: 'Range must go from low to high' };
+          return { ok: true, range: true };
+        }
+        return { ok: false, reason: 'Port must be 1-65535' };
+      },
+      addr: (v) => {
+        const bad = { ok: false, reason: 'Not an IP or CIDR' };
+        const cm = /^([^/]+)(?:\/(\d{1,3}))?$/.exec(v);
+        if (!cm) return bad;
+        const ip = cm[1], pre = cm[2] === undefined ? null : parseInt(cm[2], 10);
+        const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
+        if (v4) {
+          for (let i = 1; i <= 4; i++) { if (parseInt(v4[i], 10) > 255) return bad; }
+          if (pre !== null && pre > 32) return { ok: false, reason: 'IPv4 prefix must be 0-32' };
+          return { ok: true, cidr: pre !== null };
+        }
+        if (ip.indexOf(':') >= 0) {
+          const segs = ip.split(':').length;
+          if (!/^[0-9a-fA-F:.]+$/.test(ip) || segs < 3 || segs > 9) return bad;
+          if (pre !== null && pre > 128) return { ok: false, reason: 'IPv6 prefix must be 0-128' };
+          return { ok: true, cidr: pre !== null };
+        }
+        return bad;
+      }
+    };
+    const COUNT = {
+      port: (tags) => {
+        let p = 0, r = 0;
+        tags.forEach((t) => { const c = KIND.port(t); if (c.ok) { if (c.range) { r++; } else { p++; } } });
+        const b = [];
+        if (p) b.push(plural(p, 'port'));
+        if (r) b.push(plural(r, 'range'));
+        return b.join(', ');
+      },
+      addr: (tags) => {
+        let a = 0, c = 0;
+        tags.forEach((t) => { const k = KIND.addr(t); if (k.ok) { if (k.cidr) { c++; } else { a++; } } });
+        const b = [];
+        if (a) b.push(plural(a, 'address'));
+        if (c) b.push(plural(c, 'CIDR'));
+        return b.join(', ');
+      }
+    };
+    const split = (str) => String(str || '').split(/[\s,]+/).map((x) => x.trim()).filter((x) => x);
+    const merge = (tags, parts) => { const out = tags.slice(); parts.forEach((p) => { if (out.indexOf(p) < 0) out.push(p); }); return out; };
+
+    const DEVICES = [
+      { id: 'desktop', t: 'desktop', ic: 'i-monitor', ip: '10.144.144.2' },
+      { id: 'laptop', t: 'laptop-maxim', ic: 'i-laptop', ip: '10.144.144.3' },
+      { id: 'phone', t: 'phone-anna', ic: 'i-phone', ip: '10.144.144.4' },
+      { id: 'nas', t: 'nas-01', ic: 'i-server', ip: '10.144.144.5' },
+      { id: 'media', t: 'media-pc', ic: 'i-monitor', ip: '10.144.144.6' },
+      { id: 'router', t: 'router-01', ic: 'i-router', ip: '10.144.144.1' },
+      { id: 'vps', t: 'vps-fra', ic: 'i-server', ip: '10.144.144.7' },
+      { id: 'rpi', t: 'rpi-garage', ic: 'i-cpu', ip: '10.144.144.8' }
+    ];
+    const dev = (id) => DEVICES.filter((d) => d.id === id)[0];
+    const TAGNAMES = ['us', 'eu', 'home', 'work', 'server'];
+    const TAGDEV0 = { us: ['laptop'], eu: ['vps', 'phone'], home: ['desktop', 'nas', 'media', 'router', 'rpi'], work: ['laptop'], server: ['nas', 'vps', 'rpi'] };
+    const UG = [
+      { id: 'admins', name: 'Admins', oidc: false, src: 'Manual', devs: ['desktop', 'laptop', 'router', 'vps', 'rpi'], people: [{ i: 'MK', c: '', e: 'maxim@home.example' }, { i: 'OL', c: 'r', e: 'olga@home.example' }] },
+      { id: 'family', name: 'Family', oidc: true, src: 'OIDC claim: groups', devs: ['phone', 'media'], people: [{ i: 'AN', c: 'w', e: 'anna@home.example' }, { i: 'IV', c: 'g', e: 'ivan@home.example' }] }
+    ];
+    const ugOf = (id) => UG.filter((g) => g.id === id)[0];
+    const SECS = ['Devices', 'Tags', 'User groups', 'Subnets', 'Hosts', 'Custom', 'Any'];
+    const E = (id, sec, t, ic, extra) => Object.assign({ id: id, sec: sec, t: t, ic: ic, cls: '', s: '' }, extra || {});
+    const ENT = [].concat(
+      DEVICES.map((d) => E(d.id, 'Devices', d.t, d.ic, { ip: d.ip })),
+      TAGNAMES.map((t) => E('tag-' + t, 'Tags', t, 'i-tag', { cls: 'tag', tag: t })),
+      UG.map((g) => E(g.id, 'User groups', g.name, 'i-users', { cls: 'grp', ug: g.id })),
+      [
+        E('home', 'Subnets', 'Home LAN', 'i-network', { cls: 'net', s: '192.168.55.0/24', ip: '192.168.55.0/24' }),
+        E('pc16', 'Hosts', '192.168.55.16', 'i-laptop', { s: 'behind router-01', ip: '192.168.55.16/32', mono: true }),
+        E('custom', 'Custom', 'Custom…', 'i-terminal', { s: 'IP or CIDR list' }),
+        E('anyone', 'Any', 'Anyone', 'i-globe', { s: 'any source', side: 'from' }),
+        E('any', 'Any', 'Anywhere', 'i-globe', { s: 'any destination', side: 'to' })
+      ]
+    );
+    const find = (id) => ENT.filter((x) => x.id === id)[0];
+    const devsOf = (e, mem) => e.tag ? mem[e.tag] : (e.ug ? ugOf(e.ug).devs : []);
+    const sub = (e, mem) => {
+      if (e.tag) return plural(mem[e.tag].length, 'device');
+      if (e.ug) { const g = ugOf(e.ug); return g.people.length + (g.people.length === 1 ? ' person' : ' people') + ', ' + plural(g.devs.length, 'device'); }
+      return e.s;
+    };
+    const chip = (side) => {
+      if (side.id === 'custom') {
+        const n = side.tags.length;
+        const t = n ? side.tags[0] + (n > 1 ? ' +' + (n - 1) : '') : 'Custom';
+        return { t: t, a: t, ic: 'i-terminal', cls: '', s: '', hasS: false, nm: 'mono', kind: '' };
+      }
+      const e = find(side.id);
+      return { t: e.t, a: (e.tag ? 'tag ' : (e.ug ? 'user group ' : '')) + e.t, ic: e.ic, cls: e.cls, s: e.s, hasS: e.cls === 'net', nm: e.mono ? 'mono' : '', kind: e.cls };
+    };
+    const resolve = (side) => {
+      if (side.id === 'custom') return { ips: side.tags.filter((t) => KIND.addr(t).ok), groups: [], kinds: [] };
+      const e = find(side.id);
+      if (e.tag) return { ips: [], groups: ['tag:' + e.tag], kinds: ['tag'] };
+      if (e.ug) return { ips: [], groups: ['group:' + e.ug], kinds: ['user group'] };
+      if (e.ip) return { ips: [e.ip], groups: [], kinds: [] };
+      return { ips: [], groups: [], kinds: [] };
+    };
+    const PN = { any: 'Any', tcp: 'TCP', udp: 'UDP', icmp: 'ICMP', icmpv6: 'ICMPv6' };
+    const portLabel = (r) => {
+      const ok = r.dports.filter((t) => KIND.port(t).ok);
+      if (r.proto === 'any') return { t: 'any port', mono: false };
+      if (r.proto === 'icmp' || r.proto === 'icmpv6') return { t: r.proto, mono: false };
+      if (r.anyPort || !ok.length) return { t: r.proto + ', any port', mono: false };
+      const shown = ok.slice(0, 3).join(', ') + (ok.length > 3 ? ' +' + (ok.length - 3) : '');
+      return { t: r.proto + ' ' + shown, mono: true };
+    };
+    const autoPrio = (n) => 10000 - n * 100;
+    const q = (arr) => '[' + arr.map((x) => '"' + x + '"').join(', ') + ']';
+    const hits = (side, d, mem) => {
+      const id = side.id;
+      if (id === 'anyone' || id === 'any' || id === 'custom') return true;
+      const e = find(id);
+      if (e.tag || e.ug) return devsOf(e, mem).indexOf(d) >= 0;
+      return id === d;
+    };
+    const lan = (side) => side.id === 'anyone' || side.id === 'any' || side.id === 'custom' || side.id === 'home' || side.id === 'pc16';
+    const place = (r, d, mem) => {
+      const out = [];
+      if (hits(r.dst, d, mem)) out.push('Inbound');
+      if (r.deny && hits(r.src, d, mem) && r.dst.id !== d) out.push('Outbound');
+      if (d === 'router' && (lan(r.src) || lan(r.dst))) out.push('Forward');
+      return out;
+    };
+    const note = (x) => x.kinds.length ? '  # ' + x.kinds.join(', ') : '';
+    const compile = (r, mem) => {
+      const a = resolve(r.src), b = resolve(r.dst);
+      const tu = r.proto === 'tcp' || r.proto === 'udp';
+      const ports = tu && !r.anyPort ? r.dports.filter((t) => KIND.port(t).ok) : [];
+      const sp = tu ? r.sports.filter((t) => KIND.port(t).ok) : [];
+      const lim = r.limit ? (parseInt(r.pps, 10) || 0) : 0;
+      const bur = r.limit ? (parseInt(r.burst, 10) || 0) : 0;
+      return [
+        'name:               "' + (r.rname || 'rule-' + r.n) + '"',
+        'description:        ""',
+        'priority:           ' + autoPrio(r.n) + '  (list order)',
+        'enabled:            ' + (r.off ? 'false' : 'true'),
+        'protocol:           ' + PN[r.proto],
+        'ports:              ' + q(ports),
+        'source_ips:         ' + q(a.ips),
+        'destination_ips:    ' + q(b.ips),
+        'source_ports:       ' + q(sp),
+        'action:             ' + (r.deny ? 'Drop' : 'Allow'),
+        'rate_limit:         ' + lim,
+        'burst_limit:        ' + bur,
+        'stateful:           ' + (r.stateful ? 'true' : 'false'),
+        'source_groups:      ' + q(a.groups) + note(a),
+        'destination_groups: ' + q(b.groups) + note(b),
+        '',
+        'derived placement',
+        'nas-01     ' + (place(r, 'nas', mem).join(', ') || 'not needed'),
+        'router-01  ' + (place(r, 'router', mem).join(', ') || 'not needed')
+      ].join('\n');
+    };
+    this._l = { KIND, COUNT, split, merge, DEVICES, dev, TAGNAMES, TAGDEV0, UG, SECS, ENT, find, sub, chip, resolve, PN, portLabel, compile };
+    return this._l;
+  }
+
+  tag(kind, tags, dkey, setTags, off, emptyText) {
+    const L = this.lib(), s = this.state;
+    const draft = s.drafts[dkey] || '';
+    const put = (nt, nd) => {
+      const d = Object.assign({}, s.drafts);
+      d[dkey] = nd;
+      this.setState(Object.assign(setTags(nt), { drafts: d }));
+    };
+    let bad = '';
+    const pills = tags.map((t) => {
+      const c = L.KIND[kind](t);
+      if (!c.ok && !bad) bad = c.reason;
+      return { t: t, cls: c.ok ? (c.range ? 'range' : '') : 'bad', title: c.ok ? '' : c.reason, label: 'Remove ' + t, remove: () => put(tags.filter((x) => x !== t), draft) };
+    });
+    const commit = (txt) => { const parts = L.split(txt); if (parts.length) put(L.merge(tags, parts), ''); };
+    return {
+      pills: pills, draft: draft, off: !!off, bad: bad ? 'true' : 'false',
+      fcls: bad ? 'bad' : (off ? 'off' : ''),
+      line: bad, lineCls: bad ? 'err' : '',
+      onInput: (e) => {
+        const v = e.target.value;
+        if (/[,\s]/.test(v)) {
+          const ends = /[,\s]$/.test(v);
+          const parts = L.split(v);
+          const keep = ends ? '' : (parts.pop() || '');
+          put(L.merge(tags, parts), keep);
+        } else { put(tags, v); }
+      },
+      onKeyDown: (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); commit(draft); }
+        else if (e.key === 'Backspace' && !draft && tags.length) { put(tags.slice(0, -1), ''); }
+      },
+      onPaste: (e) => {
+        const cd = e.clipboardData || window.clipboardData;
+        if (!cd) return;
+        e.preventDefault();
+        put(L.merge(tags, L.split(draft + ' ' + cd.getData('text'))), '');
+      },
+      onBlur: () => commit(draft)
+    };
+  }
+
+  picker(side, label, sel, setSel, dkey) {
+    const L = this.lib(), s = this.state;
+    const mem = s.tagdev;
+    const isOpen = s.pick === side;
+    const chip = L.chip(sel);
+    const e = L.find(sel.id);
+    const needle = (s.q || '').toLowerCase();
+    const ents = L.ENT.filter((x) => (!x.side || x.side === side) && (!needle || (x.t + ' ' + L.sub(x, mem) + ' ' + x.sec).toLowerCase().indexOf(needle) >= 0));
+    const opts = [];
+    L.SECS.forEach((sec) => {
+      const items = ents.filter((x) => x.sec === sec);
+      if (!items.length) return;
+      opts.push({ head: true, isOpt: false, t: sec === 'Any' ? (side === 'from' ? 'Anyone' : 'Anywhere') : sec, n: items.length });
+      items.forEach((x) => {
+        const sb = x.sec === 'Any' ? '' : L.sub(x, mem);
+        opts.push({
+          head: false, isOpt: true, t: x.t, s: sb, hasS: !!sb, ic: x.ic, kind: x.cls,
+          sel: sel.id === x.id, selAria: sel.id === x.id ? 'true' : 'false',
+          cls: (sel.id === x.id ? 'sel ' : '') + (x.cls === 'tag' ? 'kt' : (x.cls === 'grp' ? 'kg' : '')),
+          pick: () => this.setState(Object.assign(setSel(x.id, x.id === 'custom' ? sel.tags : []), { pick: null, q: '' }))
+        });
+      });
+    });
+    return {
+      label: label, ic: chip.ic, value: sel.id === 'custom' ? chip.t : e.t, sub: sel.id === 'custom' ? 'IP or CIDR list' : (e.sec === 'Any' ? e.s : L.sub(e, mem)), hasSub: sel.id === 'custom' || !!(e.sec === 'Any' ? e.s : L.sub(e, mem)),
+      isOpen: isOpen, open: isOpen ? 'true' : 'false', chev: isOpen ? 'i-chev-d' : 'i-chev-r',
+      toggle: () => this.setState({ pick: isOpen ? null : side, q: '' }),
+      q: s.q || '', onSearch: (ev) => this.setState({ q: ev.target.value }), none: opts.length === 0,
+      options: opts, custom: sel.id === 'custom',
+      tg: this.tag('addr', sel.tags, dkey, (nt) => setSel('custom', nt), false, 'Add an IPv4, IPv6 or CIDR')
+    };
+  }
+
+  renderVals() {
+    const s = this.state, L = this.lib(), r = s.r;
+    const upd = (patch) => ({ r: Object.assign({}, r, patch) });
+    const set = (patch) => this.setState(upd(patch));
+    const sw = (key) => () => { const o = {}; o[key] = !r[key]; set(o); };
+    const txt = (key) => (e) => { const o = {}; o[key] = e.target.value; set(o); };
+    const setSrc = (id, tags) => upd({ src: { id: id, tags: tags || [] } });
+    const setDst = (id, tags) => upd({ dst: { id: id, tags: tags || [] } });
+    const burstErr = r.limit && r.pps !== '' && r.burst === '';
+    const pl = L.portLabel(r);
+    const sum = r.proto === 'any' ? 'any protocol, any port' : pl.t;
+    const src = L.chip(r.src), dst = L.chip(r.dst);
+    return {
+      rname: r.rname, onName: txt('rname'),
+      allowCls: 'allow' + (r.deny ? '' : ' on'), allowOn: r.deny ? 'false' : 'true', setAllow: () => set({ deny: false }),
+      denyCls: 'deny' + (r.deny ? ' on' : ''), denyOn: r.deny ? 'true' : 'false', setDeny: () => set({ deny: true }),
+      enAria: r.off ? 'false' : 'true', enCls: r.off ? '' : 'on', toggleEn: sw('off'),
+      pickers: [this.picker('from', 'From', r.src, setSrc, 'fr'), this.picker('to', 'To', r.dst, setDst, 'to')],
+      portsSummary: sum,
+      verbCls: r.deny ? 'deny' : 'allow', verbLabel: r.deny ? 'Deny' : 'Allow',
+      prev: { src: src, dst: dst, port: { t: pl.t, cls: pl.mono ? 'mono' : '' } },
+      prevAria: (r.deny ? 'Deny: ' : 'Allow: ') + src.a + ' to ' + dst.a + ' on ' + pl.t,
+      adv: s.adv, advAria: s.adv ? 'true' : 'false', advChev: s.adv ? 'i-chev-u' : 'i-chev-d', toggleAdv: () => this.setState({ adv: !s.adv }),
+      stAria: r.stateful ? 'true' : 'false', stCls: r.stateful ? 'on' : '', toggleSt: sw('stateful'),
+      limit: r.limit, limAria: r.limit ? 'true' : 'false', limCls: r.limit ? 'on' : '', toggleLim: sw('limit'),
+      pps: r.pps, onPps: txt('pps'), burst: r.burst, onBurst: txt('burst'),
+      burstErr: burstErr, burstBad: burstErr ? 'true' : 'false', burstCls: burstErr ? 'bad' : '',
+      cmp: s.cmp, cmpAria: s.cmp ? 'true' : 'false', cmpChev: s.cmp ? 'i-chev-u' : 'i-chev-d', toggleCmp: () => this.setState({ cmp: !s.cmp }),
+      cmpText: L.compile(r, s.tagdev)
+    };
+  }
+}
+</script>
+</body>
+</html>

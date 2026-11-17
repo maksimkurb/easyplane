@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Access A phone ports and protocol</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./v2.css">
+<link rel="stylesheet" href="./access.css">
+<link rel="stylesheet" href="./access-a.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="v2 ax axe" style="width:390px;height:844px">
+  <div class="ax-in axe-bg" aria-hidden="true">
+    <header class="ax-bar">
+      <span class="btn ghost icon lg ax-back"><i class="ic i-chev-l s20"></i></span>
+      <div class="ax-ttl"><div class="ax-t1">Home lab</div><div class="ax-t2"><span class="dot on"></span>7 of 8 online</div></div>
+      <span class="btn ghost icon lg ax-netmore"><i class="ic i-more"></i></span>
+    </header>
+    <section class="ax-hero"><div class="ax-wrap"><nav class="ax-tabs"><span class="ax-tab">Devices <span class="cnt">8</span></span><span class="ax-tab">Map</span><span class="ax-tab on">Access</span><span class="ax-tab">Settings</span></nav></div></section>
+  </div>
+
+  <div class="axe-scrim"></div>
+  <section class="axe-sheet full" role="dialog" aria-modal="true" aria-labelledby="axp-t">
+    <div class="axe-grab"></div>
+    <div class="axe-h">
+      <a class="btn ghost icon lg" href="AccessAPhoneEdit.dc.html" aria-label="Back to Edit rule 4"><i class="ic i-chev-l s20"></i></a>
+      <div class="axe-ht"><h2 id="axp-t">Ports and protocol</h2></div>
+    </div>
+    <div class="axe-b">
+      <div>
+        <span class="pf-lbl">Protocol</span>
+        <div class="pf-seg" role="radiogroup" aria-label="Protocol"><sc-for list="{{protos}}" as="q" hint-placeholder-count="5"><button class="{{q.cls}}" role="radio" aria-checked="{{q.on}}" onClick="{{q.pick}}">{{q.label}}</button></sc-for></div>
+      </div>
+      <div>
+        <span class="pf-lbl">Destination ports</span>
+        <div class="tg {{dp.fcls}}"><sc-for list="{{dp.pills}}" as="t" hint-placeholder-count="4"><span class="tp {{t.cls}}"><span class="t">{{t.t}}</span><button class="tp-x" aria-label="{{t.label}}" onClick="{{t.remove}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button></span></sc-for><input class="tg-in" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" aria-label="Destination ports" aria-invalid="{{dp.bad}}" placeholder="Add port" value="{{dp.draft}}" disabled="{{dp.off}}" onInput="{{dp.onInput}}" onKeyDown="{{dp.onKeyDown}}" onPaste="{{dp.onPaste}}" onBlur="{{dp.onBlur}}"></div>
+        <div class="tg-v {{dp.lineCls}}" role="status">{{dp.line}}</div>      </div>
+      <label class="pf-box" style="padding:0 10px"><span class="pf-chk"><input type="checkbox" checked="{{anyPort}}" disabled="{{noPorts}}" onChange="{{toggleAny}}"><span>Any port</span></span></label>
+      <sc-if value="{{showSp}}" hint-placeholder-val="{{true}}">
+        <div>
+          <span class="pf-lbl">Source ports</span>
+          <div class="tg {{sp.fcls}}"><sc-for list="{{sp.pills}}" as="t" hint-placeholder-count="2"><span class="tp {{t.cls}}"><span class="t">{{t.t}}</span><button class="tp-x" aria-label="{{t.label}}" onClick="{{t.remove}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button></span></sc-for><input class="tg-in" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" aria-label="Source ports" aria-invalid="{{sp.bad}}" placeholder="Add port" value="{{sp.draft}}" onInput="{{sp.onInput}}" onKeyDown="{{sp.onKeyDown}}" onPaste="{{sp.onPaste}}" onBlur="{{sp.onBlur}}"></div>
+          <div class="tg-v {{sp.lineCls}}" role="status">{{sp.line}}</div>
+        </div>
+      </sc-if>
+      <div>
+        <span class="pf-lbl">Quick add</span>
+        <div class="pf-chips"><sc-for list="{{presets}}" as="q" hint-placeholder-count="6"><button class="pf-chip" onClick="{{q.pick}}">{{q.label}} <span class="mono">{{q.hint}}</span></button></sc-for></div>
+      </div>
+    </div>
+    <div class="axe-foot one"><a class="btn pri {{doneCls}}" href="{{doneHref}}" aria-disabled="{{doneDis}}">Done</a></div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = { drafts: { dp: '', sp: '' }, r: { proto: 'tcp', dports: ['80', '443', '8000-8100', '70000'], anyPort: false, sports: [] } };
+  }
+
+  lib() {
+    if (this._l) return this._l;
+    const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+    const KIND = {
+      port: (v) => {
+        let m = /^(\d{1,5})$/.exec(v);
+        if (m) { const n = parseInt(m[1], 10); return n >= 1 && n <= 65535 ? { ok: true } : { ok: false, reason: 'Port must be 1-65535' }; }
+        m = /^(\d{1,5})-(\d{1,5})$/.exec(v);
+        if (m) {
+          const a = parseInt(m[1], 10), b = parseInt(m[2], 10);
+          if (a < 1 || a > 65535 || b < 1 || b > 65535) return { ok: false, reason: 'Port must be 1-65535' };
+          if (a >= b) return { ok: false, reason: 'Range must go from low to high' };
+          return { ok: true, range: true };
+        }
+        return { ok: false, reason: 'Port must be 1-65535' };
+      }
+    };
+    const COUNT = {
+      port: (tags) => {
+        let p = 0, r = 0;
+        tags.forEach((t) => { const c = KIND.port(t); if (c.ok) { if (c.range) { r++; } else { p++; } } });
+        const b = [];
+        if (p) b.push(plural(p, 'port'));
+        if (r) b.push(plural(r, 'range'));
+        return b.join(', ');
+      }
+    };
+    const split = (str) => String(str || '').split(/[\s,]+/).map((x) => x.trim()).filter((x) => x);
+    const merge = (tags, parts) => { const out = tags.slice(); parts.forEach((p) => { if (out.indexOf(p) < 0) out.push(p); }); return out; };
+    const PRESETS = [
+      { label: 'SSH', hint: '22', proto: 'tcp', ports: ['22'] },
+      { label: 'HTTP/S', hint: '80,443', proto: 'tcp', ports: ['80', '443'] },
+      { label: 'RDP', hint: '3389', proto: 'tcp', ports: ['3389'] },
+      { label: 'SMB', hint: '445', proto: 'tcp', ports: ['445'] },
+      { label: 'DNS', hint: '53', proto: 'udp', ports: ['53'] },
+      { label: 'Ping', hint: 'ICMP', proto: 'icmp', ports: [] }
+    ];
+    this._l = { KIND, COUNT, split, merge, PRESETS };
+    return this._l;
+  }
+
+  tag(kind, tags, dkey, setTags, off, emptyText) {
+    const L = this.lib(), s = this.state;
+    const draft = s.drafts[dkey] || '';
+    const put = (nt, nd) => {
+      const d = Object.assign({}, s.drafts);
+      d[dkey] = nd;
+      this.setState(Object.assign(setTags(nt), { drafts: d }));
+    };
+    let bad = '';
+    const pills = tags.map((t) => {
+      const c = L.KIND[kind](t);
+      if (!c.ok && !bad) bad = c.reason;
+      return { t: t, cls: c.ok ? (c.range ? 'range' : '') : 'bad', title: c.ok ? '' : c.reason, label: 'Remove ' + t, remove: () => put(tags.filter((x) => x !== t), draft) };
+    });
+    const commit = (txt) => { const parts = L.split(txt); if (parts.length) put(L.merge(tags, parts), ''); };
+    return {
+      pills: pills, draft: draft, off: !!off, bad: bad ? 'true' : 'false',
+      fcls: bad ? 'bad' : (off ? 'off' : ''),
+      line: bad, lineCls: bad ? 'err' : '',
+      onInput: (e) => {
+        const v = e.target.value;
+        if (/[,\s]/.test(v)) {
+          const ends = /[,\s]$/.test(v);
+          const parts = L.split(v);
+          const keep = ends ? '' : (parts.pop() || '');
+          put(L.merge(tags, parts), keep);
+        } else { put(tags, v); }
+      },
+      onKeyDown: (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); commit(draft); }
+        else if (e.key === 'Backspace' && !draft && tags.length) { put(tags.slice(0, -1), ''); }
+      },
+      onPaste: (e) => {
+        const cd = e.clipboardData || window.clipboardData;
+        if (!cd) return;
+        e.preventDefault();
+        put(L.merge(tags, L.split(draft + ' ' + cd.getData('text'))), '');
+      },
+      onBlur: () => commit(draft)
+    };
+  }
+
+  renderVals() {
+    const s = this.state, L = this.lib(), r = s.r;
+    const upd = (patch) => ({ r: Object.assign({}, r, patch) });
+    const set = (patch) => this.setState(upd(patch));
+    const noPorts = r.proto === 'any' || r.proto === 'icmp' || r.proto === 'icmpv6';
+    const off = noPorts || r.anyPort;
+    const dp = this.tag('port', r.dports, 'dp', (nt) => upd({ dports: nt, anyPort: false }), off, 'Empty: matches any port');
+    const sp = this.tag('port', r.sports, 'sp', (nt) => upd({ sports: nt }), false, 'Empty: matches any source port');
+    const PROTOS = [['any', 'Any'], ['tcp', 'TCP'], ['udp', 'UDP'], ['icmp', 'ICMP'], ['icmpv6', 'ICMPv6']];
+    const hasBad = (dp.bad === 'true' && !off) || (sp.bad === 'true' && !noPorts);
+    return {
+      protos: PROTOS.map((p) => ({ label: p[1], cls: r.proto === p[0] ? 'on' : '', on: r.proto === p[0] ? 'true' : 'false', pick: () => set({ proto: p[0] }) })),
+      dp: dp, noPorts: noPorts, anyPort: noPorts || r.anyPort,
+      toggleAny: () => set(r.anyPort ? { anyPort: false } : { anyPort: true, dports: [] }),
+      showSp: !noPorts, sp: sp,
+      presets: L.PRESETS.map((p) => ({
+        label: p.label, hint: p.hint,
+        pick: () => set(p.proto === 'icmp' ? { proto: 'icmp', dports: [], anyPort: true } : { proto: p.proto, dports: L.merge(r.proto === p.proto ? r.dports : [], p.ports), anyPort: false })
+      })),
+      doneCls: hasBad ? 'off' : '', doneHref: hasBad ? '#' : 'AccessAPhoneEdit.dc.html', doneDis: hasBad ? 'true' : 'false'
+    };
+  }
+}
+</script>
+</body>
+</html>

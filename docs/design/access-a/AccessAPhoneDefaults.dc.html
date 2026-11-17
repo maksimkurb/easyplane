@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Access A phone default actions</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./v2.css">
+<link rel="stylesheet" href="./access.css">
+<link rel="stylesheet" href="./access-a.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="v2 ax axe" style="width:390px;height:844px">
+  <div class="ax-in axe-bg" aria-hidden="true">
+    <header class="ax-bar">
+      <span class="btn ghost icon lg ax-back"><i class="ic i-chev-l s20"></i></span>
+      <div class="ax-ttl"><div class="ax-t1">Home lab</div><div class="ax-t2"><span class="dot on"></span>7 of 8 online</div></div>
+      <span class="btn ghost icon lg ax-netmore"><i class="ic i-more"></i></span>
+    </header>
+    <section class="ax-hero"><div class="ax-wrap"><nav class="ax-tabs"><span class="ax-tab">Devices <span class="cnt">8</span></span><span class="ax-tab">Map</span><span class="ax-tab on">Access</span><span class="ax-tab">Settings</span></nav></div></section>
+    <div class="ax-wrap ax-content">
+      <div class="ax-list">
+        <article class="rule">
+          <span class="r-n">5</span>
+          <div class="sent"><span class="sx"><span class="vb r-vb allow">Allow</span><span class="pk"><i class="ic i-globe"></i><span class="nm">Anyone</span></span><i class="ic i-arrow-r arw"></i></span><span class="pk"><i class="ic i-globe"></i><span class="nm">Anywhere</span></span><span class="pk port"><span class="nm">any port</span></span></div>
+          <span class="r-del"></span>
+        </article>
+        <div class="rule-foot axe-hl"><i class="ic i-lock s14 lead"></i><span class="rf-t">Default action</span><span class="rf-chips"><span class="chip rf-c">In <b>Block</b></span><span class="chip rf-c">Out <b>Allow</b></span><span class="chip rf-c">Fwd <b>Block</b></span></span><span class="rf-more"><i class="ic i-more s16"></i></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="axe-scrim"></div>
+  <section class="axe-sheet def" role="dialog" aria-modal="true" aria-labelledby="axd-t">
+    <div class="axe-grab"></div>
+    <div class="axe-h"><div class="axe-ht"><h2 id="axd-t">Default actions</h2></div></div>
+    <div class="axe-b">
+      <sc-for list="{{chainsM}}" as="c" hint-placeholder-count="3">
+        <div class="dc">
+          <div class="dc-h"><span class="m">{{c.title}}</span><div class="pf-seg sm" role="radiogroup" aria-label="{{c.title}} default action"><sc-for list="{{c.opts}}" as="q" hint-placeholder-count="2"><button class="{{q.cls}}" role="radio" aria-checked="{{q.on}}" onClick="{{q.pick}}">{{q.label}}</button></sc-for></div></div>
+          <button class="pf-sw" role="switch" aria-checked="{{c.enAria}}" onClick="{{c.toggleEn}}"><span class="grow"><span class="m">Enabled</span></span><span class="tgl {{c.enCls}}"></span></button>
+          <input class="pf-in" type="text" aria-label="{{c.title}} chain name" placeholder="Name" value="{{c.name}}" onInput="{{c.onName}}">
+        </div>
+      </sc-for>
+    </div>
+    <div class="axe-foot one"><a class="btn pri" href="AccessAPhone.dc.html">Done</a></div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = {
+      chains: {
+        inb: { title: 'Inbound', def: 'block', en: true, name: '' },
+        out: { title: 'Outbound', def: 'allow', en: true, name: '' },
+        fwd: { title: 'Forward', def: 'block', en: true, name: '' }
+      }
+    };
+  }
+  renderVals() {
+    const s = this.state;
+    const setCh = (k, patch) => { const c = Object.assign({}, s.chains); c[k] = Object.assign({}, c[k], patch); this.setState({ chains: c }); };
+    return {
+      chainsM: ['inb', 'out', 'fwd'].map((k) => {
+        const c = s.chains[k];
+        return {
+          title: c.title, name: c.name,
+          opts: [['block', 'Block'], ['allow', 'Allow']].map((o) => ({ label: o[1], cls: c.def === o[0] ? 'on' : '', on: c.def === o[0] ? 'true' : 'false', pick: () => setCh(k, { def: o[0] }) })),
+          enAria: c.en ? 'true' : 'false', enCls: c.en ? 'on' : '', toggleEn: () => setCh(k, { en: !c.en }),
+          onName: (e) => setCh(k, { name: e.target.value })
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>
