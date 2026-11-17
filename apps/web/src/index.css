@@ -39,6 +39,13 @@
   --relay-soft: #efe9fc;
   --scrim: rgb(17 24 39 / 0.38);
 
+  /* Access subjects: tags label devices, user groups contain people. */
+  --tag-bg: #e8f1f3;
+  --tag-fg: #0d4f59;
+  --tag-line: #b7d2d8;
+  --ug-bg: #d8d0f5;
+  --ug-fg: #3b2891;
+
   --background: var(--bg);
   --foreground: var(--fg);
   --card: var(--surface);
@@ -124,6 +131,12 @@
   --relay: #b69cff;
   --relay-soft: rgb(182 156 255 / 0.14);
   --scrim: rgb(0 0 0 / 0.55);
+
+  --tag-bg: rgb(120 190 200 / 0.14);
+  --tag-fg: #8fd0da;
+  --tag-line: rgb(120 190 200 / 0.38);
+  --ug-bg: rgb(150 130 240 / 0.28);
+  --ug-fg: #cfc5ff;
 
   --primary: var(--brand);
   --primary-foreground: var(--brand-fg);
