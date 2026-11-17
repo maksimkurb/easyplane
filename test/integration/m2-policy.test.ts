@@ -200,11 +200,23 @@ describe("M2: policy, MagicDNS and route approval API", () => {
   });
 
   it("creates tags, assigns them and rejects malformed tag names", async () => {
-    const bad = await test.app.inject({
+    // Bare names are the v2 editor's spelling; the API namespaces them.
+    const bare = await test.app.inject({
       method: "POST",
       url: "/api/tags",
       headers: headers(admin),
       payload: { name: "server" },
+    });
+    expect(bare.statusCode).toBe(201);
+    expect(bare.json()).toMatchObject({
+      name: "server",
+      subject: "tag:server",
+    });
+    const bad = await test.app.inject({
+      method: "POST",
+      url: "/api/tags",
+      headers: headers(admin),
+      payload: { name: "not a tag!" },
     });
     expect(bad.statusCode).toBe(400);
     for (const name of ["tag:web", "tag:db"]) {
@@ -236,8 +248,17 @@ describe("M2: policy, MagicDNS and route approval API", () => {
       url: "/api/tags",
       headers: authed(viewer),
     });
-    expect((tags.json() as Array<{ name: string; deviceCount: number }>)).toEqual(
-      expect.arrayContaining([{ id: expect.any(String), name: "tag:web", color: "", deviceCount: 1 }]),
+    expect(
+      tags.json() as Array<{ name: string; subject: string; deviceCount: number }>,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "web",
+          subject: "tag:web",
+          color: "",
+          deviceCount: 1,
+        }),
+      ]),
     );
   });
 

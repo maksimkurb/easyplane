@@ -8,7 +8,6 @@ import {
   PORTS,
   dockerComposeAsync,
   execDetached,
-  execIn,
   execInAsync,
   openRelayPool,
   prepareDockerConformanceEnvironment,
@@ -902,6 +901,124 @@ describe("policy spike: EasyTier ACL semantics on real clients", () => {
     void aIp;
   });
 
+
+  it("e2e: the v2 compiler's rules make the owner's case work end to end", async () => {
+    const bIp = devices.b!.virtualIpv4!;
+    const routerIp = devices.r!.virtualIpv4!;
+
+    // Save a real policy through the API. Every chain defaults to block: the
+    // compiler must emit the receive rule, the router egress rule and the
+    // reply rules itself, or nothing works.
+    const saved = await test.app.inject({
+      method: "PUT",
+      url: `/api/networks/${network.id}/policy`,
+      headers: headers(),
+      payload: {
+        document: {
+          version: 2,
+          mode: "rules",
+          subnets: { "home-lan": { cidr: LAN_CIDR, via: "core-sp-r" } },
+          chains: {
+            inbound: { default: "block", enabled: true },
+            outbound: { default: "block", enabled: true },
+            forward: { default: "block", enabled: true },
+          },
+          rules: [
+            {
+              name: "lan-to-b",
+              action: "allow",
+              from: ["subnet:home-lan"],
+              to: ["device:core-sp-b"],
+              protocol: "tcp",
+              ports: ["8080", "8099"],
+            },
+            {
+              name: "b-to-lan",
+              action: "allow",
+              from: ["device:core-sp-b"],
+              to: ["subnet:home-lan"],
+              protocol: "tcp",
+              ports: ["8080"],
+            },
+          ],
+        },
+        note: "spike e2e",
+      },
+    });
+    expect(saved.statusCode).toBe(200);
+
+    for (const letter of ["a", "b", "r"] as const) {
+      await poll(
+        `${letter} applied the v2 policy`,
+        () => getDevice(letter),
+        (device) => device.lastPushError === null && device.appliedRevision === 3,
+        90_000,
+      );
+    }
+
+    // The compiled ACL is on the devices and the flow works in both directions.
+    expect(
+      await poll(
+        "LAN host reaches b:8080 with the compiled policy",
+        () => httpFrom("core-sp-lan", `http://${bIp}:8080/`),
+        (code) => code === "200",
+        60_000,
+      ),
+    ).toBe("200");
+    expect(
+      await poll(
+        "b reaches the LAN host with the compiled policy",
+        () => httpFrom("core-sp-b", `http://${LAN_HOST}:8080/`),
+        (code) => code === "200",
+        60_000,
+      ),
+    ).toBe("200");
+    // The allow is scoped: the source client (a different /32) is still denied.
+    await new Promise((resolve) => setTimeout(resolve, 2_000));
+    expect(await httpFrom("core-sp-a", `http://${bIp}:8080/`)).toBe("000");
+
+    // Inspectability: the compiled ACL names the LAN CIDR at the destination
+    // and the router's Forward rule for the reverse direction.
+    const compiled = await test.app.inject({
+      method: "GET",
+      url: `/api/networks/${network.id}/policy/compiled/${devices.b!.id}`,
+      headers: authed(admin),
+    });
+    expect(compiled.statusCode).toBe(200);
+    const body = compiled.json() as {
+      chains: Array<{
+        chainType: string;
+        rules: Array<{ name: string; sourceIps: string[]; destinationIps: string[] }>;
+      }>;
+    };
+    const inbound = body.chains.find((chain) => chain.chainType === "Inbound")!;
+    expect(inbound.rules.find((rule) => rule.name === "lan-to-b-in")).toMatchObject({
+      sourceIps: [LAN_CIDR],
+    });
+    const routerCompiled = await test.app.inject({
+      method: "GET",
+      url: `/api/networks/${network.id}/policy/compiled/${devices.r!.id}`,
+      headers: authed(admin),
+    });
+    const routerBody = routerCompiled.json() as {
+      chains: Array<{
+        chainType: string;
+        rules: Array<{ name: string; sourceIps: string[]; destinationIps: string[] }>;
+      }>;
+    };
+    const forward = routerBody.chains.find((chain) => chain.chainType === "Forward")!;
+    expect(forward.rules.find((rule) => rule.name === "b-to-lan-subnet-fwd")).toMatchObject({
+      sourceIps: [`${bIp}/32`],
+      destinationIps: [LAN_CIDR],
+    });
+    const routerOutbound = routerBody.chains.find(
+      (chain) => chain.chainType === "Outbound",
+    )!;
+    expect(routerOutbound.rules.map((rule) => rule.name)).toContain(
+      "lan-to-b-lan-out",
+    );
+    void routerIp;
+  });
   it("d: group criteria match peer tags, source_ips match preserved addresses", async () => {
     const aIp = devices.a!.virtualIpv4!;
     const bIp = devices.b!.virtualIpv4!;
