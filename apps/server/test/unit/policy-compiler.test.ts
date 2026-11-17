@@ -190,6 +190,7 @@ function rules(
     destinationIps: rule.destinationIps,
     action: acl.Action[rule.action],
     sourceGroups: rule.sourceGroups,
+    destinationGroups: rule.destinationGroups,
     rateLimit: rule.rateLimit,
     burstLimit: rule.burstLimit,
     stateful: rule.stateful,
@@ -329,6 +330,7 @@ describe("compiler v2 goldens", () => {
         destinationIps: [],
         action: "Allow",
         sourceGroups: [],
+        destinationGroups: [],
         rateLimit: 0,
         burstLimit: 0,
         stateful: true,
@@ -343,6 +345,7 @@ describe("compiler v2 goldens", () => {
         destinationIps: [],
         action: "Allow",
         sourceGroups: [],
+        destinationGroups: [],
         rateLimit: 200,
         burstLimit: 100,
         stateful: true,
@@ -393,6 +396,10 @@ describe("compiler v2 goldens", () => {
       "group:ops",
       "tag:db",
       "tag:web",
+    ]);
+    // The destination side of `to: ["tag:db"]` is its own advertised group.
+    expect(inbound.rules.find((rule) => rule.name === "web-db-in")?.destinationGroups).toEqual([
+      "tag:db",
     ]);
   });
 

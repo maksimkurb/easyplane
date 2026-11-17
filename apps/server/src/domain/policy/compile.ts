@@ -222,6 +222,26 @@ export function compilePolicy(
     );
   }
 
+  /**
+   * Destination group criteria (EasyTier `destination_groups`) for a rule whose
+   * destination is this device. The destination's own advertised groups are
+   * what a peer sees, so only memberships this device really has are emitted.
+   */
+  function destinationCriteria(
+    entry: ResolvedStatement,
+    device: (typeof approved)[number],
+  ): string[] {
+    const memberships = resolved.groupsByDevice.get(device.id) ?? [];
+    const wanted = new Set<string>();
+    if (input.document.options.strictTags) {
+      for (const group of entry.dstGroups) if (group.startsWith("tag:")) wanted.add(group);
+    }
+    if (input.document.options.strictGroups) {
+      for (const group of entry.dstGroups) if (group.startsWith("group:")) wanted.add(group);
+    }
+    return [...wanted].filter((group) => memberships.includes(group)).sort();
+  }
+
   for (const device of approved) {
     const ownRoutes = approvedSubnetCidrs(input.routes, device.id);
     const inboundRules: acl.Rule[] = [];
@@ -246,6 +266,7 @@ export function compilePolicy(
         const ports = mergedPorts(
           destinationDevices.map((target) => (target.kind === "device" ? target.ports : [])),
         );
+        const destinationsGroups = destinationCriteria(entry, device);
         if (sources.length > 0 || criteria.length > 0) {
           if (criteria.length > 0) for (const group of criteria) verifiedGroups.add(group);
           inboundRules.push(
@@ -257,6 +278,7 @@ export function compilePolicy(
               sourcePorts: entry.sourcePorts,
               sourceIps: sources,
               sourceGroups: criteria,
+              destinationGroups: destinationsGroups,
             }),
           );
         }

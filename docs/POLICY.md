@@ -203,7 +203,7 @@ case that saves a v2 policy through the API and asserts both directions work.
 
 | chain | what the compiler emits |
 | --- | --- |
-| **Inbound** (default block) | every enabled `allow`/`deny` whose destination resolves to `D`: `source_ips` = source device `/32`s + `cidr:`/`host:` + `subnet:` CIDRs; `ports`/`source_ports`/`protocol`; `source_groups` only with `options.strictTags`/`strictGroups`; `rate_limit`/`burst_limit`/`stateful` |
+| **Inbound** (default block) | every enabled `allow`/`deny` whose destination resolves to `D`: `source_ips` = source device `/32`s + `cidr:`/`host:` + `subnet:` CIDRs; `ports`/`source_ports`/`protocol`; `source_groups`/`destination_groups` only with `options.strictTags`/`strictGroups`; `rate_limit`/`burst_limit`/`stateful` |
 | **Outbound** (default allow) | for `allow`: an egress rule when the outbound default is **block** (or for a source subnet, on its router) so the flow leaves and creates the reply record. For `deny`: always, so a deny is explicit even in a default-allow chain. Plus **reverse** rules: the destination's replies (`*-reply-out`, `source_ports` = service ports) and the router's proxy return path (`*-proxy-out`) |
 | **Forward** (default block, emitted for subnets) | destination subnet/CIDR covered by `D`'s approved routes: `destination_ips` = CIDR, `source_ips` = sources (main direction); plus `*-reply-fwd` for the return of a LAN-initiated flow (source = remote, destination = CIDR, `source_ports` = service ports) |
 
