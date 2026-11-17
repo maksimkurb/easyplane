@@ -349,12 +349,22 @@ token; deleting a device does the same and removes its history.
 
 ## 4b. Policy, MagicDNS and routes
 
-- **Policy** lives per network (`/networks/:id/policy` in the panel). Saving a
-  policy creates a new version and a config revision for every approved device
-  in that network, then pushes. No policy means EasyTier's ACL filter is off.
+- **Policy** lives per network (`/networks/:id/policy` in the panel). The
+  access page has three modes: **open** (no ACL pushed), **rules** and
+  **json** (the same document as HuJSON). Saving a policy creates a new version
+  and a config revision for every approved device in that network, then pushes.
   Read [docs/POLICY.md](POLICY.md) before locking a network down: the ingress
-  chain defaults to drop, so a missing statement blocks traffic; egress is only
-  restricted by explicit deny statements.
+  and forward chains default to block, so a missing statement blocks traffic.
+  Egress defaults to allow; if you switch it to block, the compiler emits the
+  egress and reply rules an allow needs, but a flow whose source is not covered
+  by a rule is dropped.
+- **Upgrade note (policy v2).** Migration `0007` adds `networks.policy_mode`,
+  `user_groups` and `user_group_members`. Existing networks with a policy are
+  marked `rules`; version-1 documents stay readable and are upgraded to v2 on
+  the next save (the API reports `upgradedFromV1`). v1 `groups` and `tags`
+  become user groups and device tags; nothing is deleted. The new access page
+  points at the same `/networks/:id/policy` endpoints; older deployments that
+  scripted the v1 `acls` document keep working.
 - **MagicDNS**: the per-network switch is pushed as `enable_magic_dns`. The
   zone is used for names in the panel only — EasyTier keeps `tld_dns_zone` in
   local client flags, so managed clients answer in `et.net.`. Keep the zone at

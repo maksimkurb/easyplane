@@ -28,7 +28,10 @@ version 2.6.4-81487c36
 `CollectNetworkInfo`, `ListNetworkInstance`, `GetNetworkInstanceConfig`,
 `ListNetworkInstanceMeta`, deletion/block, reconnect/re-push, invites,
 approval, policy/MagicDNS/routes and topology fields, plus the M4 adoption
-flow and UDP session layer.
+flow and UDP session layer. `policy-spike.test.ts` adds the measured ACL matrix
+(stateful replies, chain defaults, tag vs user-group matching, and a real LAN
+host behind a subnet router in both directions, ending with a compiler-produced
+policy applied through the API).
 
 The **bundled rendezvous node** is the one deliberate exception to "one pinned
 binary": the deployment compose runs `easytier/easytier:v2.7.0` because the
@@ -71,7 +74,7 @@ The control plane degrades rather than crashes on a newer client:
 | subnet routes | `proxy_cidrs` in `NetworkConfig`; the client must have TUN unless `no_tun` | POLICY.md §7 |
 | exit node | `enable_exit_node` + peer support | POLICY.md §7 |
 | credential-mode networks | `secure_mode.local_private_key` with no `network_secret`; EasyPlane does not push this mode and refuses to import it | PROTOCOL.md §13.2 |
-| EasyTier ACL import | compiles from the EasyPlane policy document, not from an imported TOML/ACL | POLICY.md |
+| EasyTier ACL import | compiles from the EasyPlane policy document v2 (v1 documents are upgraded on save), not from an imported TOML/ACL | POLICY.md §2 |
 | UDP config-server | needs a client built with UDP support (the pinned build is) | PROTOCOL.md §13.1 |
 | rendezvous node private mode | **secure mode on both sides**: the shared-secret proof is only sent by the Noise handshake, which the core only performs in secure mode | PROTOCOL.md §14.3, DEPLOY.md §4e |
 | rendezvous data relay | `disable_relay_data` is a TOML/management flag, not a CLI flag; `RENDEZVOUS_RELAY_DATA` maps to it | PROTOCOL.md §14.2 |

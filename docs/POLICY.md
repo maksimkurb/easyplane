@@ -19,21 +19,31 @@ Claims are labelled:
 
 EasyTier's ACL is a packet filter with three chains per instance
 (`acl.proto`, `ChainType`): `Inbound` (destination is this node), `Outbound`
-(packet leaves this node) and `Forward` (packet transits this node). Rules carry
-`priority` (higher first), `protocol`, `ports` (destination), `source_ips`,
-`destination_ips`, `source_ports`, `source_groups`, `destination_groups`,
-`action`, `rate_limit`, `burst_limit`, `stateful`.
+(packet leaves this node) and `Forward` (packet transits this node, including
+the userspace subnet proxy). Rules carry `priority` (higher first), `protocol`,
+`ports` (destination), `source_ips`, `destination_ips`, `source_ports`,
+`source_groups`, `destination_groups`, `action`, `rate_limit`, `burst_limit`,
+`stateful`.
 
 That is expressive but per-device and address-oriented, exactly the wrong shape
-for humans. EasyPlane keeps a Tailscale-shaped **policy document** as the single
-source of truth and **compiles it per device** into those chains:
+for humans. EasyPlane keeps one **policy document** (version 2) per network as
+the single source of truth and **compiles it per device** into those chains:
 
 ```
-policy document (per network, append-only versions)
-   + approved devices, tags, owners/IdP groups, approved subnet routes
+policy document v2 (per network, append-only versions)
+   + approved devices, tags (device labels), user groups (people),
+   + approved subnet routes
    -> compile(device) -> acl.Acl embedded in that device's NetworkConfig
    -> revision (policy_version) -> push -> client AclFilter
 ```
+
+The document has three modes (`mode`):
+
+| mode | effect |
+| --- | --- |
+| `open` | no ACL is pushed; EasyTier's filter is off. The document is still stored. |
+| `rules` | the structured editor; rules compile per device. |
+| `json` | the very same document edited as HuJSON; edits show up as rules. |
 
 Consequences that are real, not cosmetic:
 
@@ -43,115 +53,192 @@ Consequences that are real, not cosmetic:
   the policy version it was compiled with;
 - nothing secret is stored in revisions: EasyTier **group secrets are derived**
   with `HMAC-SHA256(EASYPLANE_ENCRYPTION_KEY, "easyplane.acl-group" || networkId
-  || tag)` and only exist in the pushed config;
+  || <group name>)` and only exist in the pushed config. Tag groups are named
+  `tag:<name>`, user groups `group:<name>`;
 - a device only enforces what its chain says. Policy changes on the server do
   nothing to an offline device until it reconnects and is pushed;
 - revisions created before M2 (`policy_version = null`) follow the network's
   active policy; revisions created by M2 pin the version they were compiled
-  with, so rolling a device back restores that ACL too. Disabling the policy
-  creates revisions with `policy_version = 0` (no ACL pushed at all).
+  with. Switching the mode to `open` creates revisions with
+  `policy_version = 0` (no ACL pushed at all).
 
-## 2. The document
+## 2. The document (version 2)
 
 JSON or HuJSON (`//`, `#`, `/* */` comments and trailing commas are accepted):
 
 ```jsonc
 {
-  "version": 1,
-  "groups": {
-    // "group:<name>" -> user emails and/or IdP group names
-    "group:ops": ["bob@example.com", "engineering"]
+  "version": 2,
+  "mode": "rules",                       // open | rules | json
+
+  // Named subnets: approved subnet routes, usable as source and destination.
+  "subnets": {
+    "home-lan": { "cidr": "192.168.55.0/24", "via": "router-01" }
   },
-  // Informational; the panel enforces ownership when tags are assigned.
-  "tagOwners": { "tag:db": ["group:ops"] },
+
+  // Tags label DEVICES (not people).
+  "tags": { "us": ["laptop-maxim"], "home": ["desktop", "router-01", "nas-01"] },
+
+  // User groups are PEOPLE: manual members by email, or a synced IdP claim
+  // value (read-only). They match the devices those people own.
+  "userGroups": {
+    "admins": { "source": "manual", "members": ["maxim@home.example"] },
+    "family": { "source": "oidc", "members": ["anna@home.example"] }
+  },
+
   // Static aliases for addresses that are not EasyPlane devices.
-  "hosts": { "nas": "192.168.50.10" },
-  "options": { "strictTags": false },
-  "acls": [
-    { "name": "ops-ssh", "action": "accept", "src": ["group:ops"],
-      "dst": ["*:22"], "proto": "tcp" },
-    { "name": "web-db", "action": "accept", "src": ["tag:web"],
-      "dst": ["tag:db:5432"], "proto": "tcp", "stateful": true,
-      "rateLimit": 200, "burst": 100 },
-    { "name": "web-nas", "action": "accept", "src": ["tag:web"],
-      "dst": ["cidr:192.168.50.0/24:445"], "proto": "tcp" },
-    { "name": "no-lab", "action": "deny", "src": ["tag:web"],
-      "dst": ["host:nas:23"] }
+  "hosts": { "nas": "192.168.50.10", "v6": "2001:db8::10" },
+
+  // Informational; the panel enforces ownership when tags are assigned.
+  "tagOwners": { "tag:db": ["group:admins"] },
+
+  // Per-chain defaults. `enabled: false` means the chain is NOT emitted (see
+  // §3: EasyTier keeps a disabled chain's default action, so we omit it).
+  "chains": {
+    "inbound":  { "default": "block", "enabled": true, "name": "Inbound" },
+    "outbound": { "default": "allow", "enabled": true },
+    "forward":  { "default": "block", "enabled": true, "name": "Forward" }
+  },
+
+  "options": { "strictTags": false, "strictGroups": false },
+
+  // Ordered: list order is match order (priority = 65535 - index).
+  "rules": [
+    { "name": "Family media", "action": "allow",
+      "from": ["group:family"], "to": ["device:media-pc"],
+      "protocol": "tcp", "ports": ["8096", "32400"], "enabled": true },
+    { "name": "LAN to VPS", "action": "allow",
+      "from": ["subnet:home-lan"], "to": ["device:vps-fra"],
+      "protocol": "any" },
+    { "name": "Block SSH to NAS", "action": "deny",
+      "from": ["*"], "to": ["device:nas-01"], "protocol": "tcp", "ports": ["22"] }
   ]
 }
 ```
 
-Subjects:
+### Rule fields
+
+| field | meaning |
+| --- | --- |
+| `name` | optional label; non-empty names must be unique, empty names are fine |
+| `enabled` | default `true`; a disabled rule is not compiled anywhere |
+| `action` | `allow` or `deny` |
+| `from` / `to` | lists of subjects (see below) |
+| `protocol` | `any` (default), `tcp`, `udp`, `icmp`, `icmpv6` |
+| `ports` | destination ports and ranges (`"443"`, `"8000-8100"`); empty = any. Rejected for explicit ICMP/ICMPv6 |
+| `sourcePorts` | optional source port list/range; empty = any |
+| `stateful` | default **true**. EasyTier records the flow; it is not an established/related match (see §3) |
+| `rateLimit` + `burst` | token bucket (packets/s). `burst` is required when `rateLimit` is set, otherwise the bucket starts empty and drops everything |
+
+Deliberately **not** in the document: `description` (derived), `priority`
+(list order always wins) and `chain` (the compiler derives the placement).
+
+### Subjects
 
 | subject | matches |
 | --- | --- |
-| `*`, `autogroup:all` | every approved device in the network |
-| `tag:<name>` | devices carrying that tag |
-| `group:<name>` | devices owned by users matching `groups["group:<name>"]` (email or IdP group) |
+| `*`, `anyone`, `anywhere`, `autogroup:all` | every approved device |
+| `tag:<name>` | devices carrying that label |
+| `group:<name>` | devices owned by the people in that user group |
+| `subnet:<alias>` | the CIDR of `subnets[alias]` (an approved route); covers hosts behind the router, e.g. `192.168.55.16` |
 | `device:<dns-name>` / bare `<dns-name>` | one device by its unique DNS name |
-| `host:<alias>` | `hosts[alias]` (IPv4 or CIDR), not a device |
-| `cidr:<v4>/<prefix>` | raw CIDR (destinations and forward sources) |
+| `host:<alias>` | `hosts[alias]` (IPv4/IPv6 address or CIDR), not a device |
+| `cidr:<IPv4/IPv6 CIDR>` | a raw CIDR (destinations and forward sources; IPv6 passes through) |
 
-Destinations take an optional port list: `tag:db:5432`, `*:80,443`,
-`tag:web:8000-8100`, or `*`/no suffix for every port. `proto` is `any` (default),
-`tcp`, `udp` or `icmp`. `rateLimit` requires a non-zero `burst` (EasyTier would
-start with an empty bucket and drop everything; validation rejects it).
+Tags and user groups are **distinct concepts**: tags label devices, user groups
+contain people. They are separate collections, separate subject kinds and
+compile to differently namespaced EasyTier groups (`tag:` / `group:`).
 
-Validation is strict where an operator types a name (unknown tags/groups/
-devices, malformed subjects, port ranges, duplicate statement names, undefined
-host aliases, overlapping CIDRs) and lenient at push time (a tag can be deleted
-between two pushes; the compilation then skips it and records a warning instead
-of wedging the network).
+### Validation
+
+Strict where an operator types a name (unknown tags/groups/devices/subnets/
+hosts, malformed subjects, invalid ports/ranges/CIDRs, duplicate non-empty rule
+names, `rateLimit` without `burst`) and lenient at push time (a tag or device
+can disappear between two pushes; compilation then skips it and records a
+warning instead of wedging the network). Ports are 1–65535 and a range must go
+from low to high. IPv4 and IPv6 are both accepted.
+
+### v1 compatibility and migration
+
+Existing version-1 documents (`acls`, `accept`/`deny`, `src`/`dst` with a
+`:port` suffix, `groups`) still load, validate and compile. They are upgraded
+to v2 automatically on save: `accept` → `allow`, the destination port suffix →
+`ports`, `groups` → `userGroups` (manual members), `proto` → `protocol`, and
+the v1 fixed chain defaults (inbound block, outbound allow, forward block).
+The API reports `upgradedFromV1: true`. Nothing is deleted; a v1 `group:ops`
+keeps resolving through the upgraded group.
+
+Tags live in the `tags`/`device_tags` tables, user groups in
+`user_groups`/`user_group_members`. A document's `tags` and `userGroups`
+sections are applied on save (bulk device assignment / manual membership) and
+are always filled in on read, so JSON mode reflects the real state.
+`source: "oidc"` groups are read-only: their members are derived from the
+`groups` claim of the users who signed in.
 
 ## 3. Compilation
 
-Per device `D`:
+The translation is driven by measurements on the pinned client, not by reading
+the filter in isolation. `test/conformance/policy-spike.test.ts` runs three
+real clients plus a **LAN host behind a subnet router** (a separate container
+whose only route into the overlay is the router's TUN) and a final end-to-end
+case that saves a v2 policy through the API and asserts both directions work.
 
-| chain | default | rules emitted |
-| --- | --- | --- |
-| `Inbound` | **Drop** | every `accept` statement whose destination resolves to `D`: `source_ips` = resolved source devices/CIDRs, `ports` = the statement's destination ports, `protocol`, `action = Allow`, `rate_limit`/`burst_limit`/`stateful` |
-| `Outbound` | Allow | explicit `deny` statements where `D` is a source: `destination_ips` = the resolved destinations, `action = Drop` |
-| `Forward` | **Drop** (only present when `D` serves an approved subnet route) | `accept` statements whose destination is a CIDR covered by `D`'s approved routes: `source_ips` = sources, `destination_ips` = the CIDR |
+### 3.1 SPIKE results (all [verified] on `2.6.4-81487c36`)
 
-`priority = 65535 - <statement index>`, so document order is match order
-(highest priority first, first match wins — `processor.rs` sorts by
-`Reverse(priority)` and returns on the first match). Deny rules only need to
-exist where the chain default would otherwise allow the flow, which is why they
-appear in `Outbound` only: `Inbound` already defaults to `Drop`.
+| question | measured result |
+| --- | --- |
+| `A -> B tcp` with only a B inbound allow; both defaults drop | **works** with `stateful:false` and `stateful:true`. The reply is admitted by `outbound_allow_records`: a node remembers the 5-tuple of an **allowed outbound** packet for 30 s and lets the matching inbound packet through even if the inbound chain drops it. `stateful` only records the flow. |
+| same for ICMP | **works** with an inbound allow for `protocol: ICMP`; without it the echo request is dropped at the destination. |
+| same for UDP | **works**; the reply matches the sender's outbound record. |
+| does a sender's `Outbound` default Drop matter | **yes.** With no outbound rule the request is dropped at the sender and no record exists, so the reply could not be admitted either. An explicit outbound allow restores the flow. |
+| what default applies when a chain is missing | **Allow** for that direction (`build_default_actions` falls back to Allow). An *empty* chain with `default_action: Drop` drops everything. |
+| `Chain.enabled: false` | removes the chain's **rules only**; its `default_action` is still used. A disabled drop chain still drops. `enabled:false` is therefore not "disable": the compiler omits the chain instead. |
+| LAN host (192.168.55.16) -> remote B | **works** with a B inbound allow whose `source_ips` is the LAN IP/CIDR, and the router's **Outbound** default allow (the LAN packet leaves the router through its egress chain). B sees the **LAN IP** as the source (no NAT). The router's Forward default-drop does not block this direction; the reply is admitted by the router's outbound record. |
+| remote B -> LAN host | decided by the router's **Forward** chain: EasyTier's userspace subnet proxy terminates the connection, so a default-drop Forward chain blocks it and a Forward allow (`source_ips` = B, `destination_ips` = LAN CIDR) is required. The LAN host sees the **router's LAN address** as the source (192.168.55.2 in the test), i.e. the proxy is a NAT at the router. |
+| the proxy's return path | after proxying, the router sends the return traffic **itself**, addressed from its **own overlay IP** to the original client, with the proxy's ephemeral source port. This packet hits the router's **Outbound** chain and cannot be matched by the service port. The compiler therefore emits a peer-pair allow for it (`*-proxy-out`). |
+| `source_groups` / `destination_groups` | match the peer's verified tag/group HMAC, not addresses. With both `source_ips` and `source_groups` set, **both** must match. A group-only rule admits a tagged peer; an address that matches while the group does not is dropped. |
+| owner's bug | the model could not express the LAN host: tags/devices resolve to overlay `/32`s, so a rule naming the router or its tag never matched the LAN source at the destination. Policy v2's `subnet:` subject fixes that, and the compiler now also emits the router Forward/reply rules needed for the reverse direction. |
 
-`destination_ips` is left empty in the inbound chain: the packet already arrived
-at this node, and the port criterion is what distinguishes services. (`Inbound`
-is classified by `filter.rs::classify_chain_type` when the destination is the
-node's own virtual IP.)
+### 3.2 Translation rules (per device `D`)
 
-Group declarations (`acl.group`):
+| chain | what the compiler emits |
+| --- | --- |
+| **Inbound** (default block) | every enabled `allow`/`deny` whose destination resolves to `D`: `source_ips` = source device `/32`s + `cidr:`/`host:` + `subnet:` CIDRs; `ports`/`source_ports`/`protocol`; `source_groups` only with `options.strictTags`/`strictGroups`; `rate_limit`/`burst_limit`/`stateful` |
+| **Outbound** (default allow) | for `allow`: an egress rule when the outbound default is **block** (or for a source subnet, on its router) so the flow leaves and creates the reply record. For `deny`: always, so a deny is explicit even in a default-allow chain. Plus **reverse** rules: the destination's replies (`*-reply-out`, `source_ports` = service ports) and the router's proxy return path (`*-proxy-out`) |
+| **Forward** (default block, emitted for subnets) | destination subnet/CIDR covered by `D`'s approved routes: `destination_ips` = CIDR, `source_ips` = sources (main direction); plus `*-reply-fwd` for the return of a LAN-initiated flow (source = remote, destination = CIDR, `source_ports` = service ports) |
 
-- `declares` = the tag names whose secrets this config carries;
-- `members` = the subset that is this device's own tags.
+Priorities: explicit rules use `65535 - ruleIndex`, so document order is match
+order (highest first, first match wins — `processor.rs` sorts by
+`Reverse(priority)`). Reverse/convenience rules use a low band
+(`1000 - index % 1000`), so an explicit `deny` anywhere in the document always
+outranks a reply rule.
 
-With `options.strictTags` the compiler also adds `source_groups = ["tag:x"]` to
-allow rules whose source is a tag, and declares those tags' secrets on the
-destination so EasyTier can verify the sender's `group_proof`
-(`peer_ospf_route.rs` verifies HMACs with the local group secret). See §6.
-[verified] — a strict-tag policy keeps the allowed flow working on real clients,
-which requires the proof to verify.
+Group names are namespaced: `tag:<name>` for device labels, `group:<name>` for
+user groups. Each device advertises its own memberships (its tags plus the user
+groups of its owner) and holds the secrets it must verify (its own groups, plus
+the source groups of rules when strict mode is on). With
+`options.strictTags`/`strictGroups` a rule additionally carries
+`source_groups`, so EasyTier verifies the sender's group proof (see §6).
 
 ## 4. Tailscale construct -> EasyTier primitive
 
 | Tailscale | EasyPlane / EasyTier | Status |
 | --- | --- | --- |
-| `tag:name` on devices | EasyTier group `tag:name` (declared with a derived secret; device is a `member`); rule matching uses enumerated `/32` source IPs, optionally plus `source_groups` | **approximated** (group membership is an HMAC over the peer id, not a control-plane signature; a verifier must hold the secret) |
+| `tag:name` on devices | EasyTier group `tag:name` (declared with a derived secret; device is a `member`); rule matching uses enumerated source IPs, optionally plus `source_groups` | **approximated** (group membership is an HMAC over the peer id, not a control-plane signature; a verifier must hold the secret) |
 | `tagOwners` | Stored in the document, enforced by panel permissions when tags are assigned | clean (UI-level) |
-| `group:name` of users | Devices owned by users whose email/IdP group matches; device ownership is a panel concept | **approximated** (EasyTier has no user identity on the wire; only devices are subjects) |
+| `group:name` of users | EasyTier group `group:name`; devices owned by the people in the group declare the membership; rule matching uses enumerated source IPs, optionally plus `source_groups` | **approximated** (EasyTier has no user identity on the wire; only devices are subjects) |
+| subnet routes as subjects | named `subnet:` subject → the CIDR, plus the router Forward/reply rules that make both directions work | clean (approval workflow; no auto-approvers) |
 | `autogroup:all`, `*` | every approved device | clean |
 | `hosts` aliases | `cidr:` in the compiled rules | clean |
 | ACL statement order / first match | rule `priority` = document order, first match wins | clean |
 | `dst` ports and ranges | `ports` string list | clean |
 | protocol (`tcp`/`udp`/`icmp`) | `acl.Protocol` | clean (EasyTier also has `ICMPv6`) |
-| `accept` | `Action.Allow` in the destination's inbound chain | clean |
-| `deny` | `Action.Drop` (silent drop, no RST) for egress denials; destination-side denials fall out of default-Drop | clean, but a `deny` never produces an ICMP/RST error |
+| `accept` | `Action.Allow` in the receive chain (and an egress/reply rule where a chain default would drop it) | clean |
+| `deny` | `Action.Drop` (silent drop, no RST) on the source's Outbound chain and the destination's Inbound/Forward chain | clean, but a `deny` never produces an ICMP/RST error |
 | rate limiting | `rate_limit` + `burst_limit` (token bucket per rule) | clean |
-| connection tracking / `stateful` | `stateful` flags a rule and records the flow in `conn_track`; it does **not** implement "established/related" matching | **approximated**: set it for visibility only; replies are allowed by `outbound_allow_records` (see below) |
+| connection tracking / `stateful` | `stateful` flags a rule and records the flow in `conn_track`; it does **not** implement "established/related" matching | **approximated**: replies rely on `outbound_allow_records` (30 s) or the compiler's explicit reverse rules |
+| chain defaults / per-chain switch | document `chains.*` compiled into `Chain.default_action`; a disabled chain is omitted | clean |
+| rule order | `priority = 65535 - index`; reverse rules in a low band | clean |
 | `dst` = `0.0.0.0/0` (exit node egress) | `enable_exit_node` on the exit node; `exit_nodes` on clients; ACL filtering would have to happen in the exit node's `Forward` chain | **approximated** (panel manages the approval, not a per-client egress matrix) |
 | subnet routes (`--advertise-routes`) | approved `device_routes` -> `proxy_cidrs` on the router; `routes` + `enable_manual_routes` on clients that accept routes; `Forward` chain | **approximated** (explicit approval instead of Tailscale's auto-approvers; forward chain is default-drop, so a `cidr:` statement is required to use the route) |
 | device posture, app connectors, tailnet lock, node attributes, SSH, auto-approvers, `grant` | — | **unsupported** (no equivalent primitive) |
@@ -180,6 +267,22 @@ which requires the proof to verify.
   still returns 200, i.e. EasyTier verified the sender's group proof with the
   declared secret (a wrong/missing secret would fail the proof and drop the
   packet). [verified]
+
+`test/conformance/policy-spike.test.ts` additionally runs a real LAN host
+behind a real subnet router and finishes by saving a v2 policy through the API.
+With **all three chains default-block**, a rule
+
+```jsonc
+{ "name": "lan-to-b", "action": "allow", "from": ["subnet:home-lan"],
+  "to": ["device:core-sp-b"], "protocol": "tcp", "ports": ["8080"] }
+```
+
+makes the LAN host reach the remote node and a companion rule makes the remote
+node reach the LAN host. The compiled ACL is asserted on the wire
+(`lan-to-b-in` with `sourceIps = ["192.168.55.0/24"]` on the destination,
+`b-to-lan-subnet-fwd` on the router's Forward chain, `lan-to-b-lan-out` and the
+proxy return allow on the router's Outbound chain). An unrelated client on a
+different `/32` is still denied. [verified]
 
 ## 5. MagicDNS
 
@@ -233,11 +336,12 @@ Therefore:
 - **Group secrets are derived, not stored.** Rotating
   `EASYPLANE_ENCRYPTION_KEY` changes every group secret; the next push updates
   them. Losing the key makes existing configs unverifiable until re-push.
-- **The outbound chain defaults to allow.** EasyTier has no "allow established"
-  state for the outbound direction; a default-drop egress chain would also drop
-  a server's responses to an allowed inbound request. Egress is therefore only
-  restricted by explicit `deny` statements (and by the destination's inbound
-  policy). [source; consistent with `filter.rs` `outbound_allow_records`]
+- **The outbound chain defaults to allow**, but it can be switched to block.
+  EasyTier has no "allow established" match; replies are admitted through
+  `outbound_allow_records` (an allowed outbound 5-tuple lets the matching
+  inbound packet through for 30 s). The compiler emits explicit reverse rules
+  (`*-reply-out`, `*-reply-fwd`, `*-proxy-out`) so the flow also works with a
+  default-drop egress chain or after a longer idle gap. [verified — §3.1]
 - **Deleting a tag or device does not rewrite history.** Old policy versions
   and revisions keep their content; compilation at push time resolves current
   names and warns about missing ones.
@@ -245,9 +349,21 @@ Therefore:
   `acl`, EasyTier's filter is disabled and every device can reach every other
   device on every port. The panel says so explicitly. An empty document is
   different: it denies everything inbound.
-- **Rules are per destination device.** A statement `tag:web -> tag:db:5432`
-  materialises on `db` (and on `web` only if a deny is needed). A device that
-  is offline keeps its old chain until it reconnects.
+- **Rules are translated, not copied.** `allow web -> db tcp 5432` materialises
+  on `db`'s inbound chain, on `web`'s outbound chain when egress is filtered,
+  and on a subnet router's forward chain when either side is a `subnet:`. The
+  same statement's reply path is an explicit low-priority rule where a default
+  would drop it. A device that is offline keeps its old chain until it
+  reconnects.
+- **The subnet proxy terminates TCP.** For `remote -> subnet`, the LAN host
+  sees the router's LAN address, not the overlay source, and the router sends
+  the return traffic itself from its overlay IP. The compiler emits a peer-pair
+  allow (`*-proxy-out`) for that return path; it is scoped to the router and the
+  original client but has no port criterion (the proxy's source port is
+  ephemeral).
+- **`enabled: false` on a chain means "omit it".** Do not send an EasyTier
+  chain with `enabled: false` and expect it to be off: the default action still
+  applies. [verified — §3.1]
 
 ## 7. Subnet routes and exit nodes
 
@@ -381,31 +497,43 @@ a device that cannot edit its own config.
 
 | endpoint | role | purpose |
 | --- | --- | --- |
-| `GET /api/networks/:id/policy` | any | active version + document |
+| `GET /api/networks/:id/policy` | any | mode, active version + document, structured `rules` (index, name, enabled, action, protocol, ports, sourcePorts, stateful, rate/burst, structured `from`/`to` subjects with counts) and the summary |
 | `GET /api/networks/:id/policy/versions` | any | append-only history |
-| `POST /api/networks/:id/policy/validate` | admin | validate a document/text, warnings + compiled summary per device |
-| `PUT /api/networks/:id/policy` | admin | save `{document}` or `{text}` (HuJSON), creates revisions |
-| `DELETE /api/networks/:id/policy` | admin | disable the policy (ACL filter off) |
-| `POST /api/networks/:id/policy/preview` | member/admin | "can A reach B on port P" for an unsaved document (`document` or HuJSON `text`) |
+| `GET /api/networks/:id/policy/subjects` | any | subject catalog for the pickers: devices, tags (device counts), user groups (people/device counts, `source`, `readOnly`), subnets (approved routes with their router) and hosts |
+| `POST /api/networks/:id/policy/validate` | admin | validate a document/text (v1 is upgraded), warnings + compiled summary per device + `upgradedFromV1` |
+| `PUT /api/networks/:id/policy` | admin | save `{document}` or `{text}` (HuJSON), optional `mode`; syncs the document's tags/user groups, creates revisions |
+| `DELETE /api/networks/:id/policy` | admin | disable the policy (mode `open`, ACL filter off) |
+| `POST /api/networks/:id/policy/mode` | admin | switch `open`/`rules`/`json`; `open` creates revisions with `policy_version = 0` |
+| `GET /api/networks/:id/policy/compiled/:deviceId` | any | read-only compiled ACL for any device, in EasyTier field names (`chains[].defaultAction`, rules with `sourceIps`, `destinationIps`, `sourcePorts`, `sourceGroups`, `stateful`, …), group declarations without secrets |
+| `POST /api/networks/:id/policy/preview` | member/admin | "can A reach B on port P" for an unsaved document; accepts a device **or a raw `srcIp`/CIDR**, returns a chain-by-chain `trace` and `decidedBy` |
 | `POST /api/networks/:id/policy/test` | member/admin | same against the saved policy |
-| `GET /api/networks/:id/dns` | any | switch, zone, resolved names/IPs |
-| `PUT /api/devices/:id/hostname` | member/admin | rename (unique per network) |
-| `GET /api/tags`, `POST /api/tags` | any / admin | policy tag list/create |
-| `PUT /api/devices/:id/tags` | member/admin | assign tags |
+| `GET/POST /api/tags` | any / admin | tags (bare or `tag:` spelling); each row has `name`, `subject`, `deviceCount`, `devices` |
+| `DELETE /api/tags/:id` | admin | delete a tag |
+| `PUT /api/tags/:id/devices` | member/admin | bulk assign: exactly these devices carry the tag |
+| `PUT /api/devices/:id/tags` | member/admin | assign tags to one device (kept for compatibility) |
+| `GET/POST /api/user-groups` | any / admin | user groups: manual (`members`) or synced `oidc` (read-only, derived from the IdP `groups` claim), with people/device counts |
+| `DELETE /api/user-groups/:id` | admin | delete a manual group (synced groups are read-only) |
+| `POST /api/user-groups/:id/members`, `DELETE …/members/:email` | admin | manual membership |
 | `PUT /api/devices/:id/owner` | admin | owner for `group:` subjects |
 | `GET /api/networks/:id/routes` | any | requests, approvals, reports (`source`, `lastDeclaredAt`, `advertised` per row) |
 | `GET/POST /api/devices/:id/routes` | any / member+ | list / request (`source = panel`) |
 | `POST /api/routes/:id/decision` | admin | approve/reject; pushes every approved device |
 
-Audit actions: `policy.version_created`, `policy.disabled`, `tag.created`,
-`device.tags_updated`, `device.renamed`, `device.owner_updated`,
-`network.magicdns_updated`, `route.requested`, `route.declared`,
-`route.approved`, `route.rejected`, `route.unapproved_reported`. No group
-secret, network secret or token is ever written to the audit log
-(`sanitizeAuditMetadata` strips secret-looking keys, and the compiler never hands
-secrets to it).
+Audit actions: `policy.version_created`, `policy.mode_changed`,
+`policy.disabled`, `tag.created`, `tag.deleted`, `tag.devices_updated`,
+`user_group.created`, `user_group.deleted`, `user_group.member_added`,
+`user_group.member_removed`, `device.tags_updated`, `device.renamed`,
+`device.owner_updated`, `network.magicdns_updated`, `route.requested`,
+`route.declared`, `route.approved`, `route.rejected`,
+`route.unapproved_reported`. No group secret, network secret or token is ever
+written to the audit log (`sanitizeAuditMetadata` strips secret-looking keys,
+and the compiler never hands secrets to it).
 
-## 9. Known gaps (M2)
+SSE events: `policy.updated` (with `mode`) after a save/mode switch/disable;
+`tag.updated` and `user_group.updated` after collection changes. All invalidate
+the `policy`/`devices` query topics.
+
+## 9. Known gaps
 
 - Per-client exit-node selection is not managed: approving a declared exit node
   records consent but the panel never pushes `exitNodes`, so egress still needs
@@ -420,26 +548,50 @@ secrets to it).
 - No auto-approvers (CIDR allow-lists) for route requests.
 - Managed credentials, device posture, SSH and `grant` syntax are not
   implemented (see the table in §4).
-- `stateful` does not filter by connection state; only `outbound_allow_records`
-  lets replies through.
+- `stateful` does not filter by connection state. Replies work through
+  `outbound_allow_records` (30 s) or the compiler's low-priority reverse rules;
+  neither is an "established/related" match.
+- The subnet proxy's return path is a peer-pair allow without a port criterion
+  (`*-proxy-out`): it admits the router's proxy traffic to the original client
+  on any port. It is scoped to that peer pair but broader than the service port.
+- The synthetic `/api/…/policy/test` trace is best effort: it evaluates the
+  compiled ACL chain by chain (source Outbound, destination Inbound, or the
+  router's Forward for a CIDR) and cannot model the 30 s outbound records, the
+  subnet proxy's internal sockets or routing failures. "Allowed" means "no ACL
+  rule drops it", not "the OS routes it".
 - Policy compilation is O(devices × statements) per push and each push is one
   `RunNetworkInstance` per device; a few hundred devices are fine, a large
   fleet needs batching (M4).
+- IPv6 subjects and hosts validate and pass through, but subnet routes are
+  IPv4-only (upstream `proxy_cidrs` handling and the approval workflow), so an
+  IPv6 `subnet:` object cannot be approved through the panel yet.
 
 ## 10. Appendix: one compiled ACL, end to end
 
-Policy:
+Policy (v2, outbound also default-block so the reply rules are visible):
 
 ```jsonc
-{ "acls": [{ "name": "web-db", "action": "accept",
-             "src": ["tag:web"], "dst": ["tag:db:5432"], "proto": "tcp" }] }
+{
+  "version": 2,
+  "mode": "rules",
+  "chains": {
+    "inbound":  { "default": "block", "enabled": true },
+    "outbound": { "default": "block", "enabled": true },
+    "forward":  { "default": "block", "enabled": true }
+  },
+  "rules": [
+    { "name": "web-db", "action": "allow", "from": ["tag:web"],
+      "to": ["tag:db"], "protocol": "tcp", "ports": ["5432"],
+      "rateLimit": 200, "burst": 100 }
+  ]
+}
 ```
 
-Devices: `web` = 10.10.0.2 (`tag:web`), `db` = 10.10.0.4 (`tag:db`).
+Devices: `web` = 10.14.0.2 (`tag:web`), `db` = 10.14.0.3 (`tag:db`).
 
-`db`'s compiled `NetworkConfig.acl` (this is what `RunNetworkInstance` carries;
-`acl.Protocol` 1 = TCP, `Action` 1 = Allow, 2 = Drop, `ChainType` 1/2/3 =
-Inbound/Outbound/Forward):
+`db`'s compiled `NetworkConfig.acl` (`acl.Protocol` 1 = TCP, `Action` 1 =
+Allow/2 = Drop, `ChainType` 1/2/3 = Inbound/Outbound/Forward). Secret values
+are derived and shown as placeholders:
 
 ```json
 {
@@ -448,23 +600,20 @@ Inbound/Outbound/Forward):
       {
         "name": "easyplane-inbound",
         "chainType": 1,
-        "description": "Destination-side policy enforcement (default drop)",
         "enabled": true,
         "rules": [
           {
             "name": "web-db-in",
-            "description": "accept tag:web -> db (inbound) (tag:db:5432)",
             "priority": 65535,
-            "enabled": true,
             "protocol": 1,
             "ports": ["5432"],
-            "sourceIps": ["10.10.0.2/32"],
+            "sourceIps": ["10.14.0.2/32"],
             "destinationIps": [],
             "sourcePorts": [],
             "action": 1,
-            "rateLimit": 0,
-            "burstLimit": 0,
-            "stateful": false,
+            "rateLimit": 200,
+            "burstLimit": 100,
+            "stateful": true,
             "sourceGroups": [],
             "destinationGroups": []
           }
@@ -474,21 +623,40 @@ Inbound/Outbound/Forward):
       {
         "name": "easyplane-outbound",
         "chainType": 2,
-        "description": "Explicit egress denies only (default allow)",
         "enabled": true,
-        "rules": [],
-        "defaultAction": 1
+        "rules": [
+          {
+            "name": "web-db-reply-out",
+            "description": "replies for web-db (egress)",
+            "priority": 1000,
+            "protocol": 1,
+            "ports": [],
+            "sourceIps": [],
+            "destinationIps": ["10.14.0.2/32"],
+            "sourcePorts": ["5432"],
+            "action": 1,
+            "rateLimit": 0,
+            "burstLimit": 0,
+            "stateful": true
+          }
+        ],
+        "defaultAction": 2
       }
     ],
     "group": {
-      "declares": [{ "groupName": "tag:db", "groupSecret": "<derived, never stored>" }],
+      "declares": [{ "groupName": "tag:db", "groupSecret": "<derived>" }],
       "members": ["tag:db"]
     }
   }
 }
 ```
 
-With `options.strictTags` the same rule additionally carries
-`"sourceGroups": ["tag:web"]` and `db`'s group block declares `tag:web` too (so
-it can verify the proof). Golden tests for these shapes live in
-`apps/server/test/unit/policy-compiler.test.ts`.
+`web`'s ACL carries `web-db-out` (destination 10.14.0.3/32, ports 5432) in its
+Outbound chain because that chain is default-block. With `options.strictTags`
+the inbound rule also gets `"sourceGroups": ["tag:web"]` and `db` declares
+`tag:web` too, so it can verify the proof. The reverse rule's low priority
+(1000) is what lets an explicit deny anywhere in the document outrank it.
+
+Golden tests for these shapes live in
+`apps/server/test/unit/policy-compiler.test.ts`; the real-client evidence is in
+`test/conformance/policy-spike.test.ts` and `test/conformance/m2.test.ts`.

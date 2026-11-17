@@ -10,8 +10,9 @@ Status: **M0–M4 complete**. Real `easytier-core 2.6.4-81487c36` clients (built
 from the pinned upstream commit) join through invites over `ws`/`wss`/`tcp`/
 `udp`, complete the Noise handshake, receive config after approval, track
 desired vs applied revisions, reconnect, go offline/online and are refused when
-blocked. Tags, a Tailscale-shaped policy compiled to EasyTier ACLs, MagicDNS
-names and subnet/exit-node approvals are managed from the panel; the browser
+blocked. A versioned access policy (rules, device tags, user groups, named
+subnets) compiled to EasyTier ACLs, MagicDNS names and subnet/exit-node
+approvals are managed from the panel; the browser
 updates live over SSE and a connectivity map shows direct vs relayed paths.
 M4 adds network import (TOML, share link, live device), hardening, optional
 Prometheus metrics, the UDP session layer, and a load test with hundreds of
@@ -26,7 +27,7 @@ profile for networks that cannot reach a hub directly.
 - [docs/DEPLOY.md](docs/DEPLOY.md) — compose, nginx/Caddy wss, OIDC (Keycloak/Authentik/Google), metrics
 - [docs/PERFORMANCE.md](docs/PERFORMANCE.md) — load-test method and measured numbers
 - [docs/REALTIME.md](docs/REALTIME.md) — SSE design, topology collection, the map
-- [docs/POLICY.md](docs/POLICY.md) — policy compiler, tag/group mapping, honest limits
+- [docs/POLICY.md](docs/POLICY.md) — policy model v2, compiler translation, measured EasyTier ACL behaviour, honest limits
 - [docs/CREDENTIALS.md](docs/CREDENTIALS.md) — per-device credentials: anchors, members, revocation, the no-anchor window
 - [docs/BRIEF.md](docs/BRIEF.md), [docs/USER_STORIES.md](docs/USER_STORIES.md)
 
@@ -219,15 +220,22 @@ reverse direction is available as an audited admin export
 (`?format=toml|share-link`). Formats, field mapping and golden tests are
 described in [docs/PROTOCOL.md](docs/PROTOCOL.md) §13.2.
 
-## Policy, MagicDNS and routes (M2)
+## Access policy, MagicDNS and routes
 
-- A **policy document** per network (Tailscale-shaped, HuJSON accepted) with
-  tags, user groups (expanded through device ownership), device/host/CIDR
-  subjects, port lists, allow/deny order, rate limits and an optional
-  strict-tag mode. It is validated, versioned append-only, previewable
-  ("can A reach B on port P") and compiled **per device** into EasyTier's
-  inbound/outbound/forward chains; the compiled ACL is referenced by a
-  `policy_version` on each config revision, so it is audited and rollbackable.
+- A **policy document v2** per network (HuJSON accepted, three modes: `open`
+  with no ACL pushed, `rules`, or `json` editing the same document) with
+  device **tags** and **user groups** as separate concepts, named **subnets**
+  (approved routes, usable as source and destination so a host behind a router
+  `subnet:home-lan` is addressable), device/host/CIDR subjects, protocol and
+  port/range lists, source ports, allow/deny order, per-chain defaults and
+  names, stateful/rate-limit controls, and optional strict group proofs. v1
+  documents still load and are upgraded on save. It is validated, versioned
+  append-only, previewable ("can A reach B on port P", including a raw source
+  IP and the deciding chain) and compiled **per device** into EasyTier's
+  inbound/outbound/forward chains, including the egress and reply rules that
+  make an allow work with default-drop chains. The compiled ACL is inspectable
+  per device and referenced by a `policy_version` on each config revision, so
+  it is audited and rollbackable.
 - **MagicDNS** is a per-network switch with a zone and unique, renameable DNS
   names per network (enforced in the API and by a DB index).
 - **Subnet/exit-node routes** are requested by members or **declared by the
