@@ -18,19 +18,29 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 
 /**
- * Hub card. Advertised endpoints and the hub flag are network state, not
- * revision content: saving repushes the devices that dial this one and creates
- * no revision. A hub itself receives none of its own endpoints, so it cannot
- * dial its own public address and loop.
+ * Hub card. "Hub" is the product word (the API still calls the role anchor in
+ * access mode); endpoints are network state, not revision content, so saving
+ * repushes the devices that dial this one and creates no revision.
+ *
+ * The form is only editable while there are changes to save: Save and Cancel
+ * appear when the draft differs from what the server has, so nobody wonders
+ * whether typing already saved something.
  */
 export function DeviceHubCard({ device }: { device: GetDevice200 }) {
   const { t } = useTranslation()
   const { canManage, isAdmin } = useAuth()
   const queryClient = useQueryClient()
-  const [endpoints, setEndpoints] = useState(device.advertisedEndpoints.join("\n"))
+  const saved = device.advertisedEndpoints.join("\n")
+  // Baseline + draft in one state so a server-side update resets the form
+  // without an effect (and without losing an in-progress edit).
+  const [draft, setDraft] = useState({ base: saved, value: saved })
+  const endpoints = draft.base === saved ? draft.value : saved
+  const dirty = endpoints !== saved
 
   const refresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: getGetDeviceQueryKey(device.id) })
+    await queryClient.invalidateQueries({
+      queryKey: getGetDeviceQueryKey(device.id),
+    })
     await queryClient.invalidateQueries({
       queryKey: getListNetworkPeersQueryKey(device.networkId),
     })
@@ -74,7 +84,7 @@ export function DeviceHubCard({ device }: { device: GetDevice200 }) {
             <RadioTowerIcon aria-hidden="true" className="size-4 text-fg-2" />
             {t("devices.detail.hub.title")}
           </h2>
-          <p className="text-[13px] text-fg-3">{t("devices.detail.hub.description")}</p>
+          <p className="text-[13px] text-fg-3">{t("device.hub.description")}</p>
         </div>
         <Switch
           aria-label={t("devices.detail.hub.title")}
@@ -101,7 +111,10 @@ export function DeviceHubCard({ device }: { device: GetDevice200 }) {
           })
         }}
       >
-        <label className="text-[13px] font-medium" htmlFor={`endpoints-${device.id}`}>
+        <label
+          className="text-[13px] font-medium"
+          htmlFor={`endpoints-${device.id}`}
+        >
           {t("devices.detail.endpoints.title")}
         </label>
         <Textarea
@@ -109,7 +122,9 @@ export function DeviceHubCard({ device }: { device: GetDevice200 }) {
           className="min-h-[88px] font-mono text-xs"
           disabled={!canManage || updateEndpoints.isPending}
           id={`endpoints-${device.id}`}
-          onChange={(event) => setEndpoints(event.target.value)}
+          onChange={(event) =>
+            setDraft({ base: saved, value: event.target.value })
+          }
           placeholder={t("devices.detail.endpoints.placeholder")}
           rows={3}
           value={endpoints}
@@ -118,10 +133,14 @@ export function DeviceHubCard({ device }: { device: GetDevice200 }) {
           className={empty ? "text-xs text-warn" : "text-xs text-fg-3"}
           id={`endpoints-hint-${device.id}`}
         >
-          {empty ? t("devices.detail.endpoints.emptyHint") : t("devices.detail.endpoints.hint")}
+          {empty
+            ? t("devices.detail.endpoints.emptyHint")
+            : device.isHub
+              ? t("devices.detail.endpoints.hint")
+              : t("device.hub.endpointsInactive")}
         </p>
-        {canManage ? (
-          <div>
+        {canManage && dirty ? (
+          <div className="flex flex-wrap gap-2">
             <Button
               disabled={updateEndpoints.isPending}
               size="sm"
@@ -131,6 +150,15 @@ export function DeviceHubCard({ device }: { device: GetDevice200 }) {
               {updateEndpoints.isPending
                 ? t("common.loading")
                 : t("devices.detail.endpoints.save")}
+            </Button>
+            <Button
+              disabled={updateEndpoints.isPending}
+              onClick={() => setDraft({ base: saved, value: saved })}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              {t("common.cancel")}
             </Button>
           </div>
         ) : null}

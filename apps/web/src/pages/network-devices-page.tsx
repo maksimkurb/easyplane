@@ -2,10 +2,15 @@ import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { SearchIcon } from "lucide-react"
 
+import { useListNetworkRoutes } from "@/api/generated/easyplane"
 import type { ListNetworkRoutes200RoutesItem } from "@/api/generated/model"
 import { ApprovalsPanel } from "@/components/network/approvals-panel"
-import { NetworkShell, type NetworkShellData } from "@/components/network/network-shell"
+import {
+  NetworkShell,
+  type NetworkShellData,
+} from "@/components/network/network-shell"
 import { DeviceRow } from "@/components/device/device-row"
+import { RouteLoadError } from "@/components/routes/route-load-error"
 import {
   Empty,
   EmptyDescription,
@@ -15,10 +20,12 @@ import {
 } from "@/components/ui/empty"
 import { Input } from "@/components/ui/input"
 import { Segmented } from "@/components/ui/segmented"
-import { deviceHasIssue, deviceName } from "@/lib/device-presentation"
+import { deriveDeviceStatus } from "@/lib/device-status"
+import { deviceName } from "@/lib/device-presentation"
+import { retryableQuery } from "@/lib/query-retry"
 import { MonitorSmartphoneIcon } from "lucide-react"
 
-type Filter = "all" | "online" | "issues"
+type Filter = "all" | "online" | "offline" | "attention"
 
 export function NetworkDevicesPage({ networkId }: { networkId: string }) {
   return (
@@ -33,13 +40,30 @@ function DevicesTab({ data }: { data: NetworkShellData }) {
   const [query, setQuery] = useState("")
   const [filter, setFilter] = useState<Filter>("all")
 
+  // The shell already loads the routes; this observer only adds the retry
+  // policy from lib/query-retry and gives the page an error state to show.
+  // Same query key, so no extra request is made.
+  const routesQuery = useListNetworkRoutes(data.network.id, {
+    query: retryableQuery,
+  })
+
   // Pending devices belong to the approvals block, not to this list.
   const rows = useMemo(
     () => data.devices.filter((device) => device.state !== "pending"),
     [data.devices]
   )
-  const onlineCount = rows.filter((device) => device.online === "online").length
-  const issueCount = rows.filter(deviceHasIssue).length
+  const statuses = useMemo(
+    () =>
+      new Map(rows.map((device) => [device.id, deriveDeviceStatus(device)])),
+    [rows]
+  )
+  const onlineCount = rows.filter(
+    (device) => statuses.get(device.id)?.connected
+  ).length
+  const offlineCount = rows.length - onlineCount
+  const attentionCount = rows.filter(
+    (device) => statuses.get(device.id)?.needsAttention
+  ).length
 
   const routesByDevice = useMemo(() => {
     const map = new Map<string, ListNetworkRoutes200RoutesItem[]>()
@@ -54,8 +78,10 @@ function DevicesTab({ data }: { data: NetworkShellData }) {
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
     return rows.filter((device) => {
-      if (filter === "online" && device.online !== "online") return false
-      if (filter === "issues" && !deviceHasIssue(device)) return false
+      const status = statuses.get(device.id)
+      if (filter === "online" && !status?.connected) return false
+      if (filter === "offline" && status?.connected) return false
+      if (filter === "attention" && !status?.needsAttention) return false
       if (!needle) return true
       const haystack = [
         deviceName(device),
@@ -70,7 +96,7 @@ function DevicesTab({ data }: { data: NetworkShellData }) {
         .toLowerCase()
       return haystack.includes(needle)
     })
-  }, [rows, filter, query])
+  }, [rows, filter, query, statuses])
 
   return (
     <>
@@ -80,6 +106,14 @@ function DevicesTab({ data }: { data: NetworkShellData }) {
         networkId={data.network.id}
         routes={data.routes}
       />
+
+      {routesQuery.isError ? (
+        <RouteLoadError
+          className="mb-4"
+          onRetry={() => void routesQuery.refetch()}
+          pending={routesQuery.isFetching}
+        />
+      ) : null}
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="relative min-w-0 flex-1 sm:max-w-[320px] sm:flex-none">
@@ -97,13 +131,30 @@ function DevicesTab({ data }: { data: NetworkShellData }) {
           />
         </div>
         <Segmented
-          className="max-sm:w-full"
+          className="max-sm:w-full max-sm:[&>button]:min-w-0 max-sm:[&>button]:flex-1 max-sm:[&>button]:gap-1 max-sm:[&>button]:px-1.5"
           label={t("devices.filterLabel")}
           onValueChange={setFilter}
           options={[
-            { value: "all", label: t("devices.filterAll"), count: rows.length },
-            { value: "online", label: t("devices.filterOnline"), count: onlineCount },
-            { value: "issues", label: t("devices.filterIssues"), count: issueCount },
+            {
+              value: "all",
+              label: t("deviceStatus.filters.all"),
+              count: rows.length,
+            },
+            {
+              value: "online",
+              label: t("deviceStatus.filters.online"),
+              count: onlineCount,
+            },
+            {
+              value: "offline",
+              label: t("deviceStatus.filters.offline"),
+              count: offlineCount,
+            },
+            {
+              value: "attention",
+              label: t("deviceStatus.filters.attention"),
+              count: attentionCount,
+            },
           ]}
           value={filter}
         />
@@ -126,14 +177,18 @@ function DevicesTab({ data }: { data: NetworkShellData }) {
             className="hidden h-10 grid-cols-[minmax(0,1fr)_auto_40px] items-center gap-x-2 border-b border-line px-4 text-xs font-medium text-fg-3 md:grid md:gap-x-4 md:px-5 lg:grid-cols-[minmax(0,2.4fr)_minmax(120px,1fr)_minmax(130px,1fr)_minmax(130px,1fr)_40px]"
           >
             <span>{t("devices.table.device")}</span>
-            <span className="hidden lg:block">{t("devices.table.address")}</span>
+            <span className="hidden lg:block">
+              {t("devices.table.address")}
+            </span>
             <span className="hidden lg:block">{t("devices.table.system")}</span>
-            <span>{t("devices.table.lastSeen")}</span>
+            <span>{t("deviceStatus.table.status")}</span>
             <span />
           </div>
           {filtered.length === 0 ? (
             <p className="flex min-h-28 items-center justify-center px-4 text-center text-sm text-fg-3">
-              {t("devices.noMatches")}
+              {query.trim()
+                ? t("devices.noMatches")
+                : t("deviceStatus.filters.empty")}
             </p>
           ) : (
             <div className="divide-y divide-line">
