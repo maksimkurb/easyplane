@@ -34,7 +34,14 @@ import { Input } from "@/components/ui/input"
  * verbatim; one that exactly matches a known device's endpoint is offered for
  * linking, which converts it into a device-backed entry.
  */
-export function NetworkPeersCard({ networkId }: { networkId: string }) {
+export function NetworkPeersCard({
+  networkId,
+  embedded = false,
+}: {
+  networkId: string
+  /** Render inside an existing settings section instead of its own card. */
+  embedded?: boolean
+}) {
   const { t } = useTranslation()
   const { isAdmin } = useAuth()
   const queryClient = useQueryClient()
@@ -99,8 +106,12 @@ export function NetworkPeersCard({ networkId }: { networkId: string }) {
   const deviceBacked = new Set(
     peers.filter((peer) => peer.kind === "device").map((peer) => peer.deviceId)
   )
-  const addableDevices = devices.filter((device) => !deviceBacked.has(device.id))
-  const linkableDevices = devices.filter((device) => device.state === "approved")
+  const addableDevices = devices.filter(
+    (device) => !deviceBacked.has(device.id)
+  )
+  const linkableDevices = devices.filter(
+    (device) => device.state === "approved"
+  )
   const busy =
     createPeer.isPending ||
     deletePeer.isPending ||
@@ -108,22 +119,44 @@ export function NetworkPeersCard({ networkId }: { networkId: string }) {
     updateHub.isPending
 
   return (
-    <section className="rounded-xl bg-card shadow-sm ring-1 ring-line">
-      <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-base leading-6 font-semibold tracking-[-0.006em]">
-            {t("networks.peers.title")} ({peers.length})
-          </h2>
-          <p className="text-[13px] text-fg-3">{t("networks.peers.description")}</p>
+    <div
+      className={
+        embedded
+          ? "flex flex-col gap-3"
+          : "rounded-xl bg-card shadow-sm ring-1 ring-line"
+      }
+    >
+      {embedded ? null : (
+        <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base leading-6 font-semibold tracking-[-0.006em]">
+              {t("networks.peers.title")} ({peers.length})
+            </h2>
+            <p className="text-[13px] text-fg-3">
+              {t("networks.peers.description")}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {peers.length === 0 ? (
-        <p className="border-t border-line px-4 py-5 text-[13px] text-fg-3 sm:px-5">
+        <p
+          className={
+            embedded
+              ? "text-[13px] text-fg-3"
+              : "border-t border-line px-4 py-5 text-[13px] text-fg-3 sm:px-5"
+          }
+        >
           {t("networks.peers.empty")}
         </p>
       ) : (
-        <div className="border-t border-line">
+        <div
+          className={
+            embedded
+              ? "overflow-hidden rounded-lg ring-1 ring-line"
+              : "border-t border-line"
+          }
+        >
           {peers.map((peer) => (
             <PeerRow
               busy={busy}
@@ -132,7 +165,11 @@ export function NetworkPeersCard({ networkId }: { networkId: string }) {
               key={peer.id}
               linkTarget={linkTargets[peer.id] ?? peer.suggestedDeviceId ?? ""}
               onLink={(deviceId) =>
-                linkPeer.mutate({ networkId, peerId: peer.id, data: { deviceId } })
+                linkPeer.mutate({
+                  networkId,
+                  peerId: peer.id,
+                  data: { deviceId },
+                })
               }
               onLinkTarget={(value) =>
                 setLinkTargets((current) => ({ ...current, [peer.id]: value }))
@@ -145,9 +182,17 @@ export function NetworkPeersCard({ networkId }: { networkId: string }) {
       )}
 
       {isAdmin ? (
-        <div className="grid gap-4 border-t border-line px-4 py-4 md:grid-cols-2 sm:px-5">
+        <div
+          className={
+            embedded
+              ? "grid gap-4 md:grid-cols-2"
+              : "grid gap-4 border-t border-line px-4 py-4 sm:px-5 md:grid-cols-2"
+          }
+        >
           <div className="grid gap-2">
-            <p className="text-[13px] font-medium">{t("networks.peers.addDevice")}</p>
+            <p className="text-[13px] font-medium">
+              {t("networks.peers.addDevice")}
+            </p>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <OptionSelect
                 aria-label={t("networks.peers.device")}
@@ -168,7 +213,10 @@ export function NetworkPeersCard({ networkId }: { networkId: string }) {
                 className="max-sm:w-full"
                 disabled={newDeviceId === "" || busy}
                 onClick={() =>
-                  updateHub.mutate({ deviceId: newDeviceId, data: { isHub: true } })
+                  updateHub.mutate({
+                    deviceId: newDeviceId,
+                    data: { isHub: true },
+                  })
                 }
                 size="sm"
                 type="button"
@@ -177,7 +225,9 @@ export function NetworkPeersCard({ networkId }: { networkId: string }) {
                 {t("networks.peers.addHub")}
               </Button>
             </div>
-            <p className="text-xs text-fg-3">{t("networks.peers.addDeviceHint")}</p>
+            <p className="text-xs text-fg-3">
+              {t("networks.peers.addDeviceHint")}
+            </p>
           </div>
 
           <form
@@ -188,7 +238,9 @@ export function NetworkPeersCard({ networkId }: { networkId: string }) {
               createPeer.mutate({ networkId, data: { url: url.trim() } })
             }}
           >
-            <p className="text-[13px] font-medium">{t("networks.peers.addExternal")}</p>
+            <p className="text-[13px] font-medium">
+              {t("networks.peers.addExternal")}
+            </p>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Input
                 aria-label={t("networks.peers.url")}
@@ -207,11 +259,13 @@ export function NetworkPeersCard({ networkId }: { networkId: string }) {
                 {t("common.add")}
               </Button>
             </div>
-            <p className="text-xs text-fg-3">{t("networks.peers.addExternalHint")}</p>
+            <p className="text-xs text-fg-3">
+              {t("networks.peers.addExternalHint")}
+            </p>
           </form>
         </div>
       ) : null}
-    </section>
+    </div>
   )
 }
 
@@ -254,7 +308,9 @@ function PeerRow({
                   className="truncate font-medium hover:underline"
                   href={`/devices/${peer.deviceId}`}
                 >
-                  {deviceLabel || peer.deviceId?.slice(0, 8) || t("common.none")}
+                  {deviceLabel ||
+                    peer.deviceId?.slice(0, 8) ||
+                    t("common.none")}
                 </a>
                 <Chip variant="brand">{t("networks.peers.hub")}</Chip>
               </>
