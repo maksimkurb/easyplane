@@ -26,9 +26,11 @@ export const enTranslation = {
   auth: {
     loading: "Loading EasyPlane…",
     title: "Sign in to EasyPlane",
-    description: "Use your organisation account. Passwords are never stored here.",
+    description:
+      "Use your organisation account. Passwords are never stored here.",
     sso: "Continue with {{provider}}",
-    noProviders: "No identity providers are configured. Ask the operator to set EASYPLANE_OIDC_PROVIDERS.",
+    noProviders:
+      "No identity providers are configured. Ask the operator to set EASYPLANE_OIDC_PROVIDERS.",
     failed: "Unable to sign in",
     signOut: "Sign out",
     signedInAs: "Signed in as",
@@ -99,7 +101,8 @@ export const enTranslation = {
     secret: "Network secret",
     secretHidden: "Hidden",
     reveal: "Reveal secret",
-    revealWarning: "The secret is shown once more here and the reveal is audited.",
+    revealWarning:
+      "The secret is shown once more here and the reveal is audited.",
     devices: "Devices",
     pending: "Pending",
     approved: "Approved",
@@ -123,11 +126,13 @@ export const enTranslation = {
     rotate: "Rotate secret",
     rotateRendezvousBody:
       "This network uses the bundled rendezvous node, which pins the network secret: rotate RENDEZVOUS_NETWORK_SECRET on the node and EASYPLANE_RENDEZVOUS_SECRET on the panel first, restart both, then use the rendezvous card's Align network secret action. The ordinary random rotation is refused while the node toggle is on.",
-    rotateConfirm: "Rotating the secret disconnects existing devices until they receive the new config. Continue?",
-    deleteConfirm: "Delete this network, its invites, devices and config history?",
+    rotateConfirm:
+      "Rotating the secret disconnects existing devices until they receive the new config. Continue?",
+    deleteConfirm:
+      "Delete this network, its invites, devices and config history?",
     import: {
       open: "Import network",
-    short: "Import",
+      short: "Import",
       title: "Import a network",
       back: "Back to networks",
       description:
@@ -250,8 +255,10 @@ export const enTranslation = {
     anchorBadge: "Anchor",
     memberBadge: "Member",
     knowsSecret: "knows the network secret",
-    knowsSecretLong: "This device holds the network secret and can never be revoked without rotating it.",
-    noSecretLong: "This device joins with its own credential and does not know the network secret.",
+    knowsSecretLong:
+      "This device holds the network secret and can never be revoked without rotating it.",
+    noSecretLong:
+      "This device joins with its own credential and does not know the network secret.",
     status: "Credential",
     expiry: "Expires",
     groups: "ACL groups",
@@ -262,7 +269,8 @@ export const enTranslation = {
       expired: "Expired",
     },
     noCredential: "No credential yet. Approve the device to issue one.",
-    credentialNotActive: "This credential is not active; the device cannot join.",
+    credentialNotActive:
+      "This credential is not active; the device cannot join.",
     sharedModeHint:
       "Every device in a shared-secret network holds the same secret, so a device can only be removed by blocking it — and by rotating the secret if you need its access gone for good.",
     noteShared:
@@ -287,7 +295,8 @@ export const enTranslation = {
       aspect: "Aspect",
       onboarding: "Adding a device",
       onboardingShared: "Give the device the network secret (invite).",
-      onboardingCredentials: "The device gets its own credential; no secret on the device.",
+      onboardingCredentials:
+        "The device gets its own credential; no secret on the device.",
       revocation: "Removing a device",
       revocationShared: "Block it; it still knows the secret.",
       revocationCredentials: "Revoke its credential: it can no longer join.",
@@ -296,7 +305,8 @@ export const enTranslation = {
       blastRadiusCredentials: "One leaked credential exposes one device.",
       requirements: "Requirements",
       requirementsShared: "Nothing extra.",
-      requirementsCredentials: "At least one anchor online for new members via a rendezvous node.",
+      requirementsCredentials:
+        "At least one anchor online for new members via a rendezvous node.",
     },
     dialog: {
       credentialsHint:
@@ -310,7 +320,8 @@ export const enTranslation = {
         "Every other approved device becomes a member. Its credential can be revoked individually at any time.",
       reverseWarning:
         "Switching back to a shared secret gives every device the network secret. Any device you removed earlier would be able to join again until that secret is rotated.",
-      acknowledgeReverse: "I understand every device will receive the network secret.",
+      acknowledgeReverse:
+        "I understand every device will receive the network secret.",
       previewTitle: "Dry run",
       previewAnchors: "Anchors: {{count}} ({{names}})",
       previewMembers: "Devices becoming members: {{count}}",
@@ -342,7 +353,8 @@ export const enTranslation = {
       "{{hostname}} already knows the network secret. Changing the role does not take that knowledge back.",
     demoteWhy:
       "After the change, rotate the network secret and re-enrol every remaining anchor. Until then the device can still join as a secret holder.",
-    demoteAck: "I understand this device keeps the network secret and will be rotated next.",
+    demoteAck:
+      "I understand this device keeps the network secret and will be rotated next.",
     demoteConfirm: "Change role anyway",
     roleChanged: "Role updated",
     roleChangedRotate:
@@ -365,7 +377,8 @@ export const enTranslation = {
     removeAnywayTitle: "Remove anyway",
     removeAnywayBody:
       "The device keeps the secret until it is rotated. This is an acknowledged risk, recorded in the audit log.",
-    removeAnywayAck: "I accept that {{hostname}} still knows the network secret.",
+    removeAnywayAck:
+      "I accept that {{hostname}} still knows the network secret.",
     removeAnyway: "Remove anyway",
     createDefaultHint:
       "New networks start with a shared secret: simple, and every device can join immediately. Create it, then switch to per-device credentials on the network page if you need revocable, individually expiring access.",
@@ -384,11 +397,13 @@ export const enTranslation = {
     expiresInHours: "Expires in (hours)",
     expiresInHoursHint: "Leave empty for no expiry.",
     created: "Invite created",
-    tokenWarning: "Copy the token now — it is stored hashed and cannot be shown again.",
+    tokenWarning:
+      "Copy the token now — it is stored hashed and cannot be shown again.",
     token: "Invite token",
     command: "CLI command",
     url: "Config-server URL",
-    android: "Paste this URL into the EasyTier Android app's config-server field.",
+    android:
+      "Paste this URL into the EasyTier Android app's config-server field.",
     qr: "QR code",
     status: {
       active: "Active",
@@ -399,7 +414,8 @@ export const enTranslation = {
     expires: "Expires",
     uses: "Uses",
     revoke: "Revoke",
-    revokeConfirm: "Revoke this invite? Existing devices keep working with their token.",
+    revokeConfirm:
+      "Revoke this invite? Existing devices keep working with their token.",
     revoked: "Invite revoked",
     empty: "No invites yet.",
   },
@@ -408,7 +424,8 @@ export const enTranslation = {
     description: "Every device that presented a valid invite token.",
     all: "All devices",
     pendingTitle: "Pending approvals",
-    pendingDescription: "Devices wait here until an admin approves them. They receive no config.",
+    pendingDescription:
+      "Devices wait here until an admin approves them. They receive no config.",
     pendingBadge: "Pending",
     machineId: "Machine ID",
     hostname: "Hostname",
@@ -423,12 +440,14 @@ export const enTranslation = {
     push: "Push config",
     pushRequested: "Push requested",
     approveTitle: "Approve device",
-    approveDescription: "The device receives its address and desired config immediately.",
+    approveDescription:
+      "The device receives its address and desired config immediately.",
     approved: "Device approved",
     blocked: "Device blocked",
     deleted: "Device deleted",
     deleteConfirm: "Delete this device and its config history?",
-    blockConfirm: "Block this device? It is disconnected and refused until approved again.",
+    blockConfirm:
+      "Block this device? It is disconnected and refused until approved again.",
     empty: "No devices yet. Create an invite and connect a client.",
     noPending: "No devices are waiting for approval.",
     connected: "Connected",
@@ -484,8 +503,7 @@ export const enTranslation = {
     exitNode: {
       approved: "Exit node",
       proposed: "Exit node (proposed)",
-      hint:
-        "The device advertises that it can be an exit node. Approval records consent only: actual egress depends on the client (OS route + exit_nodes).",
+      hint: "The device advertises that it can be an exit node. Approval records consent only: actual egress depends on the client (OS route + exit_nodes).",
     },
     localConfig:
       "The client's configuration file is read-only, so the panel cannot read or change this device's routes. It is managed locally on the device.",
@@ -506,7 +524,8 @@ export const enTranslation = {
       notAppliedTitle:
         "Config {{desired}} isn't applied — the device still runs {{applied}}",
       pushFailedTitle: "The last config push failed",
-      waitingForDevice: "The device will receive the config when it reconnects.",
+      waitingForDevice:
+        "The device will receive the config when it reconnects.",
       change: {
         label: "Change",
         approval: "Approved by admin",
@@ -516,19 +535,20 @@ export const enTranslation = {
       config: "Desired config",
       history: "Revision history",
       newRevision: "New revision",
-      editHint: "Saving creates a new revision and pushes it to the device when online.",
+      editHint:
+        "Saving creates a new revision and pushes it to the device when online.",
       note: "Note",
       hostname: "Hostname",
       noTun: "No TUN device",
       acceptRoutes: "Accept subnet routes from the network",
       identity: "Identity and routes",
-      identityHint: "DNS name, tags (policy subjects) and route requests for this device.",
+      identityHint:
+        "DNS name, tags (policy subjects) and route requests for this device.",
       owner: "Owner",
       noOwner: "No owner",
       endpoints: {
         title: "Advertised endpoints",
-        hint:
-          "Peer URLs other devices dial to reach this one, one per line. This is network state: changing it repushes the devices that dial it and creates no revision.",
+        hint: "Peer URLs other devices dial to reach this one, one per line. This is network state: changing it repushes the devices that dial it and creates no revision.",
         placeholder: "tcp://node-a.example.com:11010",
         emptyHint:
           "Add at least one address, otherwise nobody can dial this hub.",
@@ -538,8 +558,7 @@ export const enTranslation = {
       hub: {
         title: "Hub",
         description: "Every other device dials a hub directly.",
-        hint:
-          "A hub is dialled by every other device. The hub itself receives none of its own endpoints, so it cannot dial its own public address and loop.",
+        hint: "A hub is dialled by every other device. The hub itself receives none of its own endpoints, so it cannot dial its own public address and loop.",
         enabled: "Device is now a hub",
         disabled: "Device is no longer a hub",
         badge: "Hub",
@@ -620,16 +639,43 @@ export const enTranslation = {
       open: "Open",
       rules: "Rules",
       json: "JSON",
+      openTitle: "Allow all traffic between devices",
+      rulesTitle: "Only allow what rules permit",
+      openHint:
+        "Every device can reach every other device on every port. Use this only when you trust the whole network.",
+      rulesHint:
+        "Traffic is allowed only by the rules below. Everything else is blocked as soon as the change reaches a device.",
+      confirmOpenTitle: "Allow all traffic?",
+      confirmOpenBody:
+        "This turns the firewall off for every device in the network. Any device will be able to reach any other device on any port.",
+      confirmOpenAction: "Allow all traffic",
+      confirmRulesTitle: "Only allow what rules permit?",
+      confirmRulesBody:
+        "Rules take effect immediately. Connections that no rule allows will be blocked, including connections open right now.",
+      confirmRulesAction: "Turn on rules",
     },
     open: {
       nothingBlocked: "Nothing is blocked",
+      rulesKept:
+        "Your rules are kept, but they are not enforced while this mode is selected.",
+    },
+    tabs: {
+      label: "Access sections",
+      rules: "Rules",
+      data: "Tags & groups",
+      dataShort: "Tags",
+      subnets: "Subnets",
     },
     rules: {
       title: "Rules",
       add: "Add rule",
       empty: "No rules",
+      order: "Rules are checked top to bottom; the first match wins.",
       name: "Rule name",
+      nameOptional: "Rule name (optional)",
       namePlaceholder: "e.g. Block SSH to NAS",
+      suggestion: "{{action}} {{from}} → {{to}}",
+      useSuggestion: "Use suggestion",
       action: "Action",
       allow: "Allow",
       deny: "Deny",
@@ -640,14 +686,26 @@ export const enTranslation = {
       drag: "Drag to reorder rule {{rule}}",
       edit: "Edit rule {{rule}}",
       editNamed: "Edit rule {{rule}}: {{name}}",
+      editAction: "Edit",
       moveUp: "Move rule up",
       moveDown: "Move rule down",
       duplicate: "Duplicate rule",
       remove: "Remove rule",
       delete: "Delete rule",
+      deleted: "Rule deleted",
+      actions: "Rule {{rule}} actions",
+      actionsNamed: "Actions for {{name}}",
       sentence: "{{from}} to {{to}} on {{ports}}",
       saveRule: "Save rule",
+      newTitle: "New rule",
       editTitle: "Edit rule {{rule}}",
+      errorFrom: "Choose at least one source",
+      errorTo: "Choose at least one destination",
+      errorPorts: "“{{port}}” is not a port or range",
+      discardTitle: "Discard changes?",
+      discardBody: "This rule has unsaved changes. Leaving now loses them.",
+      discard: "Discard",
+      service: "Service",
     },
     ports: {
       label: "Ports and protocol",
@@ -663,12 +721,15 @@ export const enTranslation = {
       quickAdd: "Quick add",
       more: "+{{count}}",
       preset: {
+        any: "Any",
         ssh: "SSH",
         http: "HTTP/S",
+        web: "Web",
         rdp: "RDP",
         smb: "SMB",
         dns: "DNS",
         ping: "Ping",
+        custom: "Custom…",
       },
       errorPort: "Port must be 1-65535",
       errorRange: "Range must go from low to high",
@@ -708,6 +769,16 @@ export const enTranslation = {
       nameLabel: "{{chain}} chain name",
       defaultLabel: "{{chain}} default action",
       done: "Done",
+      everythingElse: "Everything else",
+      advanced: "Advanced settings",
+      explain: {
+        inbound:
+          "Traffic addressed to this device itself, for example a client connecting to its service.",
+        outbound:
+          "Traffic that leaves this device, for example a client calling a server.",
+        forward:
+          "Traffic that passes through this device, for example a LAN host using it as a subnet router.",
+      },
     },
     picker: {
       search: "Search devices, tags, groups",
@@ -756,6 +827,12 @@ export const enTranslation = {
       versionNumber: "Policy version {{version}}",
       via: "via {{device}}",
       noSubnets: "No approved subnets",
+      subnetsHint:
+        "Approved LANs other devices can reach through a router. Use them in rules as subnet sources or destinations.",
+      tagsHint:
+        "Labels for devices. Use them in rules instead of listing devices one by one.",
+      groupsHint:
+        "Sets of people. A group matches the devices those people own.",
       noTags: "No tags",
       noGroups: "No user groups",
       devices: "{{count}} device",
@@ -808,7 +885,68 @@ export const enTranslation = {
       versionTableStatements: "Rules",
       close: "Close",
     },
+    preview: {
+      anyone: "anyone",
+      anywhere: "anywhere",
+      device: "device {{name}}",
+      tag: "devices tagged {{name}}",
+      group: "devices of user group {{name}}",
+      subnet: "subnet {{name}}",
+      host: "host {{name}}",
+      cidr: "address {{value}}",
+      unknown: "{{value}}",
+      sentence: "{{action}} {{from}} to reach {{to}} on {{service}}",
+      serviceAny: "any protocol and port",
+      serviceIcmp: "ICMP (ping)",
+      servicePorts: "{{protocol}} ports {{ports}}",
+    },
+    matrix: {
+      title: "Who can reach whom",
+      hint: "A read-only overview by tag and user group. Hover or focus a cell to see the deciding rules; open the rules below to change them.",
+      from: "From",
+      pair: "{{from}} to {{to}}",
+      allowed: "Allowed",
+      denied: "Denied",
+      partial: "Partly allowed",
+      self: "Same devices",
+      empty: "No devices",
+      byRules: "Decided by: {{rules}}",
+      byDefault: "Decided by the default action",
+      noDevices: "No devices to compare",
+      openMode: "All traffic is allowed while the mode is Open, so every device can reach every other device.",
+    },
+    test: {
+      hint: "Check a connection against the saved policy. The matching rule is highlighted in the list.",
+      icmpHint: "Ping has no port — the whole host is tested.",
+      highlighted: "The matching rule is highlighted in the list.",
+    },
+    history: {
+      hint: "Every save is kept. Compare a version with the one before it, then restore it if needed.",
+      comparedTo: "Compared with version {{version}}",
+      firstVersion: "First saved version",
+      noChanges: "No rule changes in this version",
+      added: "Added",
+      removed: "Removed",
+      changed: "Changed",
+      before: "Before",
+      after: "After",
+      restore: "Restore",
+      restoreHint:
+        "Restoring saves an older document as a new version; nothing is erased.",
+      restoreTitle: "Restore this version?",
+      restoreBody:
+        "Version {{version}} will be saved as the current policy. Devices are updated on the next push; Cancel keeps the current policy.",
+      restored: "Policy restored from version {{version}}",
+      modeOpen: "Current mode: allow all traffic",
+      modeRules: "Current mode: only allow what rules permit",
+    },
+    compiledDialog: {
+      hint: "The ACL EasyTier actually receives for one device, after the policy is translated in both directions.",
+    },
     json: {
+      toggle: "Edit as JSON",
+      backToRules: "Back to rules",
+      hint: "Advanced view of the same policy. Validation and saving behave exactly like the form.",
       validate: "Validate",
       save: "Save",
       valid: "Policy is valid",
@@ -902,8 +1040,7 @@ export const enTranslation = {
       "Delete {{name}}? Invites, devices and config history go with it.",
     deleted: "Network deleted",
     saved: "Network saved",
-    invitesHint:
-      "Links that let new devices join. Create one with Add device.",
+    invitesHint: "Links that let new devices join. Create one with Add device.",
     inviteUses: "{{used}} of {{max}} used",
     inviteExpires: "expires {{when}}",
   },
@@ -912,20 +1049,25 @@ export const enTranslation = {
   },
   policy: {
     title: "Policy",
-    description: "Tailscale-style access policy, compiled into EasyTier ACL chains per device.",
+    description:
+      "Tailscale-style access policy, compiled into EasyTier ACL chains per device.",
     honestNote:
       "Enforcement is destination-side (EasyTier inbound chain, default drop). EasyTier keeps no outbound connection tracking, so the outbound chain is default-allow and only carries explicit deny rules; a default-deny egress chain would also drop server responses.",
     activeVersion: "Active version {{version}}",
     noPolicy: "No policy — traffic is unrestricted",
     cardHint: "Tags, groups and ACL statements",
-    cardActive: "The compiled ACL is part of every device revision and is pushed on change.",
-    cardInactive: "Without a policy EasyTier's ACL filter is disabled and all traffic is allowed.",
+    cardActive:
+      "The compiled ACL is part of every device revision and is pushed on change.",
+    cardInactive:
+      "Without a policy EasyTier's ACL filter is disabled and all traffic is allowed.",
     editor: "Policy document",
-    editorHint: "Form editing or paste HuJSON; saving creates a new version and a revision per device.",
+    editorHint:
+      "Form editing or paste HuJSON; saving creates a new version and a revision per device.",
     formMode: "Form",
     jsonMode: "JSON / HuJSON",
     jsonHint: "Comments and trailing commas are allowed.",
-    jsonParseError: "The JSON editor does not parse yet; fix it or save it as text.",
+    jsonParseError:
+      "The JSON editor does not parse yet; fix it or save it as text.",
     tags: "Tags",
     addTag: "Add tag",
     strictTags: "Strict tags",
@@ -946,10 +1088,12 @@ export const enTranslation = {
     valid: "Policy is valid",
     saved: "Policy saved and pushed",
     versions: "Versions",
-    versionsHint: "Append-only policy history; every config revision names the version it was compiled with.",
+    versionsHint:
+      "Append-only policy history; every config revision names the version it was compiled with.",
     statements: "Statements",
     test: "Test reachability",
-    testHint: "Can A reach B on port P? Evaluated with the same matcher the compiler targets.",
+    testHint:
+      "Can A reach B on port P? Evaluated with the same matcher the compiler targets.",
     testSavedHint:
       "This preview runs against the document currently in the editor (saved or not). Devices must be approved.",
     port: "Port",
@@ -971,7 +1115,8 @@ export const enTranslation = {
   },
   magicDns: {
     title: "MagicDNS",
-    description: "Names for devices in this network and what the clients resolve.",
+    description:
+      "Names for devices in this network and what the clients resolve.",
     enabled: "Enabled for this network",
     zone: "Zone",
     on: "On",
@@ -987,7 +1132,8 @@ export const enTranslation = {
     honestNote:
       "Names are unique per network and enforced by the API and a database index. The list shows the control plane's view; EasyTier clients build their DNS records from peer hostnames.",
     renameTitle: "Rename device",
-    renameDescription: "The DNS name is device identity; it is pushed as the EasyTier hostname.",
+    renameDescription:
+      "The DNS name is device identity; it is pushed as the EasyTier hostname.",
     label: "DNS name",
   },
   rendezvous: {
@@ -1006,7 +1152,8 @@ export const enTranslation = {
     nodeNetwork: "Node network name",
     secretMatch: "Network secret",
     secretMatches: "Matches the node — devices can use private mode",
-    secretDiffers: "Does not match the node — the node will refuse this network",
+    secretDiffers:
+      "Does not match the node — the node will refuse this network",
     secretUnknown:
       "Cannot be checked (EASYPLANE_RENDEZVOUS_SECRET is not set on the panel)",
     explainRendezvous:
@@ -1027,7 +1174,8 @@ export const enTranslation = {
     noDialTarget:
       "No dial target: this network has no hub, no external peer URL and does not use the bundled rendezvous node. Devices can only reach each other on the same LAN or when they already know each other's addresses.",
     p2pOnly: "p2p_only (advanced)",
-    p2pOnlyHint: "Send data only to peers with a direct connection, never through a relay.",
+    p2pOnlyHint:
+      "Send data only to peers with a direct connection, never through a relay.",
     p2pOnlyWarning:
       "With p2p_only, a device behind a symmetric NAT or CGNAT cannot exchange data at all, even when the rendezvous node relays. Use it only when every device can hole-punch.",
     confirmTitle: "Use the bundled rendezvous node?",
@@ -1040,7 +1188,8 @@ export const enTranslation = {
   routes: {
     title: "Subnet and exit-node routes",
     deviceTitle: "Routes",
-    description: "Requests stay pending until an admin approves them; only approved routes are pushed.",
+    description:
+      "Requests stay pending until an admin approves them; only approved routes are pushed.",
     empty: "No route requests yet. Request one from a device page.",
     kind: "Kind",
     cidr: "CIDR",
@@ -1058,7 +1207,8 @@ export const enTranslation = {
       "A route a device advertises in its own persisted config appears here as a proposal. Approving it distributes it to devices that accept subnet routes; the device keeps advertising it either way.",
     exitNodeConsent:
       "Approving an exit node records consent only: the client still needs an OS route and exit_nodes to send traffic through it.",
-    requestHint: "Members can request routes for a device; admins approve or reject them.",
+    requestHint:
+      "Members can request routes for a device; admins approve or reject them.",
     viewerHint: "Open a device page to request a route.",
     requested: "Route requested",
     decided: "Route updated",
@@ -1074,7 +1224,8 @@ export const enTranslation = {
     exitNodeSeen: "Exit node",
     reportTitle: "Route report from the client",
     unapproved: "Unapproved",
-    noReportYet: "No report collected yet. It arrives with the next reconcile tick.",
+    noReportYet:
+      "No report collected yet. It arrives with the next reconcile tick.",
     deviceHint:
       "Networks this device shares with the mesh. Only approved routes are sent.",
     deviceEmpty: "This device does not share any routes yet.",
@@ -1089,7 +1240,8 @@ export const enTranslation = {
   },
   audit: {
     title: "Audit log",
-    description: "Approvals, invites, config changes and sign-ins. Secrets are never logged.",
+    description:
+      "Approvals, invites, config changes and sign-ins. Secrets are never logged.",
     action: "Action",
     actor: "Actor",
     target: "Target",
@@ -1103,11 +1255,13 @@ export const enTranslation = {
       reconnecting: "Reconnecting…",
       offline: "Offline",
     },
-    liveHint: "The panel subscribes to server events; approvals, status and config changes appear without a refresh.",
+    liveHint:
+      "The panel subscribes to server events; approvals, status and config changes appear without a refresh.",
   },
   topology: {
     title: "Topology",
-    description: "Live connectivity map: direct peer links, relayed paths and the node that relays them.",
+    description:
+      "Live connectivity map: direct peer links, relayed paths and the node that relays them.",
     noNetworks: "No networks yet; create one to inspect its topology.",
     managed: "Managed",
     unmanaged: "Unmanaged",
@@ -1151,10 +1305,13 @@ export const enTranslation = {
     nodeState: "{{name}}, {{state}}",
     openDevice: "Open device",
     noProbeYet: "No probe data yet.",
-    collectedAt: "Collected {{time}} · every {{interval}}s while this map is open",
+    collectedAt:
+      "Collected {{time}} · every {{interval}}s while this map is open",
     stale: "stale",
-    empty: "No devices report topology yet. Approve a device and wait for its next probe.",
-    partial: "{{count}} device probe(s) failed in the last cycle; the map may be incomplete.",
+    empty:
+      "No devices report topology yet. Approve a device and wait for its next probe.",
+    partial:
+      "{{count}} device probe(s) failed in the last cycle; the map may be incomplete.",
     noReachableTitle: "No node is directly reachable from the internet",
     noReachableHint:
       "NAT traversal between two devices behind NAT can fail without hole punching. Add a node with a public address (a public server, or a host with a static or port-forwarded mapping) so peers can relay through it.",
@@ -1162,7 +1319,8 @@ export const enTranslation = {
       "No node reports an open or static NAT, but {{count}} node(s) are relay-capable because peers already route through them. EasyTier relays through any peer both sides can reach, so this works while those paths stay up.",
     honestNote:
       "Direct vs relayed and the relay node come from the client's own Route{cost, next_hop_peer_id}. The protocol on a relayed edge is the first hop's tunnel. NAT type and public addresses come from the client's STUN report.",
-    asymmetric: "The two sides disagree: one reports a direct connection, the other a relayed path.",
+    asymmetric:
+      "The two sides disagree: one reports a direct connection, the other a relayed path.",
     evidence: "Per-observer evidence",
     observedBy: "Observed by",
   },

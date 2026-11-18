@@ -37,7 +37,10 @@ type QueueItem = {
   ruleIndex?: number
 }
 
-function mapSaveError(message: string): { field?: keyof RuleFieldErrors; general?: string } {
+function mapSaveError(message: string): {
+  field?: keyof RuleFieldErrors
+  general?: string
+} {
   const lower = message.toLowerCase()
   if (/burst/.test(lower)) return { field: "burst" }
   if (/source\s*port/.test(lower)) return { field: "sourcePorts" }
@@ -88,21 +91,33 @@ export function useAccessPolicy(networkId: string) {
   const runningRef = useRef(false)
   const timerRef = useRef<number | null>(null)
   const latestRef = useRef<QueueItem | null>(null)
+  // Delayed callbacks (the undo toast) must see the document as it is now,
+  // not the one captured when the deletion was rendered.
+  const documentRef = useRef<AccessDocument>(document)
+  useEffect(() => {
+    documentRef.current = document
+  }, [document])
 
   const version = policyQuery.data?.data?.version ?? 0
 
   const refresh = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: getGetNetworkPolicyQueryKey(networkId) }),
+      queryClient.invalidateQueries({
+        queryKey: getGetNetworkPolicyQueryKey(networkId),
+      }),
       queryClient.invalidateQueries({
         queryKey: getListNetworkPolicyVersionsQueryKey(networkId),
       }),
       queryClient.invalidateQueries({
         queryKey: getGetPolicySubjectsQueryKey(networkId),
       }),
-      queryClient.invalidateQueries({ queryKey: getGetNetworkQueryKey(networkId) }),
+      queryClient.invalidateQueries({
+        queryKey: getGetNetworkQueryKey(networkId),
+      }),
       queryClient.invalidateQueries({ queryKey: getListDevicesQueryKey() }),
-      queryClient.invalidateQueries({ queryKey: getListNetworkRoutesQueryKey(networkId) }),
+      queryClient.invalidateQueries({
+        queryKey: getListNetworkRoutesQueryKey(networkId),
+      }),
       queryClient.invalidateQueries({ queryKey: getListTagsQueryKey() }),
       queryClient.invalidateQueries({ queryKey: getListUserGroupsQueryKey() }),
     ])
@@ -157,10 +172,18 @@ export function useAccessPolicy(networkId: string) {
     setSaving(false)
   }
 
-  const submit = (next: AccessDocument, modeOverride: AccessMode, ruleIndex?: number) => {
+  const submit = (
+    next: AccessDocument,
+    modeOverride: AccessMode,
+    ruleIndex?: number
+  ) => {
     const payload = { ...next, mode: modeOverride }
     setDocument(payload)
-    queueRef.current = { document: payload, mode: modeOverride, ...(ruleIndex !== undefined ? { ruleIndex } : {}) }
+    queueRef.current = {
+      document: payload,
+      mode: modeOverride,
+      ...(ruleIndex !== undefined ? { ruleIndex } : {}),
+    }
     void runQueue()
   }
 
@@ -185,7 +208,11 @@ export function useAccessPolicy(networkId: string) {
       submit(payload, modeOverride, ruleIndex)
       return
     }
-    latestRef.current = { document: payload, mode: modeOverride, ...(ruleIndex !== undefined ? { ruleIndex } : {}) }
+    latestRef.current = {
+      document: payload,
+      mode: modeOverride,
+      ...(ruleIndex !== undefined ? { ruleIndex } : {}),
+    }
     clearTimer()
     timerRef.current = window.setTimeout(() => {
       timerRef.current = null
@@ -203,9 +230,7 @@ export function useAccessPolicy(networkId: string) {
     if (data.version !== lastVersionRef.current) {
       lastVersionRef.current = data.version
       setDocument(
-        normalizeAccessDocument(
-          data.document ?? emptyAccessDocument(data.mode)
-        )
+        normalizeAccessDocument(data.document ?? emptyAccessDocument(data.mode))
       )
       setRuleErrors({})
     }
@@ -224,8 +249,7 @@ export function useAccessPolicy(networkId: string) {
     const target = nextRules[index]
     if (!target) return
     const next = { ...document, rules: nextRules }
-    const debounce =
-      "name" in patch || "rateLimit" in patch || "burst" in patch
+    const debounce = "name" in patch || "rateLimit" in patch || "burst" in patch
     if (!ruleIsSavable(target)) {
       setDocument({ ...next, mode })
       setGeneralError(undefined)
@@ -246,18 +270,27 @@ export function useAccessPolicy(networkId: string) {
     schedule(next, mode, index, false)
   }
 
-  const addRule = () => {
+  const addRule = (rule: AccessRule = defaultAccessRule()) => {
     const base =
       version === 0 && document.rules.length === 0
         ? emptyAccessDocument("rules")
         : document
+    const targetMode: "open" | "rules" = mode === "open" ? "open" : "rules"
     const next = {
       ...base,
-      mode: "rules" as const,
-      rules: [...base.rules, defaultAccessRule()],
+      mode: targetMode,
+      rules: [...base.rules, rule],
     }
-    setMode("rules")
-    schedule(next, "rules", next.rules.length - 1, false)
+    setMode(targetMode)
+    schedule(next, targetMode, next.rules.length - 1, false)
+  }
+
+  const insertRule = (index: number, rule: AccessRule) => {
+    const current = documentRef.current
+    const rules = [...current.rules]
+    const target = Math.min(Math.max(index, 0), rules.length)
+    rules.splice(target, 0, rule)
+    schedule({ ...current, rules }, mode, undefined, false)
   }
 
   const deleteRule = (index: number) => {
@@ -292,7 +325,9 @@ export function useAccessPolicy(networkId: string) {
       to: [...source.to],
       ports: [...source.ports],
       sourcePorts: [...source.sourcePorts],
-      ...(source.name ? { name: uniqueRuleName(document.rules, `${source.name} copy`) } : {}),
+      ...(source.name
+        ? { name: uniqueRuleName(document.rules, `${source.name} copy`) }
+        : {}),
     }
     const rules = [...document.rules]
     rules.splice(index + 1, 0, copy)
@@ -365,6 +400,7 @@ export function useAccessPolicy(networkId: string) {
     updateRule,
     saveWholeRule,
     addRule,
+    insertRule,
     deleteRule,
     moveRule,
     reorderRule,
