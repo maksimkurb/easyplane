@@ -7,6 +7,7 @@ import { AppShell } from "@/components/layout/app-shell"
 import { AuditPage } from "@/pages/audit-page"
 import { DeviceDetailPage } from "@/pages/device-detail-page"
 import { DevicesPage } from "@/pages/devices-page"
+import { LegacyTopologyRedirect } from "@/pages/legacy-topology-redirect"
 import { NetworkAccessPage } from "@/pages/network-access-page"
 import { NetworkDevicesPage } from "@/pages/network-devices-page"
 import { NetworkImportPage } from "@/pages/network-import-page"
@@ -21,14 +22,13 @@ const NetworkMapPage = lazy(() =>
     default: module.NetworkMapPage,
   }))
 )
-const TopologyPage = lazy(() =>
-  import("@/pages/topology-page").then((module) => ({ default: module.TopologyPage }))
-)
 
 function App() {
   return (
     <AppShell>
-      <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">…</div>}>
+      <Suspense
+        fallback={<div className="p-6 text-sm text-muted-foreground">…</div>}
+      >
         <Switch>
           <Route path="/">
             <Redirect to="/networks" />
@@ -45,12 +45,14 @@ function App() {
             {(params) => <NetworkSettingsPage networkId={params.id ?? ""} />}
           </Route>
           <Route path="/networks/:id/policy">
-            {(params) => <Redirect to={`/networks/${params.id ?? ""}/access`} />}
+            {(params) => (
+              <Redirect to={`/networks/${params.id ?? ""}/access`} />
+            )}
           </Route>
           <Route path="/networks/:id">
             {(params) => <NetworkDevicesPage networkId={params.id ?? ""} />}
           </Route>
-          <Route path="/topology" component={TopologyPage} />
+          <Route component={LegacyTopologyRedirect} path="/topology" />
           <Route path="/devices">
             <DevicesPage />
           </Route>

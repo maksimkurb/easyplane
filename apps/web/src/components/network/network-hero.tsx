@@ -1,8 +1,16 @@
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link } from "wouter"
-import { HistoryIcon, MoreHorizontalIcon, PlusIcon, SettingsIcon } from "lucide-react"
+import { Link, useLocation } from "wouter"
+import {
+  DownloadIcon,
+  FileUpIcon,
+  MoreHorizontalIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react"
 import { toast } from "sonner"
 
+import { exportNetworkConfig } from "@/api/generated/easyplane"
 import type { GetNetwork200 } from "@/api/generated/model"
 import { useAuth } from "@/auth/auth-context"
 import { CopyInline } from "@/components/shared/copy-inline"
@@ -15,13 +23,30 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { downloadTextFile } from "@/lib/download"
 
 export type NetworkTab = "devices" | "map" | "access" | "settings"
 
-const TABS: { id: NetworkTab; labelKey: string; path: (id: string) => string }[] = [
-  { id: "devices", labelKey: "network.tabs.devices", path: (id) => `/networks/${id}` },
-  { id: "map", labelKey: "network.tabs.map", path: (id) => `/networks/${id}/map` },
-  { id: "access", labelKey: "network.tabs.access", path: (id) => `/networks/${id}/access` },
+const TABS: {
+  id: NetworkTab
+  labelKey: string
+  path: (id: string) => string
+}[] = [
+  {
+    id: "devices",
+    labelKey: "network.tabs.devices",
+    path: (id) => `/networks/${id}`,
+  },
+  {
+    id: "map",
+    labelKey: "network.tabs.map",
+    path: (id) => `/networks/${id}/map`,
+  },
+  {
+    id: "access",
+    labelKey: "network.tabs.access",
+    path: (id) => `/networks/${id}/access`,
+  },
   {
     id: "settings",
     labelKey: "network.tabs.settings",
@@ -53,6 +78,43 @@ export function NetworkHero({
 }) {
   const { t } = useTranslation()
   const { canManage, isAdmin } = useAuth()
+  const [, navigate] = useLocation()
+  const [exporting, setExporting] = useState(false)
+
+  const copy = (value: string, message: string) => {
+    void navigator.clipboard
+      .writeText(value)
+      .then(() => toast.success(message))
+      .catch(() => toast.error(t("common.copyFailed")))
+  }
+
+  const exportConfig = async () => {
+    setExporting(true)
+    try {
+      const response = await exportNetworkConfig(network.id, { format: "toml" })
+      downloadTextFile(
+        `${network.networkName}.toml`,
+        response.data.content,
+        "application/toml;charset=utf-8"
+      )
+      toast.success(t("networks.actions.exported"))
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("networks.actions.exportFailed")
+      )
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const openDangerZone = () => {
+    navigate(`/networks/${network.id}/settings?danger=1`)
+    window.setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
+    }, 150)
+  }
 
   return (
     <section className="border-b border-line bg-card">
@@ -70,7 +132,9 @@ export function NetworkHero({
                 label={t("network.copyName", { name: network.networkName })}
                 value={network.networkName}
               />
-              <span className="font-mono text-xs whitespace-nowrap">{network.ipv4Cidr}</span>
+              <span className="font-mono text-xs whitespace-nowrap">
+                {network.ipv4Cidr}
+              </span>
               <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                 <Dot online={online > 0} />
                 {t("networks.onlineOf", { online, total })}
@@ -94,52 +158,47 @@ export function NetworkHero({
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem
-                  onClick={() => {
-                    void navigator.clipboard
-                      .writeText(network.networkName)
-                      .then(() => toast.success(t("network.nameCopied")))
-                      .catch(() => undefined)
-                  }}
+                  onClick={() =>
+                    copy(network.networkName, t("network.nameCopied"))
+                  }
                 >
                   {t("network.copyNameAction")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
-                    void navigator.clipboard
-                      .writeText(network.ipv4Cidr)
-                      .then(() => toast.success(t("network.cidrCopied")))
-                      .catch(() => undefined)
+                    copy(network.ipv4Cidr, t("network.cidrCopied"))
                   }
                 >
                   {t("network.copyCidr")}
                 </DropdownMenuItem>
-                <DropdownMenuItem render={<Link href={`/networks/${network.id}`} />}>
-                  {t("network.tabs.devices")}
-                </DropdownMenuItem>
-                <DropdownMenuItem render={<Link href={`/networks/${network.id}/map`} />}>
-                  {t("network.tabs.map")}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  render={<Link href={`/networks/${network.id}/access`} />}
-                >
-                  {t("network.tabs.access")}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  render={<Link href={`/networks/${network.id}/settings`} />}
-                >
-                  <SettingsIcon />
-                  {t("network.tabs.settings")}
-                </DropdownMenuItem>
                 {isAdmin ? (
-                  <DropdownMenuItem render={<Link href="/audit" />}>
-                    <HistoryIcon />
-                    {t("nav.items.audit")}
-                  </DropdownMenuItem>
+                  <>
+                    <MenuSeparator />
+                    <DropdownMenuItem
+                      disabled={exporting}
+                      onClick={() => void exportConfig()}
+                    >
+                      <DownloadIcon />
+                      {t("networks.actions.export")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem render={<Link href="/networks/import" />}>
+                      <FileUpIcon />
+                      {t("networks.actions.import")}
+                    </DropdownMenuItem>
+                    <MenuSeparator />
+                    <DropdownMenuItem destructive onClick={openDangerZone}>
+                      <Trash2Icon />
+                      {t("networks.actions.delete")}
+                    </DropdownMenuItem>
+                  </>
                 ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
             {canManage ? (
-              <Button className="flex-1 justify-center sm:flex-none" onClick={onAddDevice}>
+              <Button
+                className="flex-1 justify-center sm:flex-none"
+                onClick={onAddDevice}
+              >
                 <PlusIcon className="size-4" />
                 {t("network.addDevice")}
               </Button>
@@ -149,14 +208,14 @@ export function NetworkHero({
 
         <nav
           aria-label={t("network.tabs.label")}
-          className="-mx-4 mt-4 flex gap-1 overflow-x-auto px-4 sm:mx-0 sm:mt-5 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="-mx-4 mt-4 flex [scrollbar-width:none] gap-1 overflow-x-auto px-4 sm:mx-0 sm:mt-5 sm:px-0 [&::-webkit-scrollbar]:hidden"
         >
           {TABS.map((tab) => {
             const current = tab.id === active
             return (
               <Link
                 aria-current={current ? "page" : undefined}
-                className={`flex h-11 flex-none items-center gap-1.5 border-b-2 px-2 font-medium whitespace-nowrap sm:gap-2 sm:px-3 transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none ${
+                className={`flex h-11 flex-none items-center gap-1.5 border-b-2 px-2 font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none sm:gap-2 sm:px-3 ${
                   current
                     ? "border-foreground text-foreground"
                     : "border-transparent text-fg-3 hover:text-foreground"
@@ -167,7 +226,9 @@ export function NetworkHero({
                 {t(tab.labelKey)}
                 {tab.id === "devices" ? (
                   waiting > 0 ? (
-                    <Chip variant="warn">{t("network.waiting", { count: waiting })}</Chip>
+                    <Chip variant="warn">
+                      {t("network.waiting", { count: waiting })}
+                    </Chip>
                   ) : (
                     <span className="inline-grid h-5 min-w-5 place-items-center rounded-[10px] bg-surface-2 px-1.5 text-xs font-medium text-fg-2">
                       {deviceCount}
@@ -181,4 +242,8 @@ export function NetworkHero({
       </PageContainer>
     </section>
   )
+}
+
+function MenuSeparator() {
+  return <div aria-hidden="true" className="-mx-1.5 my-1.5 h-px bg-line" />
 }
