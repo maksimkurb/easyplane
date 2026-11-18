@@ -1,13 +1,27 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "wouter"
-import { ChevronRightIcon, FileUpIcon, NetworkIcon, PlusIcon } from "lucide-react"
+import {
+  ChevronRightIcon,
+  FileUpIcon,
+  NetworkIcon,
+  PlusIcon,
+} from "lucide-react"
 import { toast } from "sonner"
 
-import { useCreateNetwork, useListDevices, useListNetworks } from "@/api/generated/easyplane"
+import {
+  useCreateNetwork,
+  useListDevices,
+  useListNetworks,
+} from "@/api/generated/easyplane"
 import { useAuth } from "@/auth/auth-context"
 import { PageContainer } from "@/components/layout/page-container"
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/shared/field"
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/shared/field"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { LinkButton } from "@/components/shared/link-button"
@@ -22,6 +36,7 @@ import {
 } from "@/components/ui/dialog"
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -29,6 +44,7 @@ import {
 } from "@/components/ui/empty"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { deviceHasIssue } from "@/lib/device-presentation"
 
 export function NetworksPage() {
   const { t } = useTranslation()
@@ -53,14 +69,31 @@ export function NetworksPage() {
   })
 
   const networks = networksQuery.data?.data ?? []
-  const devices = useMemo(() => devicesQuery.data?.data ?? [], [devicesQuery.data])
-  const onlineByNetwork = useMemo(() => {
-    const counts = new Map<string, number>()
+  const devices = useMemo(
+    () => devicesQuery.data?.data ?? [],
+    [devicesQuery.data]
+  )
+  const statsByNetwork = useMemo(() => {
+    const stats = new Map<
+      string,
+      { online: number; total: number; pending: number; issues: number }
+    >()
     for (const device of devices) {
-      if (device.online !== "online") continue
-      counts.set(device.networkId, (counts.get(device.networkId) ?? 0) + 1)
+      const entry = stats.get(device.networkId) ?? {
+        online: 0,
+        total: 0,
+        pending: 0,
+        issues: 0,
+      }
+      if (device.state === "pending") entry.pending += 1
+      if (device.state === "approved") {
+        entry.total += 1
+        if (device.online === "online") entry.online += 1
+      }
+      if (deviceHasIssue(device)) entry.issues += 1
+      stats.set(device.networkId, entry)
     }
-    return counts
+    return stats
   }, [devices])
 
   return (
@@ -75,8 +108,8 @@ export function NetworksPage() {
           </h1>
           <p className="mt-0.5 text-sm text-fg-3">
             {t("networks.summary", {
-              networks: networks.length,
-              devices: devices.length,
+              networks: t("networks.count", { count: networks.length }),
+              devices: t("networks.deviceCount", { count: devices.length }),
             })}
           </p>
         </div>
@@ -115,9 +148,17 @@ export function NetworksPage() {
               <EmptyMedia variant="icon">
                 <NetworkIcon />
               </EmptyMedia>
-              <EmptyTitle>{t("networks.title")}</EmptyTitle>
+              <EmptyTitle>{t("networks.emptyTitle")}</EmptyTitle>
               <EmptyDescription>{t("networks.empty")}</EmptyDescription>
             </EmptyHeader>
+            {isAdmin ? (
+              <EmptyContent>
+                <Button onClick={() => setOpen(true)}>
+                  <PlusIcon className="size-4" />
+                  {t("networks.createFirst")}
+                </Button>
+              </EmptyContent>
+            ) : null}
           </Empty>
         ) : (
           <div className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-line">
@@ -132,9 +173,26 @@ export function NetworksPage() {
             </div>
             <ul className="divide-y divide-line">
               {networks.map((network) => {
-                const online = onlineByNetwork.get(network.id) ?? 0
-                const total = network.deviceCounts.approved
-                const waiting = network.deviceCounts.pending
+                const stats = statsByNetwork.get(network.id)
+                const total = stats?.total ?? network.deviceCounts.approved
+                const online = stats?.online ?? 0
+                const waiting = stats?.pending ?? network.deviceCounts.pending
+                const issues = stats?.issues ?? 0
+                const offline = Math.max(total - online, 0)
+                const hint =
+                  waiting > 0 ? (
+                    <Chip variant="warn">
+                      {t("networks.waitingCount", { count: waiting })}
+                    </Chip>
+                  ) : issues > 0 ? (
+                    <span className="text-xs font-medium whitespace-nowrap text-warn">
+                      {t("networks.needAttention", { count: issues })}
+                    </span>
+                  ) : offline > 0 ? (
+                    <span className="text-xs whitespace-nowrap text-fg-3">
+                      {t("networks.offlineCount", { count: offline })}
+                    </span>
+                  ) : null
                 return (
                   <li key={network.id}>
                     <Link
@@ -147,9 +205,14 @@ export function NetworksPage() {
                         </span>
                         <div className="min-w-0">
                           <div className="flex min-w-0 items-center gap-2">
-                            <span className="truncate font-semibold">{network.name}</span>
+                            <span className="truncate font-semibold">
+                              {network.name}
+                            </span>
                           </div>
-                          <div className="mt-0.5 flex min-w-0 items-center gap-2 text-xs text-fg-3">
+                          <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-3">
+                            <span className="truncate font-mono md:hidden">
+                              {network.ipv4Cidr}
+                            </span>
                             <span className="hidden truncate font-mono md:inline">
                               {network.networkName}
                             </span>
@@ -157,6 +220,9 @@ export function NetworksPage() {
                               <Dot online={online > 0} />
                               {t("networks.onlineOf", { online, total })}
                             </span>
+                            {hint ? (
+                              <span className="flex md:hidden">{hint}</span>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -168,11 +234,7 @@ export function NetworksPage() {
                           <Dot online={online > 0} />
                           {t("networks.onlineOf", { online, total })}
                         </span>
-                        {waiting > 0 ? (
-                          <Chip variant="warn">
-                            {t("networks.waitingCount", { count: waiting })}
-                          </Chip>
-                        ) : null}
+                        <span className="hidden md:inline-flex">{hint}</span>
                       </div>
                       <span className="flex justify-end text-fg-3">
                         <ChevronRightIcon className="size-4" />
@@ -200,7 +262,9 @@ export function NetworksPage() {
             </DialogHeader>
             <FieldGroup className="gap-4 py-4">
               <Field className="gap-2">
-                <FieldLabel htmlFor="network-name">{t("networks.name")}</FieldLabel>
+                <FieldLabel htmlFor="network-name">
+                  {t("networks.name")}
+                </FieldLabel>
                 <Input
                   autoFocus
                   id="network-name"
@@ -210,7 +274,9 @@ export function NetworksPage() {
                 />
               </Field>
               <Field className="gap-2">
-                <FieldLabel htmlFor="network-cidr">{t("networks.cidr")}</FieldLabel>
+                <FieldLabel htmlFor="network-cidr">
+                  {t("networks.cidr")}
+                </FieldLabel>
                 <Input
                   className="font-mono"
                   id="network-cidr"
@@ -221,15 +287,23 @@ export function NetworksPage() {
                 <FieldDescription>{t("networks.cidrHint")}</FieldDescription>
               </Field>
               <Alert>
-                <AlertDescription>{t("access.createDefaultHint")}</AlertDescription>
+                <AlertDescription>
+                  {t("access.createDefaultHint")}
+                </AlertDescription>
               </Alert>
             </FieldGroup>
             <DialogFooter>
-              <Button onClick={() => setOpen(false)} type="button" variant="outline">
+              <Button
+                onClick={() => setOpen(false)}
+                type="button"
+                variant="outline"
+              >
                 {t("common.cancel")}
               </Button>
               <Button disabled={createNetwork.isPending || !name} type="submit">
-                {createNetwork.isPending ? t("common.loading") : t("common.create")}
+                {createNetwork.isPending
+                  ? t("common.loading")
+                  : t("common.create")}
               </Button>
             </DialogFooter>
           </form>
