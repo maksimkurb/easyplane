@@ -1,7 +1,13 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useQueryClient } from "@tanstack/react-query"
-import { HistoryIcon, PlusIcon, RotateCcwIcon } from "lucide-react"
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  HistoryIcon,
+  PlusIcon,
+  RotateCcwIcon,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -11,7 +17,10 @@ import {
   useCreateDeviceRevision,
   useRollbackDeviceRevision,
 } from "@/api/generated/easyplane"
-import type { GetDevice200, ListDeviceRevisions200Item } from "@/api/generated/model"
+import type {
+  GetDevice200,
+  ListDeviceRevisions200Item,
+} from "@/api/generated/model"
 import { useAuth } from "@/auth/auth-context"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -25,12 +34,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { formatRelativeTime } from "@/lib/format"
+import { formatDateTime, formatRelativeTime } from "@/lib/format"
+
+const INITIAL_REVISIONS = 5
 
 /**
- * Revision history. Each save is a revision; the push status is derived from
- * the device's desired/applied revisions, so the "Running" chip always means
- * "this is what the client reported applying".
+ * Revision history. Each saved config is a revision; the chip only marks the
+ * two that matter operationally (the one the device runs and the one queued for
+ * the next push). Older rows are a quiet log a beginner can ignore.
  */
 export function DeviceHistoryCard({
   device,
@@ -43,18 +54,26 @@ export function DeviceHistoryCard({
   const { canManage } = useAuth()
   const queryClient = useQueryClient()
   const [newOpen, setNewOpen] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const latest = revisions[0]
+  const shown = expanded ? revisions : revisions.slice(0, INITIAL_REVISIONS)
 
   const refresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: getGetDeviceQueryKey(device.id) })
-    await queryClient.invalidateQueries({ queryKey: getListDeviceRevisionsQueryKey(device.id) })
+    await queryClient.invalidateQueries({
+      queryKey: getGetDeviceQueryKey(device.id),
+    })
+    await queryClient.invalidateQueries({
+      queryKey: getListDeviceRevisionsQueryKey(device.id),
+    })
     await queryClient.invalidateQueries({ queryKey: getListDevicesQueryKey() })
   }
 
   const rollback = useRollbackDeviceRevision({
     mutation: {
       onSuccess: async (_response, variables) => {
-        toast.success(t("devices.detail.rolledBack", { revision: variables.revision }))
+        toast.success(
+          t("devices.detail.rolledBack", { revision: variables.revision })
+        )
         await refresh()
       },
       onError: (error) =>
@@ -63,13 +82,23 @@ export function DeviceHistoryCard({
   })
 
   const changeLabel = (revision: ListDeviceRevisions200Item) => {
-    if (revision.source === "approval") return t("devices.detail.change.approval")
+    if (revision.source === "approval")
+      return t("device.history.change.approval")
     if (revision.source === "rollback") {
-      return t("devices.detail.change.rollback", {
+      return t("device.history.change.rollback", {
         revision: revision.rollbackOfRevision ?? "?",
       })
     }
-    return revision.note || t("devices.detail.change.manual")
+    const note = revision.note?.trim()
+    if (!note) return t("device.history.change.manual")
+    // The policy compiler used to write raw "policy vN" notes; describe them.
+    const policy = /^policy\b(?:\s*v?(\d+))?/i.exec(note)
+    if (policy) {
+      return policy[1]
+        ? t("device.history.change.policy", { version: policy[1] })
+        : t("device.history.change.policyShort")
+    }
+    return note
   }
 
   return (
@@ -79,17 +108,18 @@ export function DeviceHistoryCard({
           <h2 className="text-base leading-6 font-semibold tracking-[-0.006em]">
             {t("devices.detail.history")}
           </h2>
-          <p className="text-[13px] text-fg-3">{t("devices.detail.historyHint")}</p>
+          <p className="text-[13px] text-fg-3">{t("device.history.hint")}</p>
         </div>
         {canManage && device.state === "approved" ? (
           <Button
             className="max-sm:w-full max-sm:justify-center"
             onClick={() => setNewOpen(true)}
             size="sm"
+            title={t("device.history.newHint")}
             variant="outline"
           >
             <PlusIcon className="size-4" />
-            {t("devices.detail.newRevision")}
+            {t("device.history.new")}
           </Button>
         ) : null}
       </div>
@@ -104,13 +134,13 @@ export function DeviceHistoryCard({
             aria-hidden="true"
             className="hidden h-10 grid-cols-[56px_minmax(0,1fr)_minmax(120px,160px)_110px_120px] items-center gap-4 border-t border-line px-5 text-xs font-medium text-fg-3 md:grid"
           >
-            <span>#</span>
-            <span>{t("devices.detail.change.label")}</span>
+            <span>{t("device.history.revision")}</span>
+            <span>{t("device.history.changeLabel")}</span>
             <span>{t("devices.detail.createdBy")}</span>
             <span>{t("audit.when")}</span>
             <span />
           </div>
-          {revisions.map((revision) => {
+          {shown.map((revision) => {
             const running = device.appliedRevision === revision.revision
             const notApplied =
               !running &&
@@ -123,8 +153,13 @@ export function DeviceHistoryCard({
               >
                 <span className="font-medium">{revision.revision}</span>
                 <div className="min-w-0">
-                  <p className="text-[13px] break-words">{changeLabel(revision)}</p>
-                  <p className="text-xs break-words text-fg-3 md:hidden">
+                  <p className="text-[13px] break-words">
+                    {changeLabel(revision)}
+                  </p>
+                  <p
+                    className="text-xs break-words text-fg-3 md:hidden"
+                    title={formatDateTime(revision.createdAt, i18n.language)}
+                  >
                     {revision.createdByEmail ?? t("devices.detail.system")}
                     {" · "}
                     {formatRelativeTime(revision.createdAt, i18n.language)}
@@ -133,7 +168,10 @@ export function DeviceHistoryCard({
                 <span className="hidden truncate text-[13px] text-fg-2 md:block">
                   {revision.createdByEmail ?? t("devices.detail.system")}
                 </span>
-                <span className="hidden text-[13px] whitespace-nowrap text-fg-3 md:block">
+                <span
+                  className="hidden text-[13px] whitespace-nowrap text-fg-3 md:block"
+                  title={formatDateTime(revision.createdAt, i18n.language)}
+                >
                   {formatRelativeTime(revision.createdAt, i18n.language)}
                 </span>
                 <span className="flex justify-end">
@@ -143,21 +181,14 @@ export function DeviceHistoryCard({
                     <Chip variant="warn">{t("devices.detail.notApplied")}</Chip>
                   ) : canManage ? (
                     <Button
+                      className="text-fg-3 hover:text-foreground"
                       disabled={rollback.isPending}
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            t("devices.detail.rollbackConfirm", {
-                              revision: revision.revision,
-                            })
-                          )
-                        ) {
-                          rollback.mutate({
-                            deviceId: device.id,
-                            revision: revision.revision,
-                          })
-                        }
-                      }}
+                      onClick={() =>
+                        rollback.mutate({
+                          deviceId: device.id,
+                          revision: revision.revision,
+                        })
+                      }
                       size="sm"
                       variant="ghost"
                     >
@@ -169,6 +200,25 @@ export function DeviceHistoryCard({
               </div>
             )
           })}
+
+          {revisions.length > INITIAL_REVISIONS ? (
+            <div className="border-t border-line px-4 py-2 sm:px-5">
+              <Button
+                onClick={() => setExpanded((value) => !value)}
+                size="sm"
+                variant="ghost"
+              >
+                {expanded ? (
+                  <ChevronUpIcon className="size-4" />
+                ) : (
+                  <ChevronDownIcon className="size-4" />
+                )}
+                {expanded
+                  ? t("device.history.showFewer")
+                  : t("device.history.showAll", { count: revisions.length })}
+              </Button>
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -176,7 +226,7 @@ export function DeviceHistoryCard({
         <details className="border-t border-line px-4 py-2.5 text-xs text-fg-3 sm:px-5">
           <summary className="flex cursor-pointer items-center gap-2">
             <HistoryIcon aria-hidden="true" className="size-3.5" />
-            {t("devices.detail.config")}
+            {t("device.history.technical")}
           </summary>
           <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-surface-2 p-3 text-[11px] whitespace-pre-wrap">
             {JSON.stringify(latest.config, null, 2)}
@@ -250,13 +300,19 @@ function NewRevisionDialog({
           }}
         >
           <DialogHeader>
-            <DialogTitle>{t("devices.detail.newRevision")}</DialogTitle>
-            <DialogDescription>{t("devices.detail.editHint")}</DialogDescription>
+            <DialogTitle>{t("device.history.new")}</DialogTitle>
+            <DialogDescription>{t("device.history.newHint")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-4">
             <label className="flex flex-col gap-1.5">
-              <span className="text-[13px] font-medium">{t("devices.detail.note")}</span>
-              <Input onChange={(event) => setNote(event.target.value)} value={note} />
+              <span className="text-[13px] font-medium">
+                {t("devices.detail.note")}
+              </span>
+              <Input
+                onChange={(event) => setNote(event.target.value)}
+                placeholder={t("device.history.notePlaceholder")}
+                value={note}
+              />
             </label>
             <label className="flex items-center gap-2.5 text-sm">
               <Checkbox
@@ -267,11 +323,17 @@ function NewRevisionDialog({
             </label>
           </div>
           <DialogFooter>
-            <Button onClick={() => onOpenChange(false)} type="button" variant="outline">
+            <Button
+              onClick={() => onOpenChange(false)}
+              type="button"
+              variant="outline"
+            >
               {t("common.cancel")}
             </Button>
             <Button disabled={createRevision.isPending} type="submit">
-              {createRevision.isPending ? t("common.loading") : t("common.save")}
+              {createRevision.isPending
+                ? t("common.loading")
+                : t("common.save")}
             </Button>
           </DialogFooter>
         </form>

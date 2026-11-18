@@ -123,9 +123,22 @@ describe("NetworkDevicesPage", () => {
     const user = userEvent.setup()
     renderWithProviders(<NetworkDevicesPage networkId={NETWORK_ID} />)
 
-    expect(await screen.findByRole("link", { name: "Open nas-01" })).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Open relay-fra" })).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Open laptop-maxim" })).toBeInTheDocument()
+    expect(
+      await screen.findByRole("link", { name: "Open nas-01" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("link", { name: "Open relay-fra" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("link", { name: "Open laptop-maxim" })
+    ).toBeInTheDocument()
+
+    // One derived status per row: the online device is connected, the failing
+    // push is the only attention item, and the offline row is not blamed.
+    expect(screen.getAllByText("Connected").length).toBeGreaterThan(0)
+    expect(screen.getAllByText("Push failed")).toHaveLength(1)
+    expect(screen.queryByText("tag:server")).not.toBeInTheDocument()
+    expect(screen.getByText("server")).toBeInTheDocument()
 
     // Pending devices live in the approvals block, not in the list.
     expect(screen.getByText("Needs your approval")).toBeInTheDocument()
@@ -133,17 +146,38 @@ describe("NetworkDevicesPage", () => {
     const search = screen.getByRole("searchbox", { name: "Search devices" })
     await user.type(search, "relay")
     await waitFor(() =>
-      expect(screen.queryByRole("link", { name: "Open nas-01" })).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole("link", { name: "Open nas-01" })
+      ).not.toBeInTheDocument()
     )
-    expect(screen.getByRole("link", { name: "Open relay-fra" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("link", { name: "Open relay-fra" })
+    ).toBeInTheDocument()
 
     await user.clear(search)
-    await user.click(screen.getByRole("radio", { name: /Issues/ }))
+    await user.click(screen.getByRole("radio", { name: /Needs attention/ }))
     await waitFor(() =>
-      expect(screen.queryByRole("link", { name: "Open nas-01" })).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole("link", { name: "Open nas-01" })
+      ).not.toBeInTheDocument()
     )
-    expect(screen.getByRole("link", { name: "Open relay-fra" })).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Open laptop-maxim" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("link", { name: "Open relay-fra" })
+    ).toBeInTheDocument()
+    // Offline devices are their own filter, not an "issue".
+    expect(
+      screen.queryByRole("link", { name: "Open laptop-maxim" })
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("radio", { name: /Offline/ }))
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("link", { name: "Open relay-fra" })
+      ).not.toBeInTheDocument()
+    )
+    expect(
+      screen.getByRole("link", { name: "Open laptop-maxim" })
+    ).toBeInTheDocument()
 
     await user.click(screen.getByRole("radio", { name: /Online/ }))
     await waitFor(() =>
@@ -151,6 +185,8 @@ describe("NetworkDevicesPage", () => {
         screen.queryByRole("link", { name: "Open laptop-maxim" })
       ).not.toBeInTheDocument()
     )
-    expect(screen.getByRole("link", { name: "Open nas-01" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("link", { name: "Open nas-01" })
+    ).toBeInTheDocument()
   })
 })

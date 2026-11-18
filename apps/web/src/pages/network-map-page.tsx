@@ -6,6 +6,7 @@ import {
   InfoIcon,
   RadioTowerIcon,
   RefreshCwIcon,
+  ServerIcon,
   XIcon,
 } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
@@ -14,14 +15,23 @@ import {
   getGetNetworkTopologyQueryKey,
   getNetworkTopology,
   useGetNetworkTopology,
+  useListNetworkRoutes,
 } from "@/api/generated/easyplane"
 import type {
   GetNetworkTopology200LinksItem as TopologyLink,
   GetNetworkTopology200NodesItem as TopologyNode,
+  ListDevices200Item,
 } from "@/api/generated/model"
-import { NetworkShell, type NetworkShellData } from "@/components/network/network-shell"
+import {
+  NetworkShell,
+  type NetworkShellData,
+} from "@/components/network/network-shell"
+import { DeviceIcon } from "@/components/device/device-icon"
+import { DeviceStatusCell } from "@/components/device/device-status-cell"
+import { LiveStatus } from "@/components/live-status"
 import { CompactTopologyMap } from "@/components/topology/compact-topology-map"
 import { TopologyMap } from "@/components/topology/topology-map"
+import { RouteLoadError } from "@/components/routes/route-load-error"
 import { Button } from "@/components/ui/button"
 import { LinkButton } from "@/components/shared/link-button"
 import { Chip } from "@/components/ui/chip"
@@ -39,8 +49,15 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { useExitNodeStates } from "@/hooks/use-exit-node-states"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { deviceDisplayName } from "@/lib/device-status"
+import { retryableQuery } from "@/lib/query-retry"
 import { applyRealtimeEvent } from "@/realtime/apply-event"
 import { useEventStream } from "@/realtime/use-event-stream"
 
@@ -60,18 +77,32 @@ function MapTab({ data }: { data: NetworkShellData }) {
   const networkId = data.network.id
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [hintDismissed, setHintDismissed] = useState(false)
   const isCompact = useIsMobile(1100)
   const isPhone = useIsMobile(640)
 
   const exitNodeByDeviceId = useExitNodeStates(networkId)
+  // Same query the shell uses; this observer adds the shared retry policy and
+  // gives the page an error state so a 500 is not silently swallowed.
+  const routesQuery = useListNetworkRoutes(networkId, { query: retryableQuery })
   const topologyQuery = useGetNetworkTopology(networkId)
   const snapshot = topologyQuery.data?.data
-  const stream = useEventStream({
+  useEventStream({
     networkId,
     topology: true,
     enabled: true,
     onEvent: (event) => applyRealtimeEvent(queryClient, event),
   })
+
+  const deviceById = useMemo(
+    () => new Map(data.devices.map((device) => [device.id, device])),
+    [data.devices]
+  )
+  const deviceOsById = useMemo(() => {
+    const map: Record<string, ListDevices200Item["os"]> = {}
+    for (const device of data.devices) map[device.id] = device.os
+    return map
+  }, [data.devices])
 
   const nodes = useMemo(() => snapshot?.nodes ?? [], [snapshot])
   const links = useMemo(() => snapshot?.links ?? [], [snapshot])
@@ -83,7 +114,8 @@ function MapTab({ data }: { data: NetworkShellData }) {
     () =>
       selectedNode
         ? links.filter(
-            (link) => link.source === selectedNode.id || link.target === selectedNode.id
+            (link) =>
+              link.source === selectedNode.id || link.target === selectedNode.id
           )
         : [],
     [links, selectedNode]
@@ -93,7 +125,10 @@ function MapTab({ data }: { data: NetworkShellData }) {
     setRefreshing(true)
     void getNetworkTopology(networkId, { refresh: "1" })
       .then((response) => {
-        queryClient.setQueryData(getGetNetworkTopologyQueryKey(networkId), response)
+        queryClient.setQueryData(
+          getGetNetworkTopologyQueryKey(networkId),
+          response
+        )
       })
       .catch(() => undefined)
       .finally(() => setRefreshing(false))
@@ -101,6 +136,16 @@ function MapTab({ data }: { data: NetworkShellData }) {
 
   if (topologyQuery.isLoading) {
     return <Skeleton className="h-[60vh] w-full rounded-xl" />
+  }
+
+  if (topologyQuery.isError) {
+    return (
+      <RouteLoadError
+        message={t("map.loadError")}
+        onRetry={() => void topologyQuery.refetch()}
+        pending={topologyQuery.isFetching}
+      />
+    )
   }
 
   if (!snapshot || nodes.length === 0) {
@@ -119,7 +164,11 @@ function MapTab({ data }: { data: NetworkShellData }) {
 
   const panel = selectedNode ? (
     <MapSidePanel
-      devices={data.devices}
+      device={
+        selectedNode.deviceId
+          ? deviceById.get(selectedNode.deviceId)
+          : undefined
+      }
       links={selectedLinks}
       networkId={networkId}
       node={selectedNode}
@@ -128,21 +177,38 @@ function MapTab({ data }: { data: NetworkShellData }) {
     />
   ) : null
 
+  const showNatHint = !snapshot.stats.hasReachableNode && !hintDismissed
+
   return (
     <div className="flex flex-col gap-4">
-      {!snapshot.stats.hasReachableNode ? (
-        <div className="flex items-start gap-3 rounded-xl bg-warn-soft px-4 py-3 ring-1 ring-warn-line">
-          <AlertTriangleIcon aria-hidden="true" className="mt-0.5 size-4 flex-none text-warn" />
-          <div className="min-w-0 text-[13px]">
-            <p className="font-medium text-warn">{t("topology.noReachableTitle")}</p>
-            <p className="mt-0.5 text-fg-2">
-              {snapshot.stats.relayCapableNodes > 0
-                ? t("topology.noReachableRelayed", {
-                    count: snapshot.stats.relayCapableNodes,
-                  })
-                : t("topology.noReachableHint")}
-            </p>
-          </div>
+      {routesQuery.isError ? (
+        <RouteLoadError
+          onRetry={() => void routesQuery.refetch()}
+          pending={routesQuery.isFetching}
+        />
+      ) : null}
+
+      {showNatHint ? (
+        <div className="flex items-start gap-2 rounded-lg bg-warn-soft px-3 py-2 ring-1 ring-warn-line">
+          <AlertTriangleIcon
+            aria-hidden="true"
+            className="mt-0.5 size-4 flex-none text-warn"
+          />
+          <p className="min-w-0 flex-1 text-[13px] text-fg-2">
+            {snapshot.stats.relayCapableNodes > 0
+              ? t("map.natHintRelayed", {
+                  count: snapshot.stats.relayCapableNodes,
+                })
+              : t("map.natHint")}
+          </p>
+          <button
+            aria-label={t("map.dismissHint")}
+            className="grid size-7 flex-none cursor-pointer place-items-center rounded-md text-fg-3 hover:bg-surface-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+            onClick={() => setHintDismissed(true)}
+            type="button"
+          >
+            <XIcon className="size-4" />
+          </button>
         </div>
       ) : null}
 
@@ -169,27 +235,35 @@ function MapTab({ data }: { data: NetworkShellData }) {
                 {t("topology.relayed")}
               </span>
               <span className="flex items-center gap-1.5">
-                <RadioTowerIcon aria-hidden="true" className="size-3.5 text-relay" />
-                {t("topology.relayCapable")}
+                <RadioTowerIcon
+                  aria-hidden="true"
+                  className="size-3.5 text-relay"
+                />
+                {t("map.legend.relayCapable")}
               </span>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <button
+                      aria-label={t("map.legend.title")}
+                      className="grid size-6 cursor-pointer place-items-center rounded-md text-fg-3 hover:bg-surface-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+                      type="button"
+                    />
+                  }
+                >
+                  <InfoIcon className="size-3.5" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-pretty">
+                  {t("map.legend.hint")}
+                </TooltipContent>
+              </Tooltip>
             </div>
-            <span className="hidden text-xs text-fg-3 sm:inline">
-              {t("topology.collectedAt", {
+            <span className="hidden text-xs text-fg-3 md:inline">
+              {t("map.updated", {
                 time: new Date(snapshot.collectedAt).toLocaleTimeString(),
-                interval: Math.round(snapshot.intervalMs / 1000),
               })}
             </span>
-            <span className="flex items-center gap-1.5 text-xs text-fg-2">
-              <span
-                aria-hidden="true"
-                className={
-                  stream.status === "live"
-                    ? "size-2 rounded-full bg-ok-dot ring-3 ring-ok-soft"
-                    : "size-2 rounded-full bg-fg-3/50"
-                }
-              />
-              {t(`realtime.status.${stream.status}`)}
-            </span>
+            <LiveStatus />
             <Button
               aria-label={t("common.refresh")}
               disabled={refreshing}
@@ -204,11 +278,13 @@ function MapTab({ data }: { data: NetworkShellData }) {
             <div
               className="flex h-[460px] items-center justify-center p-2"
               style={{
-                backgroundImage: "radial-gradient(var(--line) 1px, transparent 1px)",
+                backgroundImage:
+                  "radial-gradient(var(--line) 1px, transparent 1px)",
                 backgroundSize: "20px 20px",
               }}
             >
               <CompactTopologyMap
+                deviceOsById={deviceOsById}
                 key={networkId}
                 links={links}
                 nodes={nodes}
@@ -220,6 +296,7 @@ function MapTab({ data }: { data: NetworkShellData }) {
             <div className="h-[440px] p-2 sm:h-[520px] xl:h-[600px]">
               <TopologyMap
                 className="h-full min-h-0 rounded-none border-0"
+                deviceOsById={deviceOsById}
                 key={networkId}
                 links={links}
                 exitNodeByDeviceId={exitNodeByDeviceId}
@@ -232,14 +309,13 @@ function MapTab({ data }: { data: NetworkShellData }) {
               />
             </div>
           )}
-          <div className="flex flex-wrap items-start gap-2 border-t border-line px-4 py-2.5 text-xs text-fg-3">
-            <InfoIcon aria-hidden="true" className="mt-0.5 size-3.5 flex-none" />
-            <span>{t("topology.honestNote")}</span>
-          </div>
         </section>
 
         {!isCompact ? (
-          <aside aria-label={t("topology.deviceDrawer")} className="flex xl:w-[340px] xl:flex-none">
+          <aside
+            aria-label={t("topology.deviceDrawer")}
+            className="flex xl:w-[340px] xl:flex-none"
+          >
             {panel}
           </aside>
         ) : null}
@@ -263,14 +339,18 @@ function MapTab({ data }: { data: NetworkShellData }) {
             side="bottom"
           >
             <SheetHeader className="sr-only">
-              <SheetTitle>{selectedNode?.hostname ?? t("topology.deviceDrawer")}</SheetTitle>
+              <SheetTitle>
+                {selectedNode?.hostname ?? t("topology.deviceDrawer")}
+              </SheetTitle>
             </SheetHeader>
-            <div aria-hidden="true" className="mx-auto h-[5px] w-10 flex-none rounded-full bg-line-2" />
+            <div
+              aria-hidden="true"
+              className="mx-auto h-[5px] w-10 flex-none rounded-full bg-line-2"
+            />
             {panel}
           </SheetContent>
         </Sheet>
       ) : null}
-
     </div>
   )
 }
@@ -278,51 +358,73 @@ function MapTab({ data }: { data: NetworkShellData }) {
 function MapSidePanel({
   node,
   nodes,
+  device,
   links,
-  devices,
   networkId,
   onClose,
 }: {
   node: TopologyNode
   nodes: TopologyNode[]
+  device?: ListDevices200Item
   links: TopologyLink[]
-  devices: NetworkShellData["devices"]
   networkId: string
   onClose?: () => void
 }) {
   const { t } = useTranslation()
-  const byId = useMemo(() => new Map(nodes.map((entry) => [entry.id, entry])), [nodes])
-  const device = node.deviceId
-    ? devices.find((entry) => entry.id === node.deviceId)
-    : undefined
+  const byId = useMemo(
+    () => new Map(nodes.map((entry) => [entry.id, entry.hostname || entry.id])),
+    [nodes]
+  )
+  const name = device ? deviceDisplayName(device) : node.hostname || node.id
 
   return (
     <div className="flex w-full min-w-0 flex-col overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-line">
       <div className="flex items-start gap-3 border-b border-line px-4 py-4">
         <span className="grid size-11 flex-none place-items-center rounded-xl bg-surface-2 text-fg-2 ring-1 ring-line">
-          <RadioTowerIcon className="size-5" />
+          {device ? (
+            <DeviceIcon className="size-5" os={device.os} />
+          ) : (
+            <ServerIcon aria-hidden="true" className="size-5" />
+          )}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="truncate text-base leading-6 font-semibold tracking-[-0.006em]">
-              {node.hostname || node.id}
+              {name}
             </h2>
-            {device?.isHub ? <Chip variant="brand">{t("devices.detail.hub.badge")}</Chip> : null}
-            {node.relayCapable ? <Chip variant="relay">{t("topology.relayCapable")}</Chip> : null}
+            {device?.isHub ? (
+              <Chip>
+                <RadioTowerIcon aria-hidden="true" className="size-3" />
+                {t("devices.detail.hub.badge")}
+              </Chip>
+            ) : null}
+            {node.relayCapable ? (
+              <Chip variant="relay">{t("topology.relayCapable")}</Chip>
+            ) : null}
           </div>
-          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-3">
-            <span className="flex items-center gap-1.5">
-              <span
-                aria-hidden="true"
-                className={
-                  node.online ? "size-2 rounded-full bg-ok-dot" : "size-2 rounded-full bg-fg-3/50"
-                }
-              />
-              {node.online ? t("devices.status.online") : t("devices.status.offline")}
-            </span>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-3">
+            {device ? (
+              <DeviceStatusCell device={device} />
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <span
+                  aria-hidden="true"
+                  className={
+                    node.online
+                      ? "size-2 rounded-full bg-ok-dot"
+                      : "size-2 rounded-full bg-fg-3/50"
+                  }
+                />
+                {node.online
+                  ? t("deviceStatus.labels.online")
+                  : t("deviceStatus.labels.offline")}
+              </span>
+            )}
             <span aria-hidden="true">·</span>
-            <span className="font-mono">{node.virtualIpv4 ?? t("common.none")}</span>
-          </p>
+            <span className="font-mono">
+              {node.virtualIpv4 ?? t("common.none")}
+            </span>
+          </div>
         </div>
         {onClose ? (
           <Button
@@ -346,11 +448,15 @@ function MapSidePanel({
         <Detail
           label={t("topology.relaysFor")}
           value={
-            node.relaysFor.map((id) => byId.get(id)?.hostname ?? id).join(", ") ||
+            node.relaysFor.map((id) => byId.get(id) ?? id).join(", ") ||
             t("common.none")
           }
         />
-        <Detail label={t("devices.version")} mono value={node.version || t("common.none")} />
+        <Detail
+          label={t("devices.version")}
+          mono
+          value={node.version || device?.easytierVersion || t("common.none")}
+        />
       </dl>
 
       <p className="px-4 pt-2 pb-1 text-[11px] font-medium tracking-wide text-fg-3 uppercase">
@@ -361,20 +467,25 @@ function MapSidePanel({
           <p className="px-4 pb-3 text-[13px] text-fg-3">{t("common.empty")}</p>
         ) : (
           links.map((link) => {
-            const other = byId.get(link.source === node.id ? link.target : link.source)
+            const otherId = link.source === node.id ? link.target : link.source
+            const otherName = byId.get(otherId) ?? otherId
             return (
               <div
                 className="flex min-h-12 flex-wrap items-center gap-x-2 gap-y-1 border-t border-line px-4 py-2"
                 key={link.id}
               >
                 <span className="min-w-0 flex-1 truncate font-medium">
-                  {other?.hostname ?? link.target}
+                  {otherName}
                 </span>
                 <Chip variant={link.kind === "direct" ? "ok" : "warn"}>
-                  {link.kind === "direct" ? t("topology.direct") : t("topology.relayed")}
+                  {link.kind === "direct"
+                    ? t("topology.direct")
+                    : t("topology.relayed")}
                 </Chip>
                 <span className="w-14 text-right font-mono text-xs text-fg-3">
-                  {link.latencyMs !== null ? `${link.latencyMs} ms` : t("common.none")}
+                  {link.latencyMs !== null
+                    ? `${link.latencyMs} ms`
+                    : t("common.none")}
                 </span>
               </div>
             )

@@ -66,7 +66,10 @@ export function DeviceDrawer({
           <SheetTitle className="flex items-center gap-2">
             {node?.hostname ?? t("topology.deviceDrawer")}
             {node?.relayCapable ? (
-              <Badge className="border-violet-500/40 text-violet-700 dark:text-violet-300" variant="outline">
+              <Badge
+                className="border-violet-500/40 text-violet-700 dark:text-violet-300"
+                variant="outline"
+              >
                 {t("topology.relayCapable")}
               </Badge>
             ) : null}
@@ -84,6 +87,9 @@ export function DeviceDrawer({
             {device ? (
               <div className="space-y-2">
                 <DeviceStatusBadges
+                  appliedRevision={device.appliedRevision}
+                  desiredRevision={device.desiredRevision}
+                  lastPushError={device.lastPushError}
                   online={device.online}
                   state={device.state}
                   sync={device.sync}
@@ -96,7 +102,11 @@ export function DeviceDrawer({
                       null
                     }
                   />
-                  <Info label={t("devices.machineId")} mono value={device.machineId} />
+                  <Info
+                    label={t("devices.machineId")}
+                    mono
+                    value={device.machineId}
+                  />
                   <Info
                     label={t("devices.lastSeen")}
                     value={
@@ -122,7 +132,11 @@ export function DeviceDrawer({
               </div>
             ) : null}
             <dl className="grid grid-cols-2 gap-3 text-sm">
-              <Info label={t("devices.virtualIp")} mono value={node.virtualIpv4} />
+              <Info
+                label={t("devices.virtualIp")}
+                mono
+                value={node.virtualIpv4}
+              />
               <Info label={t("topology.natType")} value={node.natType} />
               <Info label={t("topology.tcpNatType")} value={node.tcpNatType} />
               <Info label={t("devices.version")} mono value={node.version} />
@@ -158,7 +172,11 @@ export function DeviceDrawer({
                 </p>
                 <div className="flex flex-wrap gap-1">
                   {node.capabilityReasons.map((reason) => (
-                    <Badge className="font-mono text-[10px]" key={reason} variant="outline">
+                    <Badge
+                      className="font-mono text-[10px]"
+                      key={reason}
+                      variant="outline"
+                    >
                       {reason}
                     </Badge>
                   ))}
@@ -167,9 +185,13 @@ export function DeviceDrawer({
             ) : null}
 
             <section>
-              <h4 className="mb-2 text-sm font-medium">{t("topology.links")}</h4>
+              <h4 className="mb-2 text-sm font-medium">
+                {t("topology.links")}
+              </h4>
               {links.length === 0 ? (
-                <p className="text-xs text-muted-foreground">{t("common.empty")}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("common.empty")}
+                </p>
               ) : (
                 <ul className="space-y-1 text-xs">
                   {links.map((link) => {
@@ -198,16 +220,22 @@ export function DeviceDrawer({
                         </span>
                         <span className="text-muted-foreground">
                           {link.protocol}
-                          {link.protocolIsFirstHop ? ` (${t("topology.firstHop")})` : ""}
+                          {link.protocolIsFirstHop
+                            ? ` (${t("topology.firstHop")})`
+                            : ""}
                         </span>
                         {link.viaHostname ? (
                           <span className="text-muted-foreground">
                             {t("topology.viaRelay", { host: link.viaHostname })}
                           </span>
                         ) : null}
-                        {link.latencyMs !== null ? <span>{link.latencyMs} ms</span> : null}
+                        {link.latencyMs !== null ? (
+                          <span>{link.latencyMs} ms</span>
+                        ) : null}
                         {link.lossPercent !== null ? (
-                          <span>{link.lossPercent}% {t("topology.loss")}</span>
+                          <span>
+                            {link.lossPercent}% {t("topology.loss")}
+                          </span>
                         ) : null}
                         {link.cost !== null ? (
                           <span className="text-muted-foreground">
@@ -222,23 +250,39 @@ export function DeviceDrawer({
             </section>
 
             <section>
-              <h4 className="mb-1 text-sm font-medium">{t("topology.rawPeers")}</h4>
+              <h4 className="mb-1 text-sm font-medium">
+                {t("topology.rawPeers")}
+              </h4>
               <p className="mb-2 text-xs text-muted-foreground">
                 {t("topology.rawPeersHint")}
               </p>
               {!observation || observation.peers.length === 0 ? (
-                <p className="text-xs text-muted-foreground">{t("topology.noProbeYet")}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("topology.noProbeYet")}
+                </p>
               ) : (
                 <div className="overflow-x-auto rounded border">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="text-xs">{t("topology.peerId")}</TableHead>
-                        <TableHead className="text-xs">{t("topology.tunnel")}</TableHead>
-                        <TableHead className="text-xs">{t("topology.latency")}</TableHead>
-                        <TableHead className="text-xs">{t("topology.loss")}</TableHead>
-                        <TableHead className="text-xs">{t("topology.direction")}</TableHead>
-                        <TableHead className="text-xs">{t("topology.connRemote")}</TableHead>
+                        <TableHead className="text-xs">
+                          {t("topology.peerId")}
+                        </TableHead>
+                        <TableHead className="text-xs">
+                          {t("topology.tunnel")}
+                        </TableHead>
+                        <TableHead className="text-xs">
+                          {t("topology.latency")}
+                        </TableHead>
+                        <TableHead className="text-xs">
+                          {t("topology.loss")}
+                        </TableHead>
+                        <TableHead className="text-xs">
+                          {t("topology.direction")}
+                        </TableHead>
+                        <TableHead className="text-xs">
+                          {t("topology.connRemote")}
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -252,10 +296,14 @@ export function DeviceDrawer({
                             {peer.rawTunnelType || peer.protocol}
                           </TableCell>
                           <TableCell className="text-[10px]">
-                            {peer.latencyMs !== null ? `${peer.latencyMs} ms` : t("common.none")}
+                            {peer.latencyMs !== null
+                              ? `${peer.latencyMs} ms`
+                              : t("common.none")}
                           </TableCell>
                           <TableCell className="text-[10px]">
-                            {peer.lossPercent !== null ? `${peer.lossPercent}%` : t("common.none")}
+                            {peer.lossPercent !== null
+                              ? `${peer.lossPercent}%`
+                              : t("common.none")}
                           </TableCell>
                           <TableCell className="text-[10px]">
                             {peer.isClient
@@ -274,36 +322,54 @@ export function DeviceDrawer({
             </section>
 
             <section>
-              <h4 className="mb-1 text-sm font-medium">{t("topology.rawRoutes")}</h4>
+              <h4 className="mb-1 text-sm font-medium">
+                {t("topology.rawRoutes")}
+              </h4>
               <p className="mb-2 text-xs text-muted-foreground">
                 {t("topology.rawRoutesHint")}
               </p>
               {!observation || observation.routes.length === 0 ? (
-                <p className="text-xs text-muted-foreground">{t("topology.noProbeYet")}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("topology.noProbeYet")}
+                </p>
               ) : (
                 <div className="overflow-x-auto rounded border">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="text-xs">{t("topology.host")}</TableHead>
+                        <TableHead className="text-xs">
+                          {t("topology.host")}
+                        </TableHead>
                         <TableHead className="text-xs">IP</TableHead>
-                        <TableHead className="text-xs">{t("topology.hops")}</TableHead>
-                        <TableHead className="text-xs">{t("topology.nextHop")}</TableHead>
-                        <TableHead className="text-xs">{t("topology.natType")}</TableHead>
+                        <TableHead className="text-xs">
+                          {t("topology.hops")}
+                        </TableHead>
+                        <TableHead className="text-xs">
+                          {t("topology.nextHop")}
+                        </TableHead>
+                        <TableHead className="text-xs">
+                          {t("topology.natType")}
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {observation.routes.map((route) => (
                         <TableRow key={route.peerId}>
-                          <TableCell className="text-xs">{route.hostname}</TableCell>
+                          <TableCell className="text-xs">
+                            {route.hostname}
+                          </TableCell>
                           <TableCell className="font-mono text-[10px]">
                             {route.virtualIpv4 ?? t("common.none")}
                           </TableCell>
-                          <TableCell className="text-[10px]">{route.cost}</TableCell>
+                          <TableCell className="text-[10px]">
+                            {route.cost}
+                          </TableCell>
                           <TableCell className="font-mono text-[10px]">
                             {route.nextHopPeerId}
                           </TableCell>
-                          <TableCell className="text-[10px]">{route.natType}</TableCell>
+                          <TableCell className="text-[10px]">
+                            {route.natType}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -314,7 +380,9 @@ export function DeviceDrawer({
 
             {observation?.events && observation.events.length > 0 ? (
               <section>
-                <h4 className="mb-1 text-sm font-medium">{t("topology.clientEvents")}</h4>
+                <h4 className="mb-1 text-sm font-medium">
+                  {t("topology.clientEvents")}
+                </h4>
                 <ul className="list-inside list-disc text-xs text-muted-foreground">
                   {observation.events.slice(-10).map((event, index) => (
                     <li key={`${index}-${event}`}>{event}</li>

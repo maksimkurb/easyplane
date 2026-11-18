@@ -4,29 +4,36 @@ import { useRealtime } from "@/realtime/context"
 import { cn } from "@/lib/utils"
 
 const colors: Record<string, string> = {
-  live: "bg-emerald-500",
-  connecting: "bg-amber-500",
-  reconnecting: "bg-amber-500",
-  offline: "bg-muted-foreground/50",
+  live: "bg-ok-dot ring-3 ring-ok-soft",
+  connecting: "bg-warn",
+  reconnecting: "bg-warn",
+  offline: "bg-fg-3/50",
 }
 
-/** Small indicator that the panel is receiving server events. */
-export function LiveStatus() {
+/**
+ * Reports the state of the panel's realtime connection, not the devices.
+ * "Live updates" means events arrive without a refresh; a device can still be
+ * offline while updates are live, and the label must not imply otherwise.
+ */
+export function LiveStatus({ className }: { className?: string }) {
   const { t } = useTranslation()
-  const { status, lastSeq } = useRealtime()
+  const { status } = useRealtime()
   return (
-    <div
-      className="flex items-center justify-between gap-2 px-1 text-xs text-muted-foreground"
-      title={t("realtime.liveHint")}
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 px-1 text-xs text-muted-foreground",
+        className
+      )}
+      title={t("deviceStatus.realtime.hint")}
     >
-      <span className="flex items-center gap-1.5">
-        <span
-          aria-hidden
-          className={cn("size-1.5 rounded-full", colors[status] ?? colors.offline)}
-        />
-        {t(`realtime.status.${status}`)}
-      </span>
-      {lastSeq > 0 ? <span className="font-mono text-[10px]">#{lastSeq}</span> : null}
-    </div>
+      <span
+        aria-hidden="true"
+        className={cn(
+          "size-2 flex-none rounded-full",
+          colors[status] ?? colors.offline
+        )}
+      />
+      {t(`deviceStatus.realtime.${status}`)}
+    </span>
   )
 }

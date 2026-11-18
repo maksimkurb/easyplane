@@ -1,13 +1,16 @@
 import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
-import { RadioTowerIcon, ServerIcon } from "lucide-react"
+import { RadioTowerIcon } from "lucide-react"
 
 import type {
   GetNetworkTopology200LinksItem as TopologyLink,
   GetNetworkTopology200NodesItem as TopologyNode,
 } from "@/api/generated/model"
+import { DeviceIcon } from "@/components/device/device-icon"
 import { layoutTopology } from "@/lib/topology-layout"
 import { cn } from "@/lib/utils"
+
+type DeviceOs = { type?: string | null; distribution?: string | null }
 
 const WIDTH = 390
 const HEIGHT = 420
@@ -25,11 +28,13 @@ export function CompactTopologyMap({
   links,
   selectedNodeId,
   onSelectNode,
+  deviceOsById,
 }: {
   nodes: TopologyNode[]
   links: TopologyLink[]
   selectedNodeId: string | null
   onSelectNode: (nodeId: string | null) => void
+  deviceOsById?: Record<string, DeviceOs>
 }) {
   const { t } = useTranslation()
 
@@ -112,11 +117,17 @@ export function CompactTopologyMap({
               relayed ? "text-warn ring-warn-line" : "text-fg-2 ring-line-2"
             )}
             key={`ping-${link.id}`}
-            style={{ left: `${((from.x + to.x) / 2 / WIDTH) * 100}%`, top: `${((from.y + to.y) / 2 / HEIGHT) * 100}%` }}
+            style={{
+              left: `${((from.x + to.x) / 2 / WIDTH) * 100}%`,
+              top: `${((from.y + to.y) / 2 / HEIGHT) * 100}%`,
+            }}
           >
             <span
               aria-hidden="true"
-              className={cn("size-1.5 rounded-full", relayed ? "bg-warn" : "bg-ok-dot")}
+              className={cn(
+                "size-1.5 rounded-full",
+                relayed ? "bg-warn" : "bg-ok-dot"
+              )}
             />
             {link.latencyMs} ms
           </span>
@@ -127,11 +138,14 @@ export function CompactTopologyMap({
         const position = point(node.id)
         if (!position) return null
         const selected = node.id === selectedNodeId
+        const os = node.deviceId ? deviceOsById?.[node.deviceId] : undefined
         return (
           <button
             aria-label={t("topology.nodeState", {
               name: node.hostname || node.id,
-              state: node.online ? t("devices.status.online") : t("devices.status.offline"),
+              state: node.online
+                ? t("devices.status.online")
+                : t("devices.status.offline"),
             })}
             aria-pressed={selected}
             className={cn(
@@ -149,10 +163,16 @@ export function CompactTopologyMap({
             <span
               className={cn(
                 "relative grid size-11 place-items-center rounded-full bg-card text-fg-2 shadow-sm ring-1 ring-line-2",
+                !node.online &&
+                  "outline outline-1 outline-line-2 outline-dashed",
                 selected && "text-brand-text ring-2 ring-brand"
               )}
             >
-              <ServerIcon aria-hidden="true" className="size-[18px]" />
+              {os ? (
+                <DeviceIcon className="size-[18px]" os={os} />
+              ) : (
+                <RadioTowerIcon aria-hidden="true" className="size-[18px]" />
+              )}
               <span
                 aria-hidden="true"
                 className={cn(

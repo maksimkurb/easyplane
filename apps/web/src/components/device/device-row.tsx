@@ -27,27 +27,36 @@ import {
   useUpdateDeviceHub,
   useListUsers,
 } from "@/api/generated/easyplane"
-import type { ListDevices200Item, ListDeviceRoutes200Item } from "@/api/generated/model"
+import type {
+  ListDevices200Item,
+  ListDeviceRoutes200Item,
+} from "@/api/generated/model"
 import { AnchorRemovalDialog } from "@/components/anchor-removal-dialog"
 import { DeviceRouteChips } from "@/components/routes/device-route-chips"
 import { useAuth } from "@/auth/auth-context"
-import { Chip, Dot } from "@/components/ui/chip"
+import { Chip } from "@/components/ui/chip"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ConfirmDialog } from "@/components/device/confirm-dialog"
 import { DeviceIcon } from "@/components/device/device-icon"
 import { DeviceRenameDialog } from "@/components/device/device-rename-dialog"
+import { DeviceStatusCell } from "@/components/device/device-status-cell"
 import { DeviceTagsDialog } from "@/components/device/device-tags-dialog"
+import { deriveDeviceStatus, tagLabel } from "@/lib/device-status"
 import { deviceName, osLabel } from "@/lib/device-presentation"
-import { formatRelativeTime } from "@/lib/format"
 
 /**
- * One line in the devices list. The row menu carries every per-device action
- * that used to live in the wide actions column: push, rename, tags, hub,
- * revoke, block and remove. Dialogs are local, so the list page stays small.
+ * One line in the devices list. The row menu carries every per-device action:
+ * push, rename, tags, hub, revoke, block and remove. Dialogs are local, so the
+ * list page stays small.
+ *
+ * The status column is the only status signal on the row: one dot, one label,
+ * derived by lib/device-status. Approval, connectivity and config freshness are
+ * never shown as three competing badges.
  */
 export function DeviceRow({
   device,
@@ -62,15 +71,21 @@ export function DeviceRow({
   credentialsMode: boolean
   useRendezvous: boolean
 }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { canManage, isAdmin } = useAuth()
   const queryClient = useQueryClient()
   const [renameOpen, setRenameOpen] = useState(false)
   const [tagsOpen, setTagsOpen] = useState(false)
-  const [anchorOperation, setAnchorOperation] = useState<"block" | "delete" | null>(null)
+  const [anchorOperation, setAnchorOperation] = useState<
+    "block" | "delete" | null
+  >(null)
+  const [confirmOperation, setConfirmOperation] = useState<
+    "block" | "delete" | null
+  >(null)
 
   const name = deviceName(device)
-  const online = device.online === "online"
+  const status = deriveDeviceStatus(device)
+  const os = osLabel(device.os)
   const [now, setNow] = useState(0)
   useEffect(() => {
     // The "New" chip is cosmetic; resolve it after mount so the render path
@@ -82,23 +97,19 @@ export function DeviceRow({
     now > 0 &&
     device.approvedAt !== null &&
     now - Date.parse(device.approvedAt) < 86_400_000
-  const lastSeen = online ? t("devices.connected") : formatRelativeTime(device.lastSeenAt, i18n.language) ?? t("common.none")
   const approvedRoutes = routes.filter((route) => route.state === "approved")
-  const pushFailed = device.sync === "error" || Boolean(device.lastPushError)
-  const configStale = device.sync === "stale" && !device.lastPushError
-  // Phones have room for one chip; show the one that needs attention first.
-  const mobileChip = pushFailed ? (
-    <Chip variant="err">{t("devices.chips.pushFailed")}</Chip>
-  ) : device.state === "blocked" ? (
-    <Chip variant="err">{t("devices.status.blocked")}</Chip>
-  ) : configStale ? (
-    <Chip variant="warn">{t("devices.chips.configNotApplied")}</Chip>
-  ) : approvedRoutes.some((route) => route.kind === "exit_node") ? (
+  // Phones have room for one metadata chip (status lives in its own column).
+  const mobileChip = approvedRoutes.some(
+    (route) => route.kind === "exit_node"
+  ) ? (
     <Chip variant="brand">{t("routes.exitNode")}</Chip>
   ) : approvedRoutes.some((route) => route.kind === "subnet") ? (
     <Chip>{t("routes.subnet")}</Chip>
   ) : device.isHub ? (
-    <Chip variant="brand">{t("devices.detail.hub.badge")}</Chip>
+    <Chip>
+      <RadioTowerIcon aria-hidden="true" className="size-3" />
+      {t("devices.detail.hub.badge")}
+    </Chip>
   ) : newDevice && device.state === "approved" ? (
     <Chip variant="ok">{t("devices.chips.new")}</Chip>
   ) : null
@@ -109,15 +120,24 @@ export function DeviceRow({
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: getListDevicesQueryKey() })
-    await queryClient.invalidateQueries({ queryKey: getGetDeviceQueryKey(device.id) })
-    await queryClient.invalidateQueries({ queryKey: getListDeviceRoutesQueryKey(device.id) })
-    await queryClient.invalidateQueries({ queryKey: getGetNetworkQueryKey(networkId) })
+    await queryClient.invalidateQueries({
+      queryKey: getGetDeviceQueryKey(device.id),
+    })
+    await queryClient.invalidateQueries({
+      queryKey: getListDeviceRoutesQueryKey(device.id),
+    })
+    await queryClient.invalidateQueries({
+      queryKey: getGetNetworkQueryKey(networkId),
+    })
   }
   const onError = (error: unknown) =>
     toast.error(error instanceof Error ? error.message : t("common.error"))
 
   const push = usePushDeviceConfig({
-    mutation: { onSuccess: () => toast.success(t("devices.pushRequested")), onError },
+    mutation: {
+      onSuccess: () => toast.success(t("devices.pushRequested")),
+      onError,
+    },
   })
   const updateHub = useUpdateDeviceHub({
     mutation: {
@@ -165,11 +185,15 @@ export function DeviceRow({
       setAnchorOperation(operation)
       return
     }
-    const question =
-      operation === "block" ? t("devices.blockConfirm") : t("devices.deleteConfirm")
-    if (!window.confirm(question)) return
-    if (operation === "block") block.mutate({ deviceId: device.id, data: {} })
+    setConfirmOperation(operation)
+  }
+
+  const confirmRemoval = () => {
+    if (!confirmOperation) return
+    if (confirmOperation === "block")
+      block.mutate({ deviceId: device.id, data: {} })
     else remove.mutate({ deviceId: device.id, data: {} })
+    setConfirmOperation(null)
   }
 
   return (
@@ -188,22 +212,18 @@ export function DeviceRow({
               {name}
             </Link>
             {mobileChip ? (
-              <span className="relative z-[1] flex sm:hidden">{mobileChip}</span>
+              <span className="relative z-[1] flex sm:hidden">
+                {mobileChip}
+              </span>
             ) : null}
             <span className="relative z-[1] hidden min-w-0 flex-wrap items-center gap-1.5 sm:flex">
               {device.isHub ? (
-                <Chip variant="brand">{t("devices.detail.hub.badge")}</Chip>
+                <Chip>
+                  <RadioTowerIcon aria-hidden="true" className="size-3" />
+                  {t("devices.detail.hub.badge")}
+                </Chip>
               ) : null}
               <DeviceRouteChips routes={routes} />
-              {device.state === "blocked" ? (
-                <Chip variant="err">{t("devices.status.blocked")}</Chip>
-              ) : null}
-              {configStale ? (
-                <Chip variant="warn">{t("devices.chips.configNotApplied")}</Chip>
-              ) : null}
-              {pushFailed ? (
-                <Chip variant="err">{t("devices.chips.pushFailed")}</Chip>
-              ) : null}
               {newDevice && device.state === "approved" ? (
                 <Chip variant="ok">{t("devices.chips.new")}</Chip>
               ) : null}
@@ -213,17 +233,24 @@ export function DeviceRow({
             <span className="font-mono text-[12px] whitespace-nowrap lg:hidden">
               {device.virtualIpv4 ?? t("common.none")}
             </span>
-            {device.tags.length > 0
-              ? device.tags.map((tag) => (
-                  <Chip key={tag} variant="tag">
-                    {tag}
-                  </Chip>
-                ))
-              : device.ownerUserId
-                ? <span className="truncate">{t("devices.ownedBy", {
-                    owner: owner?.displayName || owner?.email || device.ownerUserId.slice(0, 8),
-                  })}</span>
-                : <span className="truncate">{osLabel(device.os)}</span>}
+            {device.ownerUserId && owner ? (
+              <span className="truncate">
+                {t("deviceStatus.ownedBy", {
+                  owner: owner.displayName || owner.email,
+                })}
+              </span>
+            ) : null}
+            {device.tags.map((tag) => (
+              <Chip key={tag} title={tagLabel(tag)} variant="tag">
+                <TagIcon aria-hidden="true" className="size-3" />
+                {tagLabel(tag)}
+              </Chip>
+            ))}
+            {!device.ownerUserId && device.tags.length === 0 ? (
+              <span className="truncate lg:hidden" title={os}>
+                {os}
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
@@ -233,17 +260,27 @@ export function DeviceRow({
       </span>
 
       <div className="hidden min-w-0 lg:block">
-        <div className="truncate text-[13px]">{osLabel(device.os)}</div>
-        <div className="truncate text-xs text-fg-3">
-          {device.easytierVersion ? `EasyTier ${device.easytierVersion}` : t("common.none")}
+        <div className="truncate text-[13px]" title={os}>
+          {os}
+        </div>
+        <div
+          className="truncate text-xs text-fg-3"
+          title={
+            device.easytierVersion
+              ? `EasyTier ${device.easytierVersion}`
+              : t("common.none")
+          }
+        >
+          {device.easytierVersion
+            ? `EasyTier ${device.easytierVersion}`
+            : t("common.none")}
         </div>
       </div>
 
-      <span className="flex items-center gap-2 justify-self-end text-[13px] whitespace-nowrap text-fg-2 lg:justify-self-auto">
-        <Dot online={online} />
-        <span className="max-sm:hidden">{lastSeen}</span>
-        <span className="sr-only">{lastSeen}</span>
-      </span>
+      <DeviceStatusCell
+        className="justify-self-end whitespace-nowrap lg:justify-self-auto"
+        device={device}
+      />
 
       <div className="relative z-10 flex justify-end">
         {canManage ? (
@@ -262,22 +299,23 @@ export function DeviceRow({
             <DropdownMenuContent>
               {device.state === "approved" ? (
                 <DropdownMenuItem
-                  disabled={push.isPending}
+                  disabled={push.isPending || !status.connected}
                   onClick={() => push.mutate({ deviceId: device.id })}
+                  title={
+                    status.connected
+                      ? undefined
+                      : t("deviceStatus.hint.pushOffline")
+                  }
                 >
                   <RefreshCwIcon />
                   {t("devices.menu.push")}
                 </DropdownMenuItem>
               ) : null}
-              <DropdownMenuItem
-                onClick={() => setRenameOpen(true)}
-              >
+              <DropdownMenuItem onClick={() => setRenameOpen(true)}>
                 <PencilIcon />
                 {t("devices.menu.rename")}
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setTagsOpen(true)}
-              >
+              <DropdownMenuItem onClick={() => setTagsOpen(true)}>
                 <TagIcon />
                 {t("devices.menu.tags")}
               </DropdownMenuItem>
@@ -292,15 +330,25 @@ export function DeviceRow({
                   }
                 >
                   <RadioTowerIcon />
-                  <span className="flex-1">{t("devices.detail.hub.title")}</span>
-                  {device.isHub ? <CheckIcon className="text-brand-text" /> : null}
+                  <span className="flex-1">
+                    {t("devices.detail.hub.title")}
+                  </span>
+                  {device.isHub ? (
+                    <CheckIcon className="text-brand-text" />
+                  ) : null}
                 </DropdownMenuItem>
               ) : null}
-              {credentialsMode && device.effectiveRole === "member" && device.credential ? (
+              {credentialsMode &&
+              device.effectiveRole === "member" &&
+              device.credential ? (
                 <DropdownMenuItem
                   disabled={revoke.isPending}
                   onClick={() => {
-                    if (window.confirm(t("access.revokeConfirm", { hostname: name }))) {
+                    if (
+                      window.confirm(
+                        t("access.revokeConfirm", { hostname: name })
+                      )
+                    ) {
                       revoke.mutate({ deviceId: device.id })
                     }
                   }}
@@ -309,7 +357,7 @@ export function DeviceRow({
                   {t("access.revoke")}
                 </DropdownMenuItem>
               ) : null}
-              <div aria-hidden="true" className="my-1.5 -mx-1.5 h-px bg-line" />
+              <div aria-hidden="true" className="-mx-1.5 my-1.5 h-px bg-line" />
               {device.state !== "blocked" ? (
                 <DropdownMenuItem
                   disabled={block.isPending}
@@ -347,6 +395,29 @@ export function DeviceRow({
         deviceName={name}
         onOpenChange={setTagsOpen}
         open={tagsOpen}
+      />
+
+      <ConfirmDialog
+        confirmLabel={
+          confirmOperation === "block" ? t("common.block") : t("common.remove")
+        }
+        description={
+          confirmOperation === "block"
+            ? t("devices.blockConfirm")
+            : t("devices.deleteConfirm")
+        }
+        destructive={confirmOperation === "delete"}
+        onConfirm={confirmRemoval}
+        onOpenChange={(open) => {
+          if (!open) setConfirmOperation(null)
+        }}
+        open={confirmOperation !== null}
+        pending={block.isPending || remove.isPending}
+        title={
+          confirmOperation === "block"
+            ? t("deviceStatus.danger.blockTitle")
+            : t("deviceStatus.danger.deleteTitle")
+        }
       />
 
       <AnchorRemovalDialog

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { PencilIcon } from "lucide-react"
+import { PencilIcon, TagIcon } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { deviceName, osLabel } from "@/lib/device-presentation"
+import { deviceSecondaryHostname, tagLabel } from "@/lib/device-status"
 import { formatDate } from "@/lib/format"
 
 /**
@@ -50,8 +51,12 @@ export function DeviceDetailsCard({
     mutation: {
       onSuccess: async () => {
         toast.success(t("devices.ownerSaved"))
-        await queryClient.invalidateQueries({ queryKey: getGetDeviceQueryKey(device.id) })
-        await queryClient.invalidateQueries({ queryKey: getListDevicesQueryKey() })
+        await queryClient.invalidateQueries({
+          queryKey: getGetDeviceQueryKey(device.id),
+        })
+        await queryClient.invalidateQueries({
+          queryKey: getListDevicesQueryKey(),
+        })
       },
       onError: (error) =>
         toast.error(error instanceof Error ? error.message : t("common.error")),
@@ -59,6 +64,7 @@ export function DeviceDetailsCard({
   })
 
   const name = deviceName(device)
+  const secondaryHostname = deviceSecondaryHostname(device)
 
   return (
     <section className="rounded-xl bg-card shadow-sm ring-1 ring-line">
@@ -95,7 +101,9 @@ export function DeviceDetailsCard({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none">{t("devices.detail.noOwner")}</SelectItem>
+                <SelectItem value="__none">
+                  {t("devices.detail.noOwner")}
+                </SelectItem>
                 {(users.data?.data ?? []).map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.displayName || user.email}
@@ -104,7 +112,9 @@ export function DeviceDetailsCard({
               </SelectContent>
             </Select>
           ) : (
-            <span className="truncate">{owner?.displayName || owner?.email || "—"}</span>
+            <span className="truncate">
+              {owner?.displayName || owner?.email || "—"}
+            </span>
           )}
         </Field>
 
@@ -114,8 +124,9 @@ export function DeviceDetailsCard({
               <span className="text-fg-3">—</span>
             ) : (
               device.tags.map((tag) => (
-                <Chip key={tag} variant="tag">
-                  {tag}
+                <Chip key={tag} title={tagLabel(tag)} variant="tag">
+                  <TagIcon aria-hidden="true" className="size-3" />
+                  {tagLabel(tag)}
                 </Chip>
               ))
             )}
@@ -135,7 +146,8 @@ export function DeviceDetailsCard({
         <Field label={t("magicDns.name")}>
           <span className="flex min-w-0 items-center gap-1">
             <span className="truncate font-mono text-xs">
-              {device.magicDnsName ?? `${device.dnsName ?? name}.${device.magicDnsZone}`}
+              {device.magicDnsName ??
+                `${device.dnsName ?? name}.${device.magicDnsZone}`}
             </span>
             {canManage ? (
               <button
@@ -159,11 +171,21 @@ export function DeviceDetailsCard({
         </Field>
 
         <Field label={t("devices.detail.system")}>
-          <span className="truncate">
+          <span className="truncate" title={osLabel(device.os)}>
             {osLabel(device.os)}
-            {device.easytierVersion ? ` · EasyTier ${device.easytierVersion}` : ""}
+            {device.easytierVersion
+              ? ` · EasyTier ${device.easytierVersion}`
+              : ""}
           </span>
         </Field>
+
+        {secondaryHostname ? (
+          <Field label={t("devices.hostname")}>
+            <span className="truncate font-mono text-xs">
+              {secondaryHostname}
+            </span>
+          </Field>
+        ) : null}
 
         <Field mono label={t("devices.machineId")}>
           <CopyInline
@@ -174,7 +196,9 @@ export function DeviceDetailsCard({
         </Field>
 
         <Field label={t("devices.detail.joined")}>
-          <span>{formatDate(device.approvedAt ?? device.createdAt, i18n.language)}</span>
+          <span>
+            {formatDate(device.approvedAt ?? device.createdAt, i18n.language)}
+          </span>
         </Field>
       </dl>
 
