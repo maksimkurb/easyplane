@@ -7,33 +7,14 @@ import {
   NetworkIcon,
   PlusIcon,
 } from "lucide-react"
-import { toast } from "sonner"
 
-import {
-  useCreateNetwork,
-  useListDevices,
-  useListNetworks,
-} from "@/api/generated/easyplane"
+import { useListDevices, useListNetworks } from "@/api/generated/easyplane"
 import { useAuth } from "@/auth/auth-context"
 import { PageContainer } from "@/components/layout/page-container"
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/shared/field"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { NewNetworkDialog } from "@/components/network/new-network-dialog"
 import { Button } from "@/components/ui/button"
 import { LinkButton } from "@/components/shared/link-button"
 import { Chip, Dot } from "@/components/ui/chip"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import {
   Empty,
   EmptyContent,
@@ -42,7 +23,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
-import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { deviceHasIssue } from "@/lib/device-presentation"
 
@@ -50,23 +30,9 @@ export function NetworksPage() {
   const { t } = useTranslation()
   const { isAdmin } = useAuth()
   const [open, setOpen] = useState(false)
-  const [name, setName] = useState("")
-  const [cidr, setCidr] = useState("10.144.144.0/24")
 
   const networksQuery = useListNetworks()
   const devicesQuery = useListDevices()
-  const createNetwork = useCreateNetwork({
-    mutation: {
-      onSuccess: async () => {
-        toast.success(t("networks.created"))
-        setOpen(false)
-        setName("")
-      },
-      onError: (error) => {
-        toast.error(error instanceof Error ? error.message : t("common.error"))
-      },
-    },
-  })
 
   const networks = networksQuery.data?.data ?? []
   const devices = useMemo(
@@ -248,67 +214,7 @@ export function NetworksPage() {
         )}
       </section>
 
-      <Dialog onOpenChange={setOpen} open={open}>
-        <DialogContent>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault()
-              createNetwork.mutate({ data: { name, ipv4Cidr: cidr } })
-            }}
-          >
-            <DialogHeader>
-              <DialogTitle>{t("networks.createTitle")}</DialogTitle>
-              <DialogDescription>{t("networks.description")}</DialogDescription>
-            </DialogHeader>
-            <FieldGroup className="gap-4 py-4">
-              <Field className="gap-2">
-                <FieldLabel htmlFor="network-name">
-                  {t("networks.name")}
-                </FieldLabel>
-                <Input
-                  autoFocus
-                  id="network-name"
-                  onChange={(event) => setName(event.target.value)}
-                  required
-                  value={name}
-                />
-              </Field>
-              <Field className="gap-2">
-                <FieldLabel htmlFor="network-cidr">
-                  {t("networks.cidr")}
-                </FieldLabel>
-                <Input
-                  className="font-mono"
-                  id="network-cidr"
-                  onChange={(event) => setCidr(event.target.value)}
-                  required
-                  value={cidr}
-                />
-                <FieldDescription>{t("networks.cidrHint")}</FieldDescription>
-              </Field>
-              <Alert>
-                <AlertDescription>
-                  {t("access.createDefaultHint")}
-                </AlertDescription>
-              </Alert>
-            </FieldGroup>
-            <DialogFooter>
-              <Button
-                onClick={() => setOpen(false)}
-                type="button"
-                variant="outline"
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button disabled={createNetwork.isPending || !name} type="submit">
-                {createNetwork.isPending
-                  ? t("common.loading")
-                  : t("common.create")}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <NewNetworkDialog onOpenChange={setOpen} open={open} />
     </PageContainer>
   )
 }

@@ -241,9 +241,9 @@ export const enTranslation = {
     peers: {
       title: "Hubs and peers",
       description:
-        "What every device in this network dials. Device entries use the device's advertised endpoints and are never sent back to that device, so a hub cannot dial itself. External URLs are pushed verbatim.",
+        "Addresses every device dials to find the others. Turn Hub on for an always-on device on its device page, or add an external address below.",
       empty:
-        "No peers yet. Mark a device as a hub on its page, or add an external peer URL.",
+        "No peers yet. Turn on Hub on an always-on device, or add an external address.",
       peer: "Peer",
       kind: "Kind",
       kindValue: {
@@ -256,8 +256,9 @@ export const enTranslation = {
       hub: "Hub",
       notHub: "Not a hub",
       deviceHint: "Advertised endpoints of an approved hub.",
-      externalHint: "Raw URL pushed unchanged to every device.",
-      suggestion: "Exactly matches the endpoint of {{name}}.",
+      externalHint: "Sent to every device unchanged.",
+      suggestion:
+        "Exactly matches the endpoint of {{name}}. Link it to that device.",
       linkTo: "Link to device",
       noLinkDevices: "No approved devices to link.",
       addDevice: "Add a hub",
@@ -270,7 +271,7 @@ export const enTranslation = {
       addExternal: "Add an external peer",
       url: "Peer URL",
       addExternalHint:
-        "tcp/udp/ws/wss/quic/wg/ring and the other schemes the pinned core accepts.",
+        "A full address, for example tcp://hub.example.com:11010.",
       added: "Peer added",
       removed: "Peer removed",
       linked: "Peer linked to the device",
@@ -459,6 +460,11 @@ export const enTranslation = {
       "Revoke this invite? Existing devices keep working with their token.",
     revoked: "Invite revoked",
     empty: "No invites yet.",
+    existingHidden:
+      "For security, an existing link cannot be shown again. Create a new invite if you lost it.",
+    listTitle: "Invite links",
+    usesLeft: "{{used}} of {{max}} uses",
+    noExpiry: "No expiry",
   },
   devices: {
     title: "Devices",
@@ -1000,7 +1006,8 @@ export const enTranslation = {
       byRules: "Decided by: {{rules}}",
       byDefault: "Decided by the default action",
       noDevices: "No devices to compare",
-      openMode: "All traffic is allowed while the mode is Open, so every device can reach every other device.",
+      openMode:
+        "All traffic is allowed while the mode is Open, so every device can reach every other device.",
     },
     test: {
       hint: "Check a connection against the saved policy. The matching rule is highlighted in the list.",
@@ -1109,27 +1116,236 @@ export const enTranslation = {
     neverExpires: "never expires",
     expiresIn: "expires in {{duration}}",
     expiresOn: "expires {{when}}",
+    stepLabel: "Step {{current}} of 2",
+    deviceTypeLabel: "What kind of device?",
+    typeComputer: "Computer or server",
+    typeComputerHint: "Linux, macOS, Windows or Docker",
+    typeRouter: "Router",
+    typeRouterHint: "OpenWrt and similar",
+    typePhone: "Phone",
+    typePhoneHint: "Android or iPhone app",
+    installedLabel: "Is EasyTier already installed?",
+    installedYes: "Already installed",
+    installedNo: "Not installed yet",
+    installedYesHint: "You will get one command that joins the network.",
+    installedNoHint:
+      "Install EasyTier first. If it is already on the device, choose “Already installed”.",
+    openReleases: "Open downloads",
+    inviteOptions: "Invite options",
+    inviteOptionsSummary: "{{uses}} · {{expiry}}",
+    labelPlaceholder: "e.g. Living-room server",
+    approvalExplain:
+      "Every new device waits for approval, so a lost link cannot add a device without you noticing.",
+    optionsHeading: "Invite details",
+    resultTitle: "Connect the device",
+    resultComputer: "Run this on the device",
+    resultRouter: "Run this on the router, for example over SSH",
+    resultPhone: "Scan this code in the EasyTier app",
+    phoneStepInstall: "Install EasyTier for Android",
+    phoneStepScan: "Open the app and scan this code",
+    phoneOrLink: "Or paste this link into Config server",
+    routerNote:
+      "Run it as root and make sure no other EasyTier instance is running with a local config.",
+    waitingTitle: "Waiting for the device to connect…",
+    waitingHint:
+      "This page updates automatically. Keep it open until the device appears.",
+    joinedTitle: "Device joined — approve it",
+    joinedBody:
+      "{{hostname}} connected with this invite. Approve it to let it join the network.",
+    joinedApprove: "Approve device",
+    joinedApproved:
+      "Device approved. It will appear in the network in a moment.",
+    joinedAskAdmin: "Ask an admin to approve the device.",
+    waitingForAdmin: "Waiting for an admin to approve…",
+    back: "Back",
+    createAnother: "Create another invite",
+    copiedCommand: "Command copied",
+    copiedLink: "Link copied",
+    stepDone: "Device connected",
   },
   settings: {
+    navLabel: "Settings sections",
+    sections: {
+      general: "General",
+      connectivity: "Connectivity",
+      dns: "DNS",
+      security: "Security",
+      invites: "Invites",
+      danger: "Danger zone",
+    },
     general: "General",
     generalHint: "How this network is named here and on the wire.",
+    generalDescription:
+      "The name you see, the EasyTier identity devices use, and the address range.",
+    nameHint: "Shown in this panel only. Devices never see this name.",
+    networkNameHint:
+      "Devices receive this automatically. Copy it when you connect a device by hand.",
+    cidrHint:
+      "Devices receive addresses from this range. It cannot be changed while the network has devices.",
     cidrLocked:
       "Addresses are assigned from this range. Changing it would require re-addressing every device.",
+    connectivityDescription:
+      "How devices find each other: hubs, relay and rendezvous.",
+    hubsRow: "Hubs and external peers",
+    hubsRowHint:
+      "Addresses every device dials. Turn Hub on for an always-on device on its device page, or add an external address.",
+    hubHint: "You can also turn Hub on from any device page.",
+    relayRow: "Relay and rendezvous",
+    relayRowHint: "A helper node that lets devices behind NAT find each other.",
+    directOnlyRow: "Direct connections only",
+    directOnlyHint:
+      "Devices never send data through a relay. Only choose this if every device can connect directly: a device behind a strict NAT will not be able to reach the network.",
+    directOnlyOn: "On — no relay fallback",
+    directOnlyOff: "Off — relay allowed when needed",
+    advanced: "Advanced",
+    routesRow: "Subnet and exit-node routes",
+    routesHint:
+      "Routes requested by devices. Approve them only if you trust the device.",
+    dnsDescription: "Names for devices and whether the network resolves them.",
+    magicDnsRow: "MagicDNS",
+    magicDnsRowHint: "Let devices reach each other by name instead of address.",
+    zoneRow: "DNS zone",
+    zoneHint: "Devices resolve names like nas-01.{{zone}}.",
+    zoneChangeHint:
+      "EasyTier reads the zone from client settings, so a custom zone needs extra client configuration.",
+    zoneMinHint: "The zone must be at least 3 characters.",
+    namesRow: "Device names",
+    namesRowHint: "Names assigned to approved devices.",
+    securityDescription:
+      "How devices prove they belong, and the network secret.",
+    authRow: "Device authentication",
+    authHint: "How devices prove they belong to this network.",
+    authShared:
+      "One shared secret. Simple, but a leaked device exposes the whole network.",
+    authCredentials:
+      "Each device gets its own revocable credential. An anchor (an always-on device) holds the network secret.",
+    authManage: "Manage in Access",
+    authLearnMore: "Compare the two modes",
+    secretRow: "Network secret",
     secretHint: "Shared by every device. Never shown unless you ask.",
-    rotateHint:
-      "Rotating disconnects existing devices until they receive the new config.",
+    reveal: "Reveal",
     rotate: "Rotate…",
+    rotateHint:
+      "Rotating disconnects existing devices until they receive the new configuration.",
+    rotateTitle: "Rotate the network secret?",
+    rotateBody:
+      "Every device will receive a new secret. Devices that are offline keep the old secret and can no longer join until they receive the new configuration.",
+    rotateConsequence:
+      "Copy the new secret right away: it is shown only once. This cannot be undone.",
+    rotateConfirm: "Rotate secret",
+    rotated: "Secret rotated",
+    invitesDescription:
+      "Links that let new devices join. Create them with Add device.",
+    invitesHint: "Links that let new devices join. Create one with Add device.",
+    invitesEmpty: "No invite links yet. Create one with Add device.",
+    inviteCreate: "Create invite with Add device",
+    inviteUses: "{{used}} of {{max}} used",
+    inviteUsesUnlimited: "{{used}} used, no limit",
+    inviteExpires: "Expires {{when}}",
+    inviteNoExpiry: "No expiry",
+    inviteApproval: "New devices need approval",
+    inviteExistingHidden:
+      "For security, an existing link cannot be shown again. Create a new invite if you lost it.",
+    revokeTitle: "Revoke this invite?",
+    revokeBody:
+      "The link stops working for new devices. Devices that already joined keep their access.",
+    revoked: "Invite revoked",
+    dangerDescription: "Irreversible actions. Read carefully.",
     danger: "Delete network",
     dangerHint:
       "Disconnects all {{count}} devices and removes their config. This can't be undone.",
-    deleteNetwork: "Delete {{name}}…",
+    deleteTitle: "Delete this network?",
+    deleteBody:
+      "This disconnects all {{count}} devices, removes their configuration and deletes every invite and the configuration history.",
+    deleteTypeLabel: "Type the network name to confirm",
+    deleteTypeHint: "Type “{{name}}” exactly.",
+    deleteNetwork: "Delete network",
     deleteConfirm:
       "Delete {{name}}? Invites, devices and config history go with it.",
     deleted: "Network deleted",
-    saved: "Network saved",
-    invitesHint: "Links that let new devices join. Create one with Add device.",
-    inviteUses: "{{used}} of {{max}} used",
-    inviteExpires: "expires {{when}}",
+    saved: "Saved",
+    unsaved: "Unsaved changes",
+    discard: "Discard",
+    saveChanges: "Save changes",
+    undone: "Change undone",
+    secretRevealWarning:
+      "The secret is shown again here and the reveal is recorded in the audit log.",
+  },
+  setup: {
+    title: "Set up your network",
+    optionalTitle: "Optional next steps",
+    progress: "{{done}} of {{total}} done",
+    dismiss: "Dismiss setup checklist",
+    optional: "Optional",
+    done: "Done",
+    steps: {
+      first: {
+        title: "Add your first device",
+        body: "Install EasyTier on a computer, server, router or phone and connect it with an invite.",
+        action: "Add device",
+      },
+      approve: {
+        title: "Approve the new device",
+        body: "A new device waits for your approval before it can join the network.",
+        action: "Review pending",
+        waiting: "Waiting for a device to connect.",
+      },
+      second: {
+        title: "Add a second device",
+        body: "Two approved devices can talk to each other straight away.",
+        action: "Add device",
+      },
+      hub: {
+        title: "Make a device reachable from the internet",
+        body: "Turn an always-on device into a Hub so devices behind NAT can find each other. You can also do this on any device page.",
+        action: "Open a device",
+      },
+      access: {
+        title: "Set up access rules",
+        body: "Decide which devices may reach which. Optional: without rules all traffic is allowed.",
+        action: "Open access rules",
+      },
+    },
+  },
+  newNetwork: {
+    title: "Create a network",
+    description:
+      "A name and an address range is all you need. Defaults already work.",
+    stepBasics: "Basics",
+    stepReview: "Review",
+    stepLabel: "Step {{current}} of {{total}}",
+    name: "Network name",
+    namePlaceholder: "Home lab",
+    nameHint: "A name you will recognise in the list.",
+    suggestion: "{{org}} network",
+    defaultSuggestion: "My network",
+    range: "Address range",
+    rangeHint:
+      "Devices get private addresses from this range. The suggested range is free to use.",
+    suggest: "Suggest another",
+    advanced: "Advanced options",
+    advancedHint:
+      "The EasyTier network name and network secret are generated for you. You can copy them later in Settings.",
+    networkName: "EasyTier network name",
+    secret: "Network secret",
+    generated: "Generated automatically after creation",
+    reviewTitle: "Check before you create",
+    reviewHint: "You can rename the network and change other settings later.",
+    back: "Back",
+    next: "Continue",
+    create: "Create network",
+    created: "Network created",
+    error: {
+      nameRequired: "Enter a network name.",
+      rangeRequired: "Enter an address range.",
+      rangeInvalid:
+        "That does not look like an address range. Example: 10.144.144.0/24.",
+      rangeNotPrivate:
+        "Use a private range: 10.x.x.x, 172.16–31.x.x or 192.168.x.x.",
+      rangeTooSmall:
+        "Leave room for at least a few devices, for example with a /24 range.",
+      rangeOverlap: "This range overlaps “{{name}}”. Choose another one.",
+    },
   },
   deviceDrawer: {
     openNetwork: "Open network",
@@ -1217,7 +1433,11 @@ export const enTranslation = {
     rename: "Rename",
     renamed: "Device renamed",
     honestNote:
-      "Names are unique per network and enforced by the API and a database index. The list shows the control plane's view; EasyTier clients build their DNS records from peer hostnames.",
+      "EasyTier clients build their own DNS records from peer hostnames, so every rename is pushed to all devices. Names are unique within this network.",
+    namesTitle: "Device names",
+    customName: "Custom name",
+    deviceReported: "Device reports hostname {{hostname}}",
+    deviceReportedNone: "The device did not report a hostname.",
     renameTitle: "Rename device",
     renameDescription:
       "The DNS name is device identity; it is pushed as the EasyTier hostname.",
@@ -1227,8 +1447,7 @@ export const enTranslation = {
     title: "Bundled rendezvous node",
     description:
       "A stock easytier-core public node that helps devices find each other. It is not a VPN exit and, unless the operator enabled it, it does not carry your data.",
-    notConfigured:
-      "No bundled rendezvous node is configured for this panel. Set EASYPLANE_RENDEZVOUS_ENDPOINTS on the server to show it here.",
+    notConfigured: "Not configured by the server administrator.",
     endpoints: "Peer endpoints",
     relayData: "Data relay",
     relayOn: "Relay enabled (opt-in)",
@@ -1242,13 +1461,13 @@ export const enTranslation = {
     secretDiffers:
       "Does not match the node — the node will refuse this network",
     secretUnknown:
-      "Cannot be checked (EASYPLANE_RENDEZVOUS_SECRET is not set on the panel)",
+      "Cannot be checked: the panel has no node secret to compare.",
     explainRendezvous:
       "Devices dial this node, learn each other's addresses and try a direct peer-to-peer connection. The node helps with the initial contact and NAT hole punching, but drops forwarded data by default, so traffic goes directly between devices whenever your NAT allows it.",
     explainRelay:
       "Devices dial this node and the node also forwards their data. This is the fallback for symmetric NAT and CGNAT, where a direct connection is impossible; it costs the operator bandwidth and exposes traffic metadata (not the end-to-end encrypted payload).",
     cgnatNote:
-      "Behind CGNAT or a symmetric NAT a direct path may be impossible. Only then does relaying help; enabling p2p_only below makes those devices unable to connect at all.",
+      "Behind CGNAT or a symmetric NAT a direct path may be impossible. Only then does relaying help; “Direct connections only” makes those devices unable to connect at all.",
     secretMismatchWarning:
       "This network's EasyTier secret differs from the node's. The node only admits networks that can prove its secret, so devices will be rejected until the secrets match.",
     alignSecret: "Align network secret",
@@ -1260,16 +1479,16 @@ export const enTranslation = {
     updated: "Network settings updated",
     noDialTarget:
       "No dial target: this network has no hub, no external peer URL and does not use the bundled rendezvous node. Devices can only reach each other on the same LAN or when they already know each other's addresses.",
-    p2pOnly: "p2p_only (advanced)",
+    p2pOnly: "Direct connections only",
     p2pOnlyHint:
-      "Send data only to peers with a direct connection, never through a relay.",
+      "Devices never send data through a relay. Only choose this if every device can connect directly; a device behind a strict NAT will not be able to reach the network.",
     p2pOnlyWarning:
-      "With p2p_only, a device behind a symmetric NAT or CGNAT cannot exchange data at all, even when the rendezvous node relays. Use it only when every device can hole-punch.",
+      "With direct connections only, a device behind a symmetric NAT or CGNAT cannot exchange data at all, even when the rendezvous node relays. Use it only when every device can connect directly.",
     confirmTitle: "Use the bundled rendezvous node?",
     confirmBody:
       "Every device in this network will dial the node. The panel could not verify the network secret.",
     confirmWarning:
-      "The bundled node is in private mode by default and only admits networks whose EasyTier secret equals the node's. If they differ, devices are refused (the node log says “private mode is turned on, foreign network secret mismatch”). Enabling the toggle also pushes secure mode to devices, which the node's secret proof requires.",
+      "The bundled node only admits networks that know its secret. If the secrets differ, devices are refused. Enabling this also turns on the secure handshake the node requires.",
     confirm: "Enable anyway",
   },
   routes: {
@@ -1532,7 +1751,8 @@ export const enTranslation = {
       "No node reports an open or static NAT, but {{count}} node(s) are relay-capable because peers already route through them. EasyTier relays through any peer both sides can reach, so this works while those paths stay up.",
     honestNote:
       "A solid line means the two devices talk directly; a dashed line means traffic goes through another device.",
-    asymmetric: "The two sides disagree: one reports a direct connection, the other a relayed path.",
+    asymmetric:
+      "The two sides disagree: one reports a direct connection, the other a relayed path.",
     evidence: "Per-observer evidence",
     observedBy: "Observed by",
   },
@@ -1552,8 +1772,10 @@ export const enTranslation = {
       offline: "The device is not connected right now.",
       offlinePending:
         "It will update to revision {{revision}} when it comes back online.",
-      updating: "Revision {{revision}} is queued; the device still runs an older one.",
-      updatingUnknown: "The device has not applied the latest configuration yet.",
+      updating:
+        "Revision {{revision}} is queued; the device still runs an older one.",
+      updatingUnknown:
+        "The device has not applied the latest configuration yet.",
       pushFailed: "The last configuration push failed.",
       pushFailedReason: "Last push failed: {{reason}}",
       pushOffline:
@@ -1577,13 +1799,11 @@ export const enTranslation = {
       connecting: "Connecting…",
       reconnecting: "Reconnecting…",
       offline: "Updates paused",
-      hint:
-        "This page updates itself when something changes on the server. It says nothing about whether devices are online.",
+      hint: "This page updates itself when something changes on the server. It says nothing about whether devices are online.",
     },
     danger: {
       title: "Danger zone",
-      hint:
-        "Blocking keeps the device out until you unblock it. Removing deletes the device and its configuration history.",
+      hint: "Blocking keeps the device out until you unblock it. Removing deletes the device and its configuration history.",
       blockTitle: "Block this device?",
       deleteTitle: "Remove this device?",
     },
@@ -1611,8 +1831,7 @@ export const enTranslation = {
   },
   device: {
     history: {
-      hint:
-        "Every save is a revision. The device runs the one marked Running; a newer one is applied on the next successful push.",
+      hint: "Every save is a revision. The device runs the one marked Running; a newer one is applied on the next successful push.",
       revision: "Revision",
       changeLabel: "Change",
       change: {
@@ -1648,8 +1867,7 @@ export const enTranslation = {
     legend: {
       title: "What the map shows",
       relayCapable: "Relay-capable",
-      hint:
-        "Each line joins two devices that can reach each other. A solid line means they talk directly. A dashed line means traffic passes through another device (a relay). A violet tower marks a device that can relay for others.",
+      hint: "Each line joins two devices that can reach each other. A solid line means they talk directly. A dashed line means traffic passes through another device (a relay). A violet tower marks a device that can relay for others.",
     },
   },
   health: {

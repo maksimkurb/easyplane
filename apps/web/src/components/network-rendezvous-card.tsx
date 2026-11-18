@@ -24,7 +24,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 
 /**
@@ -36,14 +35,23 @@ import { Switch } from "@/components/ui/switch"
  * networks that can prove the node's EasyTier network secret; the proof travels
  * in secure mode, so enabling the toggle also pushes secure mode to devices.
  */
-export function NetworkRendezvousCard({ network }: { network: GetNetwork200 }) {
+export function NetworkRendezvousCard({
+  network,
+  embedded = false,
+}: {
+  network: GetNetwork200
+  /** Render inside an existing settings section instead of its own card. */
+  embedded?: boolean
+}) {
   const { t } = useTranslation()
   const { isAdmin } = useAuth()
   const queryClient = useQueryClient()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   const refresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: getGetNetworkQueryKey(network.id) })
+    await queryClient.invalidateQueries({
+      queryKey: getGetNetworkQueryKey(network.id),
+    })
     await queryClient.invalidateQueries({ queryKey: getListNetworksQueryKey() })
   }
   const onError = (error: unknown) =>
@@ -86,12 +94,8 @@ export function NetworkRendezvousCard({ network }: { network: GetNetwork200 }) {
     update.mutate({ networkId: network.id, data: { useRendezvous: true } })
   }
 
-  return (
-    <SectionCard
-      action={<RadioTowerIcon className="size-4 text-muted-foreground" />}
-      description={t("rendezvous.description")}
-      title={t("rendezvous.title")}
-    >
+  const body = (
+    <>
       {!info.configured ? (
         <Alert>
           <AlertDescription>{t("rendezvous.notConfigured")}</AlertDescription>
@@ -203,9 +207,7 @@ export function NetworkRendezvousCard({ network }: { network: GetNetwork200 }) {
                 })}
               </span>
               <Badge variant={info.useBundled ? "success" : "outline"}>
-                {info.useBundled
-                  ? t("rendezvous.on")
-                  : t("rendezvous.off")}
+                {info.useBundled ? t("rendezvous.on") : t("rendezvous.off")}
               </Badge>
             </div>
           </div>
@@ -218,43 +220,11 @@ export function NetworkRendezvousCard({ network }: { network: GetNetwork200 }) {
         </Alert>
       ) : null}
 
-      <Separator className="my-4" />
-
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <label className="flex items-start gap-2 text-sm">
-          <Switch
-            checked={network.p2pOnly}
-            disabled={!isAdmin || busy}
-            onCheckedChange={(checked) =>
-              update.mutate({ networkId: network.id, data: { p2pOnly: checked } })
-            }
-          />
-          <span>
-            <span className="font-medium">{t("rendezvous.p2pOnly")}</span>
-            <span className="block text-xs text-muted-foreground">
-              {t("rendezvous.p2pOnlyHint")}
-            </span>
-          </span>
-        </label>
-        <Badge variant={network.p2pOnly ? "warning" : "outline"}>
-          {network.p2pOnly
-            ? t("rendezvous.on")
-            : t("rendezvous.off")}
-        </Badge>
-      </div>
-      {network.p2pOnly ? (
-        <Alert className="mt-3">
-          <AlertDescription>{t("rendezvous.p2pOnlyWarning")}</AlertDescription>
-        </Alert>
-      ) : null}
-
       <Dialog onOpenChange={setConfirmOpen} open={confirmOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("rendezvous.confirmTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("rendezvous.confirmBody")}
-            </DialogDescription>
+            <DialogDescription>{t("rendezvous.confirmBody")}</DialogDescription>
           </DialogHeader>
           <Alert>
             <AlertDescription>
@@ -271,6 +241,18 @@ export function NetworkRendezvousCard({ network }: { network: GetNetwork200 }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  )
+
+  if (embedded) return <div className="min-w-0">{body}</div>
+
+  return (
+    <SectionCard
+      action={<RadioTowerIcon className="size-4 text-muted-foreground" />}
+      description={t("rendezvous.description")}
+      title={t("rendezvous.title")}
+    >
+      {body}
     </SectionCard>
   )
 }

@@ -34,7 +34,14 @@ function stateVariant(state: "pending" | "approved" | "rejected") {
  * Subnet/exit-node approvals plus what the clients actually advertise.
  * Only approved rows are compiled into the pushed config.
  */
-export function NetworkRoutesCard({ networkId }: { networkId: string }) {
+export function NetworkRoutesCard({
+  networkId,
+  embedded = false,
+}: {
+  networkId: string
+  /** Render inside an existing settings section instead of its own card. */
+  embedded?: boolean
+}) {
   const { t } = useTranslation()
   const { isAdmin, canManage } = useAuth()
   const queryClient = useQueryClient()
@@ -43,8 +50,12 @@ export function NetworkRoutesCard({ networkId }: { networkId: string }) {
     mutation: {
       onSuccess: async () => {
         toast.success(t("routes.decided"))
-        await queryClient.invalidateQueries({ queryKey: getListNetworkRoutesQueryKey(networkId) })
-        await queryClient.invalidateQueries({ queryKey: getListDevicesQueryKey() })
+        await queryClient.invalidateQueries({
+          queryKey: getListNetworkRoutesQueryKey(networkId),
+        })
+        await queryClient.invalidateQueries({
+          queryKey: getListDevicesQueryKey(),
+        })
       },
       onError: (error) =>
         toast.error(error instanceof Error ? error.message : t("common.error")),
@@ -61,22 +72,18 @@ export function NetworkRoutesCard({ networkId }: { networkId: string }) {
         entry.report.observedCidrs.length > 0 ||
         entry.report.unknownPeers.length > 0 ||
         entry.report.unapprovedCidrs.length > 0 ||
-        entry.report.unapprovedObservedCidrs.length > 0),
+        entry.report.unapprovedObservedCidrs.length > 0)
   )
   const flagged = data.reports.filter(
     (entry) =>
       entry.report !== null &&
       (entry.report.unapprovedCidrs.length > 0 ||
         entry.report.unapprovedObservedCidrs.length > 0 ||
-        entry.report.unknownPeers.length > 0),
+        entry.report.unknownPeers.length > 0)
   )
 
-  return (
-    <SectionCard
-      action={<RouteIcon className="size-4 text-muted-foreground" />}
-      description={t("routes.description")}
-      title={t("routes.title")}
-    >
+  const body = (
+    <div className="flex min-w-0 flex-col gap-3">
       {data.routes.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("routes.empty")}</p>
       ) : (
@@ -96,7 +103,9 @@ export function NetworkRoutesCard({ networkId }: { networkId: string }) {
                   </Badge>
                 </div>
                 <p className="mt-0.5 font-mono text-xs text-fg-3">
-                  {route.kind === "subnet" ? t("routes.subnet") : t("routes.exitNode")}
+                  {route.kind === "subnet"
+                    ? t("routes.subnet")
+                    : t("routes.exitNode")}
                   {" · "}
                   {route.cidr || "0.0.0.0/0"}
                 </p>
@@ -105,7 +114,10 @@ export function NetworkRoutesCard({ networkId }: { networkId: string }) {
                     <Button
                       disabled={decide.isPending}
                       onClick={() =>
-                        decide.mutate({ routeId: route.id, data: { state: "rejected" } })
+                        decide.mutate({
+                          routeId: route.id,
+                          data: { state: "rejected" },
+                        })
                       }
                       size="sm"
                       variant="outline"
@@ -115,7 +127,10 @@ export function NetworkRoutesCard({ networkId }: { networkId: string }) {
                     <Button
                       disabled={decide.isPending}
                       onClick={() =>
-                        decide.mutate({ routeId: route.id, data: { state: "approved" } })
+                        decide.mutate({
+                          routeId: route.id,
+                          data: { state: "approved" },
+                        })
                       }
                       size="sm"
                     >
@@ -126,92 +141,111 @@ export function NetworkRoutesCard({ networkId }: { networkId: string }) {
               </li>
             ))}
           </ul>
-        <div className="hidden overflow-x-auto md:block">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("devices.hostname")}</TableHead>
-                <TableHead>{t("routes.kind")}</TableHead>
-                <TableHead>{t("routes.cidr")}</TableHead>
-                <TableHead>{t("common.status")}</TableHead>
-                <TableHead className="text-right">{t("common.actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.routes.map((route) => (
-                <TableRow key={route.id}>
-                  <TableCell className="text-sm">
-                    <Link className="hover:underline" href={`/devices/${route.deviceId}`}>
-                      {route.deviceHostname}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-xs">
-                    <div className="flex flex-wrap items-center gap-1">
-                      <span>
-                        {route.kind === "subnet" ? t("routes.subnet") : t("routes.exitNode")}
-                      </span>
-                      {route.source === "device_declared" ? (
-                        <Badge className="font-normal" variant="outline">
-                          {t("routes.declaredByDevice")}
-                        </Badge>
-                      ) : null}
-                      {route.source === "device_declared" && !route.advertised ? (
-                        <Badge
-                          className="border-amber-500/40 font-normal text-amber-700 dark:text-amber-300"
-                          variant="outline"
-                        >
-                          {t("routes.noLongerAdvertised")}
-                        </Badge>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {route.cidr || (route.kind === "exit_node" ? "0.0.0.0/0" : "")}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={stateVariant(route.state)}>
-                      {t(`routes.state.${route.state}`)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {isAdmin && route.state === "pending" ? (
-                      <span className="flex justify-end gap-1">
-                        <Button
-                          disabled={decide.isPending}
-                          onClick={() =>
-                            decide.mutate({ routeId: route.id, data: { state: "approved" } })
-                          }
-                          size="sm"
-                          variant="outline"
-                        >
-                          {t("common.approve")}
-                        </Button>
-                        <Button
-                          disabled={decide.isPending}
-                          onClick={() =>
-                            decide.mutate({ routeId: route.id, data: { state: "rejected" } })
-                          }
-                          size="sm"
-                          variant="ghost"
-                        >
-                          {t("routes.reject")}
-                        </Button>
-                      </span>
-                    ) : null}
-                  </TableCell>
+          <div className="hidden overflow-x-auto md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("devices.hostname")}</TableHead>
+                  <TableHead>{t("routes.kind")}</TableHead>
+                  <TableHead>{t("routes.cidr")}</TableHead>
+                  <TableHead>{t("common.status")}</TableHead>
+                  <TableHead className="text-right">
+                    {t("common.actions")}
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {data.routes.map((route) => (
+                  <TableRow key={route.id}>
+                    <TableCell className="text-sm">
+                      <Link
+                        className="hover:underline"
+                        href={`/devices/${route.deviceId}`}
+                      >
+                        {route.deviceHostname}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span>
+                          {route.kind === "subnet"
+                            ? t("routes.subnet")
+                            : t("routes.exitNode")}
+                        </span>
+                        {route.source === "device_declared" ? (
+                          <Badge className="font-normal" variant="outline">
+                            {t("routes.declaredByDevice")}
+                          </Badge>
+                        ) : null}
+                        {route.source === "device_declared" &&
+                        !route.advertised ? (
+                          <Badge
+                            className="border-amber-500/40 font-normal text-amber-700 dark:text-amber-300"
+                            variant="outline"
+                          >
+                            {t("routes.noLongerAdvertised")}
+                          </Badge>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {route.cidr ||
+                        (route.kind === "exit_node" ? "0.0.0.0/0" : "")}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={stateVariant(route.state)}>
+                        {t(`routes.state.${route.state}`)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {isAdmin && route.state === "pending" ? (
+                        <span className="flex justify-end gap-1">
+                          <Button
+                            disabled={decide.isPending}
+                            onClick={() =>
+                              decide.mutate({
+                                routeId: route.id,
+                                data: { state: "approved" },
+                              })
+                            }
+                            size="sm"
+                            variant="outline"
+                          >
+                            {t("common.approve")}
+                          </Button>
+                          <Button
+                            disabled={decide.isPending}
+                            onClick={() =>
+                              decide.mutate({
+                                routeId: route.id,
+                                data: { state: "rejected" },
+                              })
+                            }
+                            size="sm"
+                            variant="ghost"
+                          >
+                            {t("routes.reject")}
+                          </Button>
+                        </span>
+                      ) : null}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </>
       )}
 
       <p className="mt-3 text-xs text-muted-foreground">
         {canManage ? t("routes.requestHint") : t("routes.viewerHint")}
       </p>
-      <p className="mt-1 text-xs text-muted-foreground">{t("routes.declaredHint")}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{t("routes.exitNodeConsent")}</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {t("routes.declaredHint")}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {t("routes.exitNodeConsent")}
+      </p>
 
       {flagged.length > 0 ? (
         <Alert className="mt-3 border-destructive/40">
@@ -220,7 +254,10 @@ export function NetworkRoutesCard({ networkId }: { networkId: string }) {
             <ul className="list-disc space-y-1 pl-4 text-xs">
               {flagged.map((entry) => (
                 <li key={entry.deviceId}>
-                  <Link className="font-mono hover:underline" href={`/devices/${entry.deviceId}`}>
+                  <Link
+                    className="font-mono hover:underline"
+                    href={`/devices/${entry.deviceId}`}
+                  >
                     {entry.deviceHostname}
                   </Link>
                   {": "}
@@ -228,7 +265,7 @@ export function NetworkRoutesCard({ networkId }: { networkId: string }) {
                     ...(entry.report?.unapprovedCidrs ?? []),
                     ...(entry.report?.unapprovedObservedCidrs ?? []),
                     ...(entry.report?.unknownPeers ?? []).flatMap((peer) =>
-                      peer.proxyCidrs.map((cidr) => `${cidr} (${peer.ipv4})`),
+                      peer.proxyCidrs.map((cidr) => `${cidr} (${peer.ipv4})`)
                     ),
                   ].join(", ")}
                 </li>
@@ -254,18 +291,23 @@ export function NetworkRoutesCard({ networkId }: { networkId: string }) {
             <TableBody>
               {reports.map((entry) => (
                 <TableRow key={entry.deviceId}>
-                  <TableCell className="text-sm">{entry.deviceHostname}</TableCell>
+                  <TableCell className="text-sm">
+                    {entry.deviceHostname}
+                  </TableCell>
                   <TableCell className="font-mono text-[11px]">
                     {entry.report?.approvedCidrs.join(", ") || t("common.none")}
                   </TableCell>
                   <TableCell className="font-mono text-[11px]">
-                    {entry.report?.configuredCidrs.join(", ") || t("common.none")}
+                    {entry.report?.configuredCidrs.join(", ") ||
+                      t("common.none")}
                   </TableCell>
                   <TableCell className="font-mono text-[11px]">
                     {entry.report?.observedCidrs.join(", ") || t("common.none")}
                   </TableCell>
                   <TableCell className="text-xs">
-                    {entry.report?.reportedExitNode ? t("common.yes") : t("common.no")}
+                    {entry.report?.reportedExitNode
+                      ? t("common.yes")
+                      : t("common.no")}
                   </TableCell>
                 </TableRow>
               ))}
@@ -273,6 +315,18 @@ export function NetworkRoutesCard({ networkId }: { networkId: string }) {
           </Table>
         </div>
       ) : null}
+    </div>
+  )
+
+  if (embedded) return body
+
+  return (
+    <SectionCard
+      action={<RouteIcon className="size-4 text-muted-foreground" />}
+      description={t("routes.description")}
+      title={t("routes.title")}
+    >
+      {body}
     </SectionCard>
   )
 }

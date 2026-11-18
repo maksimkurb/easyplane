@@ -77,7 +77,9 @@ export function NetworkAccessCard({ network }: { network: AccessCardNetwork }) {
 
   const credentialsMode = network.access.mode === "credentials"
   const refresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: getGetNetworkQueryKey(network.id) })
+    await queryClient.invalidateQueries({
+      queryKey: getGetNetworkQueryKey(network.id),
+    })
     await queryClient.invalidateQueries({ queryKey: getListNetworksQueryKey() })
     await queryClient.invalidateQueries({
       queryKey: getListDevicesQueryKey({ networkId: network.id }),
@@ -97,7 +99,9 @@ export function NetworkAccessCard({ network }: { network: AccessCardNetwork }) {
             variant="outline"
           >
             <KeyRoundIcon className="size-4" />
-            {credentialsMode ? t("access.switchToShared") : t("access.switchToCredentials")}
+            {credentialsMode
+              ? t("access.switchToShared")
+              : t("access.switchToCredentials")}
           </Button>
         ) : undefined
       }
@@ -106,7 +110,9 @@ export function NetworkAccessCard({ network }: { network: AccessCardNetwork }) {
     >
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant={credentialsMode ? "success" : "outline"}>
-          {credentialsMode ? t("access.mode.credentials") : t("access.mode.shared_secret")}
+          {credentialsMode
+            ? t("access.mode.credentials")
+            : t("access.mode.shared_secret")}
         </Badge>
         {credentialsMode ? (
           <>
@@ -122,7 +128,9 @@ export function NetworkAccessCard({ network }: { network: AccessCardNetwork }) {
               {t("access.members", { count: network.access.members })}
             </Badge>
             <Badge variant="outline">
-              {t("access.credentials", { count: network.access.activeCredentials })}
+              {t("access.credentials", {
+                count: network.access.activeCredentials,
+              })}
             </Badge>
           </>
         ) : null}
@@ -136,7 +144,9 @@ export function NetworkAccessCard({ network }: { network: AccessCardNetwork }) {
               variant={warning === "only_one_anchor" ? "default" : "warning"}
             >
               <TriangleAlertIcon />
-              <AlertDescription>{t(`access.warning.${warning}`)}</AlertDescription>
+              <AlertDescription>
+                {t(`access.warning.${warning}`)}
+              </AlertDescription>
             </Alert>
           ))}
         </div>
@@ -156,29 +166,45 @@ export function NetworkAccessCard({ network }: { network: AccessCardNetwork }) {
               <TableCell className="text-xs text-muted-foreground">
                 {t("access.compare.onboarding")}
               </TableCell>
-              <TableCell className="text-xs">{t("access.compare.onboardingShared")}</TableCell>
-              <TableCell className="text-xs">{t("access.compare.onboardingCredentials")}</TableCell>
+              <TableCell className="text-xs">
+                {t("access.compare.onboardingShared")}
+              </TableCell>
+              <TableCell className="text-xs">
+                {t("access.compare.onboardingCredentials")}
+              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="text-xs text-muted-foreground">
                 {t("access.compare.revocation")}
               </TableCell>
-              <TableCell className="text-xs">{t("access.compare.revocationShared")}</TableCell>
-              <TableCell className="text-xs">{t("access.compare.revocationCredentials")}</TableCell>
+              <TableCell className="text-xs">
+                {t("access.compare.revocationShared")}
+              </TableCell>
+              <TableCell className="text-xs">
+                {t("access.compare.revocationCredentials")}
+              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="text-xs text-muted-foreground">
                 {t("access.compare.blastRadius")}
               </TableCell>
-              <TableCell className="text-xs">{t("access.compare.blastRadiusShared")}</TableCell>
-              <TableCell className="text-xs">{t("access.compare.blastRadiusCredentials")}</TableCell>
+              <TableCell className="text-xs">
+                {t("access.compare.blastRadiusShared")}
+              </TableCell>
+              <TableCell className="text-xs">
+                {t("access.compare.blastRadiusCredentials")}
+              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="text-xs text-muted-foreground">
                 {t("access.compare.requirements")}
               </TableCell>
-              <TableCell className="text-xs">{t("access.compare.requirementsShared")}</TableCell>
-              <TableCell className="text-xs">{t("access.compare.requirementsCredentials")}</TableCell>
+              <TableCell className="text-xs">
+                {t("access.compare.requirementsShared")}
+              </TableCell>
+              <TableCell className="text-xs">
+                {t("access.compare.requirementsCredentials")}
+              </TableCell>
             </TableRow>
           </TableBody>
         </Table>
@@ -193,16 +219,23 @@ export function NetworkAccessCard({ network }: { network: AccessCardNetwork }) {
             ["requirements", "requirementsShared", "requirementsCredentials"],
           ] as const
         ).map(([aspect, shared, credentials]) => (
-          <div className="rounded-lg bg-surface-2 p-3 ring-1 ring-line" key={aspect}>
+          <div
+            className="rounded-lg bg-surface-2 p-3 ring-1 ring-line"
+            key={aspect}
+          >
             <p className="text-xs font-medium text-fg-2">
               {t(`access.compare.${aspect}`)}
             </p>
             <p className="mt-1 text-xs">
-              <span className="text-fg-3">{t("access.mode.shared_secret")}: </span>
+              <span className="text-fg-3">
+                {t("access.mode.shared_secret")}:{" "}
+              </span>
               {t(`access.compare.${shared}`)}
             </p>
             <p className="mt-0.5 text-xs">
-              <span className="text-fg-3">{t("access.mode.credentials")}: </span>
+              <span className="text-fg-3">
+                {t("access.mode.credentials")}:{" "}
+              </span>
               {t(`access.compare.${credentials}`)}
             </p>
           </div>
@@ -226,6 +259,51 @@ export function NetworkAccessCard({ network }: { network: AccessCardNetwork }) {
   )
 }
 
+/**
+ * The mode switch on its own: a button that opens the preview-and-apply
+ * dialog. Used by the Security section of the network settings.
+ */
+export function AccessModeSwitchButton({
+  network,
+}: {
+  network: AccessCardNetwork
+}) {
+  const { t } = useTranslation()
+  const { isAdmin } = useAuth()
+  const queryClient = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const credentialsMode = network.access.mode === "credentials"
+  const target: PreviewNetworkAccessModeBodyMode = credentialsMode
+    ? "shared_secret"
+    : "credentials"
+  if (!isAdmin) return null
+  const refresh = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: getGetNetworkQueryKey(network.id),
+    })
+    await queryClient.invalidateQueries({ queryKey: getListNetworksQueryKey() })
+  }
+  return (
+    <>
+      <Button onClick={() => setOpen(true)} size="sm" variant="outline">
+        <KeyRoundIcon className="size-4" />
+        {credentialsMode
+          ? t("access.switchToShared")
+          : t("access.switchToCredentials")}
+      </Button>
+      {open ? (
+        <AccessModeDialog
+          network={network}
+          onClose={() => setOpen(false)}
+          onSwitched={refresh}
+          open={open}
+          target={target}
+        />
+      ) : null}
+    </>
+  )
+}
+
 function AccessModeDialog({
   network,
   open,
@@ -242,11 +320,14 @@ function AccessModeDialog({
   const { t } = useTranslation()
   const devicesQuery = useListDevices(
     { networkId: network.id },
-    { query: { enabled: open } },
+    { query: { enabled: open } }
   )
   const devices = useMemo(
-    () => (devicesQuery.data?.data ?? []).filter((device) => device.state === "approved"),
-    [devicesQuery.data],
+    () =>
+      (devicesQuery.data?.data ?? []).filter(
+        (device) => device.state === "approved"
+      ),
+    [devicesQuery.data]
   )
   // `null` means "use the default selection". Keeping it derived avoids a
   // setState-in-effect that would reset the user's choice on every refetch.
@@ -258,7 +339,7 @@ function AccessModeDialog({
   // exactly one (the first-device rule).
   const defaultAnchorIds = useMemo(() => {
     const hubs = devices.filter(
-      (device) => device.isHub || device.advertisedEndpoints.length > 0,
+      (device) => device.isHub || device.advertisedEndpoints.length > 0
     )
     if (hubs.length > 0) return hubs.map((device) => device.id)
     return devices.length === 1 ? [devices[0]!.id] : []
@@ -306,51 +387,73 @@ function AccessModeDialog({
       <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>
-            {target === "credentials" ? t("access.switchToCredentials") : t("access.switchToShared")}
+            {target === "credentials"
+              ? t("access.switchToCredentials")
+              : t("access.switchToShared")}
           </DialogTitle>
           <DialogDescription>
-            {target === "credentials" ? t("access.dialog.credentialsHint") : t("access.dialog.sharedHint")}
+            {target === "credentials"
+              ? t("access.dialog.credentialsHint")
+              : t("access.dialog.sharedHint")}
           </DialogDescription>
         </DialogHeader>
 
         {target === "credentials" ? (
           <div className="space-y-3">
-            <p className="text-sm font-medium">{t("access.dialog.chooseAnchors")}</p>
-            <p className="text-xs text-muted-foreground">{t("access.dialog.anchorHelp")}</p>
+            <p className="text-sm font-medium">
+              {t("access.dialog.chooseAnchors")}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("access.dialog.anchorHelp")}
+            </p>
             {devicesQuery.isLoading ? (
-              <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("common.loading")}
+              </p>
             ) : devices.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("devices.empty")}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("devices.empty")}
+              </p>
             ) : (
               <div className="max-h-64 space-y-2 overflow-y-auto rounded border p-3">
                 {devices.map((device) => (
-                  <label className="flex items-start gap-2 text-sm" key={device.id}>
+                  <label
+                    className="flex items-start gap-2 text-sm"
+                    key={device.id}
+                  >
                     <Checkbox
                       checked={anchorIds.includes(device.id)}
                       onCheckedChange={() => toggle(device.id)}
                     />
                     <span>
                       <span className="font-medium">
-                        {device.dnsName ?? (device.hostname || device.machineId.slice(0, 8))}
+                        {device.dnsName ??
+                          (device.hostname || device.machineId.slice(0, 8))}
                       </span>
                       <span className="ml-2 text-xs text-muted-foreground">
                         {device.effectiveRole === "anchor"
                           ? t("access.anchorBadge")
                           : t("access.memberBadge")}
-                        {device.online === "online" ? ` · ${t("devices.status.online")}` : ""}
+                        {device.online === "online"
+                          ? ` · ${t("devices.status.online")}`
+                          : ""}
                       </span>
                     </span>
                   </label>
                 ))}
               </div>
             )}
-            <p className="text-xs text-muted-foreground">{t("access.dialog.everyoneElseMember")}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("access.dialog.everyoneElseMember")}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
             <Alert variant="destructive">
               <TriangleAlertIcon />
-              <AlertDescription>{t("access.dialog.reverseWarning")}</AlertDescription>
+              <AlertDescription>
+                {t("access.dialog.reverseWarning")}
+              </AlertDescription>
             </Alert>
             <label className="flex items-center gap-2 text-sm">
               <Checkbox
@@ -368,17 +471,26 @@ function AccessModeDialog({
             <p className="text-xs text-muted-foreground">
               {t("access.dialog.previewAnchors", {
                 count: plan.anchors.length,
-                names: plan.anchors.map((anchor) => anchor.hostname).join(", ") || t("common.none"),
+                names:
+                  plan.anchors.map((anchor) => anchor.hostname).join(", ") ||
+                  t("common.none"),
               })}
             </p>
             <p className="text-xs text-muted-foreground">
-              {t("access.dialog.previewMembers", { count: plan.members.length })}
+              {t("access.dialog.previewMembers", {
+                count: plan.members.length,
+              })}
             </p>
             <p className="text-xs text-muted-foreground">
-              {t("access.dialog.previewRevoked", { count: plan.revokeCredentials })}
+              {t("access.dialog.previewRevoked", {
+                count: plan.revokeCredentials,
+              })}
             </p>
             {plan.warnings.map((warning) => (
-              <p className="text-xs text-amber-600 dark:text-amber-400" key={warning}>
+              <p
+                className="text-xs text-amber-600 dark:text-amber-400"
+                key={warning}
+              >
                 {t(`access.warning.${warning}`, { defaultValue: warning })}
               </p>
             ))}
@@ -408,7 +520,9 @@ function AccessModeDialog({
                 networkId: network.id,
                 data: {
                   mode: target,
-                  ...(target === "credentials" ? { anchorDeviceIds: anchorIds } : {}),
+                  ...(target === "credentials"
+                    ? { anchorDeviceIds: anchorIds }
+                    : {}),
                   ...(target === "shared_secret" ? { acknowledge: true } : {}),
                 },
               })
@@ -443,7 +557,10 @@ export function DeviceRoleBadge({
     )
   }
   return (
-    <Badge className="gap-1" variant={status === "active" ? "outline" : "destructive"}>
+    <Badge
+      className="gap-1"
+      variant={status === "active" ? "outline" : "destructive"}
+    >
       <UsersIcon className="size-3" />
       {t("access.memberBadge")}
       {expiresAt ? (

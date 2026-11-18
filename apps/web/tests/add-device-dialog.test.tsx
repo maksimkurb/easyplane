@@ -63,7 +63,20 @@ const NETWORK = {
   deviceCounts: { approved: 0, pending: 0, blocked: 0 },
 } as unknown as GetNetwork200
 
-function stubApi() {
+const PENDING_DEVICE = {
+  id: "device-pending",
+  networkId: NETWORK_ID,
+  state: "pending",
+  online: "online",
+  hostname: "pixel-8",
+  dnsName: "pixel-8",
+  machineId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  advertisedEndpoints: [],
+  isHub: false,
+  createdAt: new Date().toISOString(),
+}
+
+function stubApi({ devices = [] }: { devices?: unknown[] } = {}) {
   const calls: { url: string; init?: RequestInit }[] = []
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
@@ -78,28 +91,32 @@ function stubApi() {
             bootstrapAvailable: false,
             providers: [],
           }
-        : url.endsWith(`/api/networks/${NETWORK_ID}/invites`)
-          ? {
-              invite: {
-                id: "invite-1",
-                networkId: NETWORK_ID,
-                label: "",
-                role: "member",
-                createdAt: "2026-01-01T00:00:00.000Z",
-                expiresAt: null,
-                maxUses: 25,
-                uses: 0,
-                reusable: true,
-                remainingUses: 25,
-                status: "active",
-                revokedAt: null,
-                lastUsedAt: null,
-              },
-              token: "ep_inv_test",
-            }
-          : []
+        : url.includes("/api/devices/") && url.endsWith("/approve")
+          ? {}
+          : url.startsWith("/api/devices")
+            ? devices
+            : url.endsWith(`/api/networks/${NETWORK_ID}/invites`)
+              ? {
+                  invite: {
+                    id: "invite-1",
+                    networkId: NETWORK_ID,
+                    label: "",
+                    role: "member",
+                    createdAt: "2026-01-01T00:00:00.000Z",
+                    expiresAt: null,
+                    maxUses: 25,
+                    uses: 0,
+                    reusable: true,
+                    remainingUses: 25,
+                    status: "active",
+                    revokedAt: null,
+                    lastUsedAt: null,
+                  },
+                  token: "ep_inv_test",
+                }
+              : []
     return new Response(JSON.stringify(body), {
-      status: url.endsWith("/invites") ? 201 : 200,
+      status: url.endsWith("/invites") && init?.method === "POST" ? 201 : 200,
       headers: { "content-type": "application/json" },
     })
   }) as typeof fetch
@@ -123,32 +140,97 @@ describe("AddDeviceDialog", () => {
     const expires = screen.getByRole("radiogroup", { name: "Expires" })
     await user.click(within(expires).getByRole("radio", { name: "Never" }))
 
-    expect(screen.getByText("Up to 25 devices · never expires")).toBeInTheDocument()
+    expect(
+      screen.getByText("Up to 25 devices · never expires")
+    ).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "Create invite" }))
 
     await waitFor(() => {
-      const call = calls.find((entry) => entry.url.endsWith("/invites"))
+      const call = calls.find(
+        (entry) =>
+          entry.url.endsWith("/invites") && entry.init?.method === "POST"
+      )
       expect(call).toBeDefined()
-      const body = JSON.parse(String(call?.init?.body)) as Record<string, unknown>
+      const body = JSON.parse(String(call?.init?.body)) as Record<
+        string,
+        unknown
+      >
       expect(body).toMatchObject({ maxUses: 25, expiresInHours: null })
     })
 
-    // The token is shown once and the primary action becomes Done.
-    expect(await screen.findByRole("button", { name: "Done" })).toBeInTheDocument()
+    // The token is shown once, and step 2 waits for the device.
+    expect(
+      await screen.findByRole("button", { name: "Done" })
+    ).toBeInTheDocument()
     expect(screen.getAllByText(/ep_inv_test/).length).toBeGreaterThan(0)
+    expect(
+      screen.getByText(/Waiting for the device to connect/)
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/Create the invite to get the command/)
+    ).not.toBeInTheDocument()
   })
 
-  it("offers join and install modes and explains the missing installer", async () => {
+  it("asks what the device is and explains the missing installer", async () => {
     stubApi()
     const user = userEvent.setup()
     renderWithProviders(
       <AddDeviceDialog network={NETWORK} onOpenChange={() => undefined} open />
     )
 
-    expect(await screen.findByRole("radio", { name: /Join/ })).toBeChecked()
-    await user.click(screen.getByRole("radio", { name: /Install/ }))
-    expect(screen.getByText(/Automatic install scripts are not available yet/)).toBeInTheDocument()
-    expect(screen.getByRole("radiogroup", { name: "Device system" })).toBeInTheDocument()
+    expect(
+      await screen.findByRole("radio", { name: /Computer or server/ })
+    ).toBeChecked()
+    expect(screen.getByRole("radio", { name: /Router/ })).toBeInTheDocument()
+    expect(screen.getByRole("radio", { name: /Phone/ })).toBeInTheDocument()
+
+    const installed = screen.getByRole("radiogroup", {
+      name: "Is EasyTier already installed?",
+    })
+    expect(
+      within(installed).getByRole("radio", { name: "Already installed" })
+    ).toBeChecked()
+    await user.click(
+      within(installed).getByRole("radio", { name: "Not installed yet" })
+    )
+    expect(
+      screen.getByText(/Automatic install scripts are not available yet/)
+    ).toBeInTheDocument()
+
+    // A phone gets app instructions, not the install warning.
+    await user.click(screen.getByRole("radio", { name: /Phone/ }))
+    expect(
+      screen.queryByText(/Automatic install scripts are not available yet/)
+    ).not.toBeInTheDocument()
+  })
+
+  it("turns the waiting state into an approval action once the device appears", async () => {
+    const calls = stubApi({ devices: [PENDING_DEVICE] })
+    const user = userEvent.setup()
+    renderWithProviders(
+      <AddDeviceDialog network={NETWORK} onOpenChange={() => undefined} open />
+    )
+
+    await user.click(
+      await screen.findByRole("button", { name: "Create invite" })
+    )
+
+    expect(
+      await screen.findByText("Device joined — approve it")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/pixel-8 connected with this invite/)
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Approve device" }))
+    await waitFor(() =>
+      expect(
+        calls.some((entry) =>
+          entry.url.endsWith("/api/devices/device-pending/approve")
+        )
+      ).toBe(true)
+    )
+    expect(await screen.findByText("Device connected")).toBeInTheDocument()
   })
 })
