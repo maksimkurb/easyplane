@@ -15,10 +15,22 @@ export const enTranslation = {
       devices: "Devices",
       pending: "Pending approvals",
       topology: "Topology",
-      audit: "Audit log",
+      audit: "Activity",
     },
     back: "Back",
     breadcrumb: "Breadcrumb",
+    sidebar: "Main navigation",
+    openMenu: "Open menu",
+    collapse: "Collapse navigation",
+    expand: "Expand navigation",
+    networkList: "Your networks",
+    menuTitle: "Menu",
+    menuDescription: "Networks, devices, approvals and your account.",
+    pendingCount: "{{count}} pending",
+    pendingCount_one: "{{count}} pending",
+    pendingCount_few: "{{count}} pending",
+    pendingCount_many: "{{count}} pending",
+    pendingCount_other: "{{count}} pending",
   },
   account: {
     menuLabel: "Account, language and theme",
@@ -26,9 +38,11 @@ export const enTranslation = {
   auth: {
     loading: "Loading EasyPlane…",
     title: "Sign in to EasyPlane",
-    description: "Use your organisation account. Passwords are never stored here.",
+    description:
+      "Use your organisation account. Passwords are never stored here.",
     sso: "Continue with {{provider}}",
-    noProviders: "No identity providers are configured. Ask the operator to set EASYPLANE_OIDC_PROVIDERS.",
+    noProviders:
+      "No identity providers are configured. Ask the operator to set EASYPLANE_OIDC_PROVIDERS.",
     failed: "Unable to sign in",
     signOut: "Sign out",
     signedInAs: "Signed in as",
@@ -99,21 +113,51 @@ export const enTranslation = {
     secret: "Network secret",
     secretHidden: "Hidden",
     reveal: "Reveal secret",
-    revealWarning: "The secret is shown once more here and the reveal is audited.",
+    revealWarning:
+      "The secret is shown once more here and the reveal is audited.",
     devices: "Devices",
     pending: "Pending",
     approved: "Approved",
     blocked: "Blocked",
     open: "Open network",
-    empty: "No networks yet. Create one to invite devices.",
+    empty: "Create a network to invite your first device.",
+    emptyTitle: "No networks yet",
+    createFirst: "Create your first network",
     created: "Network created",
     table: {
       network: "Network",
       range: "Address range",
       devices: "Devices",
     },
-    summary: "{{networks}} networks · {{devices}} devices",
+    count: "{{count}} network",
+    count_one: "{{count}} network",
+    count_few: "{{count}} networks",
+    count_many: "{{count}} networks",
+    count_other: "{{count}} networks",
+    deviceCount: "{{count}} device",
+    deviceCount_one: "{{count}} device",
+    deviceCount_few: "{{count}} devices",
+    deviceCount_many: "{{count}} devices",
+    deviceCount_other: "{{count}} devices",
+    summary: "{{networks}} · {{devices}}",
     onlineOf: "{{online}} of {{total}} online",
+    needAttention: "{{count}} device needs attention",
+    needAttention_one: "{{count}} device needs attention",
+    needAttention_few: "{{count}} devices need attention",
+    needAttention_many: "{{count}} devices need attention",
+    needAttention_other: "{{count}} devices need attention",
+    offlineCount: "{{count}} offline",
+    offlineCount_one: "{{count}} offline",
+    offlineCount_few: "{{count}} offline",
+    offlineCount_many: "{{count}} offline",
+    offlineCount_other: "{{count}} offline",
+    actions: {
+      export: "Export config (.toml)",
+      import: "Import network",
+      delete: "Delete network",
+      exported: "Config exported",
+      exportFailed: "Could not export the config",
+    },
     waitingCount: "{{count}} waiting",
     waitingCount_one: "{{count}} waiting",
     waitingCount_few: "{{count}} waiting",
@@ -123,8 +167,10 @@ export const enTranslation = {
     rotate: "Rotate secret",
     rotateRendezvousBody:
       "This network uses the bundled rendezvous node, which pins the network secret: rotate RENDEZVOUS_NETWORK_SECRET on the node and EASYPLANE_RENDEZVOUS_SECRET on the panel first, restart both, then use the rendezvous card's Align network secret action. The ordinary random rotation is refused while the node toggle is on.",
-    rotateConfirm: "Rotating the secret disconnects existing devices until they receive the new config. Continue?",
-    deleteConfirm: "Delete this network, its invites, devices and config history?",
+    rotateConfirm:
+      "Rotating the secret disconnects existing devices until they receive the new config. Continue?",
+    deleteConfirm:
+      "Delete this network, its invites, devices and config history?",
     import: {
       open: "Import network",
     short: "Import",
@@ -250,8 +296,10 @@ export const enTranslation = {
     anchorBadge: "Anchor",
     memberBadge: "Member",
     knowsSecret: "knows the network secret",
-    knowsSecretLong: "This device holds the network secret and can never be revoked without rotating it.",
-    noSecretLong: "This device joins with its own credential and does not know the network secret.",
+    knowsSecretLong:
+      "This device holds the network secret and can never be revoked without rotating it.",
+    noSecretLong:
+      "This device joins with its own credential and does not know the network secret.",
     status: "Credential",
     expiry: "Expires",
     groups: "ACL groups",
@@ -262,7 +310,8 @@ export const enTranslation = {
       expired: "Expired",
     },
     noCredential: "No credential yet. Approve the device to issue one.",
-    credentialNotActive: "This credential is not active; the device cannot join.",
+    credentialNotActive:
+      "This credential is not active; the device cannot join.",
     sharedModeHint:
       "Every device in a shared-secret network holds the same secret, so a device can only be removed by blocking it — and by rotating the secret if you need its access gone for good.",
     noteShared:
@@ -287,7 +336,8 @@ export const enTranslation = {
       aspect: "Aspect",
       onboarding: "Adding a device",
       onboardingShared: "Give the device the network secret (invite).",
-      onboardingCredentials: "The device gets its own credential; no secret on the device.",
+      onboardingCredentials:
+        "The device gets its own credential; no secret on the device.",
       revocation: "Removing a device",
       revocationShared: "Block it; it still knows the secret.",
       revocationCredentials: "Revoke its credential: it can no longer join.",
@@ -296,7 +346,8 @@ export const enTranslation = {
       blastRadiusCredentials: "One leaked credential exposes one device.",
       requirements: "Requirements",
       requirementsShared: "Nothing extra.",
-      requirementsCredentials: "At least one anchor online for new members via a rendezvous node.",
+      requirementsCredentials:
+        "At least one anchor online for new members via a rendezvous node.",
     },
     dialog: {
       credentialsHint:
@@ -310,7 +361,8 @@ export const enTranslation = {
         "Every other approved device becomes a member. Its credential can be revoked individually at any time.",
       reverseWarning:
         "Switching back to a shared secret gives every device the network secret. Any device you removed earlier would be able to join again until that secret is rotated.",
-      acknowledgeReverse: "I understand every device will receive the network secret.",
+      acknowledgeReverse:
+        "I understand every device will receive the network secret.",
       previewTitle: "Dry run",
       previewAnchors: "Anchors: {{count}} ({{names}})",
       previewMembers: "Devices becoming members: {{count}}",
@@ -342,7 +394,8 @@ export const enTranslation = {
       "{{hostname}} already knows the network secret. Changing the role does not take that knowledge back.",
     demoteWhy:
       "After the change, rotate the network secret and re-enrol every remaining anchor. Until then the device can still join as a secret holder.",
-    demoteAck: "I understand this device keeps the network secret and will be rotated next.",
+    demoteAck:
+      "I understand this device keeps the network secret and will be rotated next.",
     demoteConfirm: "Change role anyway",
     roleChanged: "Role updated",
     roleChangedRotate:
@@ -365,7 +418,8 @@ export const enTranslation = {
     removeAnywayTitle: "Remove anyway",
     removeAnywayBody:
       "The device keeps the secret until it is rotated. This is an acknowledged risk, recorded in the audit log.",
-    removeAnywayAck: "I accept that {{hostname}} still knows the network secret.",
+    removeAnywayAck:
+      "I accept that {{hostname}} still knows the network secret.",
     removeAnyway: "Remove anyway",
     createDefaultHint:
       "New networks start with a shared secret: simple, and every device can join immediately. Create it, then switch to per-device credentials on the network page if you need revocable, individually expiring access.",
@@ -384,11 +438,13 @@ export const enTranslation = {
     expiresInHours: "Expires in (hours)",
     expiresInHoursHint: "Leave empty for no expiry.",
     created: "Invite created",
-    tokenWarning: "Copy the token now — it is stored hashed and cannot be shown again.",
+    tokenWarning:
+      "Copy the token now — it is stored hashed and cannot be shown again.",
     token: "Invite token",
     command: "CLI command",
     url: "Config-server URL",
-    android: "Paste this URL into the EasyTier Android app's config-server field.",
+    android:
+      "Paste this URL into the EasyTier Android app's config-server field.",
     qr: "QR code",
     status: {
       active: "Active",
@@ -399,7 +455,8 @@ export const enTranslation = {
     expires: "Expires",
     uses: "Uses",
     revoke: "Revoke",
-    revokeConfirm: "Revoke this invite? Existing devices keep working with their token.",
+    revokeConfirm:
+      "Revoke this invite? Existing devices keep working with their token.",
     revoked: "Invite revoked",
     empty: "No invites yet.",
   },
@@ -408,7 +465,8 @@ export const enTranslation = {
     description: "Every device that presented a valid invite token.",
     all: "All devices",
     pendingTitle: "Pending approvals",
-    pendingDescription: "Devices wait here until an admin approves them. They receive no config.",
+    pendingDescription:
+      "Devices wait here until an admin approves them. They receive no config.",
     pendingBadge: "Pending",
     machineId: "Machine ID",
     hostname: "Hostname",
@@ -423,12 +481,14 @@ export const enTranslation = {
     push: "Push config",
     pushRequested: "Push requested",
     approveTitle: "Approve device",
-    approveDescription: "The device receives its address and desired config immediately.",
+    approveDescription:
+      "The device receives its address and desired config immediately.",
     approved: "Device approved",
     blocked: "Device blocked",
     deleted: "Device deleted",
     deleteConfirm: "Delete this device and its config history?",
-    blockConfirm: "Block this device? It is disconnected and refused until approved again.",
+    blockConfirm:
+      "Block this device? It is disconnected and refused until approved again.",
     empty: "No devices yet. Create an invite and connect a client.",
     noPending: "No devices are waiting for approval.",
     connected: "Connected",
@@ -484,8 +544,7 @@ export const enTranslation = {
     exitNode: {
       approved: "Exit node",
       proposed: "Exit node (proposed)",
-      hint:
-        "The device advertises that it can be an exit node. Approval records consent only: actual egress depends on the client (OS route + exit_nodes).",
+      hint: "The device advertises that it can be an exit node. Approval records consent only: actual egress depends on the client (OS route + exit_nodes).",
     },
     localConfig:
       "The client's configuration file is read-only, so the panel cannot read or change this device's routes. It is managed locally on the device.",
@@ -506,7 +565,8 @@ export const enTranslation = {
       notAppliedTitle:
         "Config {{desired}} isn't applied — the device still runs {{applied}}",
       pushFailedTitle: "The last config push failed",
-      waitingForDevice: "The device will receive the config when it reconnects.",
+      waitingForDevice:
+        "The device will receive the config when it reconnects.",
       change: {
         label: "Change",
         approval: "Approved by admin",
@@ -516,19 +576,20 @@ export const enTranslation = {
       config: "Desired config",
       history: "Revision history",
       newRevision: "New revision",
-      editHint: "Saving creates a new revision and pushes it to the device when online.",
+      editHint:
+        "Saving creates a new revision and pushes it to the device when online.",
       note: "Note",
       hostname: "Hostname",
       noTun: "No TUN device",
       acceptRoutes: "Accept subnet routes from the network",
       identity: "Identity and routes",
-      identityHint: "DNS name, tags (policy subjects) and route requests for this device.",
+      identityHint:
+        "DNS name, tags (policy subjects) and route requests for this device.",
       owner: "Owner",
       noOwner: "No owner",
       endpoints: {
         title: "Advertised endpoints",
-        hint:
-          "Peer URLs other devices dial to reach this one, one per line. This is network state: changing it repushes the devices that dial it and creates no revision.",
+        hint: "Peer URLs other devices dial to reach this one, one per line. This is network state: changing it repushes the devices that dial it and creates no revision.",
         placeholder: "tcp://node-a.example.com:11010",
         emptyHint:
           "Add at least one address, otherwise nobody can dial this hub.",
@@ -538,8 +599,7 @@ export const enTranslation = {
       hub: {
         title: "Hub",
         description: "Every other device dials a hub directly.",
-        hint:
-          "A hub is dialled by every other device. The hub itself receives none of its own endpoints, so it cannot dial its own public address and loop.",
+        hint: "A hub is dialled by every other device. The hub itself receives none of its own endpoints, so it cannot dial its own public address and loop.",
         enabled: "Device is now a hub",
         disabled: "Device is no longer a hub",
         badge: "Hub",
@@ -556,6 +616,52 @@ export const enTranslation = {
         rollback: "Rollback",
       },
     },
+  },
+
+  devicesGlobal: {
+    title: "Devices",
+    description:
+      "Every device across all your networks. Search, filter and open one for details.",
+    pendingTitle: "Pending approvals",
+    pendingDescription:
+      "Devices that connected with an invite and wait for an admin decision.",
+    searchLabel: "Search devices",
+    searchPlaceholder: "Search name, IP, network or tag",
+    networkFilter: "Network",
+    allNetworks: "All networks",
+    filterLabel: "Filter devices",
+    filterAll: "All",
+    filterOnline: "Online",
+    filterIssues: "Issues",
+    filterPending: "Pending",
+    approve: "Approve",
+    reject: "Reject",
+    approveDevice: "Approve {{name}}",
+    rejectDevice: "Reject {{name}}",
+    openDevice: "Open device",
+    deviceCount: "{{count}} device",
+    deviceCount_one: "{{count}} device",
+    deviceCount_few: "{{count}} devices",
+    deviceCount_many: "{{count}} devices",
+    deviceCount_other: "{{count}} devices",
+    waitingCount: "{{count}} waiting",
+    waitingCount_one: "{{count}} waiting",
+    waitingCount_few: "{{count}} waiting",
+    waitingCount_many: "{{count}} waiting",
+    waitingCount_other: "{{count}} waiting",
+    emptyNoDevices: "No devices yet",
+    emptyNoDevicesHint:
+      "Create a network, invite a device and connect it. It will appear here for approval.",
+    goToNetworks: "Go to networks",
+    emptyPending: "No devices are waiting for approval",
+    emptyPendingHint:
+      "New devices appear here after they connect with an invite.",
+    noMatches: "No devices match your search",
+    emptyFilterHint: "Try a different search or filter.",
+    emptyOnline: "No devices are online",
+    emptyIssues: "No devices need attention",
+    emptyNetwork: "No devices in this network",
+    clearFilters: "Clear filters",
   },
 
   network: {
@@ -902,8 +1008,7 @@ export const enTranslation = {
       "Delete {{name}}? Invites, devices and config history go with it.",
     deleted: "Network deleted",
     saved: "Network saved",
-    invitesHint:
-      "Links that let new devices join. Create one with Add device.",
+    invitesHint: "Links that let new devices join. Create one with Add device.",
     inviteUses: "{{used}} of {{max}} used",
     inviteExpires: "expires {{when}}",
   },
@@ -912,20 +1017,25 @@ export const enTranslation = {
   },
   policy: {
     title: "Policy",
-    description: "Tailscale-style access policy, compiled into EasyTier ACL chains per device.",
+    description:
+      "Tailscale-style access policy, compiled into EasyTier ACL chains per device.",
     honestNote:
       "Enforcement is destination-side (EasyTier inbound chain, default drop). EasyTier keeps no outbound connection tracking, so the outbound chain is default-allow and only carries explicit deny rules; a default-deny egress chain would also drop server responses.",
     activeVersion: "Active version {{version}}",
     noPolicy: "No policy — traffic is unrestricted",
     cardHint: "Tags, groups and ACL statements",
-    cardActive: "The compiled ACL is part of every device revision and is pushed on change.",
-    cardInactive: "Without a policy EasyTier's ACL filter is disabled and all traffic is allowed.",
+    cardActive:
+      "The compiled ACL is part of every device revision and is pushed on change.",
+    cardInactive:
+      "Without a policy EasyTier's ACL filter is disabled and all traffic is allowed.",
     editor: "Policy document",
-    editorHint: "Form editing or paste HuJSON; saving creates a new version and a revision per device.",
+    editorHint:
+      "Form editing or paste HuJSON; saving creates a new version and a revision per device.",
     formMode: "Form",
     jsonMode: "JSON / HuJSON",
     jsonHint: "Comments and trailing commas are allowed.",
-    jsonParseError: "The JSON editor does not parse yet; fix it or save it as text.",
+    jsonParseError:
+      "The JSON editor does not parse yet; fix it or save it as text.",
     tags: "Tags",
     addTag: "Add tag",
     strictTags: "Strict tags",
@@ -946,10 +1056,12 @@ export const enTranslation = {
     valid: "Policy is valid",
     saved: "Policy saved and pushed",
     versions: "Versions",
-    versionsHint: "Append-only policy history; every config revision names the version it was compiled with.",
+    versionsHint:
+      "Append-only policy history; every config revision names the version it was compiled with.",
     statements: "Statements",
     test: "Test reachability",
-    testHint: "Can A reach B on port P? Evaluated with the same matcher the compiler targets.",
+    testHint:
+      "Can A reach B on port P? Evaluated with the same matcher the compiler targets.",
     testSavedHint:
       "This preview runs against the document currently in the editor (saved or not). Devices must be approved.",
     port: "Port",
@@ -971,7 +1083,8 @@ export const enTranslation = {
   },
   magicDns: {
     title: "MagicDNS",
-    description: "Names for devices in this network and what the clients resolve.",
+    description:
+      "Names for devices in this network and what the clients resolve.",
     enabled: "Enabled for this network",
     zone: "Zone",
     on: "On",
@@ -987,7 +1100,8 @@ export const enTranslation = {
     honestNote:
       "Names are unique per network and enforced by the API and a database index. The list shows the control plane's view; EasyTier clients build their DNS records from peer hostnames.",
     renameTitle: "Rename device",
-    renameDescription: "The DNS name is device identity; it is pushed as the EasyTier hostname.",
+    renameDescription:
+      "The DNS name is device identity; it is pushed as the EasyTier hostname.",
     label: "DNS name",
   },
   rendezvous: {
@@ -1006,7 +1120,8 @@ export const enTranslation = {
     nodeNetwork: "Node network name",
     secretMatch: "Network secret",
     secretMatches: "Matches the node — devices can use private mode",
-    secretDiffers: "Does not match the node — the node will refuse this network",
+    secretDiffers:
+      "Does not match the node — the node will refuse this network",
     secretUnknown:
       "Cannot be checked (EASYPLANE_RENDEZVOUS_SECRET is not set on the panel)",
     explainRendezvous:
@@ -1027,7 +1142,8 @@ export const enTranslation = {
     noDialTarget:
       "No dial target: this network has no hub, no external peer URL and does not use the bundled rendezvous node. Devices can only reach each other on the same LAN or when they already know each other's addresses.",
     p2pOnly: "p2p_only (advanced)",
-    p2pOnlyHint: "Send data only to peers with a direct connection, never through a relay.",
+    p2pOnlyHint:
+      "Send data only to peers with a direct connection, never through a relay.",
     p2pOnlyWarning:
       "With p2p_only, a device behind a symmetric NAT or CGNAT cannot exchange data at all, even when the rendezvous node relays. Use it only when every device can hole-punch.",
     confirmTitle: "Use the bundled rendezvous node?",
@@ -1040,7 +1156,8 @@ export const enTranslation = {
   routes: {
     title: "Subnet and exit-node routes",
     deviceTitle: "Routes",
-    description: "Requests stay pending until an admin approves them; only approved routes are pushed.",
+    description:
+      "Requests stay pending until an admin approves them; only approved routes are pushed.",
     empty: "No route requests yet. Request one from a device page.",
     kind: "Kind",
     cidr: "CIDR",
@@ -1058,7 +1175,8 @@ export const enTranslation = {
       "A route a device advertises in its own persisted config appears here as a proposal. Approving it distributes it to devices that accept subnet routes; the device keeps advertising it either way.",
     exitNodeConsent:
       "Approving an exit node records consent only: the client still needs an OS route and exit_nodes to send traffic through it.",
-    requestHint: "Members can request routes for a device; admins approve or reject them.",
+    requestHint:
+      "Members can request routes for a device; admins approve or reject them.",
     viewerHint: "Open a device page to request a route.",
     requested: "Route requested",
     decided: "Route updated",
@@ -1074,7 +1192,8 @@ export const enTranslation = {
     exitNodeSeen: "Exit node",
     reportTitle: "Route report from the client",
     unapproved: "Unapproved",
-    noReportYet: "No report collected yet. It arrives with the next reconcile tick.",
+    noReportYet:
+      "No report collected yet. It arrives with the next reconcile tick.",
     deviceHint:
       "Networks this device shares with the mesh. Only approved routes are sent.",
     deviceEmpty: "This device does not share any routes yet.",
@@ -1088,13 +1207,135 @@ export const enTranslation = {
       "Configured comes from GetNetworkInstanceConfig; seen-by-peers from other clients' route tables. Neither can revoke a route set by a separate local instance.",
   },
   audit: {
-    title: "Audit log",
-    description: "Approvals, invites, config changes and sign-ins. Secrets are never logged.",
-    action: "Action",
-    actor: "Actor",
-    target: "Target",
+    title: "Activity",
+    description:
+      "Who changed what, in plain language. Sign-ins, approvals, invites and config changes; secrets are never logged.",
     when: "When",
-    empty: "No audit entries yet.",
+    empty: "Sign-ins, approvals and config changes will appear here.",
+    emptyTitle: "No activity yet",
+    emptyFilteredTitle: "No matching activity",
+    emptyFiltered: "Try a different search or event type.",
+    clearFilters: "Clear filters",
+    searchLabel: "Search activity",
+    searchPlaceholder: "Search by person, device or network",
+    filterLabel: "Filter activity by event type",
+    filters: {
+      all: "All",
+      signin: "Sign-ins",
+      access: "Access policy",
+      devices: "Devices",
+      invites: "Invites",
+    },
+    actor: {
+      system: "System",
+      device: "Device",
+    },
+    target: {
+      inviteLabel: "invite “{{label}}”",
+      inviteId: "invite {{id}}",
+    },
+    showing: "Showing the latest {{count}} events",
+    showing_one: "Showing the latest {{count}} event",
+    showing_few: "Showing the latest {{count}} events",
+    showing_many: "Showing the latest {{count}} events",
+    showing_other: "Showing the latest {{count}} events",
+    loadMore: "Load more",
+    events: {
+      auth_login: "{{actor}} signed in",
+      auth_logout: "{{actor}} signed out",
+      auth_bootstrap: "{{actor}} created an administrator account",
+
+      network_created: "{{actor}} created the network {{target}}",
+      network_imported: "{{actor}} imported the network {{target}}",
+      network_deleted: "{{actor}} deleted the network {{target}}",
+      network_exported: "{{actor}} exported the network {{target}}",
+      network_secret_revealed: "{{actor}} revealed the secret of {{target}}",
+      network_secret_rotated: "{{actor}} rotated the secret of {{target}}",
+      network_rendezvous_secret_aligned:
+        "{{actor}} aligned the rendezvous secret of {{target}}",
+      network_access_mode_changed:
+        "{{actor}} changed how devices authenticate in {{target}}",
+      network_peer_added: "{{actor}} added a hub or peer to {{target}}",
+      network_peer_linked: "{{actor}} linked a peer to a device in {{target}}",
+      network_peer_removed: "{{actor}} removed a peer from {{target}}",
+
+      invite_created: "{{actor}} created an invite for {{target}}",
+      invite_revoked: "{{actor}} revoked {{target}}",
+
+      device_joined: "{{target}} joined {{network}}",
+      device_approved: "{{actor}} approved {{target}}",
+      device_blocked: "{{actor}} blocked {{target}}",
+      device_deleted: "{{actor}} removed {{target}}",
+      device_anchor_removed_acknowledged:
+        "{{actor}} removed an anchor and accepted that it still knows the secret",
+      device_push_requested: "{{actor}} asked {{target}} to pull its config",
+      device_renamed: "{{actor}} renamed {{target}} to {{name}}",
+      device_tags_updated: "{{actor}} updated the tags of {{target}}",
+      device_owner_updated: "{{actor}} changed the owner of {{target}}",
+      device_endpoints_updated:
+        "{{actor}} updated the advertised endpoints of {{target}}",
+      device_hub_enabled: "{{actor}} made {{target}} a hub",
+      device_hub_disabled: "{{actor}} stopped dialling {{target}} as a hub",
+      device_role_changed_anchor: "{{actor}} made {{target}} an anchor",
+      device_role_changed_member: "{{actor}} made {{target}} a member",
+      device_config_revision_created:
+        "{{actor}} saved a new config revision for {{target}}",
+      device_config_rollback:
+        "{{actor}} rolled {{target}} back to revision {{detail}}",
+      device_config_pushed: "Config pushed to {{target}}",
+      device_config_pushed_group_one: "Config pushed to {{count}} device",
+      device_config_pushed_group_few: "Config pushed to {{count}} devices",
+      device_config_pushed_group_many: "Config pushed to {{count}} devices",
+      device_config_pushed_group_other: "Config pushed to {{count}} devices",
+      device_config_push_failed: "Config push to {{target}} failed",
+      device_config_push_failed_group_one:
+        "Config push failed on {{count}} device",
+      device_config_push_failed_group_few:
+        "Config push failed on {{count}} devices",
+      device_config_push_failed_group_many:
+        "Config push failed on {{count}} devices",
+      device_config_push_failed_group_other:
+        "Config push failed on {{count}} devices",
+
+      credential_issued: "{{actor}} issued a credential to {{target}}",
+      credential_reissued: "{{actor}} reissued the credential of {{target}}",
+      credential_revoked: "{{actor}} revoked the credential of {{target}}",
+      credential_revoked_all_one:
+        "{{actor}} revoked {{count}} credential in {{target}}",
+      credential_revoked_all_few:
+        "{{actor}} revoked {{count}} credentials in {{target}}",
+      credential_revoked_all_many:
+        "{{actor}} revoked {{count}} credentials in {{target}}",
+      credential_revoked_all_other:
+        "{{actor}} revoked {{count}} credentials in {{target}}",
+      credential_renewed_one:
+        "{{count}} credential in {{target}} was renewed automatically",
+      credential_renewed_few:
+        "{{count}} credentials in {{target}} were renewed automatically",
+      credential_renewed_many:
+        "{{count}} credentials in {{target}} were renewed automatically",
+      credential_renewed_other:
+        "{{count}} credentials in {{target}} were renewed automatically",
+      credential_groups_updated:
+        "{{actor}} updated the credential groups of {{target}}",
+
+      policy_version_created:
+        "{{actor}} saved access policy version {{detail}} for {{target}}",
+      policy_mode_changed: "{{actor}} changed the policy mode of {{target}}",
+      policy_disabled: "{{actor}} disabled the access policy of {{target}}",
+
+      route_requested: "{{actor}} requested a route from {{target}}",
+      route_declared: "{{target}} reported a route it declares",
+      route_unapproved_reported:
+        "{{target}} reported a route that is not approved",
+
+      tag_created: "{{actor}} created the tag {{target}}",
+      tag_deleted: "{{actor}} deleted the tag {{target}}",
+      tag_devices_updated: "{{actor}} changed which devices carry {{target}}",
+
+      user_group_created: "{{actor}} created the user group {{target}}",
+      user_group_deleted: "{{actor}} deleted the user group {{target}}",
+    },
   },
   realtime: {
     status: {
@@ -1103,11 +1344,13 @@ export const enTranslation = {
       reconnecting: "Reconnecting…",
       offline: "Offline",
     },
-    liveHint: "The panel subscribes to server events; approvals, status and config changes appear without a refresh.",
+    liveHint:
+      "The panel subscribes to server events; approvals, status and config changes appear without a refresh.",
   },
   topology: {
     title: "Topology",
-    description: "Live connectivity map: direct peer links, relayed paths and the node that relays them.",
+    description:
+      "Live connectivity map: direct peer links, relayed paths and the node that relays them.",
     noNetworks: "No networks yet; create one to inspect its topology.",
     managed: "Managed",
     unmanaged: "Unmanaged",
@@ -1151,10 +1394,13 @@ export const enTranslation = {
     nodeState: "{{name}}, {{state}}",
     openDevice: "Open device",
     noProbeYet: "No probe data yet.",
-    collectedAt: "Collected {{time}} · every {{interval}}s while this map is open",
+    collectedAt:
+      "Collected {{time}} · every {{interval}}s while this map is open",
     stale: "stale",
-    empty: "No devices report topology yet. Approve a device and wait for its next probe.",
-    partial: "{{count}} device probe(s) failed in the last cycle; the map may be incomplete.",
+    empty:
+      "No devices report topology yet. Approve a device and wait for its next probe.",
+    partial:
+      "{{count}} device probe(s) failed in the last cycle; the map may be incomplete.",
     noReachableTitle: "No node is directly reachable from the internet",
     noReachableHint:
       "NAT traversal between two devices behind NAT can fail without hole punching. Add a node with a public address (a public server, or a host with a static or port-forwarded mapping) so peers can relay through it.",
@@ -1162,7 +1408,8 @@ export const enTranslation = {
       "No node reports an open or static NAT, but {{count}} node(s) are relay-capable because peers already route through them. EasyTier relays through any peer both sides can reach, so this works while those paths stay up.",
     honestNote:
       "Direct vs relayed and the relay node come from the client's own Route{cost, next_hop_peer_id}. The protocol on a relayed edge is the first hop's tunnel. NAT type and public addresses come from the client's STUN report.",
-    asymmetric: "The two sides disagree: one reports a direct connection, the other a relayed path.",
+    asymmetric:
+      "The two sides disagree: one reports a direct connection, the other a relayed path.",
     evidence: "Per-observer evidence",
     observedBy: "Observed by",
   },

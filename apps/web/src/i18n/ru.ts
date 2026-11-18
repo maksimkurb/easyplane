@@ -17,10 +17,22 @@ export const ruTranslation: Translation = {
       devices: "Устройства",
       pending: "Ожидают одобрения",
       topology: "Топология",
-      audit: "Журнал аудита",
+      audit: "Активность",
     },
     back: "Назад",
     breadcrumb: "Хлебные крошки",
+    sidebar: "Основная навигация",
+    openMenu: "Открыть меню",
+    collapse: "Свернуть навигацию",
+    expand: "Развернуть навигацию",
+    networkList: "Ваши сети",
+    menuTitle: "Меню",
+    menuDescription: "Сети, устройства, одобрения и аккаунт.",
+    pendingCount: "{{count}} ожидает",
+    pendingCount_one: "{{count}} ожидает",
+    pendingCount_few: "{{count}} ожидают",
+    pendingCount_many: "{{count}} ожидают",
+    pendingCount_other: "{{count}} ожидает",
   },
   account: {
     menuLabel: "Аккаунт, язык и тема",
@@ -28,9 +40,11 @@ export const ruTranslation: Translation = {
   auth: {
     loading: "Загрузка EasyPlane…",
     title: "Вход в EasyPlane",
-    description: "Используйте учётную запись организации. Пароли здесь не хранятся.",
+    description:
+      "Используйте учётную запись организации. Пароли здесь не хранятся.",
     sso: "Войти через {{provider}}",
-    noProviders: "Провайдеры входа не настроены. Попросите администратора задать EASYPLANE_OIDC_PROVIDERS.",
+    noProviders:
+      "Провайдеры входа не настроены. Попросите администратора задать EASYPLANE_OIDC_PROVIDERS.",
     failed: "Не удалось войти",
     signOut: "Выйти",
     signedInAs: "Вы вошли как",
@@ -107,15 +121,44 @@ export const ruTranslation: Translation = {
     approved: "Одобрены",
     blocked: "Заблокированы",
     open: "Открыть сеть",
-    empty: "Сетей пока нет. Создайте сеть, чтобы приглашать устройства.",
+    empty: "Создайте сеть, чтобы пригласить первое устройство.",
+    emptyTitle: "Сетей пока нет",
+    createFirst: "Создать первую сеть",
     created: "Сеть создана",
     table: {
       network: "Сеть",
       range: "Диапазон адресов",
       devices: "Устройства",
     },
-    summary: "Сетей: {{networks}} · устройств: {{devices}}",
+    count: "{{count}} сеть",
+    count_one: "{{count}} сеть",
+    count_few: "{{count}} сети",
+    count_many: "{{count}} сетей",
+    count_other: "{{count}} сети",
+    deviceCount: "{{count}} устройство",
+    deviceCount_one: "{{count}} устройство",
+    deviceCount_few: "{{count}} устройства",
+    deviceCount_many: "{{count}} устройств",
+    deviceCount_other: "{{count}} устройства",
+    summary: "{{networks}} · {{devices}}",
     onlineOf: "{{online}} из {{total}} онлайн",
+    needAttention: "{{count}} устройство требует внимания",
+    needAttention_one: "{{count}} устройство требует внимания",
+    needAttention_few: "{{count}} устройства требуют внимания",
+    needAttention_many: "{{count}} устройств требуют внимания",
+    needAttention_other: "{{count}} устройства требуют внимания",
+    offlineCount: "{{count}} не в сети",
+    offlineCount_one: "{{count}} не в сети",
+    offlineCount_few: "{{count}} не в сети",
+    offlineCount_many: "{{count}} не в сети",
+    offlineCount_other: "{{count}} не в сети",
+    actions: {
+      export: "Экспортировать конфигурацию (.toml)",
+      import: "Импорт сети",
+      delete: "Удалить сеть",
+      exported: "Конфигурация экспортирована",
+      exportFailed: "Не удалось экспортировать конфигурацию",
+    },
     waitingCount: "{{count}} ждут",
     waitingCount_one: "{{count}} ждёт",
     waitingCount_few: "{{count}} ждут",
@@ -125,8 +168,10 @@ export const ruTranslation: Translation = {
     rotate: "Сменить секрет",
     rotateRendezvousBody:
       "Сеть использует встроенный rendezvous-узел, который фиксирует секрет сети: сначала смените RENDEZVOUS_NETWORK_SECRET на узле и EASYPLANE_RENDEZVOUS_SECRET в панели, перезапустите оба, затем используйте «Синхронизировать секрет сети» в карточке rendezvous. Обычная случайная смена секрета при включённом узле отклоняется.",
-    rotateConfirm: "После смены секрета устройства отключатся, пока не получат новую конфигурацию. Продолжить?",
-    deleteConfirm: "Удалить сеть, приглашения, устройства и историю конфигураций?",
+    rotateConfirm:
+      "После смены секрета устройства отключатся, пока не получат новую конфигурацию. Продолжить?",
+    deleteConfirm:
+      "Удалить сеть, приглашения, устройства и историю конфигураций?",
     import: {
       open: "Импорт сети",
     short: "Импорт",
@@ -252,8 +297,10 @@ export const ruTranslation: Translation = {
     anchorBadge: "Anchor",
     memberBadge: "Участник",
     knowsSecret: "знает секрет сети",
-    knowsSecretLong: "Устройство хранит секрет сети; отозвать его можно только сменой секрета.",
-    noSecretLong: "Устройство входит по своему credential-у и не знает секрет сети.",
+    knowsSecretLong:
+      "Устройство хранит секрет сети; отозвать его можно только сменой секрета.",
+    noSecretLong:
+      "Устройство входит по своему credential-у и не знает секрет сети.",
     status: "Credential",
     expiry: "Истекает",
     groups: "ACL-группы",
@@ -263,8 +310,10 @@ export const ruTranslation: Translation = {
       revoked: "Отозван",
       expired: "Истёк",
     },
-    noCredential: "Credential ещё не выдан. Одобрите устройство, чтобы выдать его.",
-    credentialNotActive: "Credential не активен; устройство не может подключиться.",
+    noCredential:
+      "Credential ещё не выдан. Одобрите устройство, чтобы выдать его.",
+    credentialNotActive:
+      "Credential не активен; устройство не может подключиться.",
     sharedModeHint:
       "В сети с общим секретом все устройства знают один и тот же секрет. Устройство можно только заблокировать, а чтобы доступ действительно исчез, нужна смена секрета.",
     noteShared:
@@ -289,7 +338,8 @@ export const ruTranslation: Translation = {
       aspect: "Критерий",
       onboarding: "Добавление устройства",
       onboardingShared: "Устройству выдаётся секрет сети (invite).",
-      onboardingCredentials: "Устройство получает свой credential; секрета на устройстве нет.",
+      onboardingCredentials:
+        "Устройство получает свой credential; секрета на устройстве нет.",
       revocation: "Удаление устройства",
       revocationShared: "Блокировка; секрет у устройства остаётся.",
       revocationCredentials: "Отзыв credential-а: устройство больше не войдёт.",
@@ -298,7 +348,8 @@ export const ruTranslation: Translation = {
       blastRadiusCredentials: "Утечка credential-а раскрывает одно устройство.",
       requirements: "Требования",
       requirementsShared: "Ничего дополнительно.",
-      requirementsCredentials: "Хотя бы один anchor онлайн для новых участников через rendezvous-узел.",
+      requirementsCredentials:
+        "Хотя бы один anchor онлайн для новых участников через rendezvous-узел.",
     },
     dialog: {
       credentialsHint:
@@ -344,7 +395,8 @@ export const ruTranslation: Translation = {
       "{{hostname}} уже знает секрет сети. Смена роли не отбирает это знание.",
     demoteWhy:
       "После смены роли смените секрет сети и заново подключите оставшиеся anchor-ы. До этого устройство всё ещё сможет войти как владелец секрета.",
-    demoteAck: "Я понимаю, что устройство сохранит секрет сети, и следующим шагом будет смена секрета.",
+    demoteAck:
+      "Я понимаю, что устройство сохранит секрет сети, и следующим шагом будет смена секрета.",
     demoteConfirm: "Всё равно сменить роль",
     roleChanged: "Роль обновлена",
     roleChangedRotate:
@@ -390,7 +442,8 @@ export const ruTranslation: Translation = {
     token: "Токен приглашения",
     command: "Команда CLI",
     url: "URL config-сервера",
-    android: "Вставьте этот URL в поле config-сервера приложения EasyTier для Android.",
+    android:
+      "Вставьте этот URL в поле config-сервера приложения EasyTier для Android.",
     qr: "QR-код",
     status: {
       active: "Активно",
@@ -401,16 +454,19 @@ export const ruTranslation: Translation = {
     expires: "Истекает",
     uses: "Использований",
     revoke: "Отозвать",
-    revokeConfirm: "Отозвать приглашение? Существующие устройства продолжат работать.",
+    revokeConfirm:
+      "Отозвать приглашение? Существующие устройства продолжат работать.",
     revoked: "Приглашение отозвано",
     empty: "Приглашений пока нет.",
   },
   devices: {
     title: "Устройства",
-    description: "Все устройства, предъявившие действительный токен приглашения.",
+    description:
+      "Все устройства, предъявившие действительный токен приглашения.",
     all: "Все устройства",
     pendingTitle: "Ожидают одобрения",
-    pendingDescription: "Устройства ждут одобрения администратора и не получают конфигурацию.",
+    pendingDescription:
+      "Устройства ждут одобрения администратора и не получают конфигурацию.",
     pendingBadge: "Ожидает",
     machineId: "Machine ID",
     hostname: "Имя хоста",
@@ -425,12 +481,14 @@ export const ruTranslation: Translation = {
     push: "Отправить конфигурацию",
     pushRequested: "Отправка запрошена",
     approveTitle: "Одобрить устройство",
-    approveDescription: "Устройство сразу получит адрес и желаемую конфигурацию.",
+    approveDescription:
+      "Устройство сразу получит адрес и желаемую конфигурацию.",
     approved: "Устройство одобрено",
     blocked: "Устройство заблокировано",
     deleted: "Устройство удалено",
     deleteConfirm: "Удалить устройство и историю конфигураций?",
-    blockConfirm: "Заблокировать устройство? Оно будет отключено и не сможет подключиться до повторного одобрения.",
+    blockConfirm:
+      "Заблокировать устройство? Оно будет отключено и не сможет подключиться до повторного одобрения.",
     empty: "Устройств пока нет. Создайте приглашение и подключите клиент.",
     noPending: "Нет устройств, ожидающих одобрения.",
     connected: "Подключено",
@@ -486,8 +544,7 @@ export const ruTranslation: Translation = {
     exitNode: {
       approved: "Выходной узел",
       proposed: "Выходной узел (заявлен)",
-      hint:
-        "Устройство сообщает, что может быть выходным узлом. Одобрение лишь фиксирует согласие: фактический выход зависит от клиента (маршрут ОС + exit_nodes).",
+      hint: "Устройство сообщает, что может быть выходным узлом. Одобрение лишь фиксирует согласие: фактический выход зависит от клиента (маршрут ОС + exit_nodes).",
     },
     localConfig:
       "Файл конфигурации клиента доступен только для чтения: панель не может прочитать или изменить маршруты устройства. Конфигурация управляется локально на устройстве.",
@@ -508,7 +565,8 @@ export const ruTranslation: Translation = {
       notAppliedTitle:
         "Конфигурация {{desired}} не применена — устройство работает на {{applied}}",
       pushFailedTitle: "Последняя отправка конфигурации не удалась",
-      waitingForDevice: "Устройство получит конфигурацию после переподключения.",
+      waitingForDevice:
+        "Устройство получит конфигурацию после переподключения.",
       change: {
         label: "Изменение",
         approval: "Одобрено администратором",
@@ -518,19 +576,20 @@ export const ruTranslation: Translation = {
       config: "Желаемая конфигурация",
       history: "История ревизий",
       newRevision: "Новая ревизия",
-      editHint: "Сохранение создаёт ревизию и отправляет её устройству, если оно в сети.",
+      editHint:
+        "Сохранение создаёт ревизию и отправляет её устройству, если оно в сети.",
       note: "Комментарий",
       hostname: "Имя хоста",
       noTun: "Без TUN-устройства",
       acceptRoutes: "Принимать маршруты подсетей из сети",
       identity: "Идентичность и маршруты",
-      identityHint: "DNS-имя, теги (субъекты политики) и запросы маршрутов для этого устройства.",
+      identityHint:
+        "DNS-имя, теги (субъекты политики) и запросы маршрутов для этого устройства.",
       owner: "Владелец",
       noOwner: "Без владельца",
       endpoints: {
         title: "Опубликованные адреса",
-        hint:
-          "Peer-URL, по которым другие устройства подключаются к этому, по одному в строке. Это состояние сети: изменение переотправляет конфигурацию подключающимся устройствам и не создаёт ревизию.",
+        hint: "Peer-URL, по которым другие устройства подключаются к этому, по одному в строке. Это состояние сети: изменение переотправляет конфигурацию подключающимся устройствам и не создаёт ревизию.",
         placeholder: "tcp://node-a.example.com:11010",
         emptyHint:
           "Добавьте хотя бы один адрес, иначе к этому хабу никто не подключится.",
@@ -540,8 +599,7 @@ export const ruTranslation: Translation = {
       hub: {
         title: "Хаб",
         description: "Каждое другое устройство подключается к хабу напрямую.",
-        hint:
-          "К хабу подключаются все остальные устройства. Сам хаб не получает свои адреса, поэтому не может набрать собственный публичный адрес и зациклиться.",
+        hint: "К хабу подключаются все остальные устройства. Сам хаб не получает свои адреса, поэтому не может набрать собственный публичный адрес и зациклиться.",
         enabled: "Устройство стало хабом",
         disabled: "Устройство больше не хаб",
         badge: "Хаб",
@@ -558,6 +616,52 @@ export const ruTranslation: Translation = {
         rollback: "Откат",
       },
     },
+  },
+
+  devicesGlobal: {
+    title: "Устройства",
+    description:
+      "Все устройства во всех сетях. Ищите, фильтруйте и открывайте карточку устройства.",
+    pendingTitle: "Ожидают одобрения",
+    pendingDescription:
+      "Устройства, подключившиеся по приглашению и ожидающие решения администратора.",
+    searchLabel: "Поиск устройств",
+    searchPlaceholder: "Имя, IP, сеть или тег",
+    networkFilter: "Сеть",
+    allNetworks: "Все сети",
+    filterLabel: "Фильтр устройств",
+    filterAll: "Все",
+    filterOnline: "Онлайн",
+    filterIssues: "Проблемы",
+    filterPending: "Ожидают",
+    approve: "Одобрить",
+    reject: "Отклонить",
+    approveDevice: "Одобрить {{name}}",
+    rejectDevice: "Отклонить {{name}}",
+    openDevice: "Открыть устройство",
+    deviceCount: "{{count}} устройство",
+    deviceCount_one: "{{count}} устройство",
+    deviceCount_few: "{{count}} устройства",
+    deviceCount_many: "{{count}} устройств",
+    deviceCount_other: "{{count}} устройства",
+    waitingCount: "{{count}} ждут",
+    waitingCount_one: "{{count}} ждёт",
+    waitingCount_few: "{{count}} ждут",
+    waitingCount_many: "{{count}} ждут",
+    waitingCount_other: "{{count}} ждут",
+    emptyNoDevices: "Устройств пока нет",
+    emptyNoDevicesHint:
+      "Создайте сеть, пригласите устройство и подключите его. Оно появится здесь для одобрения.",
+    goToNetworks: "Перейти к сетям",
+    emptyPending: "Нет устройств, ожидающих одобрения",
+    emptyPendingHint:
+      "Новые устройства появляются здесь после подключения по приглашению.",
+    noMatches: "Устройства не найдены",
+    emptyFilterHint: "Попробуйте другой запрос или фильтр.",
+    emptyOnline: "Нет устройств онлайн",
+    emptyIssues: "Нет устройств, требующих внимания",
+    emptyNetwork: "В этой сети нет устройств",
+    clearFilters: "Сбросить фильтры",
   },
 
   network: {
@@ -587,7 +691,8 @@ export const ruTranslation: Translation = {
     wantsSubnet: "хочет открыть подсеть",
     wantsExitNode: "хочет стать exit-нодой",
     invite: "приглашение «{{label}}»",
-    subnetHint: "Другие устройства получат доступ к этой локальной сети через {{hostname}}",
+    subnetHint:
+      "Другие устройства получат доступ к этой локальной сети через {{hostname}}",
     exitNodeHint:
       "Трафик устройств, использующих эту exit-ноду, пойдёт через {{hostname}}",
     reject: "Отклонить",
@@ -604,7 +709,8 @@ export const ruTranslation: Translation = {
     openEditor: "Открыть редактор политики",
     anyProtocol: "Любой",
     testTitle: "Проверка доступа",
-    testHint: "Может ли A достучаться до B на порту P? Проверка по сохранённой политике.",
+    testHint:
+      "Может ли A достучаться до B на порту P? Проверка по сохранённой политике.",
     runTest: "Проверить",
     icmpHint: "У ping нет порта — проверяется весь хост.",
     decision: "Входящее: {{ingress}} · Исходящее: {{egress}}",
@@ -822,21 +928,25 @@ export const ruTranslation: Translation = {
   },
   addDevice: {
     title: "Добавить устройство в «{{network}}»",
-    description: "Используйте приглашение на устройстве, затем одобрите его в списке.",
+    description:
+      "Используйте приглашение на устройстве, затем одобрите его в списке.",
     inviteLink: "Приглашение",
-    labelHint: "Показывается рядом с устройствами, которые по нему подключились.",
+    labelHint:
+      "Показывается рядом с устройствами, которые по нему подключились.",
     canBeUsed: "Можно использовать",
     change: "Изменить",
     noLimit: "Без лимита",
     custom: "Своё",
     customUses: "Максимум использований",
     customUsesHint: "Выберите от 1 до 10000 устройств.",
-    usesOneHint: "Ссылка перестанет работать после подключения одного устройства.",
+    usesOneHint:
+      "Ссылка перестанет работать после подключения одного устройства.",
     usesHint: "Перестанет работать после подключения {{count}} устройств.",
     usesHint_one: "Перестанет работать после подключения {{count}} устройства.",
     usesHint_few: "Перестанет работать после подключения {{count}} устройств.",
     usesHint_many: "Перестанет работать после подключения {{count}} устройств.",
-    usesHint_other: "Перестанет работать после подключения {{count}} устройств.",
+    usesHint_other:
+      "Перестанет работать после подключения {{count}} устройств.",
     usesUnlimitedHint: "Многоразовая, пока не истечёт или не будет отозвана.",
     devices: "устройств",
     expires: "Истекает",
@@ -846,7 +956,8 @@ export const ruTranslation: Translation = {
     customExpiry: "Дата и время истечения",
     customExpiryHint: "Выберите время в пределах следующих 365 дней.",
     customExpiryNote: "В вашем часовом поясе.",
-    approvalNote: "Новые устройства ждут вашего одобрения, прежде чем получат адрес.",
+    approvalNote:
+      "Новые устройства ждут вашего одобрения, прежде чем получат адрес.",
     approvalShort: "требуется одобрение",
     modeLabel: "EasyTier уже установлен?",
     join: "Подключить",
@@ -871,7 +982,8 @@ export const ruTranslation: Translation = {
     getEasyTier: "Скачать EasyTier",
     androidStep1: "Установите EasyTier для Android",
     androidStep2: "Откройте его и отсканируйте этот код",
-    tokenWarning: "Ссылка показывается только сейчас. Скопируйте её до закрытия окна.",
+    tokenWarning:
+      "Ссылка показывается только сейчас. Скопируйте её до закрытия окна.",
     create: "Создать приглашение",
     oneDevice: "Одно устройство",
     upTo: "До {{count}} устройств",
@@ -911,20 +1023,25 @@ export const ruTranslation: Translation = {
   },
   policy: {
     title: "Политика",
-    description: "Политика доступа в стиле Tailscale, компилируемая в ACL-цепочки EasyTier для каждого устройства.",
+    description:
+      "Политика доступа в стиле Tailscale, компилируемая в ACL-цепочки EasyTier для каждого устройства.",
     honestNote:
       "Проверка выполняется на получателе (входящая цепочка EasyTier, по умолчанию drop). В EasyTier нет отслеживания исходящих соединений, поэтому исходящая цепочка разрешает всё и содержит только явные запреты: цепочка с default-deny отбрасывала бы и ответы серверов.",
     activeVersion: "Активная версия {{version}}",
     noPolicy: "Политики нет — трафик не ограничен",
     cardHint: "Теги, группы и правила ACL",
-    cardActive: "Скомпилированный ACL входит в каждую ревизию устройства и отправляется при изменениях.",
-    cardInactive: "Без политики фильтр ACL в EasyTier отключён и весь трафик разрешён.",
+    cardActive:
+      "Скомпилированный ACL входит в каждую ревизию устройства и отправляется при изменениях.",
+    cardInactive:
+      "Без политики фильтр ACL в EasyTier отключён и весь трафик разрешён.",
     editor: "Документ политики",
-    editorHint: "Редактируйте формой или вставьте HuJSON; сохранение создаёт новую версию и ревизию для каждого устройства.",
+    editorHint:
+      "Редактируйте формой или вставьте HuJSON; сохранение создаёт новую версию и ревизию для каждого устройства.",
     formMode: "Форма",
     jsonMode: "JSON / HuJSON",
     jsonHint: "Комментарии и запятые в конце разрешены.",
-    jsonParseError: "JSON в редакторе пока не разбирается; исправьте его или сохраните как текст.",
+    jsonParseError:
+      "JSON в редакторе пока не разбирается; исправьте его или сохраните как текст.",
     tags: "Теги",
     addTag: "Добавить тег",
     strictTags: "Строгие теги",
@@ -945,10 +1062,12 @@ export const ruTranslation: Translation = {
     valid: "Политика корректна",
     saved: "Политика сохранена и отправлена",
     versions: "Версии",
-    versionsHint: "История только дополняется; каждая ревизия конфигурации указывает версию политики.",
+    versionsHint:
+      "История только дополняется; каждая ревизия конфигурации указывает версию политики.",
     statements: "Правил",
     test: "Проверка доступности",
-    testHint: "Может ли A достучаться до B на порту P? Используется тот же алгоритм сопоставления.",
+    testHint:
+      "Может ли A достучаться до B на порту P? Используется тот же алгоритм сопоставления.",
     testSavedHint:
       "Проверка идёт по документу в редакторе (сохранённому или нет). Устройства должны быть одобрены.",
     port: "Порт",
@@ -970,7 +1089,8 @@ export const ruTranslation: Translation = {
   },
   magicDns: {
     title: "MagicDNS",
-    description: "Имена устройств в этой сети и то, что реально резолвят клиенты.",
+    description:
+      "Имена устройств в этой сети и то, что реально резолвят клиенты.",
     enabled: "Включён для этой сети",
     zone: "Зона",
     on: "Вкл",
@@ -986,7 +1106,8 @@ export const ruTranslation: Translation = {
     honestNote:
       "Имена уникальны в сети и проверяются API и индексом в базе. Здесь показано представление панели; EasyTier строит DNS-записи из имён хостов пиров.",
     renameTitle: "Переименовать устройство",
-    renameDescription: "DNS-имя — это идентичность устройства; оно отправляется как hostname EasyTier.",
+    renameDescription:
+      "DNS-имя — это идентичность устройства; оно отправляется как hostname EasyTier.",
     label: "DNS-имя",
   },
   rendezvous: {
@@ -1004,7 +1125,8 @@ export const ruTranslation: Translation = {
     privateOff: "Открыт любой сети",
     nodeNetwork: "Имя сети узла",
     secretMatch: "Секрет сети",
-    secretMatches: "Совпадает с узлом — устройства могут использовать приватный режим",
+    secretMatches:
+      "Совпадает с узлом — устройства могут использовать приватный режим",
     secretDiffers: "Не совпадает с узлом — узел отклонит эту сеть",
     secretUnknown:
       "Проверить нельзя (EASYPLANE_RENDEZVOUS_SECRET не задан на панели)",
@@ -1026,7 +1148,8 @@ export const ruTranslation: Translation = {
     noDialTarget:
       "Нет цели для подключения: в сети нет хаба, нет внешних peer-URL и не включён встроенный rendezvous-узел. Устройства смогут связаться только в одной локальной сети или если уже знают адреса друг друга.",
     p2pOnly: "p2p_only (продвинутое)",
-    p2pOnlyHint: "Отправлять данные только пирам с прямым соединением, никогда через ретранслятор.",
+    p2pOnlyHint:
+      "Отправлять данные только пирам с прямым соединением, никогда через ретранслятор.",
     p2pOnlyWarning:
       "С p2p_only устройство за симметричным NAT или CGNAT вообще не сможет обмениваться данными, даже если rendezvous-узел ретранслирует. Включайте только если все устройства могут пробить NAT.",
     confirmTitle: "Использовать встроенный rendezvous-узел?",
@@ -1039,7 +1162,8 @@ export const ruTranslation: Translation = {
   routes: {
     title: "Маршруты подсетей и exit-node",
     deviceTitle: "Маршруты",
-    description: "Запросы ждут одобрения администратора; отправляются только одобренные маршруты.",
+    description:
+      "Запросы ждут одобрения администратора; отправляются только одобренные маршруты.",
     empty: "Запросов пока нет. Отправьте его со страницы устройства.",
     kind: "Тип",
     cidr: "CIDR",
@@ -1057,7 +1181,8 @@ export const ruTranslation: Translation = {
       "Маршрут, который устройство анонсирует в своём сохранённом конфиге, появляется здесь как заявка. Одобрение раздаёт его устройствам, принимающим маршруты подсетей; само устройство продолжает его анонсировать в любом случае.",
     exitNodeConsent:
       "Одобрение выходного узла лишь фиксирует согласие: клиенту всё равно нужен маршрут ОС и exit_nodes, чтобы отправлять трафик через него.",
-    requestHint: "Участники запрашивают маршруты для устройства; администраторы одобряют или отклоняют.",
+    requestHint:
+      "Участники запрашивают маршруты для устройства; администраторы одобряют или отклоняют.",
     viewerHint: "Откройте страницу устройства, чтобы запросить маршрут.",
     requested: "Маршрут запрошен",
     decided: "Маршрут обновлён",
@@ -1073,7 +1198,8 @@ export const ruTranslation: Translation = {
     exitNodeSeen: "Exit node",
     reportTitle: "Отчёт клиента о маршрутах",
     unapproved: "Не одобрено",
-    noReportYet: "Отчёт ещё не собран. Он придёт при следующей итерации сверки.",
+    noReportYet:
+      "Отчёт ещё не собран. Он придёт при следующей итерации сверки.",
     deviceHint:
       "Сети, которые устройство отдаёт в общую сеть. Отправляются только одобренные маршруты.",
     deviceEmpty: "Устройство пока не отдаёт маршруты.",
@@ -1087,13 +1213,142 @@ export const ruTranslation: Translation = {
       "«В конфигурации» — из GetNetworkInstanceConfig; «видят пиры» — из таблиц маршрутов других клиентов. Ни то, ни другое не отзывает маршрут, заданный отдельным локальным инстансом.",
   },
   audit: {
-    title: "Журнал аудита",
-    description: "Одобрения, приглашения, изменения конфигурации и входы. Секреты не записываются.",
-    action: "Действие",
-    actor: "Автор",
-    target: "Объект",
+    title: "Активность",
+    description:
+      "Кто что изменил, простыми словами. Входы, одобрения, приглашения и изменения конфигурации; секреты не записываются.",
     when: "Время",
-    empty: "Записей пока нет.",
+    empty: "Входы, одобрения и изменения конфигурации появятся здесь.",
+    emptyTitle: "Активности пока нет",
+    emptyFilteredTitle: "Ничего не найдено",
+    emptyFiltered: "Попробуйте другой запрос или тип события.",
+    clearFilters: "Сбросить фильтры",
+    searchLabel: "Поиск по активности",
+    searchPlaceholder: "Имя, устройство или сеть",
+    filterLabel: "Фильтр активности по типу события",
+    filters: {
+      all: "Все",
+      signin: "Входы",
+      access: "Политики доступа",
+      devices: "Устройства",
+      invites: "Приглашения",
+    },
+    actor: {
+      system: "Система",
+      device: "Устройство",
+    },
+    target: {
+      inviteLabel: "приглашение «{{label}}»",
+      inviteId: "приглашение {{id}}",
+    },
+    showing: "Показаны последние {{count}} событие",
+    showing_one: "Показано последнее {{count}} событие",
+    showing_few: "Показаны последние {{count}} события",
+    showing_many: "Показаны последние {{count}} событий",
+    showing_other: "Показаны последние {{count}} события",
+    loadMore: "Показать ещё",
+    events: {
+      auth_login: "{{actor}} вошёл в панель",
+      auth_logout: "{{actor}} вышел из панели",
+      auth_bootstrap: "{{actor}} создал учётную запись администратора",
+
+      network_created: "{{actor}} создал сеть {{target}}",
+      network_imported: "{{actor}} импортировал сеть {{target}}",
+      network_deleted: "{{actor}} удалил сеть {{target}}",
+      network_exported: "{{actor}} экспортировал сеть {{target}}",
+      network_secret_revealed: "{{actor}} показал секрет сети {{target}}",
+      network_secret_rotated: "{{actor}} сменил секрет сети {{target}}",
+      network_rendezvous_secret_aligned:
+        "{{actor}} синхронизировал секрет rendezvous для {{target}}",
+      network_access_mode_changed:
+        "{{actor}} изменил способ аутентификации устройств в {{target}}",
+      network_peer_added: "{{actor}} добавил хаб или пир в {{target}}",
+      network_peer_linked: "{{actor}} привязал пир к устройству в {{target}}",
+      network_peer_removed: "{{actor}} удалил пир из {{target}}",
+
+      invite_created: "{{actor}} создал приглашение для {{target}}",
+      invite_revoked: "{{actor}} отозвал {{target}}",
+
+      device_joined: "{{target}} подключилось к {{network}}",
+      device_approved: "{{actor}} одобрил {{target}}",
+      device_blocked: "{{actor}} заблокировал {{target}}",
+      device_deleted: "{{actor}} удалил {{target}}",
+      device_anchor_removed_acknowledged:
+        "{{actor}} удалил anchor и подтвердил, что тот всё ещё знает секрет",
+      device_push_requested:
+        "{{actor}} попросил {{target}} получить конфигурацию",
+      device_renamed: "{{actor}} переименовал {{target}} в {{name}}",
+      device_tags_updated: "{{actor}} обновил теги {{target}}",
+      device_owner_updated: "{{actor}} сменил владельца {{target}}",
+      device_endpoints_updated:
+        "{{actor}} обновил объявленные адреса {{target}}",
+      device_hub_enabled: "{{actor}} сделал {{target}} хабом",
+      device_hub_disabled: "{{actor}} больше не использует {{target}} как хаб",
+      device_role_changed_anchor: "{{actor}} сделал {{target}} anchor-нодой",
+      device_role_changed_member: "{{actor}} сделал {{target}} участником",
+      device_config_revision_created:
+        "{{actor}} сохранил новую ревизию конфигурации для {{target}}",
+      device_config_rollback:
+        "{{actor}} откатил {{target}} к ревизии {{detail}}",
+      device_config_pushed: "Конфигурация отправлена на {{target}}",
+      device_config_pushed_group_one:
+        "Конфигурация отправлена на {{count}} устройство",
+      device_config_pushed_group_few:
+        "Конфигурация отправлена на {{count}} устройства",
+      device_config_pushed_group_many:
+        "Конфигурация отправлена на {{count}} устройств",
+      device_config_pushed_group_other:
+        "Конфигурация отправлена на {{count}} устройства",
+      device_config_push_failed:
+        "Не удалось отправить конфигурацию на {{target}}",
+      device_config_push_failed_group_one:
+        "Не удалось отправить конфигурацию на {{count}} устройство",
+      device_config_push_failed_group_few:
+        "Не удалось отправить конфигурацию на {{count}} устройства",
+      device_config_push_failed_group_many:
+        "Не удалось отправить конфигурацию на {{count}} устройств",
+      device_config_push_failed_group_other:
+        "Не удалось отправить конфигурацию на {{count}} устройства",
+
+      credential_issued: "{{actor}} выдал учётные данные {{target}}",
+      credential_reissued: "{{actor}} перевыпустил учётные данные {{target}}",
+      credential_revoked: "{{actor}} отозвал учётные данные {{target}}",
+      credential_revoked_all_one:
+        "{{actor}} отозвал {{count}} учётные данные в {{target}}",
+      credential_revoked_all_few:
+        "{{actor}} отозвал {{count}} учётных данных в {{target}}",
+      credential_revoked_all_many:
+        "{{actor}} отозвал {{count}} учётных данных в {{target}}",
+      credential_revoked_all_other:
+        "{{actor}} отозвал {{count}} учётных данных в {{target}}",
+      credential_renewed_one:
+        "{{count}} учётные данные в {{target}} продлены автоматически",
+      credential_renewed_few:
+        "{{count}} учётных данных в {{target}} продлены автоматически",
+      credential_renewed_many:
+        "{{count}} учётных данных в {{target}} продлены автоматически",
+      credential_renewed_other:
+        "{{count}} учётных данных в {{target}} продлены автоматически",
+      credential_groups_updated:
+        "{{actor}} обновил группы учётных данных {{target}}",
+
+      policy_version_created:
+        "{{actor}} сохранил версию политики доступа {{detail}} для {{target}}",
+      policy_mode_changed: "{{actor}} изменил режим политики для {{target}}",
+      policy_disabled: "{{actor}} отключил политику доступа для {{target}}",
+
+      route_requested: "{{actor}} запросил маршрут с {{target}}",
+      route_declared: "{{target}} сообщил о маршруте, который объявляет",
+      route_unapproved_reported:
+        "{{target}} сообщил о маршруте, который не одобрен",
+
+      tag_created: "{{actor}} создал тег {{target}}",
+      tag_deleted: "{{actor}} удалил тег {{target}}",
+      tag_devices_updated:
+        "{{actor}} изменил, какие устройства несут тег {{target}}",
+
+      user_group_created: "{{actor}} создал группу пользователей {{target}}",
+      user_group_deleted: "{{actor}} удалил группу пользователей {{target}}",
+    },
   },
   realtime: {
     status: {
@@ -1102,11 +1357,13 @@ export const ruTranslation: Translation = {
       reconnecting: "Переподключение…",
       offline: "Не подключено",
     },
-    liveHint: "Панель подписана на события сервера: одобрения, статусы и изменения конфигурации появляются без обновления страницы.",
+    liveHint:
+      "Панель подписана на события сервера: одобрения, статусы и изменения конфигурации появляются без обновления страницы.",
   },
   topology: {
     title: "Топология",
-    description: "Живая карта связности: прямые соединения, пути через ретранслятор и узел, который ретранслирует.",
+    description:
+      "Живая карта связности: прямые соединения, пути через ретранслятор и узел, который ретранслирует.",
     noNetworks: "Сетей пока нет; создайте сеть, чтобы посмотреть её топологию.",
     managed: "Управляемый",
     unmanaged: "Неуправляемый",
@@ -1152,8 +1409,10 @@ export const ruTranslation: Translation = {
     noProbeYet: "Данных опроса пока нет.",
     collectedAt: "Собрано {{time}} · каждые {{interval}} с, пока карта открыта",
     stale: "устарело",
-    empty: "Пока никто не сообщает топологию. Одобрите устройство и дождитесь следующего опроса.",
-    partial: "В последнем цикле не удалось опросить устройств: {{count}}. Карта может быть неполной.",
+    empty:
+      "Пока никто не сообщает топологию. Одобрите устройство и дождитесь следующего опроса.",
+    partial:
+      "В последнем цикле не удалось опросить устройств: {{count}}. Карта может быть неполной.",
     noReachableTitle: "Ни один узел не доступен напрямую из интернета",
     noReachableHint:
       "Прохождение NAT между двумя устройствами за NAT может не работать без hole punching. Добавьте узел с публичным адресом (public server или хост со статическим/проброшенным портом), чтобы пиры могли ретранслировать через него.",
@@ -1161,7 +1420,8 @@ export const ruTranslation: Translation = {
       "Ни один узел не сообщает открытый или статический NAT, но {{count}} узл(ов) уже ретранслируют трафик других пиров. EasyTier ретранслирует через любой узел, доступный обеим сторонам, поэтому это работает, пока такие пути живы.",
     honestNote:
       "«Прямое/через ретранслятор» и сам ретранслятор берутся из Route{cost, next_hop_peer_id} самого клиента. Протокол на ретранслируемой связи — туннель первого хопа. Тип NAT и публичные адреса — из STUN-отчёта клиента.",
-    asymmetric: "Стороны расходятся: одна сообщает прямое соединение, другая — путь через ретранслятор.",
+    asymmetric:
+      "Стороны расходятся: одна сообщает прямое соединение, другая — путь через ретранслятор.",
     evidence: "Данные по каждому наблюдателю",
     observedBy: "Наблюдатели",
   },
