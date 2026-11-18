@@ -1,27 +1,23 @@
-import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { LockIcon, MoreHorizontalIcon } from "lucide-react"
+import {
+  ArrowRightIcon,
+  InfoIcon,
+  LockIcon,
+  SlidersHorizontalIcon,
+} from "lucide-react"
 
 import type { AccessChain, AccessChainName } from "@/lib/access-policy"
 import { ACCESS_CHAINS } from "@/lib/access-policy"
-import { Button } from "@/components/ui/button"
-import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
 import { Segmented } from "@/components/ui/segmented"
 import { Switch } from "@/components/ui/switch"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 type Chains = Record<AccessChainName, AccessChain>
-
-function ChainTitle({ name }: { name: AccessChainName }) {
-  const { t } = useTranslation()
-  return <>{t(`accessA.defaults.${name}`)}</>
-}
 
 export function ChainDefaultsForm({
   chains,
@@ -44,7 +40,7 @@ export function ChainDefaultsForm({
           >
             <div className="flex min-w-0 items-center justify-between gap-2">
               <span className="min-w-0 text-sm font-medium">
-                <ChainTitle name={name} />
+                {t(`accessA.defaults.${name}`)}
               </span>
               <Segmented
                 className="[&>button]:h-6 [&>button]:min-w-14 [&>button]:px-2.5 [&>button]:text-[12.5px] max-sm:[&>button]:h-8"
@@ -69,7 +65,9 @@ export function ChainDefaultsForm({
               />
             </div>
             <div className="flex min-h-8 items-center gap-2 max-sm:min-h-12">
-              <span className="min-w-0 flex-1 text-sm">{t("accessA.defaults.enabled")}</span>
+              <span className="min-w-0 flex-1 text-sm">
+                {t("accessA.defaults.enabled")}
+              </span>
               <Switch
                 aria-label={`${t(`accessA.defaults.${name}`)}: ${t(
                   "accessA.defaults.enabled"
@@ -97,142 +95,114 @@ export function ChainDefaultsForm({
   )
 }
 
-export function DefaultActionsFooter({
+/** Explanations for the three directions, shown as a proper tooltip. */
+export function ChainDirectionLabel({ name }: { name: AccessChainName }) {
+  const { t } = useTranslation()
+  const explanation = t(`accessA.defaults.explain.${name}`)
+  return (
+    <span className="inline-flex min-w-0 items-center gap-1">
+      <span className="text-[12.5px] leading-[18px] font-medium">
+        {t(`accessA.defaults.${name}`)}
+      </span>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <button
+              aria-label={explanation}
+              className="grid size-6 flex-none cursor-help place-items-center rounded-md text-fg-3 hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+              type="button"
+            />
+          }
+        >
+          <InfoIcon aria-hidden="true" className="size-3.5" />
+        </TooltipTrigger>
+        <TooltipContent>{explanation}</TooltipContent>
+      </Tooltip>
+    </span>
+  )
+}
+
+/**
+ * The final row of the rule list: what happens to traffic no rule matched.
+ * Every direction is visible and editable in place; names and the enabled
+ * switch stay under "Advanced settings".
+ */
+export function DefaultActionsRow({
   chains,
-  canEdit,
-  busy,
-  onOpen,
-  expanded,
+  onChange,
+  disabled = false,
+  expanded = false,
+  onToggleAdvanced,
 }: {
   chains: Chains
-  canEdit: boolean
-  busy: boolean
-  onOpen: () => void
-  expanded: boolean
+  onChange: (name: AccessChainName, patch: Partial<AccessChain>) => void
+  disabled?: boolean
+  expanded?: boolean
+  onToggleAdvanced?: () => void
 }) {
   const { t } = useTranslation()
   return (
     <div
-      className={cn(
-        "flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1 bg-surface-2 px-2 py-1 sm:px-3",
-        expanded ? "rounded-b-none" : "rounded-b-xl"
-      )}
+      className="min-w-0 bg-surface-2/70 px-2 py-2 sm:px-3"
+      data-testid="default-actions-row"
     >
-      <LockIcon aria-hidden="true" className="hidden size-3.5 flex-none text-fg-3 sm:block" />
-      <span className="text-[12.5px] leading-[18px] font-medium text-fg-2">
-        <span className="max-sm:hidden">{t("accessA.defaults.footer")}</span>
-        <span className="sm:hidden">{t("accessA.defaults.footerShort")}</span>
-      </span>
-      <span className="flex min-w-0 flex-wrap gap-1">
-        {ACCESS_CHAINS.map((name) => (
-          <span
-            className="inline-flex h-[22px] items-center gap-1 rounded-md bg-card px-1.5 text-[12.5px] leading-[18px] text-fg-2 shadow-[inset_0_0_0_1px_var(--line)]"
-            key={name}
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
+        <span className="inline-flex min-w-0 items-center gap-1.5 text-[12.5px] leading-[18px] font-semibold text-fg-2">
+          <LockIcon aria-hidden="true" className="size-3.5 flex-none" />
+          {t("accessA.defaults.everythingElse")}
+        </span>
+        <ArrowRightIcon
+          aria-hidden="true"
+          className="size-3.5 flex-none text-fg-3"
+        />
+
+        <div className="grid min-w-0 flex-1 gap-1.5 sm:flex sm:flex-wrap sm:items-center">
+          {ACCESS_CHAINS.map((name) => (
+            <span
+              className="inline-flex min-h-8 min-w-0 items-center gap-2 rounded-lg bg-card px-2 py-1 shadow-[inset_0_0_0_1px_var(--line)]"
+              key={name}
+            >
+              <ChainDirectionLabel name={name} />
+              <Segmented
+                className="[&>button]:h-6 [&>button]:min-w-12 [&>button]:px-2 [&>button]:text-[12px] max-sm:[&>button]:h-9"
+                label={t("accessA.defaults.defaultLabel", {
+                  chain: t(`accessA.defaults.${name}`),
+                })}
+                onValueChange={(value) => onChange(name, { default: value })}
+                options={[
+                  {
+                    value: "block" as const,
+                    label: t("accessA.defaults.block"),
+                    disabled,
+                  },
+                  {
+                    value: "allow" as const,
+                    label: t("accessA.defaults.allow"),
+                    disabled,
+                  },
+                ]}
+                size="sm"
+                value={chains[name].default}
+              />
+            </span>
+          ))}
+        </div>
+
+        {onToggleAdvanced ? (
+          <button
+            aria-expanded={expanded}
+            className="ml-auto inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-[12.5px] leading-[18px] font-medium text-fg-2 hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            data-testid="default-actions-advanced"
+            disabled={disabled}
+            onClick={onToggleAdvanced}
+            type="button"
           >
-            <span>{t(`accessA.defaults.${name}`)}</span>
-            <b className="font-semibold text-foreground">
-              {chains[name].default === "block"
-                ? t("accessA.defaults.block")
-                : t("accessA.defaults.allow")}
-            </b>
-          </span>
-        ))}
-      </span>
-      <button
-        aria-expanded={expanded}
-        aria-label={t("accessA.defaults.more")}
-        className="relative ml-auto grid size-8 flex-none place-items-center rounded-lg text-fg-2 hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none after:absolute after:-inset-1.5 disabled:cursor-not-allowed disabled:opacity-50"
-        data-testid="default-actions-trigger"
-        disabled={!canEdit || busy}
-        onClick={onOpen}
-        type="button"
-      >
-        <MoreHorizontalIcon aria-hidden="true" className="size-4" />
-      </button>
-    </div>
-  )
-}
-
-function DefaultActionsSheetBody({
-  chains,
-  canEdit,
-  busy,
-  onDone,
-}: {
-  chains: Chains
-  canEdit: boolean
-  busy: boolean
-  onDone: (chains: Chains) => void
-}) {
-  const { t } = useTranslation()
-  const [draft, setDraft] = useState<Chains>(chains)
-  return (
-    <SheetContent
-      className="max-h-[calc(100dvh-96px)] gap-0 p-0 data-[side=bottom]:rounded-t-2xl"
-      data-testid="default-actions-sheet"
-      showCloseButton={false}
-      side="bottom"
-    >
-      <div className="mx-auto mt-2 h-1.5 w-10 flex-none rounded-full bg-line-2" />
-      <SheetHeader className="min-h-[52px] flex-none justify-center px-4 py-1">
-        <SheetTitle className="text-base leading-[22px]">
-          {t("accessA.defaults.title")}
-        </SheetTitle>
-      </SheetHeader>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-1 pb-3">
-        <ChainDefaultsForm
-          chains={draft}
-          disabled={!canEdit || busy}
-          onChange={(name, patch) =>
-            setDraft((current) => ({
-              ...current,
-              [name]: { ...current[name], ...patch },
-            }))
-          }
-        />
+            <SlidersHorizontalIcon aria-hidden="true" className="size-3.5" />
+            {t("accessA.defaults.advanced")}
+          </button>
+        ) : null}
       </div>
-      <SheetFooter className="m-0 flex-none border-t border-line bg-card p-4">
-        <Button
-          disabled={!canEdit || busy}
-          onClick={() => onDone(draft)}
-          type="button"
-        >
-          {t("accessA.defaults.done")}
-        </Button>
-      </SheetFooter>
-    </SheetContent>
-  )
-}
-
-export function DefaultActionsSheet({
-  open,
-  onOpenChange,
-  chains,
-  onSave,
-  canEdit,
-  busy,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  chains: Chains
-  onSave: (chains: Chains) => void
-  canEdit: boolean
-  busy: boolean
-}) {
-  return (
-    <Sheet onOpenChange={onOpenChange} open={open}>
-      {open ? (
-        <DefaultActionsSheetBody
-          busy={busy}
-          canEdit={canEdit}
-          chains={chains}
-          onDone={(next) => {
-            onSave(next)
-            onOpenChange(false)
-          }}
-        />
-      ) : null}
-    </Sheet>
+    </div>
   )
 }
 
@@ -249,10 +219,14 @@ export function DefaultActionsPanel({
 }) {
   return (
     <div
-      className={cn("rounded-b-xl border-t border-line bg-surface-2 p-2.5", className)}
+      className={cn("border-t border-line bg-surface-2 p-2.5", className)}
       data-testid="default-actions-panel"
     >
-      <ChainDefaultsForm chains={chains} disabled={disabled} onChange={onChange} />
+      <ChainDefaultsForm
+        chains={chains}
+        disabled={disabled}
+        onChange={onChange}
+      />
     </div>
   )
 }

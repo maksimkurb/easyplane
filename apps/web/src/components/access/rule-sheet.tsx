@@ -1,16 +1,17 @@
-import { useEffect, useState, type ComponentProps } from "react"
+import { useState, type ComponentProps } from "react"
 import { useTranslation } from "react-i18next"
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  ChevronLeftIcon,
-  CopyIcon,
-  Trash2Icon,
-} from "lucide-react"
 
 import type { AccessRule, AccessSubjects } from "@/lib/access-policy"
 import { ruleIsSavable } from "@/lib/access-policy"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   Sheet,
   SheetContent,
@@ -18,13 +19,18 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { PortsFields } from "@/components/access/ports-fields"
-import { RuleFields, type RuleFieldErrors } from "@/components/access/rule-editor"
-import { SubjectPickerList } from "@/components/access/subject-picker"
+import { RuleForm, type RuleFieldErrors } from "@/components/access/rule-editor"
+import { localRuleErrors } from "@/components/access/access-rule-summary"
+import { useIsMobile } from "@/hooks/use-mobile"
 
-type SheetView = "edit" | "ports" | "from" | "to"
+function sameRule(left: AccessRule, right: AccessRule): boolean {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
 
-function RuleSheetContent({
+/** Rule editor sheet: right-hand panel on desktop, full-screen sheet on phone. */
+export function RuleSheet({
+  open,
+  onOpenChange,
   rule,
   index,
   subjects,
@@ -32,237 +38,149 @@ function RuleSheetContent({
   canEdit,
   busy,
   errors,
-  canMoveUp,
-  canMoveDown,
-  onClose,
   onSave,
-  onMove,
-  onDuplicate,
-  onDelete,
 }: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
   rule: AccessRule
-  index: number
+  index: number | null
   subjects: AccessSubjects
   networkId: string
   canEdit: boolean
   busy: boolean
   errors?: RuleFieldErrors
-  canMoveUp: boolean
-  canMoveDown: boolean
-  onClose: () => void
   onSave: (rule: AccessRule) => void
-  onMove: (direction: -1 | 1) => void
-  onDuplicate: () => void
-  onDelete: () => void
 }) {
   const { t } = useTranslation()
+  const isPhone = useIsMobile(640)
   const [draft, setDraft] = useState(rule)
-  const [view, setView] = useState<SheetView>("edit")
-  const [submitted, setSubmitted] = useState(false)
-  const full = view === "ports"
+  const [touched, setTouched] = useState<Set<string>>(() => new Set())
+  const [discardOpen, setDiscardOpen] = useState(false)
 
-  const update = (patch: Partial<AccessRule>) =>
+  const dirty = index === null || !sameRule(draft, rule)
+  const local = localRuleErrors(draft, t)
+  const serverErrors = Object.fromEntries(
+    Object.entries(errors ?? {}).filter(([key]) => !touched.has(key))
+  ) as RuleFieldErrors
+  const merged: RuleFieldErrors = { ...serverErrors, ...local }
+  const valid = ruleIsSavable(draft) && Object.keys(merged).length === 0
+
+  const update = (patch: Partial<AccessRule>) => {
+    setTouched((current) => {
+      const next = new Set(current)
+      for (const key of Object.keys(patch)) next.add(key)
+      return next
+    })
     setDraft((current) => ({ ...current, ...patch }))
+  }
 
-  useEffect(() => {
-    if (!submitted || busy) return
-    const hasErrors = Boolean(errors && Object.keys(errors).length > 0)
-    if (!hasErrors) onClose()
-  }, [busy, errors, onClose, submitted])
-
-  const title =
-    view === "ports"
-      ? t("accessA.ports.label")
-      : view === "from"
-        ? t("accessA.rules.from")
-        : view === "to"
-          ? t("accessA.rules.to")
-          : t("accessA.rules.editTitle", { rule: index + 1 })
+  const requestClose = () => {
+    if (canEdit && dirty) {
+      setDiscardOpen(true)
+      return
+    }
+    onOpenChange(false)
+  }
 
   return (
-    <SheetContent
-      className={
-        full
-          ? "max-h-none gap-0 p-0 data-[side=bottom]:rounded-t-2xl"
-          : "max-h-[calc(100dvh-48px)] gap-0 p-0 data-[side=bottom]:rounded-t-2xl"
-      }
-      data-testid="rule-sheet"
-      showCloseButton={false}
-      side="bottom"
-      style={full ? { height: "calc(100dvh - 28px)" } : undefined}
-    >
-      <div className="mx-auto mt-2 h-1.5 w-10 flex-none rounded-full bg-line-2" />
-      <div className="flex min-h-[52px] flex-none items-center gap-1 px-2 py-1">
-        {view === "edit" ? null : (
-          <Button
-            aria-label={t("nav.back")}
-            onClick={() => setView("edit")}
-            size="icon-lg"
-            type="button"
-            variant="ghost"
+    <>
+      <Sheet
+        onOpenChange={(next) => {
+          if (!next) requestClose()
+        }}
+        open={open}
+      >
+        {open ? (
+          <SheetContent
+            className={
+              isPhone
+                ? "h-[100dvh] max-h-none w-full gap-0 rounded-none p-0"
+                : "w-full gap-0 p-0 sm:max-w-[560px]"
+            }
+            data-testid="rule-sheet"
+            showCloseButton={false}
+            side={isPhone ? "bottom" : "right"}
           >
-            <ChevronLeftIcon className="size-5" />
-          </Button>
-        )}
-        {view === "edit" && canEdit ? (
-          <>
-            <span aria-hidden="true" className="w-2" />
-            <SheetHeader className="min-w-0 flex-1 gap-0 p-0">
-              <SheetTitle className="truncate text-base leading-[22px]">{title}</SheetTitle>
+            <SheetHeader className="flex-none border-b border-line px-4 py-3">
+              <SheetTitle className="text-base leading-[22px]">
+                {index === null
+                  ? t("accessA.rules.newTitle")
+                  : t("accessA.rules.editTitle", { rule: index + 1 })}
+              </SheetTitle>
             </SheetHeader>
-            <Button
-              aria-label={t("accessA.rules.moveUp")}
-              className="size-10"
-              disabled={busy || !canMoveUp}
-              onClick={() => {
-                onMove(-1)
-                onClose()
-              }}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <ArrowUpIcon className="size-5" />
-            </Button>
-            <Button
-              aria-label={t("accessA.rules.moveDown")}
-              className="size-10"
-              disabled={busy || !canMoveDown}
-              onClick={() => {
-                onMove(1)
-                onClose()
-              }}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <ArrowDownIcon className="size-5" />
-            </Button>
-            <Button
-              aria-label={t("accessA.rules.duplicate")}
-              className="size-10"
-              disabled={busy}
-              onClick={() => {
-                onDuplicate()
-                onClose()
-              }}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <CopyIcon className="size-5" />
-            </Button>
-            <Button
-              aria-label={t("accessA.rules.delete")}
-              className="size-10 text-err"
-              disabled={busy}
-              onClick={() => {
-                onDelete()
-                onClose()
-              }}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <Trash2Icon className="size-5" />
-            </Button>
-          </>
-        ) : (
-          <SheetHeader className="min-w-0 flex-1 gap-0 p-0">
-            <SheetTitle className="truncate text-base leading-[22px]">{title}</SheetTitle>
-          </SheetHeader>
-        )}
-      </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-4 pt-1 pb-3">
-        {view === "edit" ? (
-          <RuleFields
-            disabled={!canEdit || busy}
-            errors={errors}
-            index={index}
-            networkId={networkId}
-            onChange={update}
-            onOpenPicker={(side) => setView(side)}
-            onOpenPorts={() => setView("ports")}
-            presentation="sheet"
-            rule={draft}
-            subjects={subjects}
-          />
-        ) : null}
-        {view === "ports" ? (
-          <PortsFields
-            disabled={!canEdit || busy}
-            errors={{
-              ...(errors?.ports ? { ports: errors.ports } : {}),
-              ...(errors?.sourcePorts ? { sourcePorts: errors.sourcePorts } : {}),
-              ...(errors?.protocol ? { protocol: errors.protocol } : {}),
-            }}
-            onChange={update}
-            rule={draft}
-            testIdPrefix="sheet"
-          />
-        ) : null}
-        {view === "from" || view === "to" ? (
-          <SubjectPickerList
-            fieldLabel={view === "from" ? t("accessA.rules.from") : t("accessA.rules.to")}
-            onChange={(values) => {
-              update(view === "from" ? { from: values } : { to: values })
-              setView("edit")
-            }}
-            side={view}
-            subjects={subjects}
-            values={view === "from" ? draft.from : draft.to}
-          />
-        ) : null}
-      </div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
+              <RuleForm
+                disabled={!canEdit || busy}
+                errors={merged}
+                index={index ?? -1}
+                networkId={networkId}
+                onChange={update}
+                rule={draft}
+                showErrors
+                subjects={subjects}
+              />
+            </div>
 
-      {view === "edit" ? (
-        <SheetFooter className={`m-0 grid flex-none gap-2 border-t border-line bg-card p-4 ${canEdit ? "grid-cols-[1fr_1.4fr]" : "grid-cols-1"}`}>
-          <Button onClick={onClose} type="button" variant="outline">
-            {t("common.cancel")}
-          </Button>
-          {canEdit ? (
+            <SheetFooter className="m-0 grid flex-none grid-cols-2 gap-2 border-t border-line bg-card p-4">
+              <Button
+                disabled={busy}
+                onClick={requestClose}
+                type="button"
+                variant="outline"
+              >
+                {t("common.cancel")}
+              </Button>
+              {canEdit ? (
+                <Button
+                  disabled={busy || !valid || !dirty}
+                  onClick={() => onSave(draft)}
+                  type="button"
+                >
+                  {t("accessA.rules.saveRule")}
+                </Button>
+              ) : (
+                <Button onClick={() => onOpenChange(false)} type="button">
+                  {t("common.close")}
+                </Button>
+              )}
+            </SheetFooter>
+          </SheetContent>
+        ) : null}
+      </Sheet>
+
+      <Dialog onOpenChange={setDiscardOpen} open={discardOpen}>
+        <DialogContent size="sm">
+          <DialogHeader>
+            <DialogTitle>{t("accessA.rules.discardTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("accessA.rules.discardBody")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
             <Button
-              disabled={busy || !ruleIsSavable(draft)}
+              autoFocus
+              onClick={() => setDiscardOpen(false)}
+              type="button"
+              variant="outline"
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
               onClick={() => {
-                setSubmitted(true)
-                onSave(draft)
+                setDiscardOpen(false)
+                onOpenChange(false)
               }}
               type="button"
+              variant="destructive"
             >
-              {t("accessA.rules.saveRule")}
+              {t("accessA.rules.discard")}
             </Button>
-          ) : (
-            <Button onClick={onClose} type="button">
-              {t("common.close")}
-            </Button>
-          )}
-        </SheetFooter>
-      ) : null}
-      {view === "ports" ? (
-        <SheetFooter className="m-0 flex-none border-t border-line bg-card p-4">
-          <Button onClick={() => setView("edit")} type="button">
-            {t("common.done")}
-          </Button>
-        </SheetFooter>
-      ) : null}
-    </SheetContent>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
-export function RuleSheet({
-  open,
-  onOpenChange,
-  ...props
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-} & Omit<ComponentProps<typeof RuleSheetContent>, "onClose">) {
-  return (
-    <Sheet onOpenChange={onOpenChange} open={open}>
-      {open ? (
-        <RuleSheetContent key={`${props.index}`} {...props} onClose={() => onOpenChange(false)} />
-      ) : null}
-    </Sheet>
-  )
-}
+export type RuleSheetProps = ComponentProps<typeof RuleSheet>

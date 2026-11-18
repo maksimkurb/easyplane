@@ -79,10 +79,12 @@ function stubApi(role: "admin" | "member" | "viewer") {
     if (url.includes("/policy")) {
       return jsonResponse({ ...POLICY, mode, document: { ...DOCUMENT, mode } })
     }
-    if (url.includes("/routes")) return jsonResponse({ routes: [], reports: [] })
+    if (url.includes("/routes"))
+      return jsonResponse({ routes: [], reports: [] })
     if (url.includes("/invites")) return jsonResponse([])
     if (url.startsWith("/api/devices")) return jsonResponse(DEVICES)
-    if (url.endsWith(`/api/networks/${NETWORK_ID}`)) return jsonResponse(NETWORK)
+    if (url.endsWith(`/api/networks/${NETWORK_ID}`))
+      return jsonResponse(NETWORK)
     if (url.includes("/tag")) return jsonResponse([])
     if (url.includes("/user-group")) return jsonResponse([])
     return jsonResponse([])
@@ -90,21 +92,49 @@ function stubApi(role: "admin" | "member" | "viewer") {
 }
 
 describe("NetworkAccessPage", () => {
-  it("switches to the JSON editor through the same mode endpoint", async () => {
+  it("shows the policy mode separately from the JSON editing view", async () => {
     stubApi("admin")
     const user = userEvent.setup({ document })
     renderWithProviders(<NetworkAccessPage networkId={NETWORK_ID} />)
 
     expect(await screen.findByText("Block SSH to NAS")).toBeInTheDocument()
-    expect(screen.getByRole("radio", { name: "Rules" })).toHaveAttribute(
-      "aria-checked",
-      "true"
-    )
+    expect(
+      screen.getByRole("radio", { name: /Only allow what rules permit/ })
+    ).toHaveAttribute("aria-checked", "true")
+    expect(
+      screen.getByRole("radio", { name: /Allow all traffic between devices/ })
+    ).toHaveAttribute("aria-checked", "false")
+    expect(
+      screen.getByText(/Rules are checked top to bottom/)
+    ).toBeInTheDocument()
 
-    await user.click(screen.getByRole("radio", { name: "JSON" }))
+    await user.click(screen.getByRole("button", { name: "Edit as JSON" }))
     const editor = await screen.findByRole("textbox", { name: "JSON / HuJSON" })
     expect((editor as HTMLTextAreaElement).value).toContain('"version": 2')
-    expect((editor as HTMLTextAreaElement).value).toContain('"Block SSH to NAS"')
+    expect((editor as HTMLTextAreaElement).value).toContain(
+      '"Block SSH to NAS"'
+    )
+    expect(
+      screen.getByRole("button", { name: "Back to rules" })
+    ).toHaveAttribute("aria-pressed", "true")
+  })
+
+  it("confirms switching the mode, with Cancel as the default", async () => {
+    stubApi("admin")
+    const user = userEvent.setup({ document })
+    renderWithProviders(<NetworkAccessPage networkId={NETWORK_ID} />)
+
+    expect(await screen.findByText("Block SSH to NAS")).toBeInTheDocument()
+    await user.click(
+      screen.getByRole("radio", { name: /Allow all traffic between devices/ })
+    )
+    const dialog = screen.getByRole("dialog")
+    expect(dialog).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus()
+    await user.click(screen.getByRole("button", { name: "Cancel" }))
+    expect(
+      screen.getByRole("radio", { name: /Only allow what rules permit/ })
+    ).toHaveAttribute("aria-checked", "true")
   })
 
   it.each(["member", "viewer"] as const)(
@@ -115,11 +145,15 @@ describe("NetworkAccessPage", () => {
 
       expect(await screen.findByText("Block SSH to NAS")).toBeInTheDocument()
       await waitFor(() =>
-        expect(screen.getByRole("radio", { name: "Rules" })).toBeDisabled()
+        expect(
+          screen.getByRole("radio", { name: /Only allow what rules permit/ })
+        ).toBeDisabled()
       )
-      expect(screen.queryByRole("button", { name: "Add rule" })).not.toBeInTheDocument()
       expect(
-        screen.queryByRole("button", { name: "Remove rule" })
+        screen.queryByRole("button", { name: "Add rule" })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole("button", { name: "Actions for Block SSH to NAS" })
       ).not.toBeInTheDocument()
       for (const toggle of screen.getAllByRole("switch")) {
         expect(toggle).toHaveAttribute("aria-disabled", "true")

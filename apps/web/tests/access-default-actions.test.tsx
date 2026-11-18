@@ -5,9 +5,9 @@ import userEvent from "@testing-library/user-event"
 import "@/i18n"
 import {
   ChainDefaultsForm,
-  DefaultActionsFooter,
-  DefaultActionsSheet,
+  DefaultActionsRow,
 } from "@/components/access/default-actions"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import type { AccessChain, AccessChainName } from "@/lib/access-policy"
 
 const CHAINS: Record<AccessChainName, AccessChain> = {
@@ -16,13 +16,19 @@ const CHAINS: Record<AccessChainName, AccessChain> = {
   forward: { default: "block", enabled: true, name: "LAN forward" },
 }
 
+function renderWithTooltips(ui: React.ReactElement) {
+  return render(<TooltipProvider>{ui}</TooltipProvider>)
+}
+
 describe("default actions", () => {
   it("renders one row per chain and reports every field change", async () => {
     const onChange = vi.fn()
     const user = userEvent.setup({ document })
     render(<ChainDefaultsForm chains={CHAINS} onChange={onChange} />)
 
-    const inbound = screen.getByRole("radiogroup", { name: "Inbound default action" })
+    const inbound = screen.getByRole("radiogroup", {
+      name: "Inbound default action",
+    })
     await user.click(within(inbound).getByRole("radio", { name: "Allow" }))
     expect(onChange).toHaveBeenCalledWith("inbound", { default: "allow" })
 
@@ -31,52 +37,42 @@ describe("default actions", () => {
 
     const name = screen.getByRole("textbox", { name: "Forward chain name" })
     await user.type(name, "x")
-    expect(onChange).toHaveBeenLastCalledWith("forward", { name: "LAN forwardx" })
+    expect(onChange).toHaveBeenLastCalledWith("forward", {
+      name: "LAN forwardx",
+    })
   })
 
-  it("shows the per-chain defaults in the footer and opens the editor", async () => {
-    const onOpen = vi.fn()
+  it("shows the final Everything else row with every direction editable inline", async () => {
+    const onChange = vi.fn()
+    const onToggleAdvanced = vi.fn()
     const user = userEvent.setup({ document })
-    render(
-      <DefaultActionsFooter
-        busy={false}
-        canEdit
+    renderWithTooltips(
+      <DefaultActionsRow
         chains={CHAINS}
-        expanded={false}
-        onOpen={onOpen}
+        onChange={onChange}
+        onToggleAdvanced={onToggleAdvanced}
       />
     )
-    expect(screen.getByText("Inbound")).toBeInTheDocument()
-    expect(screen.getAllByText("Block", { selector: "b" }).length).toBeGreaterThan(0)
-    await user.click(screen.getByRole("button", { name: "Edit default actions" }))
-    expect(onOpen).toHaveBeenCalled()
-  })
 
-  it("applies the sheet draft only when Done is pressed", async () => {
-    const onSave = vi.fn()
-    const onOpenChange = vi.fn()
-    const user = userEvent.setup({ document })
-    render(
-      <DefaultActionsSheet
-        busy={false}
-        canEdit
-        chains={CHAINS}
-        onOpenChange={onOpenChange}
-        onSave={onSave}
-        open
-      />
-    )
-    const dialog = screen.getByRole("dialog")
-    const inbound = within(dialog).getByRole("radiogroup", {
-      name: "Inbound default action",
+    expect(screen.getByText("Everything else")).toBeInTheDocument()
+    for (const name of ["Inbound", "Outbound", "Forward"]) {
+      expect(
+        screen.getByRole("radiogroup", { name: `${name} default action` })
+      ).toBeInTheDocument()
+    }
+    expect(
+      screen.getByRole("button", {
+        name: /Traffic that passes through this device/,
+      })
+    ).toBeInTheDocument()
+
+    const outbound = screen.getByRole("radiogroup", {
+      name: "Outbound default action",
     })
-    await user.click(within(inbound).getByRole("radio", { name: "Allow" }))
-    expect(onSave).not.toHaveBeenCalled()
-    await user.click(within(dialog).getByRole("button", { name: "Done" }))
-    expect(onSave).toHaveBeenCalledWith({
-      ...CHAINS,
-      inbound: { ...CHAINS.inbound, default: "allow" },
-    })
-    expect(onOpenChange).toHaveBeenCalledWith(false)
+    await user.click(within(outbound).getByRole("radio", { name: "Block" }))
+    expect(onChange).toHaveBeenCalledWith("outbound", { default: "block" })
+
+    await user.click(screen.getByRole("button", { name: "Advanced settings" }))
+    expect(onToggleAdvanced).toHaveBeenCalled()
   })
 })

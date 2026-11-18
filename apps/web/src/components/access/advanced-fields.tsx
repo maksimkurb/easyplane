@@ -4,9 +4,14 @@ import { ChevronDownIcon } from "lucide-react"
 
 import type { GetCompiledAcl200ChainsItemRulesItem } from "@/api/generated/model"
 import type { AccessRule, AccessSubjects } from "@/lib/access-policy"
-import { compiledRuleDevice, compiledRulePrefix } from "@/lib/access-policy"
+import {
+  checkPort,
+  compiledRuleDevice,
+  compiledRulePrefix,
+} from "@/lib/access-policy"
 import { useGetCompiledAcl } from "@/api/generated/easyplane"
 import { Switch } from "@/components/ui/switch"
+import { TagInput } from "@/components/access/tag-input"
 import { cn } from "@/lib/utils"
 
 function compiledFields(rule: GetCompiledAcl200ChainsItemRulesItem): string {
@@ -44,7 +49,7 @@ export function AdvancedFields({
   networkId: string
   onChange: (patch: Partial<AccessRule>) => void
   disabled?: boolean
-  errors?: { burst?: string; rate?: string }
+  errors?: { burst?: string; rate?: string; sourcePorts?: string }
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(rule.rateLimit !== undefined)
@@ -67,7 +72,9 @@ export function AdvancedFields({
         .map((entry) => ({ chain: chain.name, entry }))
     ) ?? []
 
-  const burstMessage = errors?.burst ?? (burstError ? t("accessA.advanced.burstRequired") : undefined)
+  const burstMessage =
+    errors?.burst ??
+    (burstError ? t("accessA.advanced.burstRequired") : undefined)
 
   return (
     <div className="flex min-w-0 flex-col gap-3">
@@ -89,6 +96,36 @@ export function AdvancedFields({
 
       {open ? (
         <div className="flex min-w-0 flex-col gap-3">
+          {rule.protocol === "tcp" || rule.protocol === "udp" ? (
+            <div className="min-w-0">
+              <span className="mb-1 flex min-h-6 items-center text-[12.5px] leading-4 font-medium text-fg-2">
+                {t("accessA.ports.source")}
+              </span>
+              <TagInput
+                disabled={disabled}
+                inputMode="numeric"
+                label={t("accessA.ports.source")}
+                onChange={(sourcePorts) => onChange({ sourcePorts })}
+                placeholder={t("accessA.ports.addSource")}
+                validate={(value) => {
+                  const result = checkPort(value)
+                  if (result.ok) return null
+                  return result.error === "range"
+                    ? t("accessA.ports.errorRange")
+                    : t("accessA.ports.errorPort")
+                }}
+                values={rule.sourcePorts}
+              />
+              {errors?.sourcePorts ? (
+                <p
+                  aria-live="polite"
+                  className="mt-1 text-[12.5px] leading-[18px] text-err"
+                >
+                  {errors.sourcePorts}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <div className="grid gap-3 lg:grid-cols-2">
             <div className="flex min-w-0 flex-col gap-1 rounded-[10px] bg-card p-2.5 shadow-[inset_0_0_0_1px_var(--line)]">
               <div className="flex min-h-9 items-center gap-2">
@@ -107,14 +144,17 @@ export function AdvancedFields({
 
             <div className="flex min-w-0 flex-col gap-2 rounded-[10px] bg-card p-2.5 shadow-[inset_0_0_0_1px_var(--line)]">
               <div className="flex min-h-9 items-center gap-2">
-                <span className="min-w-0 flex-1 text-sm">{t("accessA.advanced.limit")}</span>
+                <span className="min-w-0 flex-1 text-sm">
+                  {t("accessA.advanced.limit")}
+                </span>
                 <Switch
                   aria-label={t("accessA.advanced.limit")}
                   checked={limitOn}
                   disabled={disabled}
                   onCheckedChange={(checked) => {
                     setLimitOn(checked)
-                    if (!checked) onChange({ rateLimit: undefined, burst: undefined })
+                    if (!checked)
+                      onChange({ rateLimit: undefined, burst: undefined })
                   }}
                   size="sm"
                 />
@@ -129,7 +169,8 @@ export function AdvancedFields({
                       <span
                         className={cn(
                           "flex h-9 items-center rounded-lg bg-card shadow-[inset_0_0_0_1px_var(--line-2)] focus-within:shadow-[inset_0_0_0_1.5px_var(--brand),0_0_0_3px_var(--brand-soft)] max-sm:h-12",
-                          errors?.rate && "shadow-[inset_0_0_0_1.5px_var(--err)]"
+                          errors?.rate &&
+                            "shadow-[inset_0_0_0_1.5px_var(--err)]"
                         )}
                       >
                         <input
@@ -140,7 +181,10 @@ export function AdvancedFields({
                           disabled={disabled}
                           inputMode="numeric"
                           onChange={(event) => {
-                            const value = event.target.value.replace(/[^\d]/g, "")
+                            const value = event.target.value.replace(
+                              /[^\d]/g,
+                              ""
+                            )
                             onChange({
                               rateLimit: value ? Number(value) : undefined,
                             })
@@ -159,7 +203,8 @@ export function AdvancedFields({
                       <span
                         className={cn(
                           "flex h-9 items-center rounded-lg bg-card shadow-[inset_0_0_0_1px_var(--line-2)] focus-within:shadow-[inset_0_0_0_1.5px_var(--brand),0_0_0_3px_var(--brand-soft)] max-sm:h-12",
-                          burstMessage && "shadow-[inset_0_0_0_1.5px_var(--err)]"
+                          burstMessage &&
+                            "shadow-[inset_0_0_0_1.5px_var(--err)]"
                         )}
                       >
                         <input
@@ -171,8 +216,13 @@ export function AdvancedFields({
                           disabled={disabled}
                           inputMode="numeric"
                           onChange={(event) => {
-                            const value = event.target.value.replace(/[^\d]/g, "")
-                            onChange({ burst: value ? Number(value) : undefined })
+                            const value = event.target.value.replace(
+                              /[^\d]/g,
+                              ""
+                            )
+                            onChange({
+                              burst: value ? Number(value) : undefined,
+                            })
                           }}
                           value={burst}
                         />
@@ -198,6 +248,7 @@ export function AdvancedFields({
           <button
             aria-expanded={compiledOpen}
             className="flex min-h-9 w-full cursor-pointer items-center gap-2 text-left text-sm font-medium focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+            hidden={index < 0}
             onClick={() => setCompiledOpen((current) => !current)}
             type="button"
           >
@@ -219,13 +270,20 @@ export function AdvancedFields({
               </p>
               {device ? (
                 compiledQuery.isLoading ? (
-                  <p className="text-[12.5px] text-fg-2">{t("common.loading")}</p>
+                  <p className="text-[12.5px] text-fg-2">
+                    {t("common.loading")}
+                  </p>
                 ) : matched.length === 0 ? (
-                  <p className="text-[12.5px] text-fg-2">{t("accessA.advanced.compiledEmpty")}</p>
+                  <p className="text-[12.5px] text-fg-2">
+                    {t("accessA.advanced.compiledEmpty")}
+                  </p>
                 ) : (
-                  <pre className="max-w-full overflow-x-hidden rounded-lg bg-card p-2.5 font-mono text-[12.5px] leading-[18px] whitespace-pre-wrap [overflow-wrap:anywhere] shadow-[inset_0_0_0_1px_var(--line)]">
+                  <pre className="max-w-full overflow-x-hidden rounded-lg bg-card p-2.5 font-mono text-[12.5px] leading-[18px] [overflow-wrap:anywhere] whitespace-pre-wrap shadow-[inset_0_0_0_1px_var(--line)]">
                     {matched
-                      .map(({ chain, entry }) => `# ${chain}\n${compiledFields(entry)}`)
+                      .map(
+                        ({ chain, entry }) =>
+                          `# ${chain}\n${compiledFields(entry)}`
+                      )
                       .join("\n\n")}
                   </pre>
                 )

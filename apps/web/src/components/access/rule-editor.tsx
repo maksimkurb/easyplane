@@ -1,32 +1,45 @@
-import type { ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
-import { ChevronRightIcon } from "lucide-react"
+import { WandSparklesIcon } from "lucide-react"
 
-import type { AccessRule, AccessSubjects } from "@/lib/access-policy"
-import { portsSummary } from "@/lib/access-policy"
+import type { TFunction } from "i18next"
+
+import type {
+  AccessProtocol,
+  AccessRule,
+  AccessSubjects,
+} from "@/lib/access-policy"
+import { checkPort, portsSummary } from "@/lib/access-policy"
 import { Segmented } from "@/components/ui/segmented"
 import { Switch } from "@/components/ui/switch"
 import { AdvancedFields } from "@/components/access/advanced-fields"
-import { PortsFields } from "@/components/access/ports-fields"
-import { SubjectPicker, SubjectValueButton } from "@/components/access/subject-picker"
+import { SubjectPicker } from "@/components/access/subject-picker"
+import { TagInput } from "@/components/access/tag-input"
+import {
+  applyService,
+  localRuleErrors,
+  rulePreview,
+  SERVICE_ORDER,
+  serviceForRule,
+  suggestedRuleName,
+  type RuleValidationErrors,
+  type ServiceId,
+} from "@/components/access/access-rule-summary"
 import { cn } from "@/lib/utils"
 
-export type RuleFieldErrors = {
-  name?: string
-  from?: string
-  to?: string
-  ports?: string
-  sourcePorts?: string
-  protocol?: string
-  burst?: string
-  rate?: string
-  general?: string
-}
+export type RuleFieldErrors = RuleValidationErrors
 
-function FieldLabel({ children }: { children: ReactNode }) {
+function FieldLabel({
+  children,
+  action,
+}: {
+  children: ReactNode
+  action?: ReactNode
+}) {
   return (
-    <span className="mb-1 block text-[12.5px] leading-4 font-medium text-fg-2">
-      {children}
+    <span className="mb-1 flex min-h-6 flex-wrap items-center gap-2 text-[12.5px] leading-4 font-medium text-fg-2">
+      <span className="min-w-0">{children}</span>
+      {action ? <span className="ml-auto">{action}</span> : null}
     </span>
   )
 }
@@ -34,13 +47,159 @@ function FieldLabel({ children }: { children: ReactNode }) {
 function FieldError({ children }: { children?: string }) {
   if (!children) return null
   return (
-    <p aria-live="polite" className="mt-1 text-[12.5px] leading-[18px] text-err">
+    <p
+      aria-live="polite"
+      className="mt-1 text-[12.5px] leading-[18px] text-err"
+    >
       {children}
     </p>
   )
 }
 
-export function RuleFields({
+function protocolOptions(disabled = false) {
+  return [
+    { value: "tcp" as AccessProtocol, label: "TCP", disabled },
+    { value: "udp" as AccessProtocol, label: "UDP", disabled },
+    { value: "icmp" as AccessProtocol, label: "ICMP", disabled },
+    { value: "icmpv6" as AccessProtocol, label: "ICMPv6", disabled },
+  ]
+}
+
+function portError(value: string, t: TFunction): string | null {
+  const result = checkPort(value)
+  if (result.ok) return null
+  return result.error === "range"
+    ? t("accessA.ports.errorRange")
+    : t("accessA.ports.errorPort")
+}
+
+/**
+ * The service picker is the second half of the sentence. Presets write
+ * destination ports; protocol and free-form ports only appear for Custom.
+ */
+export function ServiceFields({
+  rule,
+  onChange,
+  disabled,
+  error,
+}: {
+  rule: AccessRule
+  onChange: (patch: Partial<AccessRule>) => void
+  disabled?: boolean
+  error?: string
+}) {
+  const { t } = useTranslation()
+  const service = serviceForRule(rule)
+  const [portsExplicit, setPortsExplicit] = useState(rule.ports.length > 0)
+  const anyPort = rule.ports.length === 0 && !portsExplicit
+
+  return (
+    <div className="flex min-w-0 flex-col gap-2" data-testid="service-fields">
+      <FieldLabel>{t("accessA.rules.service")}</FieldLabel>
+      <div
+        aria-label={t("accessA.rules.service")}
+        className="flex min-w-0 flex-wrap gap-1.5"
+        role="radiogroup"
+      >
+        {SERVICE_ORDER.map((id) => (
+          <button
+            aria-checked={service === id}
+            className={cn(
+              "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full bg-card px-2.5 text-[13px] font-medium shadow-[inset_0_0_0_1px_var(--line-2)] hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 max-sm:h-10",
+              service === id &&
+                "bg-brand-soft text-brand-text shadow-[inset_0_0_0_1px_var(--brand)]"
+            )}
+            disabled={disabled}
+            key={id}
+            onClick={() => onChange(applyService(rule, id as ServiceId))}
+            role="radio"
+            type="button"
+          >
+            {t(`accessA.ports.preset.${id}`)}
+          </button>
+        ))}
+      </div>
+
+      {service === "custom" ? (
+        <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+          <div className="min-w-0">
+            <FieldLabel>{t("accessA.ports.protocol")}</FieldLabel>
+            <Segmented
+              className="[&>button]:h-[30px] max-sm:[&>button]:h-10"
+              fill
+              label={t("accessA.ports.protocol")}
+              onValueChange={(protocol) => {
+                if (protocol === "icmp" || protocol === "icmpv6") {
+                  onChange({ protocol, ports: [], sourcePorts: [] })
+                } else {
+                  onChange({ protocol })
+                }
+              }}
+              options={protocolOptions(disabled)}
+              value={rule.protocol}
+            />
+          </div>
+          <div className="min-w-0">
+            <FieldLabel
+              action={
+                <label className="flex cursor-pointer items-center gap-2 text-[12.5px] font-normal">
+                  <input
+                    checked={anyPort}
+                    className="size-4 accent-[var(--brand)]"
+                    disabled={disabled}
+                    onChange={(event) => {
+                      if (event.target.checked) {
+                        setPortsExplicit(false)
+                        onChange({ ports: [] })
+                      } else {
+                        setPortsExplicit(true)
+                      }
+                    }}
+                    type="checkbox"
+                  />
+                  {t("accessA.ports.anyPort")}
+                </label>
+              }
+            >
+              {t("accessA.ports.destination")}
+            </FieldLabel>
+            <TagInput
+              data-testid="rule-destination-ports"
+              disabled={disabled || anyPort}
+              inputMode="numeric"
+              label={t("accessA.ports.destination")}
+              onChange={(ports) => {
+                setPortsExplicit(true)
+                onChange({ ports })
+              }}
+              placeholder={t("accessA.ports.addDestination")}
+              validate={(value) => portError(value, t)}
+              isRange={(value) => {
+                const result = checkPort(value)
+                return result.ok && result.range
+              }}
+              values={rule.ports}
+            />
+          </div>
+        </div>
+      ) : (
+        <p
+          className="text-[12.5px] leading-[18px] text-fg-2"
+          data-testid="service-summary"
+        >
+          {portsSummary(rule, t)}
+        </p>
+      )}
+      <FieldError>{error}</FieldError>
+    </div>
+  )
+}
+
+/**
+ * Sentence-like rule form: action, from, to, service. Rare fields live under
+ * Advanced. It edits a draft; the sheet owns Save/Cancel and the dirty guard.
+ */
+export function RuleForm({
   rule,
   index,
   subjects,
@@ -48,9 +207,7 @@ export function RuleFields({
   onChange,
   disabled = false,
   errors,
-  presentation,
-  onOpenPicker,
-  onOpenPorts,
+  showErrors = false,
 }: {
   rule: AccessRule
   index: number
@@ -59,171 +216,148 @@ export function RuleFields({
   onChange: (patch: Partial<AccessRule>) => void
   disabled?: boolean
   errors?: RuleFieldErrors
-  presentation: "inline" | "sheet"
-  onOpenPicker?: (side: "from" | "to") => void
-  onOpenPorts?: () => void
+  showErrors?: boolean
 }) {
   const { t } = useTranslation()
-  const compact = presentation === "sheet"
+  const local = localRuleErrors(rule, t)
+  const shown = showErrors ? { ...local, ...errors } : (errors ?? {})
+  const suggestion = suggestedRuleName(rule, subjects, t)
+  const preview = rulePreview(rule, subjects, t)
 
   return (
-    <div
-      className={cn(
-        "min-w-0",
-        compact
-          ? "flex flex-col gap-3.5"
-          : "grid gap-3 md:grid-cols-2 md:items-start"
-      )}
-    >
+    <div className="flex min-w-0 flex-col gap-4" data-testid="rule-form">
+      <p
+        aria-live="polite"
+        className="rounded-xl bg-brand-soft px-3 py-2.5 text-[13px] leading-[19px] font-medium text-brand-text"
+        data-testid="rule-preview"
+      >
+        {preview}
+      </p>
+
       <label className="block min-w-0">
-        <FieldLabel>{t("accessA.rules.name")}</FieldLabel>
+        <FieldLabel
+          action={
+            !rule.name?.trim() ? (
+              <button
+                className="inline-flex min-h-6 cursor-pointer items-center gap-1 rounded-md px-1.5 text-[12.5px] font-medium text-brand-text hover:bg-brand-soft focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+                disabled={disabled}
+                onClick={() => onChange({ name: suggestion })}
+                type="button"
+              >
+                <WandSparklesIcon aria-hidden="true" className="size-3.5" />
+                {t("accessA.rules.useSuggestion")}
+              </button>
+            ) : null
+          }
+        >
+          {t("accessA.rules.nameOptional")}
+        </FieldLabel>
         <input
+          aria-invalid={shown.name ? true : undefined}
           aria-label={t("accessA.rules.name")}
-          aria-invalid={errors?.name ? true : undefined}
+          autoComplete="off"
+          autoFocus={index < 0}
           className={cn(
-            "h-9 w-full min-w-0 rounded-lg border-0 bg-card px-2.5 text-sm text-foreground shadow-[inset_0_0_0_1px_var(--line-2)] outline-0 focus:shadow-[inset_0_0_0_1.5px_var(--brand),0_0_0_3px_var(--brand-soft)] disabled:cursor-not-allowed disabled:bg-surface-2 max-sm:h-12 max-sm:text-base",
-            errors?.name && "shadow-[inset_0_0_0_1.5px_var(--err)]"
+            "h-10 w-full min-w-0 rounded-lg border-0 bg-card px-2.5 text-sm text-foreground shadow-[inset_0_0_0_1px_var(--line-2)] outline-0 focus:shadow-[inset_0_0_0_1.5px_var(--brand),0_0_0_3px_var(--brand-soft)] disabled:cursor-not-allowed disabled:bg-surface-2 max-sm:h-12 max-sm:text-base",
+            shown.name && "shadow-[inset_0_0_0_1.5px_var(--err)]"
           )}
           disabled={disabled}
           onChange={(event) => onChange({ name: event.target.value })}
-          placeholder={t("accessA.rules.namePlaceholder")}
+          placeholder={suggestion}
           value={rule.name ?? ""}
         />
-        <FieldError>{errors?.name}</FieldError>
+        <FieldError>{shown.name}</FieldError>
       </label>
 
-      <div className={cn("flex min-w-0 items-end gap-3", compact && "items-center")}>
+      <div className="flex min-w-0 flex-wrap items-end gap-3">
         <div className="min-w-0 flex-1">
           <FieldLabel>{t("accessA.rules.action")}</FieldLabel>
           <Segmented
-            className="[&>button]:h-[30px] max-sm:[&>button]:h-10"
+            className="[&>button]:h-[34px] max-sm:[&>button]:h-11"
             fill
             label={t("accessA.rules.action")}
             onValueChange={(action) => onChange({ action })}
             options={[
-              { value: "allow" as const, label: t("accessA.rules.allow"), disabled },
-              { value: "deny" as const, label: t("accessA.rules.deny"), disabled },
+              {
+                value: "allow" as const,
+                label: t("accessA.rules.allow"),
+                disabled,
+              },
+              {
+                value: "deny" as const,
+                label: t("accessA.rules.deny"),
+                disabled,
+              },
             ]}
             value={rule.action}
           />
         </div>
-        {compact ? (
-          <div className="flex flex-none items-center gap-2 pb-1">
-            <span className="text-sm font-medium">{t("accessA.rules.enabled")}</span>
-            <Switch
-              aria-label={t("accessA.rules.enabled")}
-              checked={rule.enabled}
-              disabled={disabled}
-              onCheckedChange={(enabled) => onChange({ enabled })}
-            />
-          </div>
-        ) : null}
+        <label className="flex min-h-10 flex-none items-center gap-2 pb-0.5 max-sm:min-h-12">
+          <span className="text-[12.5px] leading-[18px] font-medium">
+            {t("accessA.rules.enabled")}
+          </span>
+          <Switch
+            aria-label={t("accessA.rules.enabled")}
+            checked={rule.enabled}
+            disabled={disabled}
+            onCheckedChange={(enabled) => onChange({ enabled })}
+          />
+        </label>
       </div>
 
-      <div className={cn("grid min-w-0 gap-3 sm:grid-cols-2", compact ? "" : "md:col-span-2")}>
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
         <div className="min-w-0">
           <FieldLabel>{t("accessA.rules.from")}</FieldLabel>
-          {compact ? (
-            <SubjectValueButton
-              disabled={disabled}
-              error={errors?.from}
-              label={t("accessA.rules.from")}
-              onClick={() => onOpenPicker?.("from")}
-              side="from"
-              subjects={subjects}
-              values={rule.from}
-            />
-          ) : (
-            <SubjectPicker
-              data-testid="subject-picker-from"
-              disabled={disabled}
-              error={errors?.from}
-              label={t("accessA.rules.from")}
-              onChange={(from) => onChange({ from })}
-              side="from"
-              subjects={subjects}
-              values={rule.from}
-            />
-          )}
-          {compact ? <FieldError>{errors?.from}</FieldError> : null}
+          <SubjectPicker
+            data-testid="subject-picker-from"
+            disabled={disabled}
+            error={shown.from}
+            label={t("accessA.rules.from")}
+            onChange={(from) => onChange({ from })}
+            side="from"
+            subjects={subjects}
+            values={rule.from}
+          />
         </div>
         <div className="min-w-0">
           <FieldLabel>{t("accessA.rules.to")}</FieldLabel>
-          {compact ? (
-            <SubjectValueButton
-              disabled={disabled}
-              error={errors?.to}
-              label={t("accessA.rules.to")}
-              onClick={() => onOpenPicker?.("to")}
-              side="to"
-              subjects={subjects}
-              values={rule.to}
-            />
-          ) : (
-            <SubjectPicker
-              data-testid="subject-picker-to"
-              disabled={disabled}
-              error={errors?.to}
-              label={t("accessA.rules.to")}
-              onChange={(to) => onChange({ to })}
-              side="to"
-              subjects={subjects}
-              values={rule.to}
-            />
-          )}
-          {compact ? <FieldError>{errors?.to}</FieldError> : null}
-        </div>
-      </div>
-
-      {compact ? (
-        <div className="min-w-0">
-          <FieldLabel>{t("accessA.ports.label")}</FieldLabel>
-          <button
-            aria-label={`${t("accessA.ports.label")}: ${portsSummary(rule, t)}`}
-            className="flex min-h-12 w-full cursor-pointer items-center gap-2.5 rounded-[10px] bg-card px-3 text-left text-sm shadow-[inset_0_0_0_1px_var(--line-2)] focus-visible:ring-3 focus-visible:ring-brand-soft focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-surface-2"
-            data-testid="ports-trigger"
+          <SubjectPicker
+            data-testid="subject-picker-to"
             disabled={disabled}
-            onClick={onOpenPorts}
-            type="button"
-          >
-            <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
-              {portsSummary(rule, t)}
-            </span>
-            <ChevronRightIcon aria-hidden="true" className="size-4 flex-none text-fg-3" />
-          </button>
-          <FieldError>{errors?.ports ?? errors?.sourcePorts ?? errors?.protocol}</FieldError>
-        </div>
-      ) : (
-        <div className="md:col-span-2">
-          <PortsFields
-            disabled={disabled}
-            errors={{
-              ...(errors?.ports ? { ports: errors.ports } : {}),
-              ...(errors?.sourcePorts ? { sourcePorts: errors.sourcePorts } : {}),
-              ...(errors?.protocol ? { protocol: errors.protocol } : {}),
-            }}
-            layout="grid"
-            onChange={onChange}
-            rule={rule}
-            testIdPrefix={`rule-${index}`}
+            error={shown.to}
+            label={t("accessA.rules.to")}
+            onChange={(to) => onChange({ to })}
+            side="to"
+            subjects={subjects}
+            values={rule.to}
           />
         </div>
-      )}
+      </div>
 
-      <div className={compact ? "" : "md:col-span-2"}>
-        <AdvancedFields
-          disabled={disabled}
-          errors={{ ...(errors?.burst ? { burst: errors.burst } : {}), ...(errors?.rate ? { rate: errors.rate } : {}) }}
-          index={index}
-          networkId={networkId}
-          onChange={onChange}
-          rule={rule}
-          subjects={subjects}
-        />
-      </div>
-      <div className={compact ? "" : "md:col-span-2"}>
-        <FieldError>{errors?.general}</FieldError>
-      </div>
+      <ServiceFields
+        disabled={disabled}
+        error={shown.ports ?? shown.protocol}
+        onChange={onChange}
+        rule={rule}
+      />
+
+      <AdvancedFields
+        disabled={disabled}
+        errors={{
+          ...(shown.burst ? { burst: shown.burst } : {}),
+          ...(shown.rate ? { rate: shown.rate } : {}),
+          ...(shown.sourcePorts ? { sourcePorts: shown.sourcePorts } : {}),
+        }}
+        index={index}
+        networkId={networkId}
+        onChange={onChange}
+        rule={rule}
+        subjects={subjects}
+      />
+      <FieldError>{shown.general}</FieldError>
     </div>
   )
 }
+
+/** Backwards-compatible name used by the old inline editor. */
+export const RuleFields = RuleForm
