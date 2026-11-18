@@ -1085,7 +1085,12 @@ export const enTranslation = {
       "Subnets and exit nodes approved for other devices become usable here.",
     acceptRoutesNote: "Use routes shared by other devices",
     deviceHonestNote:
-      "Configured comes from GetNetworkInstanceConfig; seen-by-peers from other clients' route tables. Neither can revoke a route set by a separate local instance.",
+      "Approved routes are sent to every device that accepts routes from other devices. This device keeps advertising them either way.",
+    deviceTechnicalNote:
+      "Configured routes come from the instance the panel manages. “Seen by peers” comes from other clients' route tables. A separate EasyTier process running on the device is invisible here and has to be changed on the device.",
+    technicalDetails: "Technical details",
+    loadError: "Couldn't load routes. The rest of the page still works.",
+    retry: "Retry",
   },
   audit: {
     title: "Audit log",
@@ -1161,10 +1166,126 @@ export const enTranslation = {
     noReachableRelayed:
       "No node reports an open or static NAT, but {{count}} node(s) are relay-capable because peers already route through them. EasyTier relays through any peer both sides can reach, so this works while those paths stay up.",
     honestNote:
-      "Direct vs relayed and the relay node come from the client's own Route{cost, next_hop_peer_id}. The protocol on a relayed edge is the first hop's tunnel. NAT type and public addresses come from the client's STUN report.",
+      "A solid line means the two devices talk directly; a dashed line means traffic goes through another device.",
     asymmetric: "The two sides disagree: one reports a direct connection, the other a relayed path.",
     evidence: "Per-observer evidence",
     observedBy: "Observed by",
+  },
+  deviceStatus: {
+    labels: {
+      blocked: "Blocked",
+      pending: "Waiting for approval",
+      offline: "Offline",
+      updating: "Updating…",
+      pushFailed: "Push failed",
+      online: "Connected",
+    },
+    hint: {
+      blocked:
+        "This device is blocked and cannot connect. Unblock it to let it back in.",
+      pending: "An admin has to approve this device before it can join.",
+      offline: "The device is not connected right now.",
+      offlinePending:
+        "It will update to revision {{revision}} when it comes back online.",
+      updating: "Revision {{revision}} is queued; the device still runs an older one.",
+      updatingUnknown: "The device has not applied the latest configuration yet.",
+      pushFailed: "The last configuration push failed.",
+      pushFailedReason: "Last push failed: {{reason}}",
+      pushOffline:
+        "The device is offline, so a push would wait until it reconnects.",
+    },
+    lastSeenAt: "Last seen {{time}}",
+    hostname: "hostname {{hostname}}",
+    ownedBy: "Owner {{owner}}",
+    table: {
+      status: "Status",
+    },
+    filters: {
+      all: "All",
+      online: "Online",
+      offline: "Offline",
+      attention: "Needs attention",
+      empty: "No devices in this view.",
+    },
+    realtime: {
+      live: "Live updates",
+      connecting: "Connecting…",
+      reconnecting: "Reconnecting…",
+      offline: "Updates paused",
+      hint:
+        "This page updates itself when something changes on the server. It says nothing about whether devices are online.",
+    },
+    danger: {
+      title: "Danger zone",
+      hint:
+        "Blocking keeps the device out until you unblock it. Removing deletes the device and its configuration history.",
+      blockTitle: "Block this device?",
+      deleteTitle: "Remove this device?",
+    },
+    block: {
+      blockedTitle: "This device is blocked",
+      blockedBody:
+        "It cannot connect to the network. Unblock it from the menu or the danger zone to let it back in.",
+      pendingTitle: "Waiting for approval",
+      pendingBody:
+        "Approve this device to give it an address and its first configuration.",
+      offlineTitle: "Offline",
+      offlineBody:
+        "Last seen {{when}}. Nothing to do — the device reconnects on its own.",
+      offlinePending:
+        "Last seen {{when}}. It will update to revision {{revision}} when it comes back online.",
+      updatingTitle: "Applying revision {{revision}}",
+      updatingBody:
+        "The device is online but still runs revision {{applied}}. If it does not switch by itself, push the configuration again.",
+      pushFailedTitle: "The last configuration push failed",
+      pushFailedReason:
+        "The device reported: {{reason}}. Push it again when the device is online.",
+      pushFailedBody:
+        "The device rejected the last configuration. Push it again when the device is online.",
+    },
+  },
+  device: {
+    history: {
+      hint:
+        "Every save is a revision. The device runs the one marked Running; a newer one is applied on the next successful push.",
+      revision: "Revision",
+      changeLabel: "Change",
+      change: {
+        approval: "Approved and configured",
+        rollback: "Rolled back to revision {{revision}}",
+        manual: "Configuration updated",
+        policy: "Access policy updated (v{{version}})",
+        policyShort: "Access policy updated",
+      },
+      new: "Save config change",
+      newHint:
+        "Creates a new revision from the current configuration and pushes it to the device when it is online.",
+      notePlaceholder: "e.g. allow SSH to the NAS",
+      showAll: "Show all {{count}}",
+      showFewer: "Show fewer",
+      technical: "Configuration JSON",
+    },
+    hub: {
+      description:
+        "A hub is an always-on device that every other device can dial directly. Keep at least one hub online in a network that spans the internet.",
+      endpointsInactive:
+        "Saved addresses are only used while this device is a hub.",
+    },
+  },
+  map: {
+    loadError: "Couldn't load the map. Retry to try again.",
+    natHint:
+      "None of these devices has a public address, so devices behind strict NAT may not find each other. Keep one always-on device with a public address online, or turn on the rendezvous node in network settings.",
+    natHintRelayed:
+      "No device reports a public address, but {{count}} device(s) already relay traffic for the others. That keeps working while those devices stay online.",
+    dismissHint: "Dismiss hint",
+    updated: "Updated {{time}}",
+    legend: {
+      title: "What the map shows",
+      relayCapable: "Relay-capable",
+      hint:
+        "Each line joins two devices that can reach each other. A solid line means they talk directly. A dashed line means traffic passes through another device (a relay). A violet tower marks a device that can relay for others.",
+    },
   },
   health: {
     title: "Status",
