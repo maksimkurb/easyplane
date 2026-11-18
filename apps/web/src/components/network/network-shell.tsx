@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
+import { useLocation, useSearch } from "wouter"
 
 import {
   useGetNetwork,
@@ -13,8 +14,10 @@ import type {
   ListInvites200Item,
   ListNetworkRoutes200RoutesItem,
 } from "@/api/generated/model"
+import { useAuth } from "@/auth/auth-context"
 import { AddDeviceDialog } from "@/components/invites/add-device-dialog"
 import { NetworkHero, type NetworkTab } from "@/components/network/network-hero"
+import { SetupChecklist } from "@/components/network/setup-checklist"
 import { PageContainer } from "@/components/layout/page-container"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -47,11 +50,20 @@ export function NetworkShell({
   children: (data: NetworkShellData) => ReactNode
 }) {
   const { t } = useTranslation()
+  const { canManage } = useAuth()
   const networkQuery = useGetNetwork(networkId)
   const devicesQuery = useListDevices({ networkId })
   const routesQuery = useListNetworkRoutes(networkId)
   const invitesQuery = useListInvites(networkId)
   const [addOpen, setAddOpen] = useState(false)
+  const search = useSearch()
+  const [location, navigate] = useLocation()
+
+  // Creating a network redirects here with ?addDevice=1 so the invite flow
+  // opens straight away. Closing it removes the flag, so the back button and
+  // a reload do not reopen the dialog.
+  const addFromLink = new URLSearchParams(search ?? "").get("addDevice") === "1"
+  const addVisible = addOpen || addFromLink
 
   const network = networkQuery.data?.data
   const devices = devicesQuery.data?.data ?? []
@@ -93,7 +105,9 @@ export function NetworkShell({
     <>
       <NetworkHero
         active={tab}
-        deviceCount={devices.filter((device) => device.state !== "pending").length}
+        deviceCount={
+          devices.filter((device) => device.state !== "pending").length
+        }
         network={network}
         onAddDevice={() => setAddOpen(true)}
         online={online}
@@ -101,6 +115,13 @@ export function NetworkShell({
         waiting={waiting}
       />
       <PageContainer className="pt-5 pb-10">
+        {canManage ? (
+          <SetupChecklist
+            devices={devices}
+            network={network}
+            openAddDevice={() => setAddOpen(true)}
+          />
+        ) : null}
         {children({
           network,
           devices,
@@ -112,7 +133,14 @@ export function NetworkShell({
           openAddDevice: () => setAddOpen(true),
         })}
       </PageContainer>
-      <AddDeviceDialog network={network} onOpenChange={setAddOpen} open={addOpen} />
+      <AddDeviceDialog
+        network={network}
+        onOpenChange={(next) => {
+          setAddOpen(next)
+          if (!next && addFromLink) navigate(location, { replace: true })
+        }}
+        open={addVisible}
+      />
     </>
   )
 }
