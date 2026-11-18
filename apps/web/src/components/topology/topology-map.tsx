@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Background,
   BaseEdge,
@@ -19,6 +19,7 @@ import {
   type NodeTypes,
   type OnNodesChange,
   type NodeChange,
+  type ReactFlowInstance,
 } from "@xyflow/react"
 import { useTranslation } from "react-i18next"
 import { RadioTowerIcon, ServerIcon } from "lucide-react"
@@ -27,16 +28,23 @@ import type {
   GetNetworkTopology200LinksItem as TopologyLink,
   GetNetworkTopology200NodesItem as TopologyNode,
 } from "@/api/generated/model"
+import { DeviceIcon } from "@/components/device/device-icon"
 import { ExitNodeBadge, type ExitNodeState } from "@/components/exit-node-badge"
 import { Badge } from "@/components/ui/badge"
 import { layoutTopology } from "@/lib/topology-layout"
 import { cn } from "@/lib/utils"
+
+type DeviceOs = { type?: string | null; distribution?: string | null }
 
 type DeviceNodeData = {
   node: TopologyNode
   exitNode?: ExitNodeState
   compact?: boolean
   slim?: boolean
+  /** Same glyph as the device list and the side panel. */
+  os?: DeviceOs
+  /** Selects the card from page state, independent of React Flow's own flag. */
+  highlighted?: boolean
 }
 
 const nodeTypes: NodeTypes = { device: DeviceNode }
@@ -47,8 +55,10 @@ function borderPoint(node: InternalNode, other: InternalNode) {
   const h = (node.measured.height ?? 0) / 2
   const cx = node.internals.positionAbsolute.x + w
   const cy = node.internals.positionAbsolute.y + h
-  const ox = other.internals.positionAbsolute.x + (other.measured.width ?? 0) / 2
-  const oy = other.internals.positionAbsolute.y + (other.measured.height ?? 0) / 2
+  const ox =
+    other.internals.positionAbsolute.x + (other.measured.width ?? 0) / 2
+  const oy =
+    other.internals.positionAbsolute.y + (other.measured.height ?? 0) / 2
   const dx = ox - cx
   const dy = oy - cy
   if (dx === 0 && dy === 0) return { x: cx, y: cy }
@@ -92,7 +102,9 @@ function DirectEdge({
             style={{
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
               background: "var(--card)",
-              opacity: (labelBgStyle as { fillOpacity?: number } | undefined)?.fillOpacity ?? 0.9,
+              opacity:
+                (labelBgStyle as { fillOpacity?: number } | undefined)
+                  ?.fillOpacity ?? 0.9,
               ...(labelStyle as object),
               fill: undefined,
             }}
@@ -109,23 +121,35 @@ const edgeTypes: EdgeTypes = { direct: DirectEdge }
 
 /**
  * One device card. Relay-capable nodes get a violet ring and a tower badge;
- * offline nodes are muted. The card carries a native tooltip with the fields
- * the map cannot fit, and clicking opens the detail drawer.
+ * offline nodes are dimmed with a dashed outline. The card carries a native
+ * tooltip with the fields the map cannot fit, and clicking opens the detail
+ * drawer. The glyph comes from the same device icon set as the list.
  */
 export function TopologyNodeCard({
   node,
   exitNode = "none",
   selected,
+  highlighted = false,
   compact = false,
   slim = false,
+  os,
 }: {
   node: TopologyNode
   exitNode?: ExitNodeState
   selected: boolean
+  highlighted?: boolean
   compact?: boolean
   slim?: boolean
+  os?: DeviceOs
 }) {
   const { t } = useTranslation()
+  const isSelected = selected || highlighted
+  const glyph = os ? (
+    <DeviceIcon className="size-4" os={os} />
+  ) : (
+    <ServerIcon aria-hidden="true" className="size-4" />
+  )
+
   if (slim) {
     return (
       <div
@@ -133,16 +157,22 @@ export function TopologyNodeCard({
           "relative w-[170px] rounded-xl bg-card px-2 py-1.5 shadow-sm transition-shadow",
           node.online
             ? "ring-1 ring-line-2"
-            : "opacity-70 outline outline-1 outline-dashed outline-line-2",
-          selected && "shadow-md ring-2 ring-brand"
+            : "opacity-70 outline outline-1 outline-line-2 outline-dashed",
+          isSelected && "shadow-md ring-2 ring-brand"
         )}
-        title={[node.hostname, node.virtualIpv4, node.natType].filter(Boolean).join(" · ")}
+        title={[node.hostname, node.virtualIpv4, node.natType]
+          .filter(Boolean)
+          .join(" · ")}
       >
         <Handle className="!opacity-0" position={Position.Left} type="target" />
-        <Handle className="!opacity-0" position={Position.Right} type="source" />
+        <Handle
+          className="!opacity-0"
+          position={Position.Right}
+          type="source"
+        />
         <div className="flex min-w-0 items-center gap-2">
           <span className="relative grid size-9 flex-none place-items-center rounded-[9px] bg-surface-2 text-fg-2 ring-1 ring-line">
-            <ServerIcon aria-hidden="true" className="size-4" />
+            {glyph}
             <span
               aria-hidden="true"
               className={cn(
@@ -170,7 +200,10 @@ export function TopologyNodeCard({
         </div>
         {exitNode !== "none" ? (
           <span className="absolute -bottom-2 left-2 bg-card">
-            <ExitNodeBadge className="px-1.5 py-0 text-[9px]" state={exitNode} />
+            <ExitNodeBadge
+              className="px-1.5 py-0 text-[9px]"
+              state={exitNode}
+            />
           </span>
         ) : null}
       </div>
@@ -183,7 +216,9 @@ export function TopologyNodeCard({
     `NAT ${node.natType}${node.tcpNatType !== "Unknown" ? ` (tcp ${node.tcpNatType})` : ""}`,
     node.publicIps.length > 0 ? `Public ${node.publicIps.join(", ")}` : null,
     node.version ? `EasyTier ${node.version}` : null,
-    node.relaysFor.length > 0 ? `Relays for ${node.relaysFor.length} node(s)` : null,
+    node.relaysFor.length > 0
+      ? `Relays for ${node.relaysFor.length} node(s)`
+      : null,
     node.listeners.length > 0 ? `Listeners ${node.listeners.join(" ")}` : null,
   ]
     .filter(Boolean)
@@ -194,9 +229,11 @@ export function TopologyNodeCard({
       className={cn(
         "rounded-lg border bg-card shadow-sm transition-shadow",
         compact ? "w-[136px] px-2.5 py-1.5" : "w-[180px] px-3 py-2",
-        node.online ? "border-border" : "border-dashed border-muted-foreground/40 opacity-70",
+        node.online
+          ? "border-border"
+          : "border-dashed border-muted-foreground/40 opacity-70",
         node.relayCapable && "border-violet-500/70 ring-1 ring-violet-500/40",
-        selected && "shadow-md ring-2 ring-primary"
+        isSelected && "shadow-md ring-2 ring-primary"
       )}
       title={tooltip}
     >
@@ -227,37 +264,48 @@ export function TopologyNodeCard({
         </div>
       ) : null}
       {!compact ? (
-      <div className="mt-1.5 flex flex-wrap items-center gap-1">
-        <Badge className="px-1.5 py-0 text-[9px]" variant="outline">
-          {node.natType}
-        </Badge>
-        {node.managed ? (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1">
           <Badge className="px-1.5 py-0 text-[9px]" variant="outline">
-            {t("topology.managed")}
+            {node.natType}
           </Badge>
-        ) : (
-          <Badge className="border-amber-500/40 px-1.5 py-0 text-[9px] text-amber-700 dark:text-amber-300" variant="outline">
-            {t("topology.unmanaged")}
-          </Badge>
-        )}
-        <ExitNodeBadge className="px-1.5 py-0 text-[9px]" state={exitNode} />
-        {node.relaysFor.length > 0 ? (
-          <Badge className="border-violet-500/40 px-1.5 py-0 text-[9px] text-violet-700 dark:text-violet-300" variant="outline">
-            {t("topology.relayCount", { count: node.relaysFor.length })}
-          </Badge>
-        ) : null}
-      </div>
+          {node.managed ? (
+            <Badge className="px-1.5 py-0 text-[9px]" variant="outline">
+              {t("topology.managed")}
+            </Badge>
+          ) : (
+            <Badge
+              className="border-amber-500/40 px-1.5 py-0 text-[9px] text-amber-700 dark:text-amber-300"
+              variant="outline"
+            >
+              {t("topology.unmanaged")}
+            </Badge>
+          )}
+          <ExitNodeBadge className="px-1.5 py-0 text-[9px]" state={exitNode} />
+          {node.relaysFor.length > 0 ? (
+            <Badge
+              className="border-violet-500/40 px-1.5 py-0 text-[9px] text-violet-700 dark:text-violet-300"
+              variant="outline"
+            >
+              {t("topology.relayCount", { count: node.relaysFor.length })}
+            </Badge>
+          ) : null}
+        </div>
       ) : null}
     </div>
   )
 }
 
-function DeviceNode({ data, selected }: NodeProps<Node<DeviceNodeData, "device">>) {
+function DeviceNode({
+  data,
+  selected,
+}: NodeProps<Node<DeviceNodeData, "device">>) {
   return (
     <TopologyNodeCard
       compact={data.compact}
       exitNode={data.exitNode}
+      highlighted={data.highlighted}
       node={data.node}
+      os={data.os}
       selected={Boolean(selected)}
       slim={data.slim}
     />
@@ -282,6 +330,8 @@ export interface TopologyMapProps {
   slim?: boolean
   /** Exit-node badge per device id (declared proposals from the routes API). */
   exitNodeByDeviceId?: Record<string, ExitNodeState>
+  /** OS per device id, so the map shows the same icon as the device list. */
+  deviceOsById?: Record<string, DeviceOs>
 }
 
 /** Renders the derived snapshot as a React Flow graph. */
@@ -297,9 +347,18 @@ export function TopologyMap({
   compact = false,
   slim = false,
   exitNodeByDeviceId,
+  deviceOsById,
 }: TopologyMapProps) {
   const { t } = useTranslation()
-  const [overrides, setOverrides] = useState<Record<string, { x: number; y: number }>>({})
+  const [overrides, setOverrides] = useState<
+    Record<string, { x: number; y: number }>
+  >({})
+  const [flow, setFlow] = useState<ReactFlowInstance<
+    Node<DeviceNodeData, "device">,
+    Edge
+  > | null>(null)
+  const hostRef = useRef<HTMLDivElement>(null)
+  const fitTimer = useRef<number | null>(null)
 
   const positions = useMemo(
     () =>
@@ -326,7 +385,8 @@ export function TopologyMap({
   const flowNodes = useMemo<Node<DeviceNodeData, "device">[]>(
     () =>
       nodes.map((node) => {
-        const position = overrides[node.id] ?? positions.get(node.id) ?? { x: 0, y: 0 }
+        const position = overrides[node.id] ??
+          positions.get(node.id) ?? { x: 0, y: 0 }
         return {
           id: node.id,
           type: "device" as const,
@@ -335,6 +395,8 @@ export function TopologyMap({
             node,
             compact,
             slim,
+            os: node.deviceId ? deviceOsById?.[node.deviceId] : undefined,
+            highlighted: selectedNodeId === node.id,
             exitNode: node.deviceId
               ? (exitNodeByDeviceId?.[node.deviceId] ?? "none")
               : "none",
@@ -342,7 +404,16 @@ export function TopologyMap({
           selected: selectedNodeId === node.id,
         }
       }),
-    [nodes, overrides, positions, selectedNodeId, compact, slim, exitNodeByDeviceId]
+    [
+      nodes,
+      overrides,
+      positions,
+      selectedNodeId,
+      compact,
+      slim,
+      exitNodeByDeviceId,
+      deviceOsById,
+    ]
   )
 
   const flowEdges = useMemo<Edge[]>(
@@ -396,8 +467,8 @@ export function TopologyMap({
     [links, pingLabels, positions, t]
   )
 
-  const handleNodesChange: OnNodesChange<Node<DeviceNodeData, "device">> = useCallback(
-    (changes: NodeChange<Node<DeviceNodeData, "device">>[]) => {
+  const handleNodesChange: OnNodesChange<Node<DeviceNodeData, "device">> =
+    useCallback((changes: NodeChange<Node<DeviceNodeData, "device">>[]) => {
       const moved = changes.filter(
         (change) => change.type === "position" && change.position
       )
@@ -410,6 +481,52 @@ export function TopologyMap({
         }
         return next
       })
+    }, [])
+
+  // The layout is computed after the first paint and changes when the graph
+  // changes, so `fitView` on mount alone leaves nodes off-canvas. Re-fit after
+  // layout and whenever the canvas is resized.
+  const layoutKey = useMemo(
+    () =>
+      `${nodes
+        .map((node) => node.id)
+        .sort()
+        .join("|")}#${links
+        .map((link) => link.id)
+        .sort()
+        .join("|")}`,
+    [nodes, links]
+  )
+  const scheduleFit = useCallback(() => {
+    if (!flow) return
+    if (fitTimer.current !== null) window.clearTimeout(fitTimer.current)
+    fitTimer.current = window.setTimeout(() => {
+      void flow.fitView({ padding: 0.08, duration: 0 })
+    }, 80)
+  }, [flow])
+
+  useEffect(() => {
+    scheduleFit()
+  }, [scheduleFit, layoutKey])
+
+  useEffect(() => {
+    const host = hostRef.current
+    if (!host || typeof ResizeObserver === "undefined") return undefined
+    let frame = 0
+    const observer = new ResizeObserver(() => {
+      window.cancelAnimationFrame(frame)
+      frame = window.requestAnimationFrame(() => scheduleFit())
+    })
+    observer.observe(host)
+    return () => {
+      observer.disconnect()
+      window.cancelAnimationFrame(frame)
+    }
+  }, [scheduleFit])
+
+  useEffect(
+    () => () => {
+      if (fitTimer.current !== null) window.clearTimeout(fitTimer.current)
     },
     []
   )
@@ -417,19 +534,19 @@ export function TopologyMap({
   return (
     <div
       className={cn(
-        "h-[68vh] min-h-96 w-full rounded-lg border border-line bg-surface-2/40",
+        "h-[68vh] min-h-96 w-full rounded-lg border border-line bg-surface-2/40 [&_.react-flow__attribution]:opacity-50",
         className
       )}
+      ref={hostRef}
     >
       <ReactFlow
         edgeTypes={edgeTypes}
         edges={flowEdges}
-        fitView
-        fitViewOptions={{ padding: 0.08 }}
         minZoom={0.15}
         nodeTypes={nodeTypes}
         nodes={flowNodes}
         onEdgeClick={(_, edge) => onSelectLink?.(edge.id)}
+        onInit={setFlow}
         onNodeClick={(_, node) => onSelectNode(node.id)}
         onNodesChange={handleNodesChange}
         onPaneClick={() => {

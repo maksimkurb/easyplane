@@ -20,7 +20,11 @@ vi.mock("@xyflow/react", () => ({
     onNodeClick,
   }: {
     nodes: Array<{ id: string; data: { node: TopologyNode } }>
-    edges: Array<{ id: string; label?: string; style?: { strokeDasharray?: string } }>
+    edges: Array<{
+      id: string
+      label?: string
+      style?: { strokeDasharray?: string }
+    }>
     onNodeClick?: (event: unknown, node: { id: string }) => void
   }) => (
     <div data-testid="flow">
@@ -37,7 +41,11 @@ vi.mock("@xyflow/react", () => ({
       </ul>
       <ul data-testid="flow-edges">
         {edges.map((edge) => (
-          <li data-dash={edge.style?.strokeDasharray ?? "solid"} data-edge-id={edge.id} key={edge.id}>
+          <li
+            data-dash={edge.style?.strokeDasharray ?? "solid"}
+            data-edge-id={edge.id}
+            key={edge.id}
+          >
             {edge.label}
           </li>
         ))}
@@ -53,7 +61,8 @@ vi.mock("@xyflow/react", () => ({
 }))
 
 vi.mock("@/api/generated/easyplane", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/api/generated/easyplane")>()
+  const actual =
+    await importOriginal<typeof import("@/api/generated/easyplane")>()
   return {
     ...actual,
     useGetDevice: () => ({
@@ -79,7 +88,10 @@ vi.mock("@/api/generated/easyplane", async (importOriginal) => {
   }
 })
 
-import { TopologyMap, TopologyNodeCard } from "@/components/topology/topology-map"
+import {
+  TopologyMap,
+  TopologyNodeCard,
+} from "@/components/topology/topology-map"
 
 function node(overrides: Partial<TopologyNode> = {}): TopologyNode {
   return {
@@ -143,8 +155,18 @@ describe("topology map", () => {
   it("renders every node and styles direct/relayed edges differently", () => {
     const nodes = [
       node(),
-      node({ id: "ip:10.0.0.3", deviceId: "dev-b", hostname: "core-b", virtualIpv4: "10.0.0.3" }),
-      node({ id: "ip:10.0.0.4", deviceId: "dev-c", hostname: "core-c", virtualIpv4: "10.0.0.4" }),
+      node({
+        id: "ip:10.0.0.3",
+        deviceId: "dev-b",
+        hostname: "core-b",
+        virtualIpv4: "10.0.0.3",
+      }),
+      node({
+        id: "ip:10.0.0.4",
+        deviceId: "dev-c",
+        hostname: "core-c",
+        virtualIpv4: "10.0.0.4",
+      }),
     ]
     const links = [
       link(),
@@ -171,10 +193,16 @@ describe("topology map", () => {
     expect(within(renderedNodes).getAllByRole("listitem")).toHaveLength(3)
     expect(renderedNodes).toHaveTextContent("core-a")
 
-    const edges = within(screen.getByTestId("flow-edges")).getAllByRole("listitem")
+    const edges = within(screen.getByTestId("flow-edges")).getAllByRole(
+      "listitem"
+    )
     expect(edges).toHaveLength(2)
-    const direct = edges.find((edge) => edge.getAttribute("data-edge-id") === links[0]!.id)!
-    const relayed = edges.find((edge) => edge.getAttribute("data-edge-id") === links[1]!.id)!
+    const direct = edges.find(
+      (edge) => edge.getAttribute("data-edge-id") === links[0]!.id
+    )!
+    const relayed = edges.find(
+      (edge) => edge.getAttribute("data-edge-id") === links[1]!.id
+    )!
     expect(direct.getAttribute("data-dash")).toBe("solid")
     expect(direct).toHaveTextContent("tcp · 1.2 ms")
     expect(relayed.getAttribute("data-dash")).not.toBe("solid")
@@ -204,6 +232,20 @@ describe("topology map", () => {
       <TopologyNodeCard node={offline} selected={false} />
     )
     expect(container.firstElementChild?.className).toContain("border-dashed")
+  })
+
+  it("highlights the node the page selected and uses the device glyph", () => {
+    const { container } = render(
+      <TopologyNodeCard
+        highlighted
+        node={node()}
+        os={{ distribution: "Debian", type: "linux" }}
+        selected={false}
+        slim
+      />
+    )
+    expect(container.firstElementChild?.className).toContain("ring-brand")
+    expect(container.querySelector(".lucide-server")).not.toBeNull()
   })
 
   it("reports the clicked node so the page can open the drawer", () => {
