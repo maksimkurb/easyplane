@@ -13,7 +13,7 @@ import type { ListNetworkRoutes200RoutesItem } from "@/api/generated/model"
 import { useAuth } from "@/auth/auth-context"
 import { Button } from "@/components/ui/button"
 import { Chip } from "@/components/ui/chip"
-import { formatRelativeTime } from "@/lib/format"
+import { formatDateTime, formatRelativeTime } from "@/lib/format"
 
 /**
  * One pending route request inside the approvals panel. Approving or rejecting
@@ -39,8 +39,12 @@ export function PendingRouteApprovalRow({
   })
 
   const invalidate = async () => {
-    await queryClient.invalidateQueries({ queryKey: getListNetworkRoutesQueryKey(networkId) })
-    await queryClient.invalidateQueries({ queryKey: getListDeviceRoutesQueryKey(route.deviceId) })
+    await queryClient.invalidateQueries({
+      queryKey: getListNetworkRoutesQueryKey(networkId),
+    })
+    await queryClient.invalidateQueries({
+      queryKey: getListDeviceRoutesQueryKey(route.deviceId),
+    })
     await queryClient.invalidateQueries({ queryKey: getListDevicesQueryKey() })
   }
 
@@ -54,7 +58,10 @@ export function PendingRouteApprovalRow({
           toast.success(
             state === "approved"
               ? t("routes.approvedToast", {
-                  cidr: route.kind === "exit_node" ? t("routes.exitNode") : route.cidr,
+                  cidr:
+                    route.kind === "exit_node"
+                      ? t("routes.exitNode")
+                      : route.cidr,
                 })
               : t("routes.rejectedToast"),
             {
@@ -86,7 +93,9 @@ export function PendingRouteApprovalRow({
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="font-semibold">{route.deviceHostname}</span>
           <span className="text-fg-3">
-            {isExitNode ? t("approvals.wantsExitNode") : t("approvals.wantsSubnet")}
+            {isExitNode
+              ? t("approvals.wantsExitNode")
+              : t("approvals.wantsSubnet")}
           </span>
           {!isExitNode ? (
             <Chip className="font-mono text-[11.5px]">{route.cidr}</Chip>
@@ -95,7 +104,10 @@ export function PendingRouteApprovalRow({
             <Chip>{t("routes.declaredByDevice")}</Chip>
           ) : null}
         </div>
-        <p className="mt-0.5 text-xs text-fg-3">
+        <p
+          className="mt-0.5 text-xs text-fg-3"
+          title={formatDateTime(route.createdAt, i18n.language)}
+        >
           {isExitNode
             ? t("approvals.exitNodeHint", { hostname: route.deviceHostname })
             : t("approvals.subnetHint", { hostname: route.deviceHostname })}

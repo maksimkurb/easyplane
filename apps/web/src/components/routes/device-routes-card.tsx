@@ -1,7 +1,13 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useQueryClient } from "@tanstack/react-query"
-import { CheckIcon, GlobeIcon, PlusIcon, RouteIcon } from "lucide-react"
+import {
+  CheckIcon,
+  GlobeIcon,
+  InfoIcon,
+  PlusIcon,
+  RouteIcon,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -15,7 +21,10 @@ import {
   useListDeviceRevisions,
   useRequestDeviceRoute,
 } from "@/api/generated/easyplane"
-import type { GetDevice200, ListDeviceRoutes200Item } from "@/api/generated/model"
+import type {
+  GetDevice200,
+  ListDeviceRoutes200Item,
+} from "@/api/generated/model"
 import { useAuth } from "@/auth/auth-context"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -23,6 +32,12 @@ import { Chip } from "@/components/ui/chip"
 import { Input } from "@/components/ui/input"
 import { Segmented } from "@/components/ui/segmented"
 import { Switch } from "@/components/ui/switch"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { retryableQuery } from "@/lib/query-retry"
 
 function stateVariant(state: ListDeviceRoutes200Item["state"]) {
   return state === "approved" ? "ok" : state === "rejected" ? "err" : "warn"
@@ -43,7 +58,9 @@ export function DeviceRoutesCard({
   const { t } = useTranslation()
   const { isAdmin, canManage } = useAuth()
   const queryClient = useQueryClient()
-  const revisionsQuery = useListDeviceRevisions(device.id)
+  const revisionsQuery = useListDeviceRevisions(device.id, {
+    query: retryableQuery,
+  })
   const [requestOpen, setRequestOpen] = useState(false)
   const [kind, setKind] = useState<"subnet" | "exit_node">("subnet")
   const [cidr, setCidr] = useState("")
@@ -54,9 +71,15 @@ export function DeviceRoutesCard({
   const acceptRoutes = latestConfig.acceptRoutes === true
 
   const invalidate = async () => {
-    await queryClient.invalidateQueries({ queryKey: getListDeviceRoutesQueryKey(device.id) })
-    await queryClient.invalidateQueries({ queryKey: getListDeviceRevisionsQueryKey(device.id) })
-    await queryClient.invalidateQueries({ queryKey: getGetDeviceQueryKey(device.id) })
+    await queryClient.invalidateQueries({
+      queryKey: getListDeviceRoutesQueryKey(device.id),
+    })
+    await queryClient.invalidateQueries({
+      queryKey: getListDeviceRevisionsQueryKey(device.id),
+    })
+    await queryClient.invalidateQueries({
+      queryKey: getGetDeviceQueryKey(device.id),
+    })
     await queryClient.invalidateQueries({ queryKey: getListDevicesQueryKey() })
     await queryClient.invalidateQueries({
       queryKey: getListNetworkRoutesQueryKey(device.networkId),
@@ -163,7 +186,9 @@ export function DeviceRoutesCard({
                       <Chip>{t("routes.declaredByDevice")}</Chip>
                     ) : null}
                     {route.source === "device_declared" && !route.advertised ? (
-                      <Chip variant="warn">{t("routes.noLongerAdvertised")}</Chip>
+                      <Chip variant="warn">
+                        {t("routes.noLongerAdvertised")}
+                      </Chip>
                     ) : null}
                   </div>
                   <p className="mt-0.5 text-xs text-fg-3">
@@ -260,7 +285,9 @@ export function DeviceRoutesCard({
         >
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-1.5">
-              <span className="text-[13px] font-medium">{t("routes.kind")}</span>
+              <span className="text-[13px] font-medium">
+                {t("routes.kind")}
+              </span>
               <Segmented
                 label={t("routes.kind")}
                 onValueChange={setKind}
@@ -273,7 +300,9 @@ export function DeviceRoutesCard({
             </div>
             {kind === "subnet" ? (
               <label className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <span className="text-[13px] font-medium">{t("routes.cidr")}</span>
+                <span className="text-[13px] font-medium">
+                  {t("routes.cidr")}
+                </span>
                 <Input
                   className="font-mono"
                   onChange={(event) => setCidr(event.target.value)}
@@ -284,27 +313,56 @@ export function DeviceRoutesCard({
               </label>
             ) : null}
             <label className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <span className="text-[13px] font-medium">{t("invites.label")}</span>
-              <Input onChange={(event) => setNote(event.target.value)} value={note} />
+              <span className="text-[13px] font-medium">
+                {t("invites.label")}
+              </span>
+              <Input
+                onChange={(event) => setNote(event.target.value)}
+                value={note}
+              />
             </label>
           </div>
           <div className="flex gap-2">
             <Button
-              disabled={request.isPending || (kind === "subnet" && cidr.trim() === "")}
+              disabled={
+                request.isPending || (kind === "subnet" && cidr.trim() === "")
+              }
               type="submit"
             >
               {request.isPending ? t("common.loading") : t("routes.request")}
             </Button>
-            <Button onClick={() => setRequestOpen(false)} type="button" variant="ghost">
+            <Button
+              onClick={() => setRequestOpen(false)}
+              type="button"
+              variant="ghost"
+            >
               {t("common.cancel")}
             </Button>
           </div>
         </form>
       ) : null}
 
-      <p className="border-t border-line px-4 py-2.5 text-xs text-fg-3 sm:px-5">
-        {t("routes.deviceHonestNote")}
-      </p>
+      <div className="flex items-start gap-2 border-t border-line px-4 py-2.5 sm:px-5">
+        <p className="min-w-0 flex-1 text-xs text-fg-3">
+          {t("routes.deviceHonestNote")}
+        </p>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <button
+                aria-label={t("routes.technicalDetails")}
+                className="grid size-7 flex-none cursor-pointer place-items-center rounded-md text-fg-3 hover:bg-surface-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+                type="button"
+              />
+            }
+          >
+            <InfoIcon className="size-3.5" />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-sm text-pretty">
+            {t("routes.deviceTechnicalNote")}
+          </TooltipContent>
+        </Tooltip>
+      </div>
     </section>
   )
 }
