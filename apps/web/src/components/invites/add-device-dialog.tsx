@@ -44,13 +44,12 @@ import { useQueryClient } from "@tanstack/react-query"
 type Uses = "1" | "5" | "unlimited" | "custom"
 type Expiry = "1d" | "7d" | "never" | "custom"
 type DeviceType = "computer" | "router" | "phone"
-type Platform = "linux" | "macos" | "windows" | "docker"
+type Platform = "native" | "docker"
 type Step = 1 | 2
 
+// Linux, macOS and Windows run the same command; only Docker differs.
 const PLATFORMS: { id: Platform; label: string }[] = [
-  { id: "linux", label: "Linux" },
-  { id: "macos", label: "macOS" },
-  { id: "windows", label: "Windows" },
+  { id: "native", label: "Linux · macOS · Windows" },
   { id: "docker", label: "Docker" },
 ]
 
@@ -94,7 +93,7 @@ export function AddDeviceDialog({
   const [step, setStep] = useState<Step>(1)
   const [deviceType, setDeviceType] = useState<DeviceType>("computer")
   const [installed, setInstalled] = useState<"yes" | "no">("yes")
-  const [platform, setPlatform] = useState<Platform>("linux")
+  const [platform, setPlatform] = useState<Platform>("native")
   const [label, setLabel] = useState("")
   const [uses, setUses] = useState<Uses>("1")
   const [customUses, setCustomUses] = useState("25")

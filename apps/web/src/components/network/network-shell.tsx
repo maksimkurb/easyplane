@@ -115,7 +115,9 @@ export function NetworkShell({
         waiting={waiting}
       />
       <PageContainer className="pt-5 pb-10">
-        {canManage ? (
+        {/* The checklist is the network's overview; on the Map, Access and
+            Settings tabs it would push the content the user came for down. */}
+        {canManage && tab === "devices" ? (
           <SetupChecklist
             devices={devices}
             network={network}

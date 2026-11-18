@@ -153,13 +153,13 @@ export function DefaultActionsRow({
         </span>
         <ArrowRightIcon
           aria-hidden="true"
-          className="size-3.5 flex-none text-fg-3"
+          className="size-3.5 flex-none text-fg-3 max-sm:hidden"
         />
 
-        <div className="grid min-w-0 flex-1 gap-1.5 sm:flex sm:flex-wrap sm:items-center">
+        <div className="grid min-w-0 basis-full gap-1.5 sm:flex sm:flex-1 sm:basis-auto sm:flex-wrap sm:items-center">
           {ACCESS_CHAINS.map((name) => (
             <span
-              className="inline-flex min-h-8 min-w-0 items-center gap-2 rounded-lg bg-card px-2 py-1 shadow-[inset_0_0_0_1px_var(--line)]"
+              className="flex min-h-8 min-w-0 items-center justify-between gap-2 rounded-lg bg-card px-2 py-1 shadow-[inset_0_0_0_1px_var(--line)] sm:inline-flex sm:justify-start"
               key={name}
             >
               <ChainDirectionLabel name={name} />
