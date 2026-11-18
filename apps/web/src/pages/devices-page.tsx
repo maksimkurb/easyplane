@@ -1,27 +1,32 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "wouter"
-import { CheckIcon, MonitorSmartphoneIcon, RefreshCwIcon, ShieldBanIcon, Trash2Icon } from "lucide-react"
-import { toast } from "sonner"
-
 import {
-  useApproveDevice,
-  useBlockDevice,
-  useDeleteDevice,
-  useListDevices,
-  useListNetworks,
-  usePushDeviceConfig,
-  useRevokeDeviceCredential,
-} from "@/api/generated/easyplane"
-import type { ListDevicesState } from "@/api/generated/model"
-import { useAuth } from "@/auth/auth-context"
-import { AnchorRemovalDialog } from "@/components/anchor-removal-dialog"
-import { DeviceStatusBadges } from "@/components/device-status"
-import { ExitNodeBadge } from "@/components/exit-node-badge"
-import { DeviceRoleBadge } from "@/components/network-access-card"
+  MonitorSmartphoneIcon,
+  NetworkIcon,
+  RefreshCwIcon,
+  SearchIcon,
+} from "lucide-react"
+
+import { useListDevices, useListNetworks } from "@/api/generated/easyplane"
+import type { ListDevices200Item } from "@/api/generated/model"
+import { GlobalDeviceRow } from "@/components/layout/global-device-row"
 import { PageContainer } from "@/components/layout/page-container"
+import { PendingDeviceRow } from "@/components/layout/pending-device-row"
 import { PageHeader } from "@/components/shared/page-header"
+import { LinkButton } from "@/components/shared/link-button"
 import { Button } from "@/components/ui/button"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Segmented } from "@/components/ui/segmented"
 import {
   Select,
   SelectContent,
@@ -30,378 +35,375 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
+import { deviceHasIssue, deviceName } from "@/lib/device-presentation"
 
-const STATES: ListDevicesState[] = ["pending", "approved", "blocked"]
+type Filter = "all" | "online" | "issues" | "pending"
 
-export function DevicesPage({ pendingOnly = false }: { pendingOnly?: boolean }) {
+/**
+ * All devices across every network. Rows deliberately share the look of a
+ * network's device list (same grid, chips, menu) and add a network heading, so a
+ * device that is reachable from the global page is never mistaken for one from
+ * another network. Pending devices get inline Approve/Reject here as well.
+ */
+export function DevicesPage({
+  pendingOnly = false,
+}: {
+  pendingOnly?: boolean
+}) {
   const { t } = useTranslation()
-  const { canManage } = useAuth()
-  const [networkId, setNetworkId] = useState<string>("all")
-  const [state, setState] = useState<ListDevicesState | "all">(
-    pendingOnly ? "pending" : "all"
-  )
-  const [anchorTarget, setAnchorTarget] = useState<{
-    deviceId: string
-    hostname: string
-    networkId: string
-    operation: "block" | "delete"
-    useRendezvous: boolean
-  } | null>(null)
+  const [networkId, setNetworkId] = useState("all")
+  const [query, setQuery] = useState("")
+  const [filter, setFilter] = useState<Filter>(pendingOnly ? "pending" : "all")
 
   const networksQuery = useListNetworks()
-  const devicesQuery = useListDevices({
-    networkId: networkId === "all" ? undefined : networkId,
-    state: state === "all" ? undefined : state,
-  })
-  const approve = useApproveDevice({
-    mutation: {
-      onSuccess: () => toast.success(t("devices.approved")),
-      onError: (error) =>
-        toast.error(error instanceof Error ? error.message : t("common.error")),
-    },
-  })
-  const block = useBlockDevice({
-    mutation: {
-      onSuccess: () => toast.success(t("devices.blocked")),
-      onError: (error) =>
-        toast.error(error instanceof Error ? error.message : t("common.error")),
-    },
-  })
-  const remove = useDeleteDevice({
-    mutation: {
-      onSuccess: () => toast.success(t("devices.deleted")),
-      onError: (error) =>
-        toast.error(error instanceof Error ? error.message : t("common.error")),
-    },
-  })
-  const push = usePushDeviceConfig({
-    mutation: {
-      onSuccess: () => toast.success(t("devices.pushRequested")),
-      onError: (error) =>
-        toast.error(error instanceof Error ? error.message : t("common.error")),
-    },
-  })
-  const revoke = useRevokeDeviceCredential({
-    mutation: {
-      onSuccess: () => toast.success(t("access.revoked")),
-      onError: (error) =>
-        toast.error(error instanceof Error ? error.message : t("common.error")),
-    },
-  })
+  const devicesQuery = useListDevices()
+  const networks = useMemo(
+    () => networksQuery.data?.data ?? [],
+    [networksQuery.data]
+  )
+  const devices = useMemo(
+    () => devicesQuery.data?.data ?? [],
+    [devicesQuery.data]
+  )
 
-  const networks = networksQuery.data?.data
-  const devices = devicesQuery.data?.data ?? []
-  const credentialsMode = (id: string) =>
-    (networks ?? []).find((network) => network.id === id)?.access.mode ===
-    "credentials"
-  const networkNames = useMemo(
-    () => new Map((networks ?? []).map((network) => [network.id, network.name])),
+  const networkById = useMemo(
+    () => new Map(networks.map((network) => [network.id, network])),
     [networks]
   )
 
+  const counts = useMemo(
+    () => ({
+      all: devices.length,
+      online: devices.filter((device) => device.online === "online").length,
+      issues: devices.filter(deviceHasIssue).length,
+      pending: devices.filter((device) => device.state === "pending").length,
+    }),
+    [devices]
+  )
+
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    return devices.filter((device) => {
+      if (networkId !== "all" && device.networkId !== networkId) return false
+      if (filter === "online" && device.online !== "online") return false
+      if (filter === "issues" && !deviceHasIssue(device)) return false
+      if (filter === "pending" && device.state !== "pending") return false
+      if (!needle) return true
+      const haystack = [
+        deviceName(device),
+        device.hostname,
+        device.label,
+        device.dnsName ?? "",
+        device.virtualIpv4 ?? "",
+        device.machineId,
+        device.networkName,
+        ...device.tags,
+      ]
+        .join(" ")
+        .toLowerCase()
+      return haystack.includes(needle)
+    })
+  }, [devices, filter, networkId, query])
+
+  const groups = useMemo(() => {
+    const order = new Map(networks.map((network, index) => [network.id, index]))
+    const byNetwork = new Map<string, ListDevices200Item[]>()
+    for (const device of filtered) {
+      const list = byNetwork.get(device.networkId) ?? []
+      list.push(device)
+      byNetwork.set(device.networkId, list)
+    }
+    return [...byNetwork.entries()]
+      .map(([id, list]) => ({
+        id,
+        name:
+          list[0]?.networkName || networkById.get(id)?.name || id.slice(0, 8),
+        devices: list,
+      }))
+      .sort(
+        (a, b) =>
+          (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (order.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+      )
+  }, [filtered, networkById, networks])
+
+  const emptyState = (() => {
+    if (devices.length === 0) {
+      return {
+        title: t("devicesGlobal.emptyNoDevices"),
+        description: t("devicesGlobal.emptyNoDevicesHint"),
+        cta: true,
+      }
+    }
+    if (filter === "pending") {
+      return {
+        title: t("devicesGlobal.emptyPending"),
+        description: t("devicesGlobal.emptyPendingHint"),
+        cta: false,
+      }
+    }
+    if (query.trim()) {
+      return {
+        title: t("devicesGlobal.noMatches"),
+        description: t("devicesGlobal.emptyFilterHint"),
+        cta: false,
+      }
+    }
+    if (filter === "online") {
+      return {
+        title: t("devicesGlobal.emptyOnline"),
+        description: t("devicesGlobal.emptyFilterHint"),
+        cta: false,
+      }
+    }
+    if (filter === "issues") {
+      return {
+        title: t("devicesGlobal.emptyIssues"),
+        description: t("devicesGlobal.emptyFilterHint"),
+        cta: false,
+      }
+    }
+    return {
+      title: t("devicesGlobal.emptyNetwork"),
+      description: t("devicesGlobal.emptyFilterHint"),
+      cta: false,
+    }
+  })()
+
+  const resetFilters = () => {
+    setQuery("")
+    setNetworkId("all")
+    setFilter(pendingOnly ? "pending" : "all")
+  }
+
+  const networkOptions = [
+    { value: "all", label: t("devicesGlobal.allNetworks") },
+    ...networks.map((network) => ({ value: network.id, label: network.name })),
+  ]
+
   return (
     <PageContainer className="py-6 sm:py-8">
-      <>
       <PageHeader
         description={
-          pendingOnly ? t("devices.pendingDescription") : t("devices.description")
+          pendingOnly
+            ? t("devicesGlobal.pendingDescription")
+            : t("devicesGlobal.description")
         }
-        title={pendingOnly ? t("devices.pendingTitle") : t("devices.title")}
+        title={
+          pendingOnly
+            ? t("devicesGlobal.pendingTitle")
+            : t("devicesGlobal.title")
+        }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Select
-          items={[
-            { value: "all", label: t("devices.all") },
-            ...(networks ?? []).map((network) => ({ value: network.id, label: network.name })),
-          ]}
-          onValueChange={(value) => value && setNetworkId(value)}
-          value={networkId}
-        >
-          <SelectTrigger aria-label={t("networks.title")} className="w-56">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("devices.all")}</SelectItem>
-            {(networks ?? []).map((network) => (
-              <SelectItem key={network.id} value={network.id}>
-                {network.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="mb-4 flex flex-col gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="min-w-0 flex-1 sm:max-w-[320px]">
+            <Label
+              className="mb-1.5 text-xs text-fg-3"
+              htmlFor="devices-search"
+            >
+              {t("devicesGlobal.searchLabel")}
+            </Label>
+            <div className="relative">
+              <SearchIcon
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-fg-3"
+              />
+              <Input
+                className="pl-9"
+                id="devices-search"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t("devicesGlobal.searchPlaceholder")}
+                type="search"
+                value={query}
+              />
+            </div>
+          </div>
 
-        {!pendingOnly ? (
-          <Select
-            items={[
-              { value: "all", label: t("devices.all") },
-              ...STATES.map((entry) => ({
-                value: entry,
-                label: t(`devices.status.${entry}`),
-              })),
-            ]}
-            onValueChange={(value) => value && setState(value as ListDevicesState | "all")}
-            value={state}
-          >
-            <SelectTrigger aria-label={t("common.status")} className="w-44">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("devices.all")}</SelectItem>
-              {STATES.map((entry) => (
-                <SelectItem key={entry} value={entry}>
-                  {t(`devices.status.${entry}`)}
+          <div className="w-full min-w-0 sm:w-64 sm:flex-none">
+            <Label
+              className="mb-1.5 text-xs text-fg-3"
+              htmlFor="devices-network-filter"
+            >
+              {t("devicesGlobal.networkFilter")}
+            </Label>
+            <Select
+              items={networkOptions}
+              onValueChange={(value) => value && setNetworkId(value)}
+              value={networkId}
+            >
+              <SelectTrigger
+                className="w-full sm:max-w-none"
+                id="devices-network-filter"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  {t("devicesGlobal.allNetworks")}
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : null}
+                {networks.map((network) => (
+                  <SelectItem key={network.id} value={network.id}>
+                    {network.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-        <Button
-          onClick={() => void devicesQuery.refetch()}
-          size="sm"
-          variant="outline"
-        >
-          <RefreshCwIcon className="size-4" />
-          {t("common.refresh")}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="max-w-full overflow-x-auto pb-0.5">
+            <Segmented
+              label={t("devicesGlobal.filterLabel")}
+              onValueChange={setFilter}
+              options={[
+                {
+                  value: "all",
+                  label: t("devicesGlobal.filterAll"),
+                  count: counts.all,
+                },
+                {
+                  value: "online",
+                  label: t("devicesGlobal.filterOnline"),
+                  count: counts.online,
+                },
+                {
+                  value: "issues",
+                  label: t("devicesGlobal.filterIssues"),
+                  count: counts.issues,
+                },
+                {
+                  value: "pending",
+                  label: t("devicesGlobal.filterPending"),
+                  count: counts.pending,
+                },
+              ]}
+              value={filter}
+            />
+          </div>
+          <Button
+            aria-label={t("common.refresh")}
+            className="ml-auto max-sm:flex-none"
+            disabled={devicesQuery.isFetching}
+            onClick={() => void devicesQuery.refetch()}
+            size="sm"
+            variant="outline"
+          >
+            <RefreshCwIcon className="size-4" />
+            <span className="max-sm:sr-only">{t("common.refresh")}</span>
+          </Button>
+        </div>
       </div>
 
       {devicesQuery.isLoading ? (
-        <Skeleton className="h-64 w-full" />
+        <div className="space-y-2">
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+        </div>
       ) : devices.length === 0 ? (
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <MonitorSmartphoneIcon />
             </EmptyMedia>
-            <EmptyTitle>
-              {pendingOnly ? t("devices.noPending") : t("devices.title")}
-            </EmptyTitle>
-            <EmptyDescription>{t("devices.empty")}</EmptyDescription>
+            <EmptyTitle>{emptyState.title}</EmptyTitle>
+            <EmptyDescription>{emptyState.description}</EmptyDescription>
           </EmptyHeader>
+          {emptyState.cta ? (
+            <EmptyContent>
+              <LinkButton href="/networks" variant="outline">
+                {t("devicesGlobal.goToNetworks")}
+              </LinkButton>
+            </EmptyContent>
+          ) : null}
+        </Empty>
+      ) : filtered.length === 0 ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <MonitorSmartphoneIcon />
+            </EmptyMedia>
+            <EmptyTitle>{emptyState.title}</EmptyTitle>
+            <EmptyDescription>{emptyState.description}</EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button onClick={resetFilters} size="sm" variant="outline">
+              {t("devicesGlobal.clearFilters")}
+            </Button>
+          </EmptyContent>
         </Empty>
       ) : (
-        <div className="overflow-x-auto rounded-lg border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("devices.hostname")}</TableHead>
-                <TableHead>{t("common.status")}</TableHead>
-                <TableHead>{t("access.role")}</TableHead>
-                <TableHead>{t("networks.title")}</TableHead>
-                <TableHead>{t("devices.os")}</TableHead>
-                <TableHead>{t("devices.virtualIp")}</TableHead>
-                <TableHead>{t("devices.lastSeen")}</TableHead>
-                <TableHead>{t("devices.appliedRevision")}</TableHead>
-                <TableHead className="text-right">{t("common.actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {devices.map((device) => (
-                <TableRow key={device.id}>
-                  <TableCell>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Link
-                        className="font-medium hover:underline"
-                        href={`/devices/${device.id}`}
-                      >
-                        {device.hostname || device.machineId.slice(0, 8)}
-                      </Link>
-                      <ExitNodeBadge state={device.exitNode} />
-                    </div>
-                    <div className="max-w-56 truncate font-mono text-[10px] text-muted-foreground">
-                      {device.machineId}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <DeviceStatusBadges
-                      online={device.online}
-                      state={device.state}
-                      sync={device.sync}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <DeviceRoleBadge
-                      expiresAt={device.credential?.expiry}
-                      role={device.effectiveRole}
-                      status={device.credential?.status}
-                    />
-                    {device.knowsSecret ? (
-                      <div className="mt-1 text-[10px] text-muted-foreground">
-                        {t("access.knowsSecret")}
-                      </div>
-                    ) : device.credential ? (
-                      <div className="mt-1 text-[10px] text-muted-foreground">
-                        {t(`access.credentialStatus.${device.credential.status}`)}
-                      </div>
-                    ) : null}
-                  </TableCell>
-                  <TableCell>{networkNames.get(device.networkId) ?? t("common.none")}</TableCell>
-                  <TableCell className="max-w-48 text-xs">
-                    {device.os.distribution || device.os.type || t("common.none")}
-                    {device.os.version ? ` ${device.os.version}` : ""}
-                    <div className="text-muted-foreground">
-                      {device.easytierVersion || t("common.none")}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {device.virtualIpv4 ?? t("common.none")}
-                  </TableCell>
-                  <TableCell className="text-xs">
-                    {device.lastSeenAt
-                      ? new Date(device.lastSeenAt).toLocaleString()
-                      : t("common.none")}
-                  </TableCell>
-                  <TableCell>
-                    {device.appliedRevision ?? t("common.none")}
-                    {device.desiredRevision !== null &&
-                    device.appliedRevision !== device.desiredRevision ? (
-                      <span className="text-amber-600"> / {device.desiredRevision}</span>
-                    ) : null}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap justify-end gap-1">
-                      {canManage && device.state !== "approved" ? (
-                        <Button
-                          disabled={approve.isPending}
-                          onClick={() => approve.mutate({ deviceId: device.id, data: {} })}
-                          size="sm"
-                          variant="outline"
-                        >
-                          <CheckIcon className="size-4" />
-                          {t("common.approve")}
-                        </Button>
-                      ) : null}
-                      {canManage && device.state === "approved" ? (
-                        <>
-                          <Button
-                            disabled={push.isPending}
-                            onClick={() => push.mutate({ deviceId: device.id })}
-                            size="sm"
-                            variant="outline"
-                          >
-                            <RefreshCwIcon className="size-4" />
-                          </Button>
-                          {credentialsMode(device.networkId) &&
-                          device.effectiveRole === "member" ? (
-                            <Button
-                              disabled={revoke.isPending}
-                              onClick={() => {
-                                if (window.confirm(t("access.revokeConfirm", { hostname: device.hostname }))) {
-                                  revoke.mutate({ deviceId: device.id })
-                                }
-                              }}
-                              size="sm"
-                              variant="outline"
-                            >
-                              <ShieldBanIcon className="size-4" />
-                              {t("access.revoke")}
-                            </Button>
-                          ) : (
-                            <Button
-                              onClick={() => {
-                                if (
-                                  credentialsMode(device.networkId) &&
-                                  device.effectiveRole === "anchor"
-                                ) {
-                                  setAnchorTarget({
-                                    deviceId: device.id,
-                                    hostname: device.hostname,
-                                    networkId: device.networkId,
-                                    operation: "block",
-                                    useRendezvous:
-                                      (networks ?? []).find(
-                                        (network) => network.id === device.networkId,
-                                      )?.useRendezvous ?? false,
-                                  })
-                                  return
-                                }
-                                if (window.confirm(t("devices.blockConfirm"))) {
-                                  block.mutate({ deviceId: device.id, data: {} })
-                                }
-                              }}
-                              size="sm"
-                              variant="outline"
-                            >
-                              <ShieldBanIcon className="size-4" />
-                              {t("common.block")}
-                            </Button>
-                          )}
-                        </>
-                      ) : null}
-                      {canManage ? (
-                        <Button
-                          onClick={() => {
-                            if (
-                              credentialsMode(device.networkId) &&
-                              device.effectiveRole === "anchor"
-                            ) {
-                              setAnchorTarget({
-                                deviceId: device.id,
-                                hostname: device.hostname,
-                                networkId: device.networkId,
-                                operation: "delete",
-                                useRendezvous:
-                                  (networks ?? []).find(
-                                    (network) => network.id === device.networkId,
-                                  )?.useRendezvous ?? false,
-                              })
-                              return
-                            }
-                            if (window.confirm(t("devices.deleteConfirm"))) {
-                              remove.mutate({ deviceId: device.id, data: {} })
-                            }
-                          }}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          <Trash2Icon className="size-4" />
-                        </Button>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-line">
+          {groups.map((group) => {
+            const network = networkById.get(group.id)
+            const approved = group.devices.filter(
+              (device) => device.state === "approved"
+            )
+            const online = approved.filter(
+              (device) => device.online === "online"
+            ).length
+            const waiting = group.devices.filter(
+              (device) => device.state === "pending"
+            ).length
+            return (
+              <section
+                aria-label={group.name}
+                className="border-b border-line last:border-b-0"
+                key={group.id}
+              >
+                <div className="flex min-h-10 flex-wrap items-center gap-x-2 gap-y-1 border-b border-line bg-surface-2/50 px-4 py-1.5 md:px-5">
+                  <NetworkIcon
+                    aria-hidden="true"
+                    className="size-4 flex-none text-fg-3"
+                  />
+                  <Link
+                    className="min-w-0 truncate text-[13px] font-medium hover:underline"
+                    href={`/networks/${group.id}`}
+                  >
+                    {group.name}
+                  </Link>
+                  <span className="text-xs text-fg-3">
+                    {t("devicesGlobal.deviceCount", {
+                      count: group.devices.length,
+                    })}
+                    {approved.length > 0
+                      ? ` · ${t("networks.onlineOf", { online, total: approved.length })}`
+                      : null}
+                  </span>
+                  {waiting > 0 ? (
+                    <span className="ml-auto text-xs font-medium text-warn">
+                      {t("devicesGlobal.waitingCount", { count: waiting })}
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="divide-y divide-line">
+                  {group.devices.map((device) =>
+                    device.state === "pending" ? (
+                      <PendingDeviceRow
+                        device={device}
+                        key={device.id}
+                        networkName={group.name}
+                      />
+                    ) : (
+                      <GlobalDeviceRow
+                        credentialsMode={network?.access.mode === "credentials"}
+                        device={device}
+                        key={device.id}
+                        networkName={group.name}
+                        useRendezvous={network?.useRendezvous ?? false}
+                      />
+                    )
+                  )}
+                </div>
+              </section>
+            )
+          })}
         </div>
       )}
-
-      <AnchorRemovalDialog
-        hostname={anchorTarget?.hostname ?? ""}
-        networkId={anchorTarget?.networkId ?? ""}
-        onClose={() => setAnchorTarget(null)}
-        onConfirm={() => {
-          if (!anchorTarget) return
-          if (anchorTarget.operation === "block") {
-            block.mutate({ deviceId: anchorTarget.deviceId, data: { acknowledgeAnchorRisk: true } })
-          } else {
-            remove.mutate({ deviceId: anchorTarget.deviceId, data: { acknowledgeAnchorRisk: true } })
-          }
-          setAnchorTarget(null)
-        }}
-        open={anchorTarget !== null}
-        operation={anchorTarget?.operation ?? "block"}
-        pending={block.isPending || remove.isPending}
-        useRendezvous={anchorTarget?.useRendezvous ?? false}
-      />
-      </>
     </PageContainer>
   )
 }
