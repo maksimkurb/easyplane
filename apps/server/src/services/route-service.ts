@@ -15,6 +15,7 @@ import {
 import type { Device, DeviceRoute } from "../db/schema.js";
 import {
   buildRouteReport,
+  normalizeRouteReport,
   cidrContains,
   declarableCidr,
   isDeclaredRouteAdvertised,
@@ -536,8 +537,7 @@ export class RouteService {
 
   reportOf(device: Device): RouteReport | null {
     const state = device.reportedState as Record<string, unknown>;
-    const report = state[REPORT_KEY] as RouteReport | undefined;
-    return report ?? null;
+    return normalizeRouteReport(state[REPORT_KEY]);
   }
 
   observationsOf(device: Device): PeerObservationRecord[] {

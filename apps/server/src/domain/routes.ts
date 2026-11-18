@@ -245,6 +245,57 @@ export interface RouteReport {
   unknownPeers: PeerObservation[];
 }
 
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function objectArray(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value)
+    ? value.filter(
+        (item): item is Record<string, unknown> =>
+          typeof item === "object" && item !== null,
+      )
+    : [];
+}
+
+/**
+ * Reads a route report stored in `devices.reported_state`. Reports written by
+ * older builds lack fields added later; filling them with empty values keeps
+ * the API response valid instead of failing serialisation for the whole
+ * network.
+ */
+export function normalizeRouteReport(raw: unknown): RouteReport | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const report = raw as Record<string, unknown>;
+  return {
+    approvedCidrs: stringArray(report.approvedCidrs),
+    declaredCidrs: stringArray(report.declaredCidrs),
+    configuredCidrs: stringArray(report.configuredCidrs),
+    observedCidrs: stringArray(report.observedCidrs),
+    unapprovedCidrs: stringArray(report.unapprovedCidrs),
+    unapprovedObservedCidrs: stringArray(report.unapprovedObservedCidrs),
+    missingCidrs: stringArray(report.missingCidrs),
+    reportedExitNode: report.reportedExitNode === true,
+    unmanagedInstances: objectArray(report.unmanagedInstances).map((item) => ({
+      instanceId: String(item.instanceId ?? ""),
+      networkName: String(item.networkName ?? ""),
+      hostname: String(item.hostname ?? ""),
+      proxyCidrs: stringArray(item.proxyCidrs),
+      exitNode: item.exitNode === true,
+      unmanaged: item.unmanaged !== false,
+      removable: item.removable === true,
+    })),
+    unknownPeers: objectArray(report.unknownPeers).map((item) => ({
+      ipv4: String(item.ipv4 ?? ""),
+      hostname: String(item.hostname ?? ""),
+      proxyCidrs: stringArray(item.proxyCidrs),
+      ...(typeof item.deviceId === "string" ? { deviceId: item.deviceId } : {}),
+    })),
+  };
+}
+
 /**
  * Compares what the device claims to route with what the control plane
  * approved. EasyTier reports proxy CIDRs per instance in CollectNetworkInfo, so
