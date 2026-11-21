@@ -32,10 +32,14 @@ describe("default actions", () => {
     await user.click(within(inbound).getByRole("radio", { name: "Allow" }))
     expect(onChange).toHaveBeenCalledWith("inbound", { default: "allow" })
 
-    await user.click(screen.getByRole("switch", { name: "Forward: Enabled" }))
+    await user.click(
+      screen.getByRole("switch", { name: "Through this device: Enabled" })
+    )
     expect(onChange).toHaveBeenCalledWith("forward", { enabled: false })
 
-    const name = screen.getByRole("textbox", { name: "Forward chain name" })
+    const name = screen.getByRole("textbox", {
+      name: "Through this device chain name",
+    })
     await user.type(name, "x")
     expect(onChange).toHaveBeenLastCalledWith("forward", {
       name: "LAN forwardx",
@@ -55,14 +59,14 @@ describe("default actions", () => {
     )
 
     expect(screen.getByText("Everything else")).toBeInTheDocument()
-    for (const name of ["Inbound", "Outbound", "Forward"]) {
+    for (const name of ["Inbound", "Outbound", "Through this device"]) {
       expect(
         screen.getByRole("radiogroup", { name: `${name} default action` })
       ).toBeInTheDocument()
     }
     expect(
       screen.getByRole("button", {
-        name: /Traffic that passes through this device/,
+        name: /Traffic through this device/,
       })
     ).toBeInTheDocument()
 

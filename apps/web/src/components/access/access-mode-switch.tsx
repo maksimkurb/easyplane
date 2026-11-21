@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 import { GlobeIcon, ShieldCheckIcon } from "lucide-react"
 
 import type { AccessMode } from "@/lib/access-policy"
+import { Segmented } from "@/components/ui/segmented"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -13,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { cn } from "@/lib/utils"
 
 export type EnforcementMode = "open" | "rules"
 
@@ -50,74 +50,49 @@ export function AccessModeSwitch({
     onChange(next)
   }
 
-  const cards: Array<{
-    mode: EnforcementMode
-    icon: typeof GlobeIcon
-    title: string
-    hint: string
-  }> = [
-    {
-      mode: "open",
-      icon: GlobeIcon,
-      title: t("accessA.mode.openTitle"),
-      hint: t("accessA.mode.openHint"),
-    },
-    {
-      mode: "rules",
-      icon: ShieldCheckIcon,
-      title: t("accessA.mode.rulesTitle"),
-      hint: t("accessA.mode.rulesHint"),
-    },
-  ]
-
   return (
     <>
       <div
-        aria-label={t("accessA.mode.label")}
-        className="grid min-w-0 gap-2 sm:grid-cols-2"
+        className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5"
         data-testid="access-mode-switch"
-        role="radiogroup"
       >
-        {cards.map((card) => {
-          const active = current === card.mode
-          const Icon = card.icon
-          return (
-            <button
-              aria-checked={active}
-              className={cn(
-                "flex min-h-0 cursor-pointer items-start gap-2.5 rounded-xl bg-card p-3 text-left shadow-[inset_0_0_0_1px_var(--line)] transition-shadow focus-visible:ring-3 focus-visible:ring-brand-soft focus-visible:outline-none max-sm:min-h-12",
-                active &&
-                  "shadow-[inset_0_0_0_1.5px_var(--brand),0_0_0_3px_var(--brand-soft)]",
-                disabled && "cursor-not-allowed opacity-60"
-              )}
-              disabled={disabled}
-              key={card.mode}
-              onClick={() => pick(card.mode)}
-              role="radio"
-              type="button"
-            >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "mt-0.5 grid size-8 flex-none place-items-center rounded-lg",
-                  active
-                    ? "bg-brand-soft text-brand-text"
-                    : "bg-surface-2 text-fg-3"
-                )}
-              >
-                <Icon className="size-4" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm leading-5 font-semibold">
-                  {card.title}
+        <Segmented
+          className="[&>button]:h-8 max-sm:[&>button]:h-11"
+          label={t("accessA.mode.label")}
+          onValueChange={pick}
+          options={[
+            {
+              value: "open" as const,
+              label: (
+                <span className="inline-flex items-center gap-1.5">
+                  <GlobeIcon aria-hidden="true" className="size-4" />
+                  {t("accessA.mode.open")}
                 </span>
-                <span className="mt-0.5 block text-[12.5px] leading-[18px] text-fg-2">
-                  {card.hint}
+              ),
+              disabled,
+            },
+            {
+              value: "rules" as const,
+              label: (
+                <span className="inline-flex items-center gap-1.5">
+                  <ShieldCheckIcon aria-hidden="true" className="size-4" />
+                  {t("accessA.mode.rules")}
                 </span>
-              </span>
-            </button>
-          )
-        })}
+              ),
+              disabled,
+            },
+          ]}
+          value={current}
+        />
+        <p
+          aria-live="polite"
+          className="min-w-0 flex-1 basis-48 text-[12.5px] leading-[18px] text-fg-2"
+          data-testid="access-mode-hint"
+        >
+          {current === "open"
+            ? t("accessA.mode.openHint")
+            : t("accessA.mode.rulesHint")}
+        </p>
       </div>
 
       <ModeChangeDialog

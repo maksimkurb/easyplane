@@ -12,6 +12,7 @@ import {
 import { useGetCompiledAcl } from "@/api/generated/easyplane"
 import { Switch } from "@/components/ui/switch"
 import { TagInput } from "@/components/access/tag-input"
+import { friendlyChainName } from "@/components/access/access-rule-summary"
 import { cn } from "@/lib/utils"
 
 function compiledFields(rule: GetCompiledAcl200ChainsItemRulesItem): string {
@@ -282,7 +283,7 @@ export function AdvancedFields({
                     {matched
                       .map(
                         ({ chain, entry }) =>
-                          `# ${chain}\n${compiledFields(entry)}`
+                          `# ${friendlyChainName(chain, t)}\n${compiledFields(entry)}`
                       )
                       .join("\n\n")}
                   </pre>

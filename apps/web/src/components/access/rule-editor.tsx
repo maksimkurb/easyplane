@@ -105,7 +105,7 @@ export function ServiceFields({
           <button
             aria-checked={service === id}
             className={cn(
-              "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full bg-card px-2.5 text-[13px] font-medium shadow-[inset_0_0_0_1px_var(--line-2)] hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 max-sm:h-10",
+              "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full bg-card px-2.5 text-[13px] font-medium shadow-[inset_0_0_0_1px_var(--line-2)] hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 max-sm:h-11",
               service === id &&
                 "bg-brand-soft text-brand-text shadow-[inset_0_0_0_1px_var(--brand)]"
             )}
@@ -125,7 +125,7 @@ export function ServiceFields({
           <div className="min-w-0">
             <FieldLabel>{t("accessA.ports.protocol")}</FieldLabel>
             <Segmented
-              className="[&>button]:h-[30px] max-sm:[&>button]:h-10"
+              className="[&>button]:h-[30px] max-sm:[&>button]:h-11"
               fill
               label={t("accessA.ports.protocol")}
               onValueChange={(protocol) => {
@@ -305,7 +305,9 @@ export function RuleForm({
         </label>
       </div>
 
-      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+      {/* "From" and "To" stay in one column: at the sheet's 560px the pair was
+          ~240px wide and a CIDR chip had to break inside itself. */}
+      <div className="grid min-w-0 gap-3">
         <div className="min-w-0">
           <FieldLabel>{t("accessA.rules.from")}</FieldLabel>
           <SubjectPicker

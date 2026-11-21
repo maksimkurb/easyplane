@@ -22,16 +22,24 @@ function Harness({ onChange }: { onChange?: (mode: EnforcementMode) => void }) {
 }
 
 describe("AccessModeSwitch", () => {
-  it("is a radio group with a plain-language consequence per mode", () => {
+  it("is a compact radio group with one line of consequence", async () => {
+    const user = userEvent.setup({ document })
     render(<Harness />)
     const group = screen.getByRole("radiogroup", { name: "Access mode" })
     expect(group).toBeInTheDocument()
-    expect(
-      screen.getByRole("radio", { name: /Allow all traffic between devices/ })
-    ).toHaveAttribute("aria-checked", "true")
-    expect(
-      screen.getByRole("radio", { name: /Only allow what rules permit/ })
-    ).toHaveTextContent("Everything else is blocked")
+    expect(screen.getByRole("radio", { name: "Open" })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    )
+    expect(screen.getByTestId("access-mode-hint")).toHaveTextContent(
+      "The filter is off"
+    )
+
+    await user.click(screen.getByRole("radio", { name: "Rules" }))
+    await user.click(screen.getByRole("button", { name: "Turn on rules" }))
+    expect(screen.getByTestId("access-mode-hint")).toHaveTextContent(
+      "Only what is listed below is allowed"
+    )
   })
 
   it("confirms a connectivity change with Cancel as the default", async () => {
@@ -39,9 +47,7 @@ describe("AccessModeSwitch", () => {
     const user = userEvent.setup({ document })
     render(<Harness onChange={onChange} />)
 
-    await user.click(
-      screen.getByRole("radio", { name: /Only allow what rules permit/ })
-    )
+    await user.click(screen.getByRole("radio", { name: "Rules" }))
     const dialog = screen.getByRole("dialog")
     expect(
       within(dialog).getByRole("heading", {
@@ -55,27 +61,25 @@ describe("AccessModeSwitch", () => {
     expect(onChange).not.toHaveBeenCalled()
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
 
-    await user.click(
-      screen.getByRole("radio", { name: /Only allow what rules permit/ })
-    )
+    await user.click(screen.getByRole("radio", { name: "Rules" }))
     await user.click(screen.getByRole("button", { name: "Turn on rules" }))
     expect(onChange).toHaveBeenCalledWith("rules")
-    expect(
-      screen.getByRole("radio", { name: /Only allow what rules permit/ })
-    ).toHaveAttribute("aria-checked", "true")
+    expect(screen.getByRole("radio", { name: "Rules" })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    )
   })
 
   it("does not ask twice when giving up filtering", async () => {
     render(<AccessModeSwitchHarness initial="rules" />)
     const user = userEvent.setup({ document })
-    await user.click(
-      screen.getByRole("radio", { name: /Allow all traffic between devices/ })
-    )
+    await user.click(screen.getByRole("radio", { name: "Open" }))
     expect(screen.getByRole("dialog")).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Allow all traffic" }))
-    expect(
-      screen.getByRole("radio", { name: /Allow all traffic between devices/ })
-    ).toHaveAttribute("aria-checked", "true")
+    expect(screen.getByRole("radio", { name: "Open" })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    )
   })
 
   it("disables every option for read-only roles", () => {

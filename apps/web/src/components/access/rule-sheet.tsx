@@ -94,7 +94,7 @@ export function RuleSheet({
           <SheetContent
             className={
               isPhone
-                ? "h-[100dvh] max-h-none w-full gap-0 rounded-none p-0"
+                ? "inset-y-0 h-auto max-h-none w-full gap-0 rounded-none p-0"
                 : "w-full gap-0 p-0 sm:max-w-[560px]"
             }
             data-testid="rule-sheet"
