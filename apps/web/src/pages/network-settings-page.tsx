@@ -51,7 +51,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { formatDateTime } from "@/lib/format"
+import { formatDateTimeShort } from "@/lib/format"
+import { normalizeDnsName } from "@/lib/device-presentation"
 import { cn } from "@/lib/utils"
 
 const SECTIONS = [
@@ -190,32 +191,38 @@ function SettingsTab({ data }: { data: NetworkShellData }) {
   const label = (id: Section) => t(`settings.sections.${id}`)
 
   return (
-    <div className="grid items-start gap-4 md:grid-cols-[190px_minmax(0,1fr)] md:gap-6">
-      <nav
-        aria-label={t("settings.navLabel")}
-        className="-mx-1 flex [scrollbar-width:none] gap-1 overflow-x-auto rounded-xl bg-surface-3 p-1 md:sticky md:top-4 md:mx-0 md:flex-col md:rounded-none md:bg-transparent md:p-0 [&::-webkit-scrollbar]:hidden"
-      >
-        {SECTIONS.map((id) => {
-          const current = section === id
-          return (
-            <button
-              aria-current={current ? "page" : undefined}
-              className={cn(
-                "flex h-9 flex-none items-center rounded-lg px-3 text-[13px] font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
-                current
-                  ? "bg-card text-foreground shadow-sm ring-1 ring-line md:bg-surface-2 md:shadow-none"
-                  : "text-fg-2 hover:text-foreground",
-                id === "danger" && "text-err hover:text-err"
-              )}
-              key={id}
-              onClick={() => setSection(id)}
-              type="button"
-            >
-              {label(id)}
-            </button>
-          )
-        })}
-      </nav>
+    <div className="grid items-start gap-4 lg:grid-cols-[190px_minmax(0,1fr)] lg:gap-6">
+      <div className="relative min-w-0 lg:static">
+        <nav
+          aria-label={t("settings.navLabel")}
+          className="flex w-full [scrollbar-width:none] gap-1 overflow-x-auto rounded-xl bg-surface-3 p-1 lg:sticky lg:top-4 lg:mx-0 lg:w-auto lg:flex-col lg:rounded-none lg:bg-transparent lg:p-0 [&::-webkit-scrollbar]:hidden -mx-1"
+        >
+          {SECTIONS.map((id) => {
+            const current = section === id
+            return (
+              <button
+                aria-current={current ? "page" : undefined}
+                className={cn(
+                  "flex h-11 flex-none items-center rounded-lg px-3 text-[13px] font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none lg:h-9",
+                  current
+                    ? "bg-card text-foreground shadow-sm ring-1 ring-line lg:bg-surface-2 lg:shadow-none"
+                    : "text-fg-2 hover:text-foreground",
+                  id === "danger" && "text-err hover:text-err"
+                )}
+                key={id}
+                onClick={() => setSection(id)}
+                type="button"
+              >
+                {label(id)}
+              </button>
+            )
+          })}
+        </nav>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-1 right-0 w-8 rounded-r-xl bg-gradient-to-l from-surface-3 to-transparent lg:hidden"
+        />
+      </div>
 
       <div
         aria-label={label(section)}
@@ -384,7 +391,7 @@ function SettingsTab({ data }: { data: NetworkShellData }) {
             >
               <SettingsRow
                 description={t("settings.zoneHint", {
-                  zone: network.magicDnsZone,
+                  zone: normalizeDnsName(network.magicDnsZone),
                 })}
                 htmlFor="settings-zone"
                 label={t("settings.zoneRow")}
@@ -607,6 +614,17 @@ function InviteRow({
   onRevoke?: () => void
 }) {
   const { t, i18n } = useTranslation()
+  const exhausted =
+    invite.maxUses !== null && invite.uses >= invite.maxUses
+  const expiry = exhausted
+    ? t("invites.usedUpHint")
+    : invite.status !== "active"
+      ? t(`invites.status.${invite.status}`)
+      : invite.expiresAt
+        ? t("settings.inviteExpires", {
+            when: formatDateTimeShort(invite.expiresAt, i18n.language),
+          })
+        : t("settings.inviteNoExpiry")
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line px-3.5 py-2.5 first:border-t-0">
       <span className="grid size-9 flex-none place-items-center rounded-[9px] bg-surface-2 text-fg-2 ring-1 ring-line">
@@ -619,14 +637,16 @@ function InviteRow({
           </span>
           <Chip
             variant={
-              invite.status === "active"
+              invite.status === "active" && !exhausted
                 ? "ok"
                 : invite.status === "revoked"
                   ? "err"
                   : "warn"
             }
           >
-            {t(`invites.status.${invite.status}`)}
+            {exhausted
+              ? t("invites.status.exhausted")
+              : t(`invites.status.${invite.status}`)}
           </Chip>
         </div>
         <p className="mt-0.5 text-xs text-fg-3">
@@ -637,11 +657,7 @@ function InviteRow({
                 max: invite.maxUses,
               })}
           {" · "}
-          {invite.expiresAt
-            ? t("settings.inviteExpires", {
-                when: formatDateTime(invite.expiresAt, i18n.language),
-              })
-            : t("settings.inviteNoExpiry")}
+          {expiry}
           {" · "}
           {t("settings.inviteApproval")}
         </p>

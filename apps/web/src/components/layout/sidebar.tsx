@@ -22,6 +22,7 @@ import { LanguageSelector } from "@/components/language-selector"
 import { ThemeSelector } from "@/components/theme-selector"
 import { Button } from "@/components/ui/button"
 import { Chip } from "@/components/ui/chip"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Sheet,
   SheetClose,
@@ -202,7 +203,7 @@ export function MobileNavSheet() {
                     {label || t("account.menuLabel")}
                   </p>
                   {user.email !== label ? (
-                    <p className="truncate text-[11px] text-fg-3">
+                    <p className="truncate text-xs text-fg-3">
                       {user.email}
                     </p>
                   ) : null}
@@ -254,12 +255,21 @@ function SidebarNav({
         label={t("nav.items.networks")}
         onNavigate={onNavigate}
       />
-      {collapsed || networks.length === 0 ? null : (
+      {collapsed || (networks.length === 0 && !networksQuery.isLoading) ? null : (
         <ul
           aria-label={t("nav.networkList")}
           className="mt-0.5 mb-1.5 ml-4 flex min-w-0 flex-col gap-0.5 border-l border-line pl-2.5"
+          aria-busy={networksQuery.isLoading || undefined}
         >
-          {networks.map((network) => {
+          {networksQuery.isLoading
+            ? // Reserve one network row so the items below do not jump when
+              // the list arrives.
+              [0].map((index) => (
+                <li className="min-w-0" key={index}>
+                  <Skeleton className="my-0.5 h-8 w-full max-w-40 rounded-md" />
+                </li>
+              ))
+            : networks.map((network) => {
             const active = network.id === activeNetworkId
             return (
               <li key={network.id} className="min-w-0">

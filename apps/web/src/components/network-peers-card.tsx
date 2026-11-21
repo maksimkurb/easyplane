@@ -185,18 +185,18 @@ export function NetworkPeersCard({
         <div
           className={
             embedded
-              ? "grid gap-4 md:grid-cols-2"
-              : "grid gap-4 border-t border-line px-4 py-4 sm:px-5 md:grid-cols-2"
+              ? "grid min-w-0 gap-x-6 gap-y-5 xl:grid-cols-2"
+              : "grid min-w-0 gap-x-6 gap-y-5 border-t border-line px-4 py-4 sm:px-5 xl:grid-cols-2"
           }
         >
-          <div className="grid gap-2">
+          <div className="grid min-w-0 gap-2">
             <p className="text-[13px] font-medium">
               {t("networks.peers.addDevice")}
             </p>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex min-w-0 flex-col gap-2 xl:flex-row xl:items-center">
               <OptionSelect
                 aria-label={t("networks.peers.device")}
-                className="min-w-0 sm:flex-1"
+                className="min-w-0 xl:flex-1"
                 empty={t("networks.peers.noDevices")}
                 onValueChange={setNewDeviceId}
                 options={addableDevices.map((device) => ({
@@ -210,7 +210,7 @@ export function NetworkPeersCard({
                 value={newDeviceId}
               />
               <Button
-                className="max-sm:w-full"
+                className="max-sm:w-full xl:flex-none"
                 disabled={newDeviceId === "" || busy}
                 onClick={() =>
                   updateHub.mutate({
@@ -231,7 +231,7 @@ export function NetworkPeersCard({
           </div>
 
           <form
-            className="grid gap-2"
+            className="grid min-w-0 gap-2"
             onSubmit={(event) => {
               event.preventDefault()
               if (url.trim() === "") return
@@ -241,16 +241,16 @@ export function NetworkPeersCard({
             <p className="text-[13px] font-medium">
               {t("networks.peers.addExternal")}
             </p>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex min-w-0 flex-col gap-2 xl:flex-row xl:items-center">
               <Input
                 aria-label={t("networks.peers.url")}
-                className="min-w-0 sm:flex-1"
+                className="min-w-0 xl:flex-1"
                 onChange={(event) => setUrl(event.target.value)}
                 placeholder="tcp://hub.example.com:11010"
                 value={url}
               />
               <Button
-                className="max-sm:w-full"
+                className="max-sm:w-full xl:flex-none"
                 disabled={url.trim() === "" || busy}
                 size="sm"
                 type="submit"

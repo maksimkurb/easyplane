@@ -1,9 +1,10 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useLocation, useParams } from "wouter"
+import { Link, useLocation, useParams } from "wouter"
 import {
   AlertTriangleIcon,
   BanIcon,
+  ChevronRightIcon,
   ClockIcon,
   LockIcon,
   MoreHorizontalIcon,
@@ -213,6 +214,39 @@ export function DeviceDetailPage() {
     <>
       <section className="border-b border-line bg-card">
         <PageContainer className="py-4 sm:py-5">
+          <nav
+            aria-label={t("devices.breadcrumbs")}
+            className="mb-2 flex min-w-0 items-center gap-1.5 text-[13px] text-fg-3"
+          >
+            {network ? (
+              <Link
+                className="inline-flex min-h-11 max-w-full min-w-0 items-center truncate rounded-md hover:text-foreground hover:underline sm:min-h-0"
+                href={`/networks/${network.id}`}
+                title={network.name}
+              >
+                {network.name}
+              </Link>
+            ) : networkQuery.isLoading ? (
+              <Skeleton className="h-4 w-28" />
+            ) : (
+              <Link
+                className="inline-flex min-h-11 items-center rounded-md hover:text-foreground hover:underline sm:min-h-0"
+                href="/networks"
+              >
+                {t("networks.title")}
+              </Link>
+            )}
+            <ChevronRightIcon
+              aria-hidden="true"
+              className="size-3.5 flex-none text-fg-3"
+            />
+            <span
+              aria-current="page"
+              className="min-w-0 truncate font-medium text-fg-2"
+            >
+              {name}
+            </span>
+          </nav>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3 sm:flex-nowrap">
             <span className="grid size-12 flex-none place-items-center rounded-xl bg-surface-2 text-fg-2 ring-1 ring-line">
               <DeviceIcon className="size-6" os={device.os} />
@@ -393,7 +427,7 @@ export function DeviceDetailPage() {
           />
 
           <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
-            <div className="flex min-w-0 flex-1 flex-col gap-5">
+            <div className="order-2 flex min-w-0 flex-1 flex-col gap-5 xl:order-1">
               {routesQuery.isError ? (
                 <RouteLoadError
                   onRetry={() => void routesQuery.refetch()}
@@ -405,7 +439,7 @@ export function DeviceDetailPage() {
               <DeviceHistoryCard device={device} revisions={revisions} />
             </div>
 
-            <aside className="flex w-full min-w-0 flex-col gap-5 xl:w-[340px] xl:flex-none">
+            <aside className="order-1 flex w-full min-w-0 flex-col gap-5 xl:order-2 xl:w-[340px] xl:flex-none">
               <DeviceDetailsCard device={device} publicIp={publicIp} />
               <DeviceAccessCard device={device} />
               <DeviceConnectionsCard

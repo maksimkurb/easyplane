@@ -17,6 +17,7 @@ import { CopyInline } from "@/components/shared/copy-inline"
 import { PageContainer } from "@/components/layout/page-container"
 import { Button } from "@/components/ui/button"
 import { Chip, Dot } from "@/components/ui/chip"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,6 +67,7 @@ export function NetworkHero({
   total,
   waiting,
   deviceCount,
+  devicesLoading = false,
   onAddDevice,
 }: {
   network: GetNetwork200
@@ -74,6 +76,8 @@ export function NetworkHero({
   total: number
   waiting: number
   deviceCount: number
+  /** While the device list loads, counts show a placeholder instead of 0. */
+  devicesLoading?: boolean
   onAddDevice: () => void
 }) {
   const { t } = useTranslation()
@@ -128,17 +132,23 @@ export function NetworkHero({
               {network.name}
             </h1>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-fg-3">
-              <CopyInline
-                label={t("network.copyName", { name: network.networkName })}
-                value={network.networkName}
-              />
+              {network.networkName !== network.name ? (
+                <CopyInline
+                  label={t("network.copyName", { name: network.networkName })}
+                  value={network.networkName}
+                />
+              ) : null}
               <span className="font-mono text-xs whitespace-nowrap">
                 {network.ipv4Cidr}
               </span>
-              <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                <Dot online={online > 0} />
-                {t("networks.onlineOf", { online, total })}
-              </span>
+              {devicesLoading ? (
+                <Skeleton className="h-4 w-24" />
+              ) : (
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                  <Dot online={online > 0} />
+                  {t("networks.onlineOf", { online, total })}
+                </span>
+              )}
             </div>
           </div>
 
@@ -206,39 +216,48 @@ export function NetworkHero({
           </div>
         </div>
 
-        <nav
-          aria-label={t("network.tabs.label")}
-          className="-mx-4 mt-4 flex [scrollbar-width:none] gap-1 overflow-x-auto px-4 sm:mx-0 sm:mt-5 sm:px-0 [&::-webkit-scrollbar]:hidden"
-        >
-          {TABS.map((tab) => {
-            const current = tab.id === active
-            return (
-              <Link
-                aria-current={current ? "page" : undefined}
-                className={`flex h-11 flex-none items-center gap-1.5 border-b-2 px-2 font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none sm:gap-2 sm:px-3 ${
-                  current
-                    ? "border-foreground text-foreground"
-                    : "border-transparent text-fg-3 hover:text-foreground"
-                }`}
-                href={tab.path(network.id)}
-                key={tab.id}
-              >
-                {t(tab.labelKey)}
-                {tab.id === "devices" ? (
-                  waiting > 0 ? (
-                    <Chip variant="warn">
-                      {t("network.waiting", { count: waiting })}
-                    </Chip>
-                  ) : (
-                    <span className="inline-grid h-5 min-w-5 place-items-center rounded-[10px] bg-surface-2 px-1.5 text-xs font-medium text-fg-2">
-                      {deviceCount}
-                    </span>
-                  )
-                ) : null}
-              </Link>
-            )
-          })}
-        </nav>
+        <div className="relative">
+          <nav
+            aria-label={t("network.tabs.label")}
+            className="mt-4 -mx-4 flex [scrollbar-width:none] gap-1 overflow-x-auto px-4 sm:mx-0 sm:mt-5 sm:px-0 [&::-webkit-scrollbar]:hidden"
+          >
+            {TABS.map((tab) => {
+              const current = tab.id === active
+              return (
+                <Link
+                  aria-current={current ? "page" : undefined}
+                  className={`flex h-11 flex-none items-center gap-1.5 border-b-2 px-2 font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none sm:gap-2 sm:px-3 ${
+                    current
+                      ? "border-foreground text-foreground"
+                      : "border-transparent text-fg-3 hover:text-foreground"
+                  }`}
+                  href={tab.path(network.id)}
+                  key={tab.id}
+                >
+                  {t(tab.labelKey)}
+                  {tab.id === "devices" ? (
+                    devicesLoading ? (
+                      <Skeleton className="h-5 w-6 rounded-[10px]" />
+                    ) : waiting > 0 ? (
+                      <Chip variant="warn">
+                        {t("network.waiting", { count: waiting })}
+                      </Chip>
+                    ) : (
+                      <span className="inline-grid h-5 min-w-5 place-items-center rounded-[10px] bg-surface-2 px-1.5 text-xs font-medium text-fg-2">
+                        {deviceCount}
+                      </span>
+                    )
+                  ) : null}
+                </Link>
+              )
+            })}
+          </nav>
+          {/* A fade marks that the tab strip scrolls sideways on phones. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card to-transparent sm:hidden"
+          />
+        </div>
       </PageContainer>
     </section>
   )

@@ -98,7 +98,7 @@ export function PendingRouteApprovalRow({
               : t("approvals.wantsSubnet")}
           </span>
           {!isExitNode ? (
-            <Chip className="font-mono text-[11.5px]">{route.cidr}</Chip>
+            <Chip className="font-mono text-xs">{route.cidr}</Chip>
           ) : null}
           {route.source === "device_declared" ? (
             <Chip>{t("routes.declaredByDevice")}</Chip>

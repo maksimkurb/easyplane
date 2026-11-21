@@ -53,7 +53,15 @@ const devices = [
   }),
 ]
 
-function stubApi(list: typeof devices) {
+function stubApi(
+  list: typeof devices,
+  users: Array<{
+    id: string
+    email: string
+    displayName: string
+    role: string
+  }> = []
+) {
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input)
     const body = url.endsWith("/api/auth/me")
@@ -71,7 +79,7 @@ function stubApi(list: typeof devices) {
           : url.startsWith("/api/networks")
             ? [network]
             : url.startsWith("/api/users")
-              ? []
+              ? users
               : []
     return new Response(JSON.stringify(body), {
       status: 200,
@@ -105,7 +113,7 @@ describe("DevicesPage", () => {
       screen.getByRole("button", { name: "Reject pixel-8" })
     ).toBeInTheDocument()
 
-    await user.click(screen.getByRole("radio", { name: /^Pending/ }))
+    await user.click(screen.getByRole("radio", { name: /^Waiting for approval/ }))
 
     await waitFor(() => {
       expect(
@@ -119,7 +127,7 @@ describe("DevicesPage", () => {
     stubApi(devices)
     renderWithProviders(<DevicesPage pendingOnly />)
 
-    const pending = await screen.findByRole("radio", { name: /^Pending/ })
+    const pending = await screen.findByRole("radio", { name: /^Waiting for approval/ })
     expect(pending).toHaveAttribute("aria-checked", "true")
     expect(
       screen.queryByRole("link", { name: /owrt-h1/i })
@@ -134,5 +142,37 @@ describe("DevicesPage", () => {
       await screen.findByText("No devices are waiting for approval")
     ).toBeInTheDocument()
     expect(screen.queryByText("No devices yet")).not.toBeInTheDocument()
+    // Nothing is filtered here, so there is nothing to reset.
+    expect(
+      screen.queryByRole("button", { name: "Clear filters" })
+    ).not.toBeInTheDocument()
+  })
+
+  it("shows the owner's name instead of a raw id and normalises tags", async () => {
+    stubApi(
+      [
+        makeDevice({
+          id: "d-owned",
+          hostname: "nas-02",
+          dnsName: "nas-02",
+          ownerUserId: "8a2f1b0e-0000-4000-8000-000000000001",
+          tags: ["tag:kz"],
+        }),
+      ],
+      [
+        {
+          id: "8a2f1b0e-0000-4000-8000-000000000001",
+          email: "anna@example.com",
+          displayName: "Anna",
+          role: "admin",
+        },
+      ]
+    )
+    renderWithProviders(<DevicesPage />)
+
+    expect(await screen.findByText("Owner Anna")).toBeInTheDocument()
+    expect(screen.queryByText(/805e3206/)).not.toBeInTheDocument()
+    expect(screen.getByText("kz")).toBeInTheDocument()
+    expect(screen.queryByText("tag:kz")).not.toBeInTheDocument()
   })
 })

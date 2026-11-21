@@ -116,14 +116,14 @@ describe("NetworkPeersCard", () => {
     expect(
       screen.getByText("tcp://legacy.example.com:11010")
     ).toBeInTheDocument()
-    expect(screen.getByText(/exactly matches the endpoint/i)).toBeInTheDocument()
+    expect(screen.getByText(/exactly matches the address/i)).toBeInTheDocument()
     // Device-backed hubs and external URLs are distinguished.
-    expect(screen.getByText("Hub")).toBeInTheDocument()
-    expect(screen.getByText("External")).toBeInTheDocument()
+    expect(screen.getByText("Anchor device")).toBeInTheDocument()
+    expect(screen.getByText("External address")).toBeInTheDocument()
     // Admin affordances.
     expect(
       screen.getByRole("button", { name: /Link to device/i })
     ).toBeInTheDocument()
-    expect(screen.getByText(/Add an external peer/i)).toBeInTheDocument()
+    expect(screen.getByText("Add an external address")).toBeInTheDocument()
   })
 })

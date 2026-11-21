@@ -39,7 +39,7 @@ describe("network access card", () => {
     renderWithProviders(<NetworkAccessCard network={NETWORK} />)
     expect(screen.getByText("Аутентификация устройств")).toBeInTheDocument()
     expect(screen.getByText(/Anchor-ов онлайн: 0 из 1/)).toBeInTheDocument()
-    expect(screen.getByText(/Ни один anchor не онлайн/)).toBeInTheDocument()
+    expect(screen.getByText(/Ни одно опорное устройство не в сети/)).toBeInTheDocument()
     await i18n.changeLanguage("en")
   })
 

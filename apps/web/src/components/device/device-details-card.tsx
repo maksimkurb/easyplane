@@ -17,6 +17,7 @@ import { DeviceRenameDialog } from "@/components/device/device-rename-dialog"
 import { DeviceTagsDialog } from "@/components/device/device-tags-dialog"
 import { CopyInline } from "@/components/shared/copy-inline"
 import { Chip } from "@/components/ui/chip"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -24,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { deviceName, osLabel } from "@/lib/device-presentation"
+import { dnsFqdn, deviceName, normalizeDnsName, osLabel } from "@/lib/device-presentation"
 import { deviceSecondaryHostname, tagLabel } from "@/lib/device-status"
 import { formatDate } from "@/lib/format"
 
@@ -46,6 +47,7 @@ export function DeviceDetailsCard({
   const [tagsOpen, setTagsOpen] = useState(false)
   const users = useListUsers({ query: { enabled: isAdmin } })
   const owner = users.data?.data.find((user) => user.id === device.ownerUserId)
+  const ownerLoading = users.isLoading || users.isPending
 
   const setOwner = useSetDeviceOwner({
     mutation: {
@@ -65,6 +67,9 @@ export function DeviceDetailsCard({
 
   const name = deviceName(device)
   const secondaryHostname = deviceSecondaryHostname(device)
+  const magicName = device.magicDnsName
+    ? normalizeDnsName(device.magicDnsName)
+    : dnsFqdn(device.dnsName ?? name, device.magicDnsZone)
 
   return (
     <section className="rounded-xl bg-card shadow-sm ring-1 ring-line">
@@ -76,43 +81,47 @@ export function DeviceDetailsCard({
       <dl className="grid grid-cols-[110px_minmax(0,1fr)] px-4 pb-3 sm:px-5">
         <Field label={t("devices.detail.owner")}>
           {isAdmin ? (
-            <Select
-              items={[
-                { value: "__none", label: t("devices.detail.noOwner") },
-                ...(users.data?.data ?? []).map((user) => ({
-                  value: user.id,
-                  label: user.displayName || user.email,
-                })),
-              ]}
-              onValueChange={(value) =>
-                value &&
-                setOwner.mutate({
-                  deviceId: device.id,
-                  data: { userId: value === "__none" ? null : value },
-                })
-              }
-              value={device.ownerUserId ?? "__none"}
-            >
-              <SelectTrigger
-                aria-label={t("devices.detail.owner")}
-                className="h-8 max-w-full border-0 bg-transparent px-1 font-normal shadow-none hover:bg-surface-2"
-                size="sm"
+            ownerLoading ? (
+              <Skeleton className="h-4 w-28" />
+            ) : (
+              <Select
+                items={[
+                  { value: "__none", label: t("devices.detail.noOwner") },
+                  ...(users.data?.data ?? []).map((user) => ({
+                    value: user.id,
+                    label: user.displayName || user.email,
+                  })),
+                ]}
+                onValueChange={(value) =>
+                  value &&
+                  setOwner.mutate({
+                    deviceId: device.id,
+                    data: { userId: value === "__none" ? null : value },
+                  })
+                }
+                value={device.ownerUserId ?? "__none"}
               >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none">
-                  {t("devices.detail.noOwner")}
-                </SelectItem>
-                {(users.data?.data ?? []).map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.displayName || user.email}
+                <SelectTrigger
+                  aria-label={t("devices.detail.owner")}
+                  className="h-8 max-w-full border-0 bg-transparent px-1 font-normal shadow-none hover:bg-surface-2"
+                  size="sm"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">
+                    {t("devices.detail.noOwner")}
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  {(users.data?.data ?? []).map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.displayName || user.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )
           ) : (
-            <span className="truncate">
+            <span className="break-words">
               {owner?.displayName || owner?.email || "—"}
             </span>
           )}
@@ -145,9 +154,11 @@ export function DeviceDetailsCard({
 
         <Field label={t("magicDns.name")}>
           <span className="flex min-w-0 items-center gap-1">
-            <span className="truncate font-mono text-xs">
-              {device.magicDnsName ??
-                `${device.dnsName ?? name}.${device.magicDnsZone}`}
+            <span
+              className="min-w-0 break-all font-mono text-xs"
+              title={magicName}
+            >
+              {magicName}
             </span>
             {canManage ? (
               <button
@@ -167,11 +178,23 @@ export function DeviceDetailsCard({
         </Field>
 
         <Field label={t("devices.detail.publicIp")}>
-          <span className="truncate font-mono text-xs">{publicIp || "—"}</span>
+          <span
+            className="min-w-0 break-all font-mono text-xs"
+            title={publicIp ?? undefined}
+          >
+            {publicIp || "—"}
+          </span>
         </Field>
 
         <Field label={t("devices.detail.system")}>
-          <span className="truncate" title={osLabel(device.os)}>
+          <span
+            className="min-w-0 break-words"
+            title={`${osLabel(device.os)}${
+              device.easytierVersion
+                ? ` · EasyTier ${device.easytierVersion}`
+                : ""
+            }`}
+          >
             {osLabel(device.os)}
             {device.easytierVersion
               ? ` · EasyTier ${device.easytierVersion}`
@@ -181,7 +204,10 @@ export function DeviceDetailsCard({
 
         {secondaryHostname ? (
           <Field label={t("devices.hostname")}>
-            <span className="truncate font-mono text-xs">
+            <span
+              className="min-w-0 break-all font-mono text-xs"
+              title={secondaryHostname}
+            >
               {secondaryHostname}
             </span>
           </Field>
@@ -189,8 +215,10 @@ export function DeviceDetailsCard({
 
         <Field mono label={t("devices.machineId")}>
           <CopyInline
-            className="-ml-1.5"
+            className="-ml-1.5 max-w-full"
             label={t("devices.copyMachineId")}
+            multiline
+            title={device.machineId}
             value={device.machineId}
           />
         </Field>
@@ -236,7 +264,7 @@ function Field({
         {label}
       </dt>
       <dd
-        className={`flex min-h-10 min-w-0 items-center gap-2 border-t border-line py-1.5 first:border-t-0 ${
+        className={`flex min-h-10 min-w-0 items-start gap-2 border-t border-line py-2 first:border-t-0 ${
           mono ? "font-mono text-xs" : "text-sm"
         }`}
       >

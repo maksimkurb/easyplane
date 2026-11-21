@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { formatDateTime, formatRelativeTime } from "@/lib/format"
+import { groupConsecutive } from "@/lib/sequence"
 
 const INITIAL_REVISIONS = 5
 
@@ -57,7 +58,6 @@ export function DeviceHistoryCard({
   const [expanded, setExpanded] = useState(false)
   const latest = revisions[0]
   const shown = expanded ? revisions : revisions.slice(0, INITIAL_REVISIONS)
-
   const refresh = async () => {
     await queryClient.invalidateQueries({
       queryKey: getGetDeviceQueryKey(device.id),
@@ -140,21 +140,46 @@ export function DeviceHistoryCard({
             <span>{t("audit.when")}</span>
             <span />
           </div>
-          {shown.map((revision) => {
+          {groupConsecutive(shown, (revision) =>
+            `${changeLabel(revision)}·${revision.createdByEmail ?? ""}`
+          ).map((group) => {
+            const revision = group.items[0]
             const running = device.appliedRevision === revision.revision
             const notApplied =
               !running &&
               device.desiredRevision === revision.revision &&
               device.desiredRevision !== device.appliedRevision
+            const repeated = group.count > 1
             return (
               <div
                 className="grid min-h-14 grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-t border-line px-4 py-2.5 md:grid-cols-[56px_minmax(0,1fr)_minmax(120px,160px)_110px_120px] md:gap-4 md:px-5"
-                key={revision.id}
+                key={group.id}
               >
-                <span className="font-medium">{revision.revision}</span>
+                <span className="font-medium">
+                  {revision.revision}
+                  {repeated ? (
+                    <span className="ml-1 text-xs text-fg-3">
+                      –{group.items[group.items.length - 1].revision}
+                    </span>
+                  ) : null}
+                </span>
                 <div className="min-w-0">
-                  <p className="text-[13px] break-words">
-                    {changeLabel(revision)}
+                  <p className="flex min-w-0 flex-wrap items-center gap-1.5 text-[13px] break-words">
+                    <span>{changeLabel(revision)}</span>
+                    {repeated ? (
+                      <Chip
+                        aria-label={t("device.history.repeated", {
+                          count: group.count,
+                        })}
+                        title={group.items
+                          .map((item) => formatRelativeTime(item.createdAt, i18n.language))
+                          .filter(Boolean)
+                          .join(" · ")}
+                        variant="outline"
+                      >
+                        ×{group.count}
+                      </Chip>
+                    ) : null}
                   </p>
                   <p
                     className="text-xs break-words text-fg-3 md:hidden"
@@ -228,7 +253,7 @@ export function DeviceHistoryCard({
             <HistoryIcon aria-hidden="true" className="size-3.5" />
             {t("device.history.technical")}
           </summary>
-          <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-surface-2 p-3 text-[11px] whitespace-pre-wrap">
+          <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-surface-2 p-3 text-xs whitespace-pre-wrap">
             {JSON.stringify(latest.config, null, 2)}
           </pre>
         </details>

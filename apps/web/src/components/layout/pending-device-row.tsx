@@ -87,7 +87,7 @@ export function PendingDeviceRow({
           </div>
           <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-fg-3">
             {hostname && hostname !== name ? (
-              <span className="truncate font-mono text-[11.5px]">
+              <span className="truncate font-mono text-xs">
                 {hostname}
               </span>
             ) : null}

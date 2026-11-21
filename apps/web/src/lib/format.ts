@@ -29,6 +29,36 @@ export function formatDateTime(value: string | null | undefined, locale: string)
   return new Date(time).toLocaleString(locale)
 }
 
+/** Compact date for lists: "26 нояб., 22:26" (no seconds, no year). */
+export function formatDateTimeShort(
+  value: string | null | undefined,
+  locale: string
+): string {
+  if (!value) return "—"
+  const time = Date.parse(value)
+  if (Number.isNaN(time)) return "—"
+  return new Date(time).toLocaleString(locale, {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
+/** Time of day only, for rows already grouped under a date heading. */
+export function formatTimeOfDay(
+  value: string | null | undefined,
+  locale: string
+): string {
+  if (!value) return "—"
+  const time = Date.parse(value)
+  if (Number.isNaN(time)) return "—"
+  return new Date(time).toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
 export function formatDate(value: string | null | undefined, locale: string): string {
   if (!value) return "—"
   const time = Date.parse(value)

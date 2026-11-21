@@ -75,7 +75,7 @@ export function DeviceStatusCell({
       <span aria-hidden="true" className="min-w-0">
         <span className="block truncate">{label}</span>
         {showHint && hint ? (
-          <span className="block truncate text-[11px] text-fg-3">{hint}</span>
+          <span className="block truncate text-xs text-fg-3">{hint}</span>
         ) : null}
       </span>
       <span className="sr-only">{screenReaderLabel}</span>

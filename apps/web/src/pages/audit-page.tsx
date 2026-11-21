@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react"
+import { Fragment, useMemo, useState, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "wouter"
 import { HistoryIcon, SearchIcon } from "lucide-react"
@@ -25,8 +25,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Segmented } from "@/components/ui/segmented"
 import { Skeleton } from "@/components/ui/skeleton"
-import { RelativeTime } from "@/components/shared/relative-time"
 import { deviceName } from "@/lib/device-presentation"
+import { formatDate, formatDateTime, formatTimeOfDay } from "@/lib/format"
 import {
   auditCategory,
   auditEventKey,
@@ -51,7 +51,13 @@ function renderMarkers(
 ): ReactNode[] {
   return template
     .split(MARK_RE)
-    .map((part, index) => (index % 2 === 0 ? part : (nodes[part] ?? part)))
+    .map((part, index) =>
+      index % 2 === 0 ? (
+        part
+      ) : (
+        <Fragment key={index}>{nodes[part] ?? part}</Fragment>
+      )
+    )
 }
 
 function markerText(template: string, values: Record<string, string>): string {
@@ -71,12 +77,23 @@ type AuditItem =
       kind: "group"
       action: string
       items: ResolvedEntry[]
+      count: number
+      /** Config pushes already say "to N devices"; other repeats get a ×N chip. */
+      showCount: boolean
       category: AuditCategory | null
       createdAt: string
       sentence: ReactNode
       searchText: string
       title: string
     }
+
+/** Actions that repeat in bursts and read better as one line. */
+const REPEATABLE_ACTIONS = new Set([
+  "device.config.pushed",
+  "device.config.push_failed",
+  "route.unapproved_reported",
+  "route.declared",
+])
 
 /**
  * "Activity" is the audit log in the user's language. Every row is a sentence
@@ -85,11 +102,13 @@ type AuditItem =
  * does not know yet.
  */
 export function AuditPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { isAdmin } = useAuth()
   const [limit, setLimit] = useState(PAGE_SIZE)
   const [eventFilter, setEventFilter] = useState<AuditFilter>("all")
   const [query, setQuery] = useState("")
+  // "Today"/"Yesterday" are resolved once per visit rather than on every render.
+  const [now] = useState(() => Date.now())
 
   const auditQuery = useListAuditLog({ limit }, { query: { enabled: isAdmin } })
   const usersQuery = useListUsers({ query: { enabled: isAdmin } })
@@ -117,21 +136,6 @@ export function AuditPage() {
       ),
     [networksQuery.data]
   )
-
-  const counts = useMemo(() => {
-    const result: Record<AuditFilter, number> = {
-      all: entries.length,
-      signin: 0,
-      access: 0,
-      devices: 0,
-      invites: 0,
-    }
-    for (const entry of entries) {
-      const category = auditCategory(entry.action)
-      if (category) result[category] += 1
-    }
-    return result
-  }, [entries])
 
   const items = useMemo<AuditItem[]>(() => {
     const targetFor = (entry: ListAuditLog200Item) => {
@@ -287,36 +291,57 @@ export function AuditPage() {
     const grouped: AuditItem[] = []
     for (const item of resolved) {
       const last = grouped[grouped.length - 1]
-      if (isGroupableAuditEntry(item.entry)) {
-        if (last?.kind === "group" && last.action === item.entry.action) {
-          const groupItems = [...last.items, item]
-          const key =
-            item.entry.action === "device.config.push_failed"
-              ? "audit.events.device_config_push_failed_group"
-              : "audit.events.device_config_pushed_group"
-          const sentence = t(key, { count: groupItems.length })
-          grouped[grouped.length - 1] = {
-            kind: "group",
-            action: item.entry.action,
-            items: groupItems,
-            category: last.category,
-            createdAt: last.createdAt,
-            sentence,
-            searchText: `${sentence} ${groupItems
-              .map((entry) => entry.searchText)
-              .join(" ")}`,
-            title: groupItems
-              .map((entry) => entry.entry)
-              .map((entry) => targetFor(entry).text)
-              .filter(Boolean)
-              .join(", "),
-          }
-          continue
+      const repeatable = REPEATABLE_ACTIONS.has(item.entry.action)
+      const sameAction = last?.kind === "group" && last.action === item.entry.action
+      // Config pushes group across devices; device-reported routes group only
+      // when they are about the same device, so unrelated reports stay apart.
+      const sameTarget =
+        last?.kind === "group" &&
+        last.items[0]?.entry.targetId === item.entry.targetId
+      const canMerge =
+        repeatable &&
+        sameAction &&
+        (isGroupableAuditEntry(item.entry) || sameTarget)
+
+      if (canMerge && last?.kind === "group") {
+        const groupItems = [...last.items, item]
+        const configPush =
+          item.entry.action === "device.config.pushed" ||
+          item.entry.action === "device.config.push_failed"
+        const key =
+          item.entry.action === "device.config.push_failed"
+            ? "audit.events.device_config_push_failed_group"
+            : "audit.events.device_config_pushed_group"
+        const sentence = configPush
+          ? t(key, { count: groupItems.length })
+          : last.sentence
+        grouped[grouped.length - 1] = {
+          kind: "group",
+          action: item.entry.action,
+          items: groupItems,
+          count: groupItems.length,
+          showCount: !configPush,
+          category: last.category,
+          createdAt: last.createdAt,
+          sentence,
+          searchText: `${groupItems
+            .map((entry) => entry.searchText)
+            .join(" ")}${configPush ? ` ${sentence}` : ""}`,
+          title: groupItems
+            .map((entry) => entry.entry)
+            .map((entry) => targetFor(entry).text)
+            .filter(Boolean)
+            .join(", "),
         }
+        continue
+      }
+      if (repeatable) {
         grouped.push({
           kind: "group",
           action: item.entry.action,
           items: [item],
+          count: 1,
+          showCount: false,
           category: item.category,
           createdAt: item.entry.createdAt,
           sentence: item.sentence,
@@ -337,6 +362,36 @@ export function AuditPage() {
     if (!needle) return true
     return item.searchText.toLowerCase().includes(needle)
   })
+
+  // Entries read as a diary: "Today", "Yesterday", then the absolute date.
+  const dayKeyOf = (value: string) => {
+    const date = new Date(value)
+    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+  }
+  const createdAtOf = (item: AuditItem) =>
+    item.kind === "single" ? item.entry.createdAt : item.createdAt
+  const todayKey = dayKeyOf(new Date(now).toISOString())
+  const yesterdayKey = dayKeyOf(new Date(now - 86_400_000).toISOString())
+  const sections: { key: string; label: string; items: AuditItem[] }[] = []
+  for (const item of filtered) {
+    const createdAt = createdAtOf(item)
+    const key = dayKeyOf(createdAt)
+    const last = sections[sections.length - 1]
+    if (last && last.key === key) {
+      last.items.push(item)
+      continue
+    }
+    sections.push({
+      key,
+      label:
+        key === todayKey
+          ? t("audit.dates.today")
+          : key === yesterdayKey
+            ? t("audit.dates.yesterday")
+            : formatDate(createdAt, i18n.language),
+      items: [item],
+    })
+  }
 
   if (!isAdmin) {
     return (
@@ -363,45 +418,32 @@ export function AuditPage() {
           />
           <Input
             aria-label={t("audit.searchLabel")}
-            className="pl-9"
+            className="min-h-11 pl-9 text-ellipsis sm:min-h-10"
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t("audit.searchPlaceholder")}
             type="search"
             value={query}
           />
         </div>
-        <div className="max-w-full overflow-x-auto pb-0.5">
-          <Segmented
-            label={t("audit.filterLabel")}
-            onValueChange={setEventFilter}
-            options={[
-              {
-                value: "all",
-                label: t("audit.filters.all"),
-                count: counts.all,
-              },
-              {
-                value: "signin",
-                label: t("audit.filters.signin"),
-                count: counts.signin,
-              },
-              {
-                value: "access",
-                label: t("audit.filters.access"),
-                count: counts.access,
-              },
-              {
-                value: "devices",
-                label: t("audit.filters.devices"),
-                count: counts.devices,
-              },
-              {
-                value: "invites",
-                label: t("audit.filters.invites"),
-                count: counts.invites,
-              },
-            ]}
-            value={eventFilter}
+        <div className="relative min-w-0 max-w-full">
+          <div className="overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <Segmented
+              className="max-sm:[&>button]:h-11"
+              label={t("audit.filterLabel")}
+              onValueChange={setEventFilter}
+              options={[
+                { value: "all", label: t("audit.filters.all") },
+                { value: "signin", label: t("audit.filters.signin") },
+                { value: "access", label: t("audit.filters.access") },
+                { value: "devices", label: t("audit.filters.devices") },
+                { value: "invites", label: t("audit.filters.invites") },
+              ]}
+              value={eventFilter}
+            />
+          </div>
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent md:hidden"
           />
         </div>
       </div>
@@ -447,33 +489,51 @@ export function AuditPage() {
       ) : (
         <>
           <ol className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-line">
-            {filtered.map((item) => {
-              const key =
-                item.kind === "single"
-                  ? item.entry.id
-                  : `${item.action}-${item.items[0]?.entry.id ?? item.createdAt}`
-              return (
-                <li
-                  className="grid gap-1 border-b border-line px-4 py-3 last:border-b-0 md:grid-cols-[128px_minmax(0,1fr)] md:gap-4 md:px-5"
-                  key={key}
-                >
-                  <RelativeTime
-                    className="text-xs text-fg-3"
-                    value={
-                      item.kind === "single"
-                        ? item.entry.createdAt
-                        : item.createdAt
-                    }
-                  />
-                  <div
-                    className="min-w-0 text-[13.5px] leading-5 text-pretty"
-                    title={item.kind === "group" ? item.title : undefined}
-                  >
-                    {item.sentence}
-                  </div>
+            {sections.map((section) => (
+              <Fragment key={section.key}>
+                <li className="border-b border-line bg-surface-2/60 px-4 py-2 text-xs font-medium text-fg-2 md:px-5">
+                  <h2>{section.label}</h2>
                 </li>
-              )
-            })}
+                {section.items.map((item) => {
+                  const key =
+                    item.kind === "single"
+                      ? item.entry.id
+                      : `${item.action}-${item.items[0]?.entry.id ?? item.createdAt}`
+                  return (
+                    <li
+                      className="grid gap-1 border-b border-line px-4 py-3 last:border-b-0 md:grid-cols-[128px_minmax(0,1fr)] md:gap-4 md:px-5"
+                      key={key}
+                    >
+                      <time
+                        className="text-xs whitespace-nowrap text-fg-3"
+                        dateTime={createdAtOf(item)}
+                        title={formatDateTime(createdAtOf(item), i18n.language)}
+                      >
+                        {formatTimeOfDay(createdAtOf(item), i18n.language)}
+                      </time>
+                      <div
+                        className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 text-[13.5px] leading-5 text-pretty"
+                        title={item.kind === "group" ? item.title : undefined}
+                      >
+                        <span className="min-w-0">{item.sentence}</span>
+                        {item.kind === "group" &&
+                        item.showCount &&
+                        item.count > 1 ? (
+                          <span
+                            aria-label={t("audit.repeated", {
+                              count: item.count,
+                            })}
+                            className="inline-flex h-5 items-center rounded-md bg-surface-2 px-1.5 text-xs font-medium text-fg-2 ring-1 ring-line"
+                          >
+                            ×{item.count}
+                          </span>
+                        ) : null}
+                      </div>
+                    </li>
+                  )
+                })}
+              </Fragment>
+            ))}
           </ol>
 
           <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-fg-3">

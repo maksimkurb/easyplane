@@ -4,13 +4,14 @@ import { Link } from "wouter"
 import {
   BanIcon,
   CheckIcon,
+  ExternalLinkIcon,
   MoreHorizontalIcon,
   PencilIcon,
+  RadioTowerIcon,
   RefreshCwIcon,
   ShieldBanIcon,
   TagIcon,
   TrashIcon,
-  RadioTowerIcon,
 } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -20,6 +21,8 @@ import {
   getGetNetworkQueryKey,
   getListDeviceRoutesQueryKey,
   getListDevicesQueryKey,
+  getListNetworksQueryKey,
+  useApproveDevice,
   useBlockDevice,
   useDeleteDevice,
   usePushDeviceConfig,
@@ -41,6 +44,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ConfirmDialog } from "@/components/device/confirm-dialog"
 import { DeviceIcon } from "@/components/device/device-icon"
 import { DeviceRenameDialog } from "@/components/device/device-rename-dialog"
@@ -50,26 +54,29 @@ import { deriveDeviceStatus, tagLabel } from "@/lib/device-status"
 import { deviceName, osLabel } from "@/lib/device-presentation"
 
 /**
- * One line in the devices list. The row menu carries every per-device action:
- * push, rename, tags, hub, revoke, block and remove. Dialogs are local, so the
- * list page stays small.
+ * The one device row used by the global list, the network list and the device
+ * page's siblings. It carries every per-device action in its menu and shows a
+ * single status column (see lib/device-status), so a device never looks online
+ * and stale at the same time.
  *
- * The status column is the only status signal on the row: one dot, one label,
- * derived by lib/device-status. Approval, connectivity and config freshness are
- * never shown as three competing badges.
+ * Pass `networkName` to show which network the device belongs to (the global
+ * list does; a network's own list already knows).
  */
 export function DeviceRow({
   device,
-  routes,
+  routes = [],
   networkId,
-  credentialsMode,
-  useRendezvous,
+  credentialsMode = false,
+  useRendezvous = false,
+  networkName,
 }: {
   device: ListDevices200Item
-  routes: ListDeviceRoutes200Item[]
+  routes?: ListDeviceRoutes200Item[]
   networkId: string
-  credentialsMode: boolean
-  useRendezvous: boolean
+  credentialsMode?: boolean
+  useRendezvous?: boolean
+  /** Secondary text with the network name; omitted inside a network. */
+  networkName?: string
 }) {
   const { t } = useTranslation()
   const { canManage, isAdmin } = useAuth()
@@ -86,6 +93,8 @@ export function DeviceRow({
   const name = deviceName(device)
   const status = deriveDeviceStatus(device)
   const os = osLabel(device.os)
+  const secondaryHostname =
+    device.hostname && device.hostname !== name ? device.hostname : null
   const [now, setNow] = useState(0)
   useEffect(() => {
     // The "New" chip is cosmetic; resolve it after mount so the render path
@@ -97,29 +106,19 @@ export function DeviceRow({
     now > 0 &&
     device.approvedAt !== null &&
     now - Date.parse(device.approvedAt) < 86_400_000
-  const approvedRoutes = routes.filter((route) => route.state === "approved")
-  // Phones have room for one metadata chip (status lives in its own column).
-  const mobileChip = approvedRoutes.some(
-    (route) => route.kind === "exit_node"
-  ) ? (
-    <Chip variant="brand">{t("routes.exitNode")}</Chip>
-  ) : approvedRoutes.some((route) => route.kind === "subnet") ? (
-    <Chip>{t("routes.subnet")}</Chip>
-  ) : device.isHub ? (
-    <Chip>
-      <RadioTowerIcon aria-hidden="true" className="size-3" />
-      {t("devices.detail.hub.badge")}
-    </Chip>
-  ) : newDevice && device.state === "approved" ? (
-    <Chip variant="ok">{t("devices.chips.new")}</Chip>
-  ) : null
+
+  // The owner is a person's name, never a raw ID. While the user list loads
+  // the row shows a placeholder instead of the first eight UUID characters.
   const users = useListUsers({
     query: { enabled: isAdmin && Boolean(device.ownerUserId) },
   })
   const owner = users.data?.data.find((user) => user.id === device.ownerUserId)
+  const ownerPending =
+    Boolean(device.ownerUserId) && (users.isLoading || users.isPending)
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: getListDevicesQueryKey() })
+    await queryClient.invalidateQueries({ queryKey: getListNetworksQueryKey() })
     await queryClient.invalidateQueries({
       queryKey: getGetDeviceQueryKey(device.id),
     })
@@ -147,6 +146,15 @@ export function DeviceRow({
             ? t("devices.detail.hub.enabled")
             : t("devices.detail.hub.disabled")
         )
+        await invalidate()
+      },
+      onError,
+    },
+  })
+  const approve = useApproveDevice({
+    mutation: {
+      onSuccess: async () => {
+        toast.success(t("devices.approved"))
         await invalidate()
       },
       onError,
@@ -196,61 +204,88 @@ export function DeviceRow({
     setConfirmOperation(null)
   }
 
+  const hubChip = device.isHub ? (
+    <Chip className="gap-1.5">
+      <RadioTowerIcon aria-hidden="true" className="size-3" />
+      <span className="max-sm:sr-only">{t("devices.detail.hub.badge")}</span>
+    </Chip>
+  ) : null
+
   return (
-    <div className="relative grid min-h-16 grid-cols-[minmax(0,1fr)_auto_40px] items-center gap-x-2 gap-y-2 px-4 py-2.5 transition-colors hover:bg-surface-2/70 md:gap-x-4 md:px-5 lg:grid-cols-[minmax(0,2.4fr)_minmax(120px,1fr)_minmax(130px,1fr)_minmax(130px,1fr)_40px]">
+    <div className="relative grid min-h-16 grid-cols-[minmax(0,1fr)_auto_44px] items-center gap-x-2 gap-y-2 px-4 py-2.5 transition-colors hover:bg-surface-2/70 md:gap-x-4 md:px-5 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1fr)_44px]">
       <div className="flex min-w-0 items-center gap-3.5">
         <span className="grid size-9 flex-none place-items-center rounded-[9px] bg-surface-2 text-fg-2 ring-1 ring-line">
           <DeviceIcon className="size-4" os={device.os} />
         </span>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <Link
               aria-label={t("devices.openDevice", { name })}
-              className="truncate font-semibold after:absolute after:inset-0 after:z-0 hover:underline focus-visible:underline"
+              className="relative inline-flex min-h-11 max-w-full min-w-0 items-center truncate font-semibold after:absolute after:inset-0 after:z-0 hover:underline focus-visible:underline sm:min-h-0"
               href={`/devices/${device.id}`}
+              title={name}
             >
-              {name}
+              <span className="truncate">{name}</span>
             </Link>
-            {mobileChip ? (
-              <span className="relative z-[1] flex sm:hidden">
-                {mobileChip}
+            {hubChip}
+            <span className="relative z-[1] flex min-w-0 flex-wrap items-center gap-1.5">
+              <DeviceRouteChips routes={routes} />
+            </span>
+            {newDevice && device.state === "approved" ? (
+              <Chip variant="ok">{t("devices.chips.new")}</Chip>
+            ) : null}
+          </div>
+          <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-3">
+            {secondaryHostname ? (
+              <span
+                className="hidden max-w-full truncate font-mono text-xs lg:inline"
+                title={secondaryHostname}
+              >
+                {secondaryHostname}
               </span>
             ) : null}
-            <span className="relative z-[1] hidden min-w-0 flex-wrap items-center gap-1.5 sm:flex">
-              {device.isHub ? (
-                <Chip>
-                  <RadioTowerIcon aria-hidden="true" className="size-3" />
-                  {t("devices.detail.hub.badge")}
-                </Chip>
-              ) : null}
-              <DeviceRouteChips routes={routes} />
-              {newDevice && device.state === "approved" ? (
-                <Chip variant="ok">{t("devices.chips.new")}</Chip>
-              ) : null}
-            </span>
-          </div>
-          <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-fg-3 max-sm:[&>*:nth-child(n+2)]:hidden">
-            <span className="font-mono text-[12px] whitespace-nowrap lg:hidden">
+            <span className="font-mono text-xs whitespace-nowrap lg:hidden">
               {device.virtualIpv4 ?? t("common.none")}
             </span>
-            {device.ownerUserId && owner ? (
-              <span className="truncate">
+            {networkName ? (
+              <Link
+                className="relative z-[1] inline-flex min-h-11 max-w-full min-w-0 items-center truncate hover:text-foreground hover:underline sm:min-h-0"
+                href={`/networks/${device.networkId}`}
+                title={networkName}
+              >
+                {networkName}
+              </Link>
+            ) : null}
+            {ownerPending ? (
+              <Skeleton className="h-3 w-20" />
+            ) : owner ? (
+              <span className="max-w-full truncate">
                 {t("deviceStatus.ownedBy", {
                   owner: owner.displayName || owner.email,
                 })}
               </span>
             ) : null}
-            {device.tags.map((tag) => (
-              <Chip key={tag} title={tagLabel(tag)} variant="tag">
-                <TagIcon aria-hidden="true" className="size-3" />
-                {tagLabel(tag)}
-              </Chip>
-            ))}
-            {!device.ownerUserId && device.tags.length === 0 ? (
-              <span className="truncate lg:hidden" title={os}>
-                {os}
+            {device.tags.length > 0 ? (
+              <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+                {device.tags.map((tag) => (
+                  <Chip
+                    className="text-xs"
+                    key={tag}
+                    title={tagLabel(tag)}
+                    variant="tag"
+                  >
+                    <TagIcon aria-hidden="true" className="size-3" />
+                    {tagLabel(tag)}
+                  </Chip>
+                ))}
               </span>
             ) : null}
+            <span
+              className="max-w-full truncate text-xs text-fg-3 lg:hidden"
+              title={os}
+            >
+              {os}
+            </span>
           </div>
         </div>
       </div>
@@ -289,7 +324,7 @@ export function DeviceRow({
               render={
                 <button
                   aria-label={t("devices.actionsFor", { name })}
-                  className="grid size-9 cursor-pointer place-items-center rounded-lg text-fg-2 hover:bg-surface-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="grid size-11 cursor-pointer place-items-center rounded-lg text-fg-2 hover:bg-surface-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none lg:size-9"
                   type="button"
                 />
               }
@@ -297,6 +332,12 @@ export function DeviceRow({
               <MoreHorizontalIcon className="size-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
+              <DropdownMenuItem
+                render={<Link href={`/devices/${device.id}`} />}
+              >
+                <ExternalLinkIcon />
+                {t("devicesGlobal.openDevice")}
+              </DropdownMenuItem>
               {device.state === "approved" ? (
                 <DropdownMenuItem
                   disabled={push.isPending || !status.connected}
@@ -358,7 +399,17 @@ export function DeviceRow({
                 </DropdownMenuItem>
               ) : null}
               <div aria-hidden="true" className="-mx-1.5 my-1.5 h-px bg-line" />
-              {device.state !== "blocked" ? (
+              {device.state === "blocked" ? (
+                <DropdownMenuItem
+                  disabled={approve.isPending}
+                  onClick={() =>
+                    approve.mutate({ deviceId: device.id, data: {} })
+                  }
+                >
+                  <CheckIcon />
+                  {t("common.unblock")}
+                </DropdownMenuItem>
+              ) : (
                 <DropdownMenuItem
                   disabled={block.isPending}
                   onClick={() => askRemoval("block")}
@@ -366,7 +417,7 @@ export function DeviceRow({
                   <BanIcon />
                   {t("common.block")}
                 </DropdownMenuItem>
-              ) : null}
+              )}
               <DropdownMenuItem
                 destructive
                 disabled={remove.isPending}
