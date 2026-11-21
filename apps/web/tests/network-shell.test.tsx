@@ -118,4 +118,41 @@ describe("NetworkShell", () => {
     )
     expect(window.location.search).toBe("")
   })
+
+  it("does not repeat the network name when the EasyTier name is the same", async () => {
+    stubApi()
+    // A network whose display name and EasyTier name are identical is common
+    // after an import; the header should show it once.
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      const body = url.endsWith("/api/auth/me")
+        ? ADMIN
+        : url.endsWith("/api/config")
+          ? {
+              orgName: "Acme",
+              publicUrl: null,
+              publicConfigServerUrl: null,
+              bootstrapAvailable: false,
+              providers: [],
+            }
+          : url.endsWith(`/api/networks/${NETWORK_ID}`)
+            ? { ...NETWORK, name: "cubly-mesh", networkName: "cubly-mesh" }
+            : url.startsWith("/api/devices")
+              ? []
+              : []
+      return new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    }) as typeof fetch
+
+    renderWithProviders(
+      <NetworkShell networkId={NETWORK_ID} tab="devices">
+        {() => <p>Devices content</p>}
+      </NetworkShell>
+    )
+
+    expect(await screen.findByText("Devices content")).toBeInTheDocument()
+    expect(screen.getAllByText("cubly-mesh")).toHaveLength(1)
+  })
 })

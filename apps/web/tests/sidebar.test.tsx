@@ -87,7 +87,7 @@ describe("Sidebar", () => {
     ).toHaveAttribute("href", "/audit")
 
     const approvals = screen.getByRole("link", {
-      name: /Pending approvals/,
+      name: /Waiting for approval/,
     })
     expect(await within(approvals).findByText("2")).toBeInTheDocument()
 

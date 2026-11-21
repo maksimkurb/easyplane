@@ -93,7 +93,7 @@ export function AccountMenu({
                 {label || t("account.menuLabel")}
               </span>
               {user && user.email !== label ? (
-                <span className="block truncate text-[11px] text-fg-3">
+                <span className="block truncate text-xs text-fg-3">
                   {user.email}
                 </span>
               ) : null}
@@ -119,7 +119,7 @@ export function AccountMenu({
         ) : null}
 
         <MenuSeparator />
-        <p className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium tracking-wide text-fg-3 uppercase">
+        <p className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium tracking-wide text-fg-3 uppercase">
           <LanguagesIcon className="size-3.5" />
           {t("common.language")}
         </p>
@@ -137,7 +137,7 @@ export function AccountMenu({
         ))}
 
         <MenuSeparator />
-        <p className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium tracking-wide text-fg-3 uppercase">
+        <p className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium tracking-wide text-fg-3 uppercase">
           <PaletteIcon className="size-3.5" />
           {t("common.theme")}
         </p>

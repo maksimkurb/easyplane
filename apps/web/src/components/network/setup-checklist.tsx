@@ -264,12 +264,12 @@ export function SetupChecklist({
                     {number}. {title}
                   </span>
                   {entry.optional ? (
-                    <Chip className="h-[18px] px-1.5 text-[11px]">
+                    <Chip className="h-[18px] px-1.5 text-xs">
                       {t("setup.optional")}
                     </Chip>
                   ) : null}
                   {entry.done ? (
-                    <span className="text-[11px] font-medium text-ok">
+                    <span className="text-xs font-medium text-ok">
                       {t("setup.done")}
                     </span>
                   ) : null}

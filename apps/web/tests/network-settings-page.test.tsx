@@ -80,6 +80,21 @@ const INVITES = [
     revokedAt: null,
     lastUsedAt: null,
   },
+  {
+    id: "invite-2",
+    networkId: NETWORK_ID,
+    label: "Old tablet",
+    role: "member",
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+    maxUses: 1,
+    uses: 1,
+    reusable: false,
+    remainingUses: 0,
+    status: "active",
+    revokedAt: null,
+    lastUsedAt: null,
+  },
 ]
 
 function stubApi() {
@@ -173,7 +188,10 @@ describe("NetworkSettingsPage", () => {
 
     expect(await screen.findByText("Family phones")).toBeInTheDocument()
     expect(screen.getByText(/1 of 5 used/)).toBeInTheDocument()
-    expect(screen.getByText(/New devices need approval/)).toBeInTheDocument()
+    expect(screen.getAllByText(/New devices need approval/).length).toBeGreaterThan(0)
+    // An exhausted link shows its status instead of a misleading expiry date.
+    expect(screen.getByText("Old tablet")).toBeInTheDocument()
+    expect(screen.getByText(/This link no longer works/)).toBeInTheDocument()
     expect(screen.queryByText(/Copy the token now/i)).not.toBeInTheDocument()
     expect(
       screen.getByRole("button", { name: "Create invite with Add device" })
@@ -228,7 +246,7 @@ describe("NetworkSettingsPage", () => {
       screen.queryByText(/never sent back to that device/)
     ).not.toBeInTheDocument()
     expect(
-      screen.getByText(/turn Hub on from any device page/i)
+      screen.getByText(/turned on from any device page/i)
     ).toBeInTheDocument()
 
     await user.click(within(nav).getByRole("button", { name: "DNS" }))

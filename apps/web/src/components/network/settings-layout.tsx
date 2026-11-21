@@ -57,7 +57,7 @@ export function SettingsRow({
   return (
     <div
       className={cn(
-        "border-t border-line px-4 py-4 first:border-t-0 sm:px-5 sm:py-5 md:grid md:grid-cols-[minmax(0,240px)_minmax(0,1fr)] md:gap-6",
+        "border-t border-line px-4 py-4 first:border-t-0 sm:px-5 sm:py-5 lg:grid lg:grid-cols-[minmax(0,240px)_minmax(0,1fr)] lg:gap-6",
         className
       )}
     >
@@ -75,7 +75,7 @@ export function SettingsRow({
           </p>
         ) : null}
       </div>
-      <div className="mt-3 min-w-0 md:mt-0">{children}</div>
+      <div className="mt-3 min-w-0 lg:mt-0">{children}</div>
     </div>
   )
 }

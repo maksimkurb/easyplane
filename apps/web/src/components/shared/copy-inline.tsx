@@ -13,10 +13,16 @@ export function CopyInline({
   value,
   label,
   className,
+  title,
+  multiline = false,
 }: {
   value: string
   label: string
   className?: string
+  /** Full value on hover; the visible text may be truncated. */
+  title?: string
+  /** Let a long identifier wrap instead of truncating it. */
+  multiline?: boolean
 }) {
   const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
@@ -39,9 +45,12 @@ export function CopyInline({
         className
       )}
       onClick={() => void copy()}
+      title={title}
       type="button"
     >
-      <span className="truncate">{value}</span>
+      <span className={multiline ? "min-w-0 break-all" : "truncate"}>
+        {value}
+      </span>
       {copied ? (
         <CheckIcon aria-hidden="true" className="size-3.5 flex-none text-ok" />
       ) : (

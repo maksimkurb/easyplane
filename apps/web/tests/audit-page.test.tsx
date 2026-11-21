@@ -84,7 +84,7 @@ const devices = [
 ]
 const network = makeNetwork({ id: NETWORK_ID, name: "Home lab" })
 
-function stubApi() {
+function stubApi(data: typeof entries = entries) {
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input)
     const body = url.endsWith("/api/auth/me")
@@ -98,7 +98,7 @@ function stubApi() {
             providers: [],
           }
         : url.startsWith("/api/audit")
-          ? entries
+          ? data
           : url.startsWith("/api/users")
             ? [
                 {
@@ -181,5 +181,63 @@ describe("AuditPage", () => {
     expect(
       rowTexts().some((row) => row.includes("Admin approved owrt-h1"))
     ).toBe(true)
+  })
+
+  it("collapses repeated reports and groups entries by day", async () => {
+    const recent = Date.now()
+    stubApi([
+      {
+        id: "r1",
+        actorUserId: null,
+        actorType: "device",
+        action: "route.unapproved_reported",
+        targetType: "device",
+        targetId: "d-nas",
+        metadata: {},
+        createdAt: new Date(recent - 60_000).toISOString(),
+      },
+      {
+        id: "r2",
+        actorUserId: null,
+        actorType: "device",
+        action: "route.unapproved_reported",
+        targetType: "device",
+        targetId: "d-nas",
+        metadata: {},
+        createdAt: new Date(recent - 120_000).toISOString(),
+      },
+      {
+        id: "r3",
+        actorUserId: null,
+        actorType: "device",
+        action: "route.unapproved_reported",
+        targetType: "device",
+        targetId: "d-nas",
+        metadata: {},
+        createdAt: new Date(recent - 180_000).toISOString(),
+      },
+      {
+        id: "r4",
+        actorUserId: "u1",
+        actorType: "user",
+        action: "auth.login",
+        targetType: "",
+        targetId: "",
+        metadata: {},
+        createdAt: new Date(recent - 86_400_000).toISOString(),
+      },
+    ])
+    renderWithProviders(<AuditPage />)
+
+    expect(await screen.findByText("Activity")).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText("×3")).toBeInTheDocument()
+    })
+    expect(screen.getByText("Today")).toBeInTheDocument()
+    expect(screen.getByText("Yesterday")).toBeInTheDocument()
+    const reports = rowTexts().filter((row) =>
+      row.includes("reported a route that is not approved")
+    )
+    expect(reports).toHaveLength(1)
   })
 })

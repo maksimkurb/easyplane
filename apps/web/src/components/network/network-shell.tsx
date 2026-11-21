@@ -108,6 +108,7 @@ export function NetworkShell({
         deviceCount={
           devices.filter((device) => device.state !== "pending").length
         }
+        devicesLoading={devicesQuery.isLoading}
         network={network}
         onAddDevice={() => setAddOpen(true)}
         online={online}

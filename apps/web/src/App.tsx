@@ -4,6 +4,7 @@ import { Redirect, Route, Switch } from "wouter"
 import { useAuth } from "@/auth/auth-context"
 import { LoginPage } from "@/auth/login-page"
 import { AppShell } from "@/components/layout/app-shell"
+import { AppSkeleton } from "@/components/layout/app-skeleton"
 import { AuditPage } from "@/pages/audit-page"
 import { DeviceDetailPage } from "@/pages/device-detail-page"
 import { DevicesPage } from "@/pages/devices-page"
@@ -13,7 +14,6 @@ import { NetworkDevicesPage } from "@/pages/network-devices-page"
 import { NetworkImportPage } from "@/pages/network-import-page"
 import { NetworkSettingsPage } from "@/pages/network-settings-page"
 import { NetworksPage } from "@/pages/networks-page"
-import { useTranslation } from "react-i18next"
 
 // The map pulls in @xyflow/react; load it only when a map is opened so the
 // rest of the panel keeps its small bundle.
@@ -26,9 +26,7 @@ const NetworkMapPage = lazy(() =>
 function App() {
   return (
     <AppShell>
-      <Suspense
-        fallback={<div className="p-6 text-sm text-muted-foreground">…</div>}
-      >
+      <Suspense fallback={<AppSkeleton />}>
         <Switch>
           <Route path="/">
             <Redirect to="/networks" />
@@ -72,14 +70,9 @@ function App() {
 
 export function AuthenticatedRoot() {
   const { me, loading } = useAuth()
-  const { t } = useTranslation()
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
-        {t("auth.loading")}
-      </div>
-    )
+    return <AppSkeleton />
   }
   if (!me) return <LoginPage />
   return <App />

@@ -10,7 +10,7 @@ import {
 
 import { useListDevices, useListNetworks } from "@/api/generated/easyplane"
 import type { ListDevices200Item } from "@/api/generated/model"
-import { GlobalDeviceRow } from "@/components/layout/global-device-row"
+import { DeviceRow } from "@/components/device/device-row"
 import { PageContainer } from "@/components/layout/page-container"
 import { PendingDeviceRow } from "@/components/layout/pending-device-row"
 import { PageHeader } from "@/components/shared/page-header"
@@ -211,7 +211,7 @@ export function DevicesPage({
                 className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-fg-3"
               />
               <Input
-                className="pl-9"
+                className="min-h-11 pl-9 text-ellipsis sm:min-h-10"
                 id="devices-search"
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={t("devicesGlobal.searchPlaceholder")}
@@ -254,33 +254,40 @@ export function DevicesPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="max-w-full overflow-x-auto pb-0.5">
-            <Segmented
-              label={t("devicesGlobal.filterLabel")}
-              onValueChange={setFilter}
-              options={[
-                {
-                  value: "all",
-                  label: t("devicesGlobal.filterAll"),
-                  count: counts.all,
-                },
-                {
-                  value: "online",
-                  label: t("devicesGlobal.filterOnline"),
-                  count: counts.online,
-                },
-                {
-                  value: "issues",
-                  label: t("devicesGlobal.filterIssues"),
-                  count: counts.issues,
-                },
-                {
-                  value: "pending",
-                  label: t("devicesGlobal.filterPending"),
-                  count: counts.pending,
-                },
-              ]}
-              value={filter}
+          <div className="relative min-w-0 max-w-full">
+            <div className="overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <Segmented
+                className="max-sm:[&>button]:h-11"
+                label={t("devicesGlobal.filterLabel")}
+                onValueChange={setFilter}
+                options={[
+                  {
+                    value: "all",
+                    label: t("devicesGlobal.filterAll"),
+                    count: counts.all,
+                  },
+                  {
+                    value: "online",
+                    label: t("devicesGlobal.filterOnline"),
+                    count: counts.online,
+                  },
+                  {
+                    value: "issues",
+                    label: t("devicesGlobal.filterIssues"),
+                    count: counts.issues,
+                  },
+                  {
+                    value: "pending",
+                    label: t("devicesGlobal.filterPending"),
+                    count: counts.pending,
+                  },
+                ]}
+                value={filter}
+              />
+            </div>
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent md:hidden"
             />
           </div>
           <Button
@@ -329,11 +336,15 @@ export function DevicesPage({
             <EmptyTitle>{emptyState.title}</EmptyTitle>
             <EmptyDescription>{emptyState.description}</EmptyDescription>
           </EmptyHeader>
-          <EmptyContent>
-            <Button onClick={resetFilters} size="sm" variant="outline">
-              {t("devicesGlobal.clearFilters")}
-            </Button>
-          </EmptyContent>
+          {/* "Nothing is waiting for approval" is a finished state, not a
+              filtered one: a reset button there would suggest a hidden list. */}
+          {filter === "pending" && !query.trim() ? null : (
+            <EmptyContent>
+              <Button onClick={resetFilters} size="sm" variant="outline">
+                {t("devicesGlobal.clearFilters")}
+              </Button>
+            </EmptyContent>
+          )}
         </Empty>
       ) : (
         <div className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-line">
@@ -374,7 +385,7 @@ export function DevicesPage({
                       : null}
                   </span>
                   {waiting > 0 ? (
-                    <span className="ml-auto text-xs font-medium text-warn">
+                    <span className="ml-auto text-xs font-medium whitespace-nowrap text-warn">
                       {t("devicesGlobal.waitingCount", { count: waiting })}
                     </span>
                   ) : null}
@@ -389,10 +400,13 @@ export function DevicesPage({
                         networkName={group.name}
                       />
                     ) : (
-                      <GlobalDeviceRow
-                        credentialsMode={network?.access.mode === "credentials"}
+                      <DeviceRow
+                        credentialsMode={
+                          network?.access.mode === "credentials"
+                        }
                         device={device}
                         key={device.id}
+                        networkId={device.networkId}
                         networkName={group.name}
                         useRendezvous={network?.useRendezvous ?? false}
                       />

@@ -1,6 +1,12 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { KeyRoundIcon, RefreshCwIcon, ShieldBanIcon, UserCogIcon } from "lucide-react"
+import {
+  ChevronDownIcon,
+  KeyRoundIcon,
+  RefreshCwIcon,
+  ShieldBanIcon,
+  UserCogIcon,
+} from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
@@ -29,16 +35,25 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import type { GetDevice200 } from "@/api/generated/model"
+import { formatDate } from "@/lib/format"
 
+/**
+ * "Access and keys" on the device page. The everyday answer is one sentence and
+ * two badges; the credential details (public key, groups, exact expiry) are
+ * real but only matter when something is wrong, so they live behind
+ * "For experienced users" instead of three paragraphs above the fold.
+ */
 export function DeviceAccessCard({ device }: { device: GetDevice200 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { isAdmin } = useAuth()
   const queryClient = useQueryClient()
   const [demoteOpen, setDemoteOpen] = useState(false)
   const [acknowledged, setAcknowledged] = useState(false)
 
   const refresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: getGetDeviceQueryKey(device.id) })
+    await queryClient.invalidateQueries({
+      queryKey: getGetDeviceQueryKey(device.id),
+    })
     await queryClient.invalidateQueries({
       queryKey: getListDevicesQueryKey({ networkId: device.networkId }),
     })
@@ -73,7 +88,7 @@ export function DeviceAccessCard({ device }: { device: GetDevice200 }) {
         toast.success(
           response.data.needsSecretRotation
             ? t("access.roleChangedRotate")
-            : t("access.roleChanged"),
+            : t("access.roleChanged")
         )
         setDemoteOpen(false)
         setAcknowledged(false)
@@ -102,42 +117,70 @@ export function DeviceAccessCard({ device }: { device: GetDevice200 }) {
         ) : (
           <Badge variant="outline">{t("access.mode.shared_secret")}</Badge>
         )}
-        {device.knowsSecret ? (
-          <span className="text-xs text-muted-foreground">{t("access.knowsSecretLong")}</span>
-        ) : (
-          <span className="text-xs text-muted-foreground">{t("access.noSecretLong")}</span>
-        )}
+        {credentialsMode && credential ? (
+          <Badge
+            variant={credential.status === "active" ? "success" : "warning"}
+          >
+            {t(`access.credentialStatus.${credential.status}`)}
+          </Badge>
+        ) : null}
       </div>
 
+      <p className="text-[13px] leading-5 text-fg-2">
+        {credentialsMode
+          ? t("access.deviceSummaryCredentials")
+          : t("access.deviceSummaryShared")}
+      </p>
+
       {credentialsMode && credential ? (
-        <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <dt className="text-muted-foreground">{t("access.status")}</dt>
-            <dd>{t(`access.credentialStatus.${credential.status}`)}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">{t("access.expiry")}</dt>
-            <dd>{new Date(credential.expiry).toLocaleDateString()}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">{t("access.groups")}</dt>
-            <dd className="text-xs">
-              {credential.groups.length > 0 ? credential.groups.join(", ") : t("common.none")}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">{t("access.publicKey")}</dt>
-            <dd className="flex items-center gap-1 font-mono text-[10px]">
-              <span className="truncate">{credential.publicKey}</span>
-              <CopyButton value={credential.publicKey} />
-            </dd>
-          </div>
-        </dl>
+        <details className="rounded-lg ring-1 ring-line">
+          <summary className="flex cursor-pointer items-center gap-2 px-3 py-2.5 text-[13px] font-medium hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none">
+            <ChevronDownIcon aria-hidden="true" className="size-4 text-fg-3" />
+            {t("settings.advanced")}
+          </summary>
+          <dl className="grid gap-3 border-t border-line px-3 py-3 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-xs text-fg-3">{t("access.groups")}</dt>
+              <dd className="mt-0.5 break-words text-[13px]">
+                {credential.groups.length > 0
+                  ? credential.groups.join(", ")
+                  : t("common.none")}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-fg-3">{t("access.expiry")}</dt>
+              <dd className="mt-0.5 text-[13px]">
+                {formatDate(credential.expiry, i18n.language)}
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-xs text-fg-3">{t("access.publicKey")}</dt>
+              <dd className="mt-1 flex min-w-0 items-start gap-2 font-mono text-xs">
+                <span
+                  className="min-w-0 break-all text-fg-2"
+                  title={credential.publicKey}
+                >
+                  {credential.publicKey}
+                </span>
+                <CopyButton
+                  className="h-8 flex-none px-2"
+                  value={credential.publicKey}
+                />
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-xs text-fg-3">{t("access.secretKnowledge")}</dt>
+              <dd className="mt-0.5 text-[13px] text-fg-2">
+                {device.knowsSecret
+                  ? t("access.knowsSecretLong")
+                  : t("access.noSecretLong")}
+              </dd>
+            </div>
+          </dl>
+        </details>
       ) : credentialsMode ? (
-        <p className="text-sm text-muted-foreground">{t("access.noCredential")}</p>
-      ) : (
-        <p className="text-sm text-muted-foreground">{t("access.sharedModeHint")}</p>
-      )}
+        <p className="text-[13px] text-fg-2">{t("access.noCredential")}</p>
+      ) : null}
 
       {credentialsMode && credential?.status !== "active" ? (
         <Alert variant="warning">
@@ -164,7 +207,13 @@ export function DeviceAccessCard({ device }: { device: GetDevice200 }) {
               <Button
                 disabled={revoke.isPending}
                 onClick={() => {
-                  if (window.confirm(t("access.revokeConfirm", { hostname: device.hostname }))) {
+                  if (
+                    window.confirm(
+                      t("access.revokeConfirm", {
+                        hostname: device.hostname,
+                      })
+                    )
+                  ) {
                     revoke.mutate({ deviceId: device.id })
                   }
                 }}
@@ -177,7 +226,10 @@ export function DeviceAccessCard({ device }: { device: GetDevice200 }) {
               <Button
                 onClick={() => {
                   if (window.confirm(t("access.promoteConfirm"))) {
-                    setRole.mutate({ deviceId: device.id, data: { role: "anchor" } })
+                    setRole.mutate({
+                      deviceId: device.id,
+                      data: { role: "anchor" },
+                    })
                   }
                 }}
                 size="sm"
@@ -188,7 +240,11 @@ export function DeviceAccessCard({ device }: { device: GetDevice200 }) {
               </Button>
             </>
           ) : (
-            <Button onClick={() => setDemoteOpen(true)} size="sm" variant="outline">
+            <Button
+              onClick={() => setDemoteOpen(true)}
+              size="sm"
+              variant="outline"
+            >
               <UserCogIcon className="size-4" />
               {t("access.makeMember")}
             </Button>
@@ -206,7 +262,9 @@ export function DeviceAccessCard({ device }: { device: GetDevice200 }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("access.demoteTitle")}</DialogTitle>
-            <DialogDescription>{t("access.demoteBody", { hostname: device.hostname })}</DialogDescription>
+            <DialogDescription>
+              {t("access.demoteBody", { hostname: device.hostname })}
+            </DialogDescription>
           </DialogHeader>
           <Alert variant="warning">
             <KeyRoundIcon />
@@ -232,7 +290,9 @@ export function DeviceAccessCard({ device }: { device: GetDevice200 }) {
                 })
               }
             >
-              {setRole.isPending ? t("common.loading") : t("access.demoteConfirm")}
+              {setRole.isPending
+                ? t("common.loading")
+                : t("access.demoteConfirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

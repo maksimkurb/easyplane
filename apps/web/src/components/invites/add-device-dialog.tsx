@@ -289,7 +289,7 @@ export function AddDeviceDialog({
           {summary}
         </span>
         <Button
-          className="max-sm:w-full"
+          className="max-sm:flex-1"
           onClick={close}
           type="button"
           variant="ghost"
@@ -297,7 +297,7 @@ export function AddDeviceDialog({
           {t("common.cancel")}
         </Button>
         <Button
-          className="max-sm:w-full"
+          className="max-sm:flex-1"
           disabled={createInvite.isPending || usesInvalid || expiryInvalid}
           onClick={create}
           type="button"
@@ -311,14 +311,14 @@ export function AddDeviceDialog({
           {summary}
         </span>
         <Button
-          className="max-sm:w-full"
+          className="max-sm:flex-1"
           onClick={reset}
           type="button"
           variant="outline"
         >
           {t("addDevice.createAnother")}
         </Button>
-        <Button className="max-sm:w-full" onClick={close} type="button">
+        <Button className="max-sm:flex-1" onClick={close} type="button">
           {t("common.done")}
         </Button>
       </>
@@ -387,6 +387,7 @@ export function AddDeviceDialog({
               {t("addDevice.canBeUsed")}
             </span>
             <Segmented
+              className="gap-1 [&>button]:px-2.5 max-sm:[&>button]:h-11"
               fill
               label={t("addDevice.canBeUsed")}
               onValueChange={(value) => !created && setUses(value)}
@@ -430,6 +431,7 @@ export function AddDeviceDialog({
               {t("addDevice.expires")}
             </span>
             <Segmented
+              className="gap-1 [&>button]:px-2.5 max-sm:[&>button]:h-11"
               fill
               label={t("addDevice.expires")}
               onValueChange={pickExpiry}
@@ -465,6 +467,7 @@ export function AddDeviceDialog({
                 {t("access.inviteRole")}
               </span>
               <Segmented
+                className="gap-1 [&>button]:px-2.5"
                 fill
                 label={t("access.inviteRole")}
                 onValueChange={(value) => !created && setRole(value)}
@@ -534,6 +537,7 @@ export function AddDeviceDialog({
             {t("addDevice.installedLabel")}
           </span>
           <Segmented
+            className="gap-1 [&>button]:px-2.5 max-sm:[&>button]:h-11"
             fill
             label={t("addDevice.installedLabel")}
             onValueChange={(value) => setInstalled(value)}

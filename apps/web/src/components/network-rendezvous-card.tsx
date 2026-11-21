@@ -102,76 +102,90 @@ export function NetworkRendezvousCard({
         </Alert>
       ) : (
         <>
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <dt className="text-muted-foreground">
-                {t("rendezvous.endpoints")}
-              </dt>
-              <dd className="mt-1 flex flex-wrap gap-1">
-                {info.endpoints.map((endpoint) => (
-                  <code
-                    className="rounded bg-muted px-1.5 py-0.5 text-xs"
-                    key={endpoint}
-                  >
-                    {endpoint}
-                  </code>
-                ))}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">
-                {t("rendezvous.relayData")}
-              </dt>
-              <dd className="mt-1">
-                <Badge variant={info.relayData ? "warning" : "success"}>
-                  {info.relayData
-                    ? t("rendezvous.relayOn")
-                    : t("rendezvous.relayOff")}
-                </Badge>
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">
-                {t("rendezvous.privateMode")}
-              </dt>
-              <dd className="mt-1">
-                <Badge variant={info.privateMode ? "success" : "destructive"}>
-                  {info.privateMode
-                    ? t("rendezvous.privateOn")
-                    : t("rendezvous.privateOff")}
-                </Badge>
-              </dd>
-            </div>
-            {info.networkName ? (
-              <div>
-                <dt className="text-muted-foreground">
-                  {t("rendezvous.nodeNetwork")}
+          <p className="text-[13px] leading-5 text-fg-2">
+            {t("rendezvous.summary")}
+          </p>
+          <details className="mt-3 rounded-lg ring-1 ring-line">
+            <summary className="flex cursor-pointer items-center gap-2 px-3 py-2.5 text-[13px] font-medium hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none">
+              {t("settings.advanced")}
+            </summary>
+            <dl className="grid gap-3 border-t border-line px-3 py-3 text-sm sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <dt className="text-xs text-fg-3">
+                  {t("rendezvous.endpoints")}
                 </dt>
-                <dd className="mt-1 font-mono text-xs">{info.networkName}</dd>
+                <dd className="mt-1 flex flex-wrap gap-1">
+                  {info.endpoints.map((endpoint) => (
+                    <code
+                      className="rounded bg-muted px-1.5 py-0.5 text-xs break-all"
+                      key={endpoint}
+                    >
+                      {endpoint}
+                    </code>
+                  ))}
+                </dd>
               </div>
-            ) : null}
-            <div>
-              <dt className="text-muted-foreground">
-                {t("rendezvous.secretMatch")}
-              </dt>
-              <dd className="mt-1 text-xs">
-                {info.secretMatches === true
-                  ? t("rendezvous.secretMatches")
-                  : info.secretMatches === false
-                    ? t("rendezvous.secretDiffers")
-                    : t("rendezvous.secretUnknown")}
-              </dd>
-            </div>
-          </dl>
-
-          <p className="mt-4 text-sm text-muted-foreground">
-            {info.relayData
-              ? t("rendezvous.explainRelay")
-              : t("rendezvous.explainRendezvous")}
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            {t("rendezvous.cgnatNote")}
-          </p>
+              <div>
+                <dt className="text-xs text-fg-3">
+                  {t("rendezvous.relayData")}
+                </dt>
+                <dd className="mt-1">
+                  <Badge variant={info.relayData ? "warning" : "success"}>
+                    {info.relayData
+                      ? t("rendezvous.relayOn")
+                      : t("rendezvous.relayOff")}
+                  </Badge>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-fg-3">
+                  {t("rendezvous.privateMode")}
+                </dt>
+                <dd className="mt-1">
+                  <Badge
+                    variant={info.privateMode ? "success" : "destructive"}
+                  >
+                    {info.privateMode
+                      ? t("rendezvous.privateOn")
+                      : t("rendezvous.privateOff")}
+                  </Badge>
+                </dd>
+              </div>
+              {info.networkName ? (
+                <div>
+                  <dt className="text-xs text-fg-3">
+                    {t("rendezvous.nodeNetwork")}
+                  </dt>
+                  <dd className="mt-1 font-mono text-xs">{info.networkName}</dd>
+                </div>
+              ) : null}
+              <div>
+                <dt className="text-xs text-fg-3">
+                  {t("rendezvous.secretMatch")}
+                </dt>
+                <dd className="mt-1 text-xs">
+                  {info.secretMatches === true
+                    ? t("rendezvous.secretMatches")
+                    : info.secretMatches === false
+                      ? t("rendezvous.secretDiffers")
+                      : t("rendezvous.secretUnknown")}
+                </dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-xs text-fg-3">
+                  {t("rendezvous.howItWorks")}
+                </dt>
+                <dd className="mt-1 space-y-1 text-xs text-fg-2">
+                  <p>
+                    {info.relayData
+                      ? t("rendezvous.explainRelay")
+                      : t("rendezvous.explainRendezvous")}
+                  </p>
+                  <p>{t("rendezvous.cgnatNote")}</p>
+                </dd>
+              </div>
+            </dl>
+          </details>
 
           {secretMismatch ? (
             <Alert className="mt-4">

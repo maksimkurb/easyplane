@@ -179,10 +179,16 @@ export function NetworksPage() {
                             <span className="truncate font-mono md:hidden">
                               {network.ipv4Cidr}
                             </span>
-                            <span className="hidden truncate font-mono md:inline">
-                              {network.networkName}
-                            </span>
-                            <span className="flex items-center gap-1.5 md:hidden">
+                            {network.networkName !== network.name ? (
+                              <span className="hidden max-w-full truncate font-mono md:inline">
+                                {network.networkName}
+                              </span>
+                            ) : (
+                              <span className="hidden max-w-full truncate font-mono md:inline">
+                                {network.ipv4Cidr}
+                              </span>
+                            )}
+                            <span className="flex items-center gap-1.5 whitespace-nowrap md:hidden">
                               <Dot online={online > 0} />
                               {t("networks.onlineOf", { online, total })}
                             </span>
@@ -196,7 +202,7 @@ export function NetworksPage() {
                         {network.ipv4Cidr}
                       </span>
                       <div className="flex items-center justify-end gap-2.5">
-                        <span className="hidden items-center gap-2 text-[13px] text-fg-2 md:inline-flex">
+                        <span className="hidden items-center gap-2 text-[13px] whitespace-nowrap text-fg-2 md:inline-flex">
                           <Dot online={online > 0} />
                           {t("networks.onlineOf", { online, total })}
                         </span>

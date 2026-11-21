@@ -123,41 +123,49 @@ function DevicesTab({ data }: { data: NetworkShellData }) {
           />
           <Input
             aria-label={t("devices.searchLabel")}
-            className="pl-9"
+            className="min-h-11 pl-9 text-ellipsis sm:min-h-10"
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t("devices.searchPlaceholder")}
             type="search"
             value={query}
           />
         </div>
-        <Segmented
-          className="max-sm:w-full max-sm:[&>button]:min-w-0 max-sm:[&>button]:flex-1 max-sm:[&>button]:gap-1 max-sm:[&>button]:px-1.5"
-          label={t("devices.filterLabel")}
-          onValueChange={setFilter}
-          options={[
-            {
-              value: "all",
-              label: t("deviceStatus.filters.all"),
-              count: rows.length,
-            },
-            {
-              value: "online",
-              label: t("deviceStatus.filters.online"),
-              count: onlineCount,
-            },
-            {
-              value: "offline",
-              label: t("deviceStatus.filters.offline"),
-              count: offlineCount,
-            },
-            {
-              value: "attention",
-              label: t("deviceStatus.filters.attention"),
-              count: attentionCount,
-            },
-          ]}
-          value={filter}
-        />
+        <div className="relative min-w-0 max-sm:w-full sm:flex-1">
+          <div className="overflow-x-auto pb-0.5 [scrollbar-width:none] max-sm:w-full [&::-webkit-scrollbar]:hidden">
+            <Segmented
+              className="max-sm:w-full max-sm:[&>button]:h-11 max-sm:[&>button]:min-w-0 max-sm:[&>button]:flex-1 max-sm:[&>button]:gap-1 max-sm:[&>button]:px-1.5"
+              label={t("devices.filterLabel")}
+              onValueChange={setFilter}
+              options={[
+                {
+                  value: "all",
+                  label: t("deviceStatus.filters.all"),
+                  count: rows.length,
+                },
+                {
+                  value: "online",
+                  label: t("deviceStatus.filters.online"),
+                  count: onlineCount,
+                },
+                {
+                  value: "offline",
+                  label: t("deviceStatus.filters.offline"),
+                  count: offlineCount,
+                },
+                {
+                  value: "attention",
+                  label: t("deviceStatus.filters.attention"),
+                  count: attentionCount,
+                },
+              ]}
+              value={filter}
+            />
+          </div>
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent md:hidden"
+          />
+        </div>
       </div>
 
       {rows.length === 0 ? (

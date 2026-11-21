@@ -15,6 +15,7 @@ import { useAuth } from "@/auth/auth-context"
 import { SectionCard } from "@/components/shared/section-card"
 import { Chip } from "@/components/ui/chip"
 import { Button } from "@/components/ui/button"
+import { normalizeDnsName } from "@/lib/device-presentation"
 import {
   Dialog,
   DialogContent,
@@ -88,21 +89,19 @@ export function NetworkMagicDnsCard({
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <p className="truncate font-mono text-xs">{name.fqdn}</p>
+                    <p
+                      className="truncate font-mono text-xs"
+                      title={normalizeDnsName(name.fqdn)}
+                    >
+                      {normalizeDnsName(name.fqdn)}
+                    </p>
                     {name.renamed ? (
-                      <Chip className="h-[18px] px-1.5 text-[11px]">
+                      <Chip className="text-xs">
                         {t("magicDns.customName")}
                       </Chip>
                     ) : null}
                   </div>
-                  <p className="font-mono text-[11px] text-fg-3">{name.ipv4}</p>
-                  <p className="mt-0.5 text-xs text-fg-3">
-                    {name.reportedHostname
-                      ? t("magicDns.deviceReported", {
-                          hostname: name.reportedHostname,
-                        })
-                      : t("magicDns.deviceReportedNone")}
-                  </p>
+                  <p className="font-mono text-xs text-fg-2">{name.ipv4}</p>
                 </div>
                 {canManage ? (
                   <Button
@@ -128,9 +127,8 @@ export function NetworkMagicDnsCard({
                 <TableRow>
                   <TableHead>{t("magicDns.name")}</TableHead>
                   <TableHead>{t("devices.virtualIp")}</TableHead>
-                  <TableHead>{t("devices.hostname")}</TableHead>
-                  <TableHead className="text-right">
-                    {t("common.actions")}
+                  <TableHead className="w-12 text-right">
+                    <span className="sr-only">{t("common.actions")}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -139,9 +137,18 @@ export function NetworkMagicDnsCard({
                   <TableRow key={name.deviceId}>
                     <TableCell className="text-xs">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="font-mono">{name.fqdn}</span>
+                        <Link
+                          className="font-mono hover:underline"
+                          href={`/devices/${name.deviceId}`}
+                          title={
+                            name.reportedHostname ??
+                            normalizeDnsName(name.fqdn)
+                          }
+                        >
+                          {normalizeDnsName(name.fqdn)}
+                        </Link>
                         {name.renamed ? (
-                          <Chip className="h-[18px] px-1.5 text-[11px]">
+                          <Chip className="text-xs">
                             {t("magicDns.customName")}
                           </Chip>
                         ) : null}
@@ -150,35 +157,22 @@ export function NetworkMagicDnsCard({
                     <TableCell className="font-mono text-xs">
                       {name.ipv4}
                     </TableCell>
-                    <TableCell className="text-xs">
-                      <Link
-                        className="hover:underline"
-                        href={`/devices/${name.deviceId}`}
-                      >
-                        {name.reportedHostname || t("common.none")}
-                      </Link>
-                      {name.reportedHostname ? (
-                        <p className="mt-0.5 text-[11px] text-fg-3">
-                          {t("magicDns.deviceReported", {
-                            hostname: name.reportedHostname,
-                          })}
-                        </p>
-                      ) : null}
-                    </TableCell>
                     <TableCell className="text-right">
                       {canManage ? (
                         <Button
+                          aria-label={t("magicDns.renameFor", {
+                            name: name.hostname,
+                          })}
                           onClick={() =>
                             setEditing({
                               deviceId: name.deviceId,
                               name: name.hostname,
                             })
                           }
-                          size="sm"
+                          size="icon-sm"
                           variant="ghost"
                         >
                           <PencilIcon className="size-4" />
-                          {t("magicDns.rename")}
                         </Button>
                       ) : null}
                     </TableCell>

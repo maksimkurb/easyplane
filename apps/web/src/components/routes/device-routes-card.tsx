@@ -2,7 +2,6 @@ import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useQueryClient } from "@tanstack/react-query"
 import {
-  CheckIcon,
   GlobeIcon,
   InfoIcon,
   PlusIcon,
@@ -200,39 +199,23 @@ export function DeviceRoutesCard({
                 </div>
 
                 {isAdmin ? (
-                  exitNode && route.state !== "pending" ? (
+                  <label className="flex flex-none items-center gap-2 text-[13px] text-fg-2">
+                    <span className="max-sm:sr-only">
+                      {t("routes.allow")}
+                    </span>
                     <Switch
-                      aria-label={t("routes.exitNodeApproved")}
+                      aria-label={t("routes.allowFor", {
+                        route: exitNode
+                          ? t("routes.exitNode")
+                          : (route.cidr ?? t("routes.subnet")),
+                      })}
                       checked={route.state === "approved"}
                       disabled={decide.isPending}
                       onCheckedChange={(checked) =>
                         decideRoute(route, checked ? "approved" : "rejected")
                       }
                     />
-                  ) : (
-                    <div className="flex flex-none gap-2">
-                      {route.state !== "rejected" ? (
-                        <Button
-                          disabled={decide.isPending}
-                          onClick={() => decideRoute(route, "rejected")}
-                          size="sm"
-                          variant="outline"
-                        >
-                          {t("routes.reject")}
-                        </Button>
-                      ) : null}
-                      {route.state !== "approved" ? (
-                        <Button
-                          disabled={decide.isPending}
-                          onClick={() => decideRoute(route, "approved")}
-                          size="sm"
-                        >
-                          <CheckIcon className="size-4" />
-                          {t("common.approve")}
-                        </Button>
-                      ) : null}
-                    </div>
-                  )
+                  </label>
                 ) : null}
               </div>
             )
@@ -314,7 +297,7 @@ export function DeviceRoutesCard({
             ) : null}
             <label className="flex min-w-0 flex-1 flex-col gap-1.5">
               <span className="text-[13px] font-medium">
-                {t("invites.label")}
+                {t("routes.noteLabel")}
               </span>
               <Input
                 onChange={(event) => setNote(event.target.value)}
