@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { layoutTopology } from "@/lib/topology-layout"
+import { layoutTopology, firstTopologyNode } from "@/lib/topology-layout"
 
 const nodes = [
   { id: "hub", label: "core-a", relayCapable: false, online: true },
@@ -77,7 +77,63 @@ describe("radial topology layout", () => {
     expect(positions.has("island")).toBe(true)
   })
 
+  it("keeps every position when devices go offline or online", () => {
+    const before = layoutTopology(nodes, links)
+    const offline = nodes.map((node, index) => ({
+      ...node,
+      online: index % 2 === 0 ? false : node.online,
+    }))
+    const after = layoutTopology([...offline].reverse(), [...links].reverse())
+    for (const [id, position] of before) {
+      expect(after.get(id)).toEqual(position)
+    }
+  })
+
+  it("spreads isolated devices across one ring instead of stacking them", () => {
+    const islands = ["a", "b", "c", "d"].map((id) => ({
+      id,
+      label: id,
+      online: true,
+    }))
+    const positions = layoutTopology(islands, [])
+    const radii = islands.map((node) => {
+      const position = positions.get(node.id)!
+      return Math.hypot(position.x, position.y)
+    })
+    // One node is the centre; the other three share the same outer radius and
+    // are spread around the full circle rather than packed into an arc.
+    expect(new Set(radii.map((value) => Math.round(value))).size).toBe(2)
+  })
+
   it("returns nothing for an empty graph", () => {
     expect(layoutTopology([], []).size).toBe(0)
+  })
+})
+
+describe("stable topology selection", () => {
+  it("picks the same default node regardless of snapshot order", () => {
+    const unsorted = [
+      { id: "ip:10.0.0.3", hostname: "zeta" },
+      { id: "ip:10.0.0.2", hostname: "alpha" },
+      { id: "ip:10.0.0.4", hostname: "alpha" },
+    ]
+    expect(firstTopologyNode(unsorted)?.id).toBe("ip:10.0.0.2")
+    expect(firstTopologyNode([...unsorted].reverse())?.id).toBe("ip:10.0.0.2")
+  })
+
+  it("does not depend on liveness", () => {
+    const online = [
+      { id: "b", hostname: "beta", online: false },
+      { id: "a", hostname: "alpha", online: true },
+    ]
+    expect(firstTopologyNode(online)?.id).toBe("a")
+    expect(
+      firstTopologyNode(online.map((node) => ({ ...node, online: !node.online })))
+        ?.id
+    ).toBe("a")
+  })
+
+  it("has no default for an empty snapshot", () => {
+    expect(firstTopologyNode([])).toBeNull()
   })
 })

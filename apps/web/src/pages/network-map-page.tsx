@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react"
+import { useMemo, useState, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import {
   AlertTriangleIcon,
   ArrowRightIcon,
+  CheckIcon,
+  CopyIcon,
   InfoIcon,
   RadioTowerIcon,
   RefreshCwIcon,
@@ -58,6 +60,8 @@ import { useExitNodeStates } from "@/hooks/use-exit-node-states"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { deviceDisplayName } from "@/lib/device-status"
 import { retryableQuery } from "@/lib/query-retry"
+import { firstTopologyNode } from "@/lib/topology-layout"
+import { cn } from "@/lib/utils"
 import { applyRealtimeEvent } from "@/realtime/apply-event"
 import { useEventStream } from "@/realtime/use-event-stream"
 
@@ -106,10 +110,17 @@ function MapTab({ data }: { data: NetworkShellData }) {
 
   const nodes = useMemo(() => snapshot?.nodes ?? [], [snapshot])
   const links = useMemo(() => snapshot?.links ?? [], [snapshot])
-  const selectedNode = useMemo(
-    () => nodes.find((node) => node.id === selectedNodeId) ?? nodes[0] ?? null,
-    [nodes, selectedNodeId]
-  )
+  // The default panel is the first node in stable name+id order. Picking
+  // `nodes[0]` meant a reordered snapshot silently switched the panel to a
+  // different device; an explicit selection wins as long as it still exists.
+  const defaultNode = useMemo(() => firstTopologyNode(nodes), [nodes])
+  const selectedNode = useMemo(() => {
+    if (selectedNodeId) {
+      const explicit = nodes.find((node) => node.id === selectedNodeId)
+      if (explicit) return explicit
+    }
+    return defaultNode
+  }, [nodes, selectedNodeId, defaultNode])
   const selectedLinks = useMemo(
     () =>
       selectedNode
@@ -276,7 +287,7 @@ function MapTab({ data }: { data: NetworkShellData }) {
           </div>
           {isPhone ? (
             <div
-              className="flex h-[460px] items-center justify-center p-2"
+              className="flex items-center justify-center p-2"
               style={{
                 backgroundImage:
                   "radial-gradient(var(--line) 1px, transparent 1px)",
@@ -336,6 +347,7 @@ function MapTab({ data }: { data: NetworkShellData }) {
         >
           <SheetContent
             className="max-h-[85dvh] overflow-y-auto rounded-t-2xl data-[side=bottom]:rounded-t-2xl"
+            showCloseButton={false}
             side="bottom"
           >
             <SheetHeader className="sr-only">
@@ -438,28 +450,29 @@ function MapSidePanel({
         ) : null}
       </div>
 
-      <dl className="grid grid-cols-[110px_minmax(0,1fr)] px-4 text-sm">
-        <Detail label={t("topology.natType")} value={node.natType} />
-        <Detail
-          label={t("topology.publicIps")}
-          mono
-          value={node.publicIps.join(", ") || t("common.none")}
-        />
-        <Detail
-          label={t("topology.relaysFor")}
-          value={
-            node.relaysFor.map((id) => byId.get(id) ?? id).join(", ") ||
+      <dl className="px-4 text-sm">
+        <Detail label={t("topology.natType")}>{node.natType}</Detail>
+        <Detail label={t("topology.publicIps")} mono>
+          {node.publicIps.length === 0 ? (
             t("common.none")
-          }
-        />
-        <Detail
-          label={t("devices.version")}
-          mono
-          value={node.version || device?.easytierVersion || t("common.none")}
-        />
+          ) : (
+            <span className="flex flex-col gap-0.5">
+              {node.publicIps.map((ip) => (
+                <CopyableValue key={ip} value={ip} />
+              ))}
+            </span>
+          )}
+        </Detail>
+        <Detail label={t("topology.relaysFor")}>
+          {node.relaysFor.map((id) => byId.get(id) ?? id).join(", ") ||
+            t("common.none")}
+        </Detail>
+        <Detail label={t("devices.version")} mono>
+          {node.version || device?.easytierVersion || t("common.none")}
+        </Detail>
       </dl>
 
-      <p className="px-4 pt-2 pb-1 text-[11px] font-medium tracking-wide text-fg-3 uppercase">
+      <p className="px-4 pt-3 pb-1.5 text-xs leading-4 font-medium tracking-wide text-fg-2 uppercase">
         {t("topology.connections")}
       </p>
       <div className="min-h-0 flex-1">
@@ -482,7 +495,7 @@ function MapSidePanel({
                     ? t("topology.direct")
                     : t("topology.relayed")}
                 </Chip>
-                <span className="w-14 text-right font-mono text-xs text-fg-3">
+                <span className="min-w-[4.5rem] text-right font-mono text-xs whitespace-nowrap text-fg-3 tabular-nums">
                   {link.latencyMs !== null
                     ? `${link.latencyMs} ms`
                     : t("common.none")}
@@ -518,27 +531,74 @@ function MapSidePanel({
   )
 }
 
+/**
+ * One row of the detail list. `dl > div` groups are valid HTML and keep the
+ * first row's top border off both the label and the value, which the previous
+ * `first:border-t-0` did only for the label and left a half-line.
+ */
 function Detail({
   label,
-  value,
   mono,
+  children,
 }: {
   label: string
-  value: string
   mono?: boolean
+  children: ReactNode
 }) {
   return (
-    <>
-      <dt className="flex min-h-10 items-center border-t border-line py-2 text-[13px] text-fg-3 first:border-t-0">
-        {label}
-      </dt>
+    <div className="grid grid-cols-1 gap-x-3 gap-y-0.5 border-t border-line py-2 first:border-t-0 sm:grid-cols-[7.5rem_minmax(0,1fr)]">
+      <dt className="text-xs leading-5 text-fg-3 sm:text-[13px]">{label}</dt>
       <dd
-        className={`flex min-h-10 min-w-0 items-center border-t border-line py-2 text-[13px] first:border-t-0 ${
-          mono ? "truncate font-mono text-xs" : "truncate"
-        }`}
+        className={cn(
+          "min-w-0 text-[13px] leading-5 break-words",
+          mono && "font-mono text-xs"
+        )}
+        title={typeof children === "string" ? children : undefined}
       >
-        {value}
+        {children}
       </dd>
-    </>
+    </div>
+  )
+}
+
+/** A public IP that can be read in full, copied and wrapped instead of cut. */
+function CopyableValue({ value }: { value: string }) {
+  const { t } = useTranslation()
+  const [copied, setCopied] = useState(false)
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // Clipboard is unavailable on insecure origins; the value stays visible.
+    }
+  }
+
+  return (
+    <button
+      aria-label={`${t("common.copy")}: ${value}`}
+      className="group -mx-1 flex min-h-11 min-w-0 cursor-pointer items-start gap-1.5 rounded-md px-1 py-0.5 text-left font-mono text-xs break-all text-fg-2 hover:bg-surface-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none sm:min-h-0"
+      onClick={() => void copy()}
+      title={value}
+      type="button"
+    >
+      <span className="min-w-0">{value}</span>
+      {copied ? (
+        <CheckIcon
+          aria-hidden="true"
+          className="mt-0.5 size-3.5 flex-none text-ok"
+        />
+      ) : (
+        <CopyIcon
+          aria-hidden="true"
+          className="mt-0.5 size-3.5 flex-none text-fg-3 group-hover:text-foreground"
+        />
+      )}
+      <span aria-live="polite" className="sr-only">
+        {copied ? t("common.copied") : ""}
+      </span>
+    </button>
   )
 }

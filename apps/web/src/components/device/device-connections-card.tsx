@@ -73,7 +73,7 @@ export function DeviceConnectionsCard({
                 <Chip variant={link.kind === "direct" ? "ok" : "warn"}>
                   {link.kind === "direct" ? t("topology.direct") : t("topology.relayed")}
                 </Chip>
-                <span className="w-14 text-right font-mono text-xs text-fg-3">
+                <span className="min-w-[4.5rem] text-right font-mono text-xs whitespace-nowrap text-fg-3 tabular-nums">
                   {link.latencyMs !== null ? `${link.latencyMs} ms` : t("common.none")}
                 </span>
               </div>

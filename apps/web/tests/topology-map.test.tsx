@@ -13,52 +13,114 @@ import type {
  * test replaces it with a stub that exposes the props it was given. The custom
  * node is tested directly.
  */
-vi.mock("@xyflow/react", () => ({
-  ReactFlow: ({
-    nodes,
-    edges,
-    onNodeClick,
-  }: {
-    nodes: Array<{ id: string; data: { node: TopologyNode } }>
-    edges: Array<{
-      id: string
-      label?: string
-      style?: { strokeDasharray?: string }
-    }>
-    onNodeClick?: (event: unknown, node: { id: string }) => void
-  }) => (
-    <div data-testid="flow">
-      <ul data-testid="flow-nodes">
-        {nodes.map((node) => (
-          <li
-            data-node-id={node.id}
-            key={node.id}
-            onClick={() => onNodeClick?.({}, { id: node.id })}
-          >
-            {node.data.node.hostname}
-          </li>
-        ))}
-      </ul>
-      <ul data-testid="flow-edges">
-        {edges.map((edge) => (
-          <li
-            data-dash={edge.style?.strokeDasharray ?? "solid"}
-            data-edge-id={edge.id}
-            key={edge.id}
-          >
-            {edge.label}
-          </li>
-        ))}
-      </ul>
-    </div>
-  ),
-  Background: () => null,
-  Controls: () => null,
-  MiniMap: () => null,
-  Handle: () => null,
-  Position: { Left: "left", Right: "right" },
-  MarkerType: { ArrowClosed: "arrow" },
-}))
+vi.mock("@xyflow/react", async () => {
+  const React = await import("react")
+  type FlowNode = {
+    id: string
+    position: { x: number; y: number }
+    data: { node: TopologyNode }
+    measured?: { width: number; height: number }
+    selected?: boolean
+  }
+  type Change = {
+    id: string
+    type: string
+    position?: { x: number; y: number }
+    selected?: boolean
+    dimensions?: { width: number; height: number }
+  }
+  // Enough of `applyNodeChanges` for the position/select/dimension changes the
+  // component under test relies on.
+  const applyChanges = (changes: Change[], nodes: FlowNode[]) =>
+    nodes.map((node) => {
+      let next = node
+      for (const change of changes) {
+        if (change.id !== node.id) continue
+        if (change.type === "position" && change.position) {
+          next = { ...next, position: change.position }
+        } else if (change.type === "select") {
+          next = { ...next, selected: change.selected }
+        } else if (change.type === "dimensions" && change.dimensions) {
+          next = { ...next, measured: change.dimensions }
+        }
+      }
+      return next
+    })
+  return {
+    // The real hook is plain `useState` plus `applyNodeChanges`.
+    useNodesState: (initial: FlowNode[]) => {
+      const [nodes, setNodes] = React.useState(initial)
+      const onNodesChange = React.useCallback((changes: Change[]) => {
+        setNodes((current) => applyChanges(changes, current))
+      }, [])
+      return [nodes, setNodes, onNodesChange]
+    },
+    applyNodeChanges: applyChanges,
+    ReactFlow: ({
+      nodes,
+      edges,
+      onNodeClick,
+      onNodesChange,
+    }: {
+      nodes: FlowNode[]
+      edges: Array<{
+        id: string
+        label?: string
+        style?: { strokeDasharray?: string }
+      }>
+      onNodeClick?: (event: unknown, node: { id: string }) => void
+      onNodesChange?: (changes: Change[]) => void
+    }) => (
+      <div data-testid="flow">
+        <button
+          data-testid="drag"
+          onClick={() =>
+            nodes[0] &&
+            onNodesChange?.([
+              {
+                id: nodes[0].id,
+                type: "position",
+                position: { x: 42, y: 43 },
+              },
+            ])
+          }
+          type="button"
+        >
+          drag
+        </button>
+        <ul data-testid="flow-nodes">
+          {nodes.map((node) => (
+            <li
+              data-node-id={node.id}
+              data-position={`${node.position.x},${node.position.y}`}
+              key={node.id}
+              onClick={() => onNodeClick?.({}, { id: node.id })}
+            >
+              {node.data.node.hostname}
+            </li>
+          ))}
+        </ul>
+        <ul data-testid="flow-edges">
+          {edges.map((edge) => (
+            <li
+              data-dash={edge.style?.strokeDasharray ?? "solid"}
+              data-edge-id={edge.id}
+              key={edge.id}
+            >
+              {edge.label}
+            </li>
+          ))}
+        </ul>
+      </div>
+    ),
+    Background: () => null,
+    Controls: () => null,
+    MiniMap: () => null,
+    Handle: () => null,
+    Position: { Left: "left", Right: "right" },
+    MarkerType: { ArrowClosed: "arrow" },
+  }
+})
 
 vi.mock("@/api/generated/easyplane", async (importOriginal) => {
   const actual =
@@ -261,6 +323,40 @@ describe("topology map", () => {
     )
     fireEvent.click(screen.getByText("core-a"))
     expect(onSelectNode).toHaveBeenCalledWith("ip:10.0.0.2")
+  })
+
+  it("keeps a dragged node in place when a fresh snapshot arrives", () => {
+    const first = node()
+    const second = node({
+      id: "ip:10.0.0.3",
+      deviceId: "dev-b",
+      hostname: "core-b",
+      virtualIpv4: "10.0.0.3",
+    })
+    const { rerender } = render(
+      <TopologyMap
+        links={[link()]}
+        nodes={[first, second]}
+        onSelectNode={() => undefined}
+        selectedNodeId={null}
+      />
+    )
+    fireEvent.click(screen.getByTestId("drag"))
+    const dragged = () =>
+      screen.getByText("core-a").closest("li")!.getAttribute("data-position")
+    expect(dragged()).toBe("42,43")
+
+    // Realtime updates hand over brand-new objects with the same content; the
+    // node must keep its position instead of snapping back to the layout.
+    rerender(
+      <TopologyMap
+        links={[link()]}
+        nodes={[{ ...first }, { ...second }]}
+        onSelectNode={() => undefined}
+        selectedNodeId={null}
+      />
+    )
+    expect(dragged()).toBe("42,43")
   })
 })
 
