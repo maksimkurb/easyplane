@@ -2,7 +2,18 @@ export interface LayoutNodeInput {
   id: string
   label?: string
   relayCapable?: boolean
+  /**
+   * Accepted for API compatibility but deliberately ignored: liveness must not
+   * move nodes, otherwise every device that goes offline reshuffles the map.
+   */
   online?: boolean
+}
+
+/** Anything the map can name: a topology node, a device, a list entry. */
+export interface TopologyNodeIdentity {
+  id: string
+  hostname?: string | null
+  label?: string | null
 }
 
 export interface LayoutLinkInput {
@@ -21,6 +32,73 @@ export interface LayoutOptions {
   minSpacing?: number
   nodeWidth?: number
   nodeHeight?: number
+}
+
+/** Graph shape shared by the desktop rings and the phone map. */
+export interface TopologyLevels {
+  rootId: string
+  /** Hop distance from the root; disconnected nodes share the last ring. */
+  level: Map<string, number>
+}
+
+/**
+ * Picks the centre node and the hop distance of every node.
+ *
+ * The root is chosen from stable properties only — relay capability, then
+ * degree, then name and id. Using `online` here made the centre (and therefore
+ * every ring around it) jump whenever an unrelated device went offline.
+ */
+export function topologyLevels(
+  nodes: readonly LayoutNodeInput[],
+  links: readonly LayoutLinkInput[]
+): TopologyLevels | null {
+  if (nodes.length === 0) return null
+
+  const byId = new Map(nodes.map((node) => [node.id, node]))
+  const adjacency = new Map<string, string[]>()
+  for (const node of nodes) adjacency.set(node.id, [])
+  for (const link of links) {
+    if (!byId.has(link.source) || !byId.has(link.target)) continue
+    adjacency.get(link.source)!.push(link.target)
+    adjacency.get(link.target)!.push(link.source)
+  }
+
+  const degree = (id: string) => adjacency.get(id)?.length ?? 0
+  const root =
+    [...nodes]
+      .sort((left, right) => {
+        const relay =
+          Number(Boolean(right.relayCapable)) - Number(Boolean(left.relayCapable))
+        if (relay !== 0) return relay
+        const degreeDelta = degree(right.id) - degree(left.id)
+        if (degreeDelta !== 0) return degreeDelta
+        return compareTopologyNodes(left, right)
+      })[0]!
+
+  const level = new Map<string, number>([[root.id, 0]])
+  const queue = [root.id]
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    for (const next of adjacency.get(current) ?? []) {
+      if (level.has(next)) continue
+      level.set(next, (level.get(current) ?? 0) + 1)
+      queue.push(next)
+    }
+  }
+
+  const unreachable = [...nodes]
+    .filter((node) => !level.has(node.id))
+    .sort(compareTopologyNodes)
+  if (unreachable.length > 0) {
+    // Disconnected nodes share the outermost ring instead of opening a new one:
+    // a new ring pushed the layout hundreds of pixels out and forced the map to
+    // zoom out, leaving most of the canvas empty. Without any links they still
+    // get the first ring rather than the centre.
+    const ring = Math.max(1, Math.max(0, ...level.values()))
+    for (const node of unreachable) level.set(node.id, ring)
+  }
+
+  return { rootId: root.id, level }
 }
 
 /**
@@ -48,49 +126,9 @@ export function layoutTopology(
   } = options
 
   const positions = new Map<string, LayoutPosition>()
-  if (nodes.length === 0) return positions
-
-  const byId = new Map(nodes.map((node) => [node.id, node]))
-  const adjacency = new Map<string, string[]>()
-  for (const node of nodes) adjacency.set(node.id, [])
-  for (const link of links) {
-    if (!byId.has(link.source) || !byId.has(link.target)) continue
-    adjacency.get(link.source)!.push(link.target)
-    adjacency.get(link.target)!.push(link.source)
-  }
-
-  const degree = (id: string) => adjacency.get(id)?.length ?? 0
-  const root =
-    [...nodes]
-      .sort((left, right) => {
-        const relay = Number(Boolean(right.relayCapable)) - Number(Boolean(left.relayCapable))
-        if (relay !== 0) return relay
-        const online = Number(Boolean(right.online)) - Number(Boolean(left.online))
-        if (online !== 0) return online
-        const degreeDelta = degree(right.id) - degree(left.id)
-        if (degreeDelta !== 0) return degreeDelta
-        return labelOf(left).localeCompare(labelOf(right)) || left.id.localeCompare(right.id)
-      })[0]!
-
-  // BFS hop distance from the root.
-  const level = new Map<string, number>([[root.id, 0]])
-  const queue = [root.id]
-  while (queue.length > 0) {
-    const current = queue.shift()!
-    for (const next of adjacency.get(current) ?? []) {
-      if (level.has(next)) continue
-      level.set(next, (level.get(current) ?? 0) + 1)
-      queue.push(next)
-    }
-  }
-  const unreachable = [...nodes]
-    .filter((node) => !level.has(node.id))
-    .sort((left, right) => labelOf(left).localeCompare(labelOf(right)) || left.id.localeCompare(right.id))
-  let lastLevel = Math.max(0, ...level.values())
-  for (const node of unreachable) {
-    lastLevel += 1
-    level.set(node.id, lastLevel)
-  }
+  const shape = topologyLevels(nodes, links)
+  if (!shape) return positions
+  const { level } = shape
 
   const rings = new Map<number, LayoutNodeInput[]>()
   for (const node of nodes) {
@@ -100,13 +138,12 @@ export function layoutTopology(
     rings.set(ring, bucket)
   }
 
-  for (const [ring, bucket] of [...rings.entries()].sort(([left], [right]) => left - right)) {
-    const ordered = [...bucket].sort(
-      (left, right) =>
-        Number(Boolean(right.online)) - Number(Boolean(left.online)) ||
-        labelOf(left).localeCompare(labelOf(right)) ||
-        left.id.localeCompare(right.id)
-    )
+  for (const [ring, bucket] of [...rings.entries()].sort(
+    ([left], [right]) => left - right
+  )) {
+    // Ring order is a stable name+id sort. Liveness is not part of the
+    // geometry, so a device going offline never reshuffles its neighbours.
+    const ordered = [...bucket].sort(compareTopologyNodes)
     if (ring === 0) {
       // A single centre node (several nodes at hop 0 can only happen when the
       // graph is empty or all nodes are isolated).
@@ -114,8 +151,12 @@ export function layoutTopology(
         if (ordered.length === 1) {
           positions.set(node.id, { x: 0, y: 0 })
         } else {
-          const angle = -Math.PI / 2 + (index * 2 * Math.PI) / ordered.length
-          positions.set(node.id, { x: Math.cos(angle) * baseRadius * 0.5, y: Math.sin(angle) * baseRadius * 0.5 })
+          const angle =
+            -Math.PI / 2 + (index * 2 * Math.PI) / ordered.length
+          positions.set(node.id, {
+            x: Math.cos(angle) * baseRadius * 0.5,
+            y: Math.sin(angle) * baseRadius * 0.5,
+          })
         }
       })
       continue
@@ -138,6 +179,32 @@ export function layoutTopology(
   return positions
 }
 
-function labelOf(node: LayoutNodeInput): string {
-  return node.label ?? node.id
+function labelOf(node: TopologyNodeIdentity): string {
+  return node.hostname ?? node.label ?? node.id
+}
+
+/**
+ * Stable order for nodes that is independent of API order and liveness: the
+ * display name first, then the id. The map uses it for ring placement and the
+ * page uses it to pick the default selection, so neither jumps when a snapshot
+ * is reordered or a device goes offline.
+ */
+export function compareTopologyNodes(
+  left: TopologyNodeIdentity,
+  right: TopologyNodeIdentity
+): number {
+  return (
+    labelOf(left).localeCompare(labelOf(right)) || left.id.localeCompare(right.id)
+  )
+}
+
+/** The first node in stable order, or `null` for an empty snapshot. */
+export function firstTopologyNode<T extends TopologyNodeIdentity>(
+  nodes: readonly T[]
+): T | null {
+  let first: T | null = null
+  for (const node of nodes) {
+    if (first === null || compareTopologyNodes(node, first) < 0) first = node
+  }
+  return first
 }

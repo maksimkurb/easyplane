@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import {
   Background,
   BaseEdge,
@@ -10,6 +10,7 @@ import {
   ReactFlow,
   getStraightPath,
   useInternalNode,
+  useNodesState,
   type Edge,
   type EdgeProps,
   type EdgeTypes,
@@ -17,8 +18,6 @@ import {
   type Node,
   type NodeProps,
   type NodeTypes,
-  type OnNodesChange,
-  type NodeChange,
   type ReactFlowInstance,
 } from "@xyflow/react"
 import { useTranslation } from "react-i18next"
@@ -45,6 +44,38 @@ type DeviceNodeData = {
   os?: DeviceOs
   /** Selects the card from page state, independent of React Flow's own flag. */
   highlighted?: boolean
+}
+
+type DeviceFlowNode = Node<DeviceNodeData, "device">
+
+/**
+ * The values a card actually renders. Two snapshots with the same signature
+ * keep the same node object, which keeps React Flow from re-measuring (and
+ * briefly hiding) every card on each `topology.updated` event.
+ */
+function nodeDataSignature(data: DeviceNodeData): string {
+  const node = data.node
+  return JSON.stringify([
+    data.highlighted,
+    data.compact,
+    data.slim,
+    data.exitNode ?? "none",
+    data.os?.type ?? null,
+    data.os?.distribution ?? null,
+    node.hostname,
+    node.virtualIpv4,
+    node.online,
+    node.relayCapable,
+    node.managed,
+    node.natType,
+    node.tcpNatType,
+    node.peerId,
+    node.deviceId,
+    node.version,
+    node.publicIps,
+    node.listeners,
+    node.relaysFor.length,
+  ])
 }
 
 const nodeTypes: NodeTypes = { device: DeviceNode }
@@ -98,7 +129,7 @@ function DirectEdge({
       {label ? (
         <EdgeLabelRenderer>
           <div
-            className="nodrag nopan pointer-events-auto absolute rounded px-1 py-0.5 text-[10px] leading-3"
+            className="nodrag nopan pointer-events-auto absolute rounded px-1.5 py-0.5 text-xs leading-4 whitespace-nowrap"
             style={{
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
               background: "var(--card)",
@@ -106,6 +137,7 @@ function DirectEdge({
                 (labelBgStyle as { fillOpacity?: number } | undefined)
                   ?.fillOpacity ?? 0.9,
               ...(labelStyle as object),
+              color: "var(--fg-2)",
               fill: undefined,
             }}
           >
@@ -185,7 +217,7 @@ export function TopologyNodeCard({
             <span className="block truncate text-[13px] leading-4 font-semibold">
               {node.hostname || node.id}
             </span>
-            <span className="block truncate font-mono text-[11.5px] leading-4 text-fg-3">
+            <span className="block truncate font-mono text-xs leading-4 text-fg-2">
               {node.virtualIpv4 ?? t("common.none")}
             </span>
           </span>
@@ -258,7 +290,7 @@ export function TopologyNodeCard({
         ) : null}
       </div>
       {!compact ? (
-        <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+        <div className="mt-1 font-mono text-xs text-fg-2">
           {node.virtualIpv4 ?? t("common.none")}
           {node.peerId ? ` · #${node.peerId}` : ""}
         </div>
@@ -350,15 +382,16 @@ export function TopologyMap({
   deviceOsById,
 }: TopologyMapProps) {
   const { t } = useTranslation()
-  const [overrides, setOverrides] = useState<
-    Record<string, { x: number; y: number }>
-  >({})
   const [flow, setFlow] = useState<ReactFlowInstance<
-    Node<DeviceNodeData, "device">,
+    DeviceFlowNode,
     Edge
   > | null>(null)
-  const hostRef = useRef<HTMLDivElement>(null)
-  const fitTimer = useRef<number | null>(null)
+  // React Flow owns node geometry: positions, dragging flags and measured
+  // sizes live in this state, not in a render-time map over the API snapshot.
+  // Replacing node objects on every poll is what made the map flicker.
+  const [flowNodes, setFlowNodes, onNodesChange] =
+    useNodesState<DeviceFlowNode>([])
+  const fitted = useRef(false)
 
   const positions = useMemo(
     () =>
@@ -382,39 +415,76 @@ export function TopologyMap({
     [nodes, links, compact]
   )
 
-  const flowNodes = useMemo<Node<DeviceNodeData, "device">[]>(
-    () =>
-      nodes.map((node) => {
-        const position = overrides[node.id] ??
-          positions.get(node.id) ?? { x: 0, y: 0 }
-        return {
-          id: node.id,
-          type: "device" as const,
-          position,
-          data: {
-            node,
-            compact,
-            slim,
-            os: node.deviceId ? deviceOsById?.[node.deviceId] : undefined,
-            highlighted: selectedNodeId === node.id,
-            exitNode: node.deviceId
-              ? (exitNodeByDeviceId?.[node.deviceId] ?? "none")
-              : "none",
-          },
-          selected: selectedNodeId === node.id,
+  // Merge the snapshot into the existing nodes by id. Geometry (position,
+  // measured, dragging, selection) always survives; only `data` is replaced,
+  // and only when what the card renders actually changed. A device that goes
+  // online/offline or a repeated `topology.updated` event therefore no longer
+  // resets the layout mid-drag.
+  useEffect(() => {
+    setFlowNodes((current) => {
+      const previous = new Map(current.map((node) => [node.id, node]))
+      let changed = false
+      const next = nodes.map((node) => {
+        const data: DeviceNodeData = {
+          node,
+          compact,
+          slim,
+          os: node.deviceId ? deviceOsById?.[node.deviceId] : undefined,
+          highlighted: selectedNodeId === node.id,
+          exitNode: node.deviceId
+            ? (exitNodeByDeviceId?.[node.deviceId] ?? "none")
+            : "none",
         }
-      }),
-    [
-      nodes,
-      overrides,
-      positions,
-      selectedNodeId,
-      compact,
-      slim,
-      exitNodeByDeviceId,
-      deviceOsById,
-    ]
-  )
+        const existing = previous.get(node.id)
+        if (!existing) {
+          changed = true
+          return {
+            id: node.id,
+            type: "device" as const,
+            position: positions.get(node.id) ?? { x: 0, y: 0 },
+            data,
+            selected: Boolean(data.highlighted),
+          }
+        }
+        if (
+          existing.selected === Boolean(data.highlighted) &&
+          nodeDataSignature(existing.data) === nodeDataSignature(data)
+        ) {
+          return existing
+        }
+        changed = true
+        return { ...existing, data, selected: Boolean(data.highlighted) }
+      })
+      if (!changed && next.length === current.length) return current
+      return next
+    })
+  }, [
+    nodes,
+    positions,
+    compact,
+    slim,
+    deviceOsById,
+    exitNodeByDeviceId,
+    selectedNodeId,
+    setFlowNodes,
+  ])
+
+  // Actual centres of the cards on screen, so "this edge is too short for a
+  // ping pill" is measured against the real (possibly dragged) positions.
+  const nodeCenters = useMemo(() => {
+    const centers = new Map<string, { x: number; y: number }>()
+    for (const node of flowNodes) {
+      const width =
+        node.measured?.width ??
+        (node.data.slim ? 170 : node.data.compact ? 136 : 180)
+      const height = node.measured?.height ?? 56
+      centers.set(node.id, {
+        x: node.position.x + width / 2,
+        y: node.position.y + height / 2,
+      })
+    }
+    return centers
+  }, [flowNodes])
 
   const flowEdges = useMemo<Edge[]>(
     () =>
@@ -441,10 +511,12 @@ export function TopologyMap({
               ]
                 .filter(Boolean)
                 .join(" · ")
-        const from = positions.get(link.source)
-        const to = positions.get(link.target)
-        const short =
-          from && to ? Math.hypot(from.x - to.x, from.y - to.y) < 230 : false
+        const from = nodeCenters.get(link.source)
+        const to = nodeCenters.get(link.target)
+        const short = from && to
+          ? Math.hypot(from.x - to.x, from.y - to.y) <
+            (compact ? 160 : 230)
+          : false
         return {
           id: link.id,
           type: "direct" as const,
@@ -457,79 +529,29 @@ export function TopologyMap({
             strokeWidth: 1.6,
             strokeDasharray: relayed ? "6 4" : undefined,
           },
-          labelStyle: { fontSize: 10, fill: "currentColor" },
+          labelStyle: { fontSize: 12, fill: "currentColor" },
           labelBgStyle: { fill: "var(--card)", fillOpacity: 0.85 },
           labelBgPadding: [4, 2] as [number, number],
           labelBgBorderRadius: 4,
           data: { link },
         }
       }),
-    [links, pingLabels, positions, t]
+    [links, pingLabels, nodeCenters, compact, t]
   )
 
-  const handleNodesChange: OnNodesChange<Node<DeviceNodeData, "device">> =
-    useCallback((changes: NodeChange<Node<DeviceNodeData, "device">>[]) => {
-      const moved = changes.filter(
-        (change) => change.type === "position" && change.position
-      )
-      if (moved.length === 0) return
-      setOverrides((current) => {
-        const next = { ...current }
-        for (const change of moved) {
-          if (change.type !== "position" || !change.position) continue
-          next[change.id] = change.position
-        }
-        return next
-      })
-    }, [])
-
-  // The layout is computed after the first paint and changes when the graph
-  // changes, so `fitView` on mount alone leaves nodes off-canvas. Re-fit after
-  // layout and whenever the canvas is resized.
-  const layoutKey = useMemo(
-    () =>
-      `${nodes
-        .map((node) => node.id)
-        .sort()
-        .join("|")}#${links
-        .map((link) => link.id)
-        .sort()
-        .join("|")}`,
-    [nodes, links]
-  )
-  const scheduleFit = useCallback(() => {
-    if (!flow) return
-    if (fitTimer.current !== null) window.clearTimeout(fitTimer.current)
-    fitTimer.current = window.setTimeout(() => {
-      void flow.fitView({ padding: 0.08, duration: 0 })
-    }, 80)
-  }, [flow])
-
-  useEffect(() => {
-    scheduleFit()
-  }, [scheduleFit, layoutKey])
-
-  useEffect(() => {
-    const host = hostRef.current
-    if (!host || typeof ResizeObserver === "undefined") return undefined
-    let frame = 0
-    const observer = new ResizeObserver(() => {
-      window.cancelAnimationFrame(frame)
-      frame = window.requestAnimationFrame(() => scheduleFit())
-    })
-    observer.observe(host)
-    return () => {
-      observer.disconnect()
-      window.cancelAnimationFrame(frame)
-    }
-  }, [scheduleFit])
-
-  useEffect(
-    () => () => {
-      if (fitTimer.current !== null) window.clearTimeout(fitTimer.current)
-    },
-    []
-  )
+  // One fit, once every node has been measured by React Flow. Fitting on a
+  // timer and on every resize made the graph "fly in" on load and jump when
+  // the sidebar collapsed. New snapshots never re-fit; users keep their
+  // viewport and can fit again from the controls.
+  useLayoutEffect(() => {
+    if (fitted.current || !flow || flowNodes.length === 0) return
+    const allMeasured = flowNodes.every(
+      (node) => (node.measured?.width ?? 0) > 0 && (node.measured?.height ?? 0) > 0
+    )
+    if (!allMeasured) return
+    fitted.current = true
+    void flow.fitView({ padding: 0.12, duration: 0 })
+  }, [flow, flowNodes])
 
   return (
     <div
@@ -537,7 +559,6 @@ export function TopologyMap({
         "h-[68vh] min-h-96 w-full rounded-lg border border-line bg-surface-2/40 [&_.react-flow__attribution]:opacity-50",
         className
       )}
-      ref={hostRef}
     >
       <ReactFlow
         edgeTypes={edgeTypes}
@@ -548,7 +569,7 @@ export function TopologyMap({
         onEdgeClick={(_, edge) => onSelectLink?.(edge.id)}
         onInit={setFlow}
         onNodeClick={(_, node) => onSelectNode(node.id)}
-        onNodesChange={handleNodesChange}
+        onNodesChange={onNodesChange}
         onPaneClick={() => {
           onSelectNode(null)
           onSelectLink?.(null)
