@@ -180,6 +180,28 @@ export function approvedExitNode(
   );
 }
 
+/**
+ * Approved subnet CIDRs of the whole network, regardless of owner.
+ *
+ * Peer observations are a property of the *network*, not of the observing
+ * device: a CIDR another member advertises is legitimate when some device has
+ * an approved row for it. Judging them against the observing device's own
+ * approvals made every inter-router subnet (h1 sees h3's /24) look unapproved.
+ * Only `approved` counts here; a pending or rejected proposal of a peer stays
+ * unapproved until an admin approves it.
+ */
+export function approvedNetworkSubnetCidrs(
+  routes: readonly RouteRecord[],
+): string[] {
+  const result = new Set<string>();
+  for (const route of routes) {
+    if (route.kind === "subnet" && route.state === "approved") {
+      result.add(normalizeCidr(route.cidr));
+    }
+  }
+  return [...result].sort();
+}
+
 /** All approved subnet routes of the network except the device's own. */
 export function acceptedRoutesFor(
   routes: readonly RouteRecord[],
@@ -235,7 +257,11 @@ export interface RouteReport {
   observedCidrs: string[];
   /** Configured CIDRs that are not approved for this device. */
   unapprovedCidrs: string[];
-  /** Peer-observed CIDRs that are not approved for this device. */
+  /**
+   * Peer-observed CIDRs that no device in the network has approved. Peers
+   * advertise the whole network's routes, so this is not about *this* device's
+   * approvals (see `approvedNetworkSubnetCidrs`).
+   */
   unapprovedObservedCidrs: string[];
   /** Approved CIDRs the client does not report (push pending or broken). */
   missingCidrs: string[];
@@ -318,8 +344,17 @@ export function buildRouteReport(input: {
 }): RouteReport {
   const approved = approvedSubnetCidrs(input.approvals, input.deviceId);
   const declared = declaredSubnetCidrs(input.approvals, input.deviceId);
-  const approvedSet = new Set(approved);
+  // Own config is judged against what this device may route...
   const expected = new Set([...approved, ...declared]);
+  // ...but `observed` comes from peers, which advertise *their* routes (and the
+  // rest of the network's). A peer CIDR is unapproved only when no device has an
+  // approved row for it. This device's own declaration is included too, because
+  // peers echo our advertisement back; a peer's pending/rejected proposal is
+  // deliberately *not* included and stays unapproved.
+  const expectedObserved = new Set([
+    ...approvedNetworkSubnetCidrs(input.approvals),
+    ...declared,
+  ]);
   const configured = new Set<string>();
   const unapproved = new Set<string>();
   const unmanaged: ReportedInstance[] = [];
@@ -368,7 +403,9 @@ export function buildRouteReport(input: {
       });
     }
   }
-  const unapprovedObserved = [...observed].filter((cidr) => !expected.has(cidr));
+  const unapprovedObserved = [...observed].filter(
+    (cidr) => !expectedObserved.has(cidr),
+  );
 
   return {
     approvedCidrs: approved,
@@ -435,8 +472,12 @@ export function mergePeerObservations(
   deviceId: string,
 ): RouteReport {
   if (observations.length === 0) return report;
+  // Peer reports describe this device, but a peer's route table also carries
+  // the other members' routes. Compare against every device's approved subnets
+  // (plus this device's own pending declaration, which peers echo back) so a
+  // legitimate route of another router is not flagged here either.
   const expected = new Set([
-    ...approvedSubnetCidrs(approvals, deviceId),
+    ...approvedNetworkSubnetCidrs(approvals),
     ...declaredSubnetCidrs(approvals, deviceId),
   ]);
   const observed = new Set(report.observedCidrs);

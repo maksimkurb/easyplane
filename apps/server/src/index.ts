@@ -192,6 +192,7 @@ export {
 export {
   acceptedRoutesFor,
   approvedExitNode,
+  approvedNetworkSubnetCidrs,
   approvedSubnetCidrs,
   buildRouteReport,
   cidrContains,
