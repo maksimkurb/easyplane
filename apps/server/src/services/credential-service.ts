@@ -404,7 +404,11 @@ export class CredentialService {
           gt(table.expiry, now),
           lt(table.expiry, before),
         ),
-      orderBy: (table, { asc }) => [asc(table.networkId), asc(table.expiry)],
+      orderBy: (table, { asc }) => [
+        asc(table.networkId),
+        asc(table.expiry),
+        asc(table.id),
+      ],
     });
     const byNetwork = new Map<string, Credential[]>();
     for (const row of rows) {
@@ -487,7 +491,7 @@ export class CredentialService {
       await this.options.db.query.devices.findMany({
         where: (table, { and, eq }) =>
           and(eq(table.networkId, network.id), eq(table.state, "pending")),
-        orderBy: (table, { asc }) => [asc(table.hostname)],
+        orderBy: (table, { asc }) => [asc(table.hostname), asc(table.id)],
       })
     ).map((device) => ({
       deviceId: device.id,

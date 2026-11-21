@@ -91,7 +91,7 @@ export async function listUsers(db: DbExecutor, orgId: string): Promise<User[]> 
     .select()
     .from(users)
     .where(eq(users.orgId, orgId))
-    .orderBy(asc(users.createdAt));
+    .orderBy(asc(users.createdAt), asc(users.id));
 }
 
 export async function countAdmins(db: DbExecutor, orgId: string): Promise<number> {
@@ -305,7 +305,7 @@ export async function listNetworks(
     .select()
     .from(networks)
     .where(eq(networks.orgId, orgId))
-    .orderBy(asc(networks.createdAt));
+    .orderBy(asc(networks.createdAt), asc(networks.id));
 }
 
 export async function getNetwork(
@@ -397,7 +397,7 @@ export async function listInvites(
     .select()
     .from(invites)
     .where(eq(invites.networkId, networkId))
-    .orderBy(desc(invites.createdAt));
+    .orderBy(desc(invites.createdAt), asc(invites.id));
 }
 
 export async function getInvite(
@@ -502,6 +502,22 @@ export async function getDevice(
   return rows[0];
 }
 
+/**
+ * Stable order for the device list: creation time, then hostname, then id.
+ *
+ * `lastSeenAt` is intentionally not part of the key — it changes on every
+ * heartbeat, which made rows jump between polls. The comparator mirrors the SQL
+ * `orderBy` of `listDevices` so the order also holds for an executor with a
+ * different collation (and is testable without a database).
+ */
+export function compareDevicesForList(left: Device, right: Device): number {
+  const byCreated = left.createdAt.getTime() - right.createdAt.getTime();
+  if (byCreated !== 0) return byCreated;
+  const byHostname = left.hostname.localeCompare(right.hostname);
+  if (byHostname !== 0) return byHostname;
+  return left.id.localeCompare(right.id);
+}
+
 export async function listDevices(
   db: DbExecutor,
   orgId: string,
@@ -514,11 +530,12 @@ export async function listDevices(
   if (filters.state !== undefined) {
     conditions.push(eq(devices.state, filters.state));
   }
-  return db
+  const rows = await db
     .select()
     .from(devices)
     .where(and(...conditions))
-    .orderBy(desc(devices.lastSeenAt), asc(devices.hostname));
+    .orderBy(asc(devices.createdAt), asc(devices.hostname), asc(devices.id));
+  return rows.sort(compareDevicesForList);
 }
 
 export async function insertDevice(
@@ -570,7 +587,7 @@ export async function listDevicesInNetwork(
     .select()
     .from(devices)
     .where(eq(devices.networkId, networkId))
-    .orderBy(asc(devices.dnsName));
+    .orderBy(asc(devices.dnsName), asc(devices.hostname), asc(devices.id));
 }
 
 export async function listDevicesForReconcile(
@@ -580,7 +597,8 @@ export async function listDevicesForReconcile(
   return db
     .select()
     .from(devices)
-    .where(and(eq(devices.orgId, orgId), eq(devices.state, "approved")));
+    .where(and(eq(devices.orgId, orgId), eq(devices.state, "approved")))
+    .orderBy(asc(devices.createdAt), asc(devices.id));
 }
 
 export async function pendingDeviceCount(
@@ -668,7 +686,7 @@ export async function listAudit(
     .select()
     .from(auditLog)
     .where(eq(auditLog.orgId, orgId))
-    .orderBy(desc(auditLog.createdAt))
+    .orderBy(desc(auditLog.createdAt), asc(auditLog.id))
     .limit(Math.min(Math.max(limit, 1), 500));
 }
 
@@ -690,7 +708,8 @@ export async function findDevicesByIds(
   return db
     .select()
     .from(devices)
-    .where(and(eq(devices.orgId, orgId), inArray(devices.id, ids)));
+    .where(and(eq(devices.orgId, orgId), inArray(devices.id, ids)))
+    .orderBy(asc(devices.createdAt), asc(devices.id));
 }
 
 export async function findUnclaimedDevices(
@@ -707,7 +726,8 @@ export async function findUnclaimedDevices(
         eq(devices.networkId, networkId),
         or(isNull(devices.virtualIpv4), eq(devices.state, "pending")),
       ),
-    );
+    )
+    .orderBy(asc(devices.createdAt), asc(devices.id));
 }
 
 // ---------------------------------------------------------------------------
@@ -718,7 +738,11 @@ export async function listTags(
   db: DbExecutor,
   orgId: string,
 ): Promise<(typeof tags.$inferSelect)[]> {
-  return db.select().from(tags).where(eq(tags.orgId, orgId)).orderBy(asc(tags.name));
+  return db
+    .select()
+    .from(tags)
+    .where(eq(tags.orgId, orgId))
+    .orderBy(asc(tags.name), asc(tags.id));
 }
 
 export async function upsertTag(
@@ -816,7 +840,7 @@ export async function listUserGroups(
     .select()
     .from(userGroups)
     .where(eq(userGroups.orgId, orgId))
-    .orderBy(asc(userGroups.name));
+    .orderBy(asc(userGroups.name), asc(userGroups.id));
 }
 
 export async function getUserGroup(
@@ -905,7 +929,7 @@ export async function listUserGroupMembers(
     .from(userGroupMembers)
     .innerJoin(userGroups, eq(userGroups.id, userGroupMembers.groupId))
     .where(eq(userGroups.orgId, orgId))
-    .orderBy(asc(userGroupMembers.email));
+    .orderBy(asc(userGroupMembers.email), asc(userGroupMembers.groupId));
   return rows;
 }
 
@@ -1001,7 +1025,7 @@ export async function listNetworkRoutes(
     .select()
     .from(deviceRoutes)
     .where(eq(deviceRoutes.networkId, networkId))
-    .orderBy(asc(deviceRoutes.createdAt));
+    .orderBy(asc(deviceRoutes.createdAt), asc(deviceRoutes.id));
 }
 
 export async function listDeviceRoutes(
@@ -1012,7 +1036,7 @@ export async function listDeviceRoutes(
     .select()
     .from(deviceRoutes)
     .where(eq(deviceRoutes.deviceId, deviceId))
-    .orderBy(asc(deviceRoutes.createdAt));
+    .orderBy(asc(deviceRoutes.createdAt), asc(deviceRoutes.id));
 }
 
 export async function getDeviceRoute(
@@ -1136,7 +1160,7 @@ export async function listOrgDeviceRoutes(
     .select()
     .from(deviceRoutes)
     .where(eq(deviceRoutes.orgId, orgId))
-    .orderBy(asc(deviceRoutes.createdAt));
+    .orderBy(asc(deviceRoutes.createdAt), asc(deviceRoutes.id));
 }
 
 export async function decideDeviceRoute(
@@ -1171,7 +1195,8 @@ export async function approvedRoutesForDevice(
     .from(deviceRoutes)
     .where(
       and(eq(deviceRoutes.deviceId, deviceId), eq(deviceRoutes.state, "approved")),
-    );
+    )
+    .orderBy(asc(deviceRoutes.createdAt), asc(deviceRoutes.id));
 }
 
 export async function approvedRoutesForNetwork(
@@ -1186,7 +1211,8 @@ export async function approvedRoutesForNetwork(
         eq(deviceRoutes.networkId, networkId),
         eq(deviceRoutes.state, "approved"),
       ),
-    );
+    )
+    .orderBy(asc(deviceRoutes.createdAt), asc(deviceRoutes.id));
 }
 
 /** Every credential of an organisation (device list rendering). */
@@ -1198,7 +1224,7 @@ export async function listCredentialsForOrg(
     .select()
     .from(credentials)
     .where(eq(credentials.orgId, orgId))
-    .orderBy(desc(credentials.createdAt));
+    .orderBy(desc(credentials.createdAt), asc(credentials.id));
 }
 
 /** Credentials of one network, newest first (including revoked history rows). */
@@ -1210,7 +1236,7 @@ export async function listCredentialsForNetwork(
     .select()
     .from(credentials)
     .where(eq(credentials.networkId, networkId))
-    .orderBy(desc(credentials.createdAt));
+    .orderBy(desc(credentials.createdAt), asc(credentials.id));
 }
 
 /** Only credentials an anchor may publish: `active` and not past expiry. */
@@ -1298,7 +1324,11 @@ export async function listCredentialsExpiringBefore(
         lt(credentials.expiry, before),
       ),
     )
-    .orderBy(asc(credentials.networkId), asc(credentials.expiry));
+    .orderBy(
+      asc(credentials.networkId),
+      asc(credentials.expiry),
+      asc(credentials.id),
+    );
 }
 
 /** Approved devices of one network filtered by role. */
@@ -1317,7 +1347,7 @@ export async function listApprovedDevicesByRole(
         eq(devices.role, role),
       ),
     )
-    .orderBy(asc(devices.hostname));
+    .orderBy(asc(devices.hostname), asc(devices.id));
 }
 
 export async function listApprovedDevicesInNetwork(
@@ -1328,7 +1358,7 @@ export async function listApprovedDevicesInNetwork(
     .select()
     .from(devices)
     .where(and(eq(devices.networkId, networkId), eq(devices.state, "approved")))
-    .orderBy(asc(devices.hostname));
+    .orderBy(asc(devices.hostname), asc(devices.id));
 }
 
 /** Every DNS name in use in a network, for uniqueness checks. */
@@ -1382,7 +1412,7 @@ export async function listNetworkPeers(
     .select()
     .from(networkPeers)
     .where(eq(networkPeers.networkId, networkId))
-    .orderBy(asc(networkPeers.position));
+    .orderBy(asc(networkPeers.position), asc(networkPeers.id));
 }
 
 export interface NetworkPeerRecord {
@@ -1404,7 +1434,7 @@ export async function listNetworkPeerRecords(
     .from(networkPeers)
     .leftJoin(devices, eq(devices.id, networkPeers.deviceId))
     .where(eq(networkPeers.networkId, networkId))
-    .orderBy(asc(networkPeers.position));
+    .orderBy(asc(networkPeers.position), asc(networkPeers.id));
 }
 
 export async function getNetworkPeer(

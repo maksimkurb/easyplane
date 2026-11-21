@@ -1486,7 +1486,10 @@ export class PolicyService {
         name: device.dnsName ?? device.hostname,
         hostname: device.hostname,
       }))
-      .sort((left, right) => left.name.localeCompare(right.name));
+      .sort(
+        (left, right) =>
+          left.name.localeCompare(right.name) || left.id.localeCompare(right.id),
+      );
     return {
       id: tag.id,
       name: tag.name.replace(/^tag:/, ""),
@@ -1765,6 +1768,7 @@ export class PolicyService {
   private async firstNetwork(actor: RequestActor): Promise<Network | undefined> {
     const rows = await this.db.query.networks.findMany({
       where: (table, { eq }) => eq(table.orgId, actor.orgId),
+      orderBy: (table, { asc }) => [asc(table.createdAt), asc(table.id)],
       limit: 1,
     });
     return rows[0];
@@ -1788,7 +1792,10 @@ export class PolicyService {
         state: row.state,
         tags: (tagsByDevice.get(row.id) ?? []).map((tag) => tag.replace(/^tag:/, "")),
       }))
-      .sort((left, right) => left.name.localeCompare(right.name));
+      .sort(
+        (left, right) =>
+          left.name.localeCompare(right.name) || left.id.localeCompare(right.id),
+      );
 
     const devicesByTag = new Map<string, Array<{ id: string; name: string; hostname: string }>>();
     for (const [deviceId, tagNames] of tagsByDevice) {
@@ -1944,7 +1951,10 @@ export class PolicyService {
         devices: groupDevices.map((device) => ({ id: device.id, name: device.hostname })),
       });
     }
-    groupEntries.sort((left, right) => left.name.localeCompare(right.name));
+    groupEntries.sort(
+      (left, right) =>
+        left.name.localeCompare(right.name) || left.id.localeCompare(right.id),
+    );
     return groupEntries;
   }
 

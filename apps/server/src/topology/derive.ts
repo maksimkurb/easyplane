@@ -581,7 +581,7 @@ export function deriveTopology(
   }
 
   // Pass 3: relay bookkeeping and capability flags (after all links exist).
-  for (const link of collectLinks(linkMap)) {
+  for (const link of collectLinks(linkMap, nodes)) {
     if (link.kind !== "relayed" || !link.via) continue;
     const relay = nodes.get(link.via);
     if (relay) {
@@ -612,7 +612,7 @@ export function deriveTopology(
     }
   }
 
-  const links = collectLinks(linkMap);
+  const links = collectLinks(linkMap, nodes);
   const nodesByDevice = new Map<string, TopologyNode>();
   for (const node of nodes.values()) {
     if (node.deviceId) nodesByDevice.set(node.deviceId, node);
@@ -623,7 +623,7 @@ export function deriveTopology(
     if (node) node.online = input.online && Boolean(input.info?.running);
   }
 
-  const nodeList = [...nodes.values()].sort(compareNodes);
+  const nodeList = [...nodes.values()].sort(compareTopologyNodes);
   const reachableNodes = nodeList.filter((node) => node.reachable).length;
 
   return {
@@ -841,12 +841,72 @@ function mergeLink(
   }
 }
 
-function collectLinks(links: Map<string, TopologyLink>): TopologyLink[] {
-  return [...links.values()].sort((left, right) => left.id.localeCompare(right.id));
+/** Display name of a node, falling back to the stable node id. */
+function nodeLabel(node: TopologyNode | undefined, nodeId: string): string {
+  return node?.hostname || nodeId;
 }
 
-function compareNodes(left: TopologyNode, right: TopologyNode): number {
-  if (left.managed !== right.managed) return left.managed ? -1 : 1;
-  if (left.online !== right.online) return left.online ? -1 : 1;
-  return (left.hostname || left.id).localeCompare(right.hostname || right.id);
+/**
+ * Canonical endpoint labels of a link.
+ *
+ * A link is stored for an unordered pair, so sorting on the unordered pair is
+ * the same as sorting by the neighbour's name from either endpoint: when one
+ * endpoint is fixed (the device drawer), the pair key orders by the other one.
+ */
+function endpointLabels(
+  link: TopologyLink,
+  nameOf: (nodeId: string) => string,
+): [string, string] {
+  const source = nameOf(link.source);
+  const target = nameOf(link.target);
+  return source <= target ? [source, target] : [target, source];
+}
+
+/**
+ * Stable order for topology links: by the endpoint names the UI shows (the
+ * neighbour in the device drawer), then by the link id as a tie-breaker.
+ *
+ * Exported for unit tests; callers pass `id => node.hostname || id`.
+ */
+export function compareTopologyLinks(
+  left: TopologyLink,
+  right: TopologyLink,
+  nameOf: (nodeId: string) => string,
+): number {
+  const [leftFirst, leftSecond] = endpointLabels(left, nameOf);
+  const [rightFirst, rightSecond] = endpointLabels(right, nameOf);
+  return (
+    leftFirst.localeCompare(rightFirst) ||
+    leftSecond.localeCompare(rightSecond) ||
+    left.id.localeCompare(right.id)
+  );
+}
+
+function collectLinks(
+  links: Map<string, TopologyLink>,
+  nodes: Map<string, TopologyNode>,
+): TopologyLink[] {
+  return [...links.values()].sort((left, right) =>
+    compareTopologyLinks(left, right, (nodeId) =>
+      nodeLabel(nodes.get(nodeId), nodeId),
+    ),
+  );
+}
+
+/**
+ * Stable order for topology nodes: hostname (falling back to the node id),
+ * then the node id.
+ *
+ * Deliberately ignores `online` and `managed`: both flip between heartbeats and
+ * made rows jump every collection. `createdAt` is not part of the topology API
+ * schema (and must not change the generated web client), so the hostname is the
+ * first key here; the devices list itself is ordered by creation time.
+ */
+export function compareTopologyNodes(
+  left: TopologyNode,
+  right: TopologyNode,
+): number {
+  const byName = nodeLabel(left, left.id).localeCompare(nodeLabel(right, right.id));
+  if (byName !== 0) return byName;
+  return left.id.localeCompare(right.id);
 }

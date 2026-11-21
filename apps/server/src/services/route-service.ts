@@ -127,6 +127,7 @@ export class RouteService {
     const devices = await this.db.query.devices.findMany({
       where: (table, { and, eq }) =>
         and(eq(table.orgId, actor.orgId), eq(table.networkId, networkId)),
+      orderBy: (table, { asc }) => [asc(table.createdAt), asc(table.id)],
     });
     const names = await this.hostnames(devices);
     const routes = rows.map((row) => toDto(row, names.get(row.deviceId) ?? ""));
