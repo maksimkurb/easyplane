@@ -177,6 +177,21 @@ describe("topology derivation from a real CollectNetworkInfo fixture", () => {
     expect(second.nodes).toEqual(first.nodes);
     expect(second.links).toEqual(first.links);
   });
+
+  it("keeps the node and link order when the probes arrive in another order", () => {
+    const forward = build();
+    const reversed = deriveTopology([...inputs()].reverse(), {
+      networkId: "net-fixture",
+      collectedAt: Date.parse("2026-01-01T00:00:00Z"),
+      intervalMs: 5_000,
+    });
+    expect(reversed.nodes.map((node) => node.id)).toEqual(
+      forward.nodes.map((node) => node.id),
+    );
+    expect(reversed.links.map((link) => link.id)).toEqual(
+      forward.links.map((link) => link.id),
+    );
+  });
 });
 
 describe("tunnel protocol normalisation", () => {

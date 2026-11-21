@@ -58,6 +58,7 @@ export { readEnv, type AppEnv, type OidcProviderConfig } from "./env.js";
 export { createDatabase, type Database, type DatabaseHandle } from "./db/client.js";
 export { runMigrations } from "./db/migrate.js";
 export * as schema from "./db/schema.js";
+export { compareDevicesForList } from "./db/repositories.js";
 export { createAppContext, VERSION, type AppContext } from "./app/context.js";
 export { buildApp, type BuildAppOptions } from "./app/build-app.js";
 export {
@@ -255,6 +256,8 @@ export {
 } from "./realtime/events.js";
 export { SSE_HEARTBEAT_SECONDS, serializeSseEvent } from "./realtime/sse.js";
 export {
+  compareTopologyLinks,
+  compareTopologyNodes,
   deriveTopology,
   formatIpv4Inet,
   natTypeName,

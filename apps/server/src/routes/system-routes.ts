@@ -318,6 +318,7 @@ export function registerSystemRoutes(
       requireRole(request, ["admin"]);
       const users = await context.db.query.users.findMany({
         where: (table, { eq }) => eq(table.orgId, context.organisation.id),
+        orderBy: (table, { asc }) => [asc(table.createdAt), asc(table.id)],
       });
       return users.map(toUserDto);
     },

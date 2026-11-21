@@ -1197,7 +1197,11 @@ export class NetworkService {
           device.hostname !== "" &&
           device.hostname.toLowerCase() !== (device.dnsName ?? "").toLowerCase(),
       }))
-      .sort((left, right) => left.fqdn.localeCompare(right.fqdn));
+      .sort(
+        (left, right) =>
+          left.fqdn.localeCompare(right.fqdn) ||
+          left.deviceId.localeCompare(right.deviceId),
+      );
   }
 
   async delete(orgId: string, userId: string, id: string): Promise<void> {

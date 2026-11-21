@@ -146,6 +146,7 @@ export async function pushNetworkDevices(
   const rows = await db.query.devices.findMany({
     where: (table, { and, eq }) =>
       and(eq(table.networkId, networkId), eq(table.state, "approved")),
+    orderBy: (table, { asc }) => [asc(table.createdAt), asc(table.id)],
   });
   for (const device of rows) push.schedule(device.id, reason);
   return rows.length;

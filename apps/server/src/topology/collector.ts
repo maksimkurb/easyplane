@@ -143,7 +143,9 @@ export class TopologyService {
   private async discover(): Promise<void> {
     if (this.stopped) return;
     try {
-      const networks = await this.options.db.query.networks.findMany();
+      const networks = await this.options.db.query.networks.findMany({
+        orderBy: (table, { asc }) => [asc(table.id)],
+      });
       const seen = new Set<string>();
       for (const network of networks) {
         seen.add(network.id);
