@@ -4,6 +4,7 @@ import type { AppEnv } from "../env.js";
 import type { Database } from "../db/client.js";
 import { ensureOrganisation, listApprovedDevicesByRole } from "../db/repositories.js";
 import type { Organisation } from "../db/schema.js";
+import { hubPublicIpsChanged } from "../domain/hub.js";
 import { AuthService } from "../auth/service.js";
 import { OidcClient } from "../auth/oidc.js";
 import { SessionService } from "../auth/session.js";
@@ -20,7 +21,7 @@ import { DeviceSessionRegistry } from "../services/device-sessions.js";
 import { InviteService } from "../services/invite-service.js";
 import { NetworkService } from "../services/network-service.js";
 import { PolicyService } from "../services/policy-service.js";
-import { PushService } from "../services/push-service.js";
+import { PushService, pushNetworkDevices } from "../services/push-service.js";
 import { RouteService } from "../services/route-service.js";
 import { TopologyService } from "../topology/collector.js";
 
@@ -215,6 +216,33 @@ export async function createAppContext(
     deviceTimeoutMs: env.topologyTimeoutMs,
     maxDevicesPerCycle: env.topologyMaxDevices,
     metrics,
+    onPublicIpsChanged: async ({ device, previousPublicIps, publicIps }) => {
+      // Only a hub's public address changes what peers dial. Other devices'
+      // stored public IPs are informational.
+      if (
+        !hubPublicIpsChanged(device, previousPublicIps, publicIps)
+      ) {
+        return;
+      }
+      await pushNetworkDevices(
+        db,
+        push,
+        device.networkId,
+        "hub public address changed",
+      );
+      // The address is device state, not a network setting, but this event is
+      // the existing "refetch devices in this network" signal and changes here
+      // are rare (only when the detected public address really moved).
+      realtime.publish({
+        type: "network.updated",
+        orgId: device.orgId,
+        networkId: device.networkId,
+        data: {
+          networkId: device.networkId,
+          reason: "hub-public-address-updated",
+        },
+      });
+    },
   });
 
   controlPlane = new ControlPlaneServer({

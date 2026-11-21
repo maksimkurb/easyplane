@@ -312,6 +312,26 @@ export const devices = pgTable(
       .notNull()
       .default(sql`'{}'::text[]`),
     /**
+     * Port EasyTier listens on when the device is a hub. Null means the
+     * default 11010 (both tcp and udp are bound on it).
+     */
+    listenPort: integer("listen_port"),
+    /**
+     * Port other devices dial after router port-forwarding. Null means "same
+     * as the listen port"; the public address is the device's STUN-reported
+     * IPv4 plus this port.
+     */
+    externalPort: integer("external_port"),
+    /**
+     * Last public IPv4 addresses the topology collector observed for this
+     * device (EasyTier STUN). Kept when the device goes offline so an
+     * advertised hub endpoint does not disappear between probes.
+     */
+    publicIps: text("public_ips")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    /**
      * A hub is a device other devices dial. Only approved hubs contribute
      * endpoints to a network's compiled peer list, and a hub never receives
      * its own endpoints (so it cannot dial itself).

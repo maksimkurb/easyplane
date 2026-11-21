@@ -542,21 +542,29 @@ device dials its public address, reaches itself and loops with
 `peer id conflict, are you connecting to yourself?` in the core log. EasyPlane
 therefore builds the peer list **per device at push time**:
 
-- a device's **Advertised endpoints** (device page, member/admin) are the URLs
-  other devices should dial, e.g. `tcp://h-1.node.kurb.me:11010`;
+- a device's **Additional advertised addresses** (device page, member/admin)
+  are extra URLs other devices should dial, e.g. a DDNS name or another
+  transport;
 - **Use as hub** (device page, admin) adds the device to the network's ordered
-  **Peers** list as a device-backed entry (network page);
+  **Peers** list as a device-backed entry (network page) and makes it listen on
+  its **listen port** (default 11010, tcp+udp). Most operators only toggle the
+  switch;
+- the public address is detected automatically: `tcp://<public IPv4>:<external
+  port>` uses the STUN address the topology collector observed, with the
+  external port falling back to the listen port (Plex-style). A port-forward
+  on the router is still required and is not inferred;
 - only **approved** hubs contribute endpoints, and the target device's own
   entry is excluded by `device_id`/`machine_id`; raw external URLs are pushed
   verbatim unless linked to a device;
 - a device that is the only hub gets an empty list — it listens, it does not
   dial.
 
-Changing endpoints/hub flags repushes the devices that dial them (no revision,
-audited, SSE `network.updated`). Nothing is inferred from DNS or IPs: a raw URL
-is offered for linking only when it exactly equals a device's advertised
-endpoint, and linking adds the URL to that device's endpoints and converts the
-entry to device-backed.
+Changing endpoints/hub flags/ports repushes the devices that dial them (no
+revision, audited, SSE `network.updated`). A change in the detected public IP
+repushes only when the effective advertised set changes. Nothing is otherwise
+inferred from DNS or IPs: a raw URL is offered for linking only when it exactly
+equals a device's stored extra endpoint, and linking adds the URL to that
+device's endpoints and converts the entry to device-backed.
 
 ### Upgrading from broadcast peer URLs
 
@@ -567,13 +575,14 @@ first, then revisions). Nothing is lost and the same URLs are pushed. It cannot
 know which URL belongs to which device, so the self-dial loop persists until an
 operator links them:
 
-1. for each hub, open the device page and add its public endpoint(s) under
-   **Advertised endpoints**;
-2. toggle **Use as hub**;
-3. on the network page, link the raw URL to that device (**Link to device**).
-   The URL becomes device-backed, the device stops receiving it, and it is
-   still pushed to everyone else;
-4. repeat for every hub, then remove raw entries that nothing dials anymore.
+1. for each hub, turn on **Use as hub** on its device page and keep the
+   detected public address (change the ports only if the router uses
+   different ones); add a DDNS name under **Additional advertised addresses**
+   when the detected IP changes often;
+2. on the network page, link the legacy raw URL to that device
+   (**Link to device**). The URL becomes device-backed, the device stops
+   receiving it, and it is still pushed to everyone else;
+3. repeat for every hub, then remove raw entries that nothing dials anymore.
 
 The old JSON is left in place, so a downgraded image still sees it.
 

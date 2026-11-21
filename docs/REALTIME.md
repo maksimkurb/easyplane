@@ -279,6 +279,9 @@ hub-and-spoke, leaves with `disable_p2p`):
   (relay hostname, cost, first-hop `tcp`, `relaying-for` on the hub);
 - direct edges carry `tcp`, real RTT/loss and the dialler/acceptor direction;
 - NAT type and listeners come from the client's STUN report and listener list;
+- the public IPv4 list is persisted on the device (`devices.public_ips`) and
+  survives probes while the device is offline; it feeds the hub's automatic
+  `tcp://<public IP>:<external port>` peer endpoint;
 - stopping a container produces `device.updated{online:offline, reason:
   session-closed}` on a live SSE stream, starting it produces an online
   heartbeat event, and the REST view converges;

@@ -42,6 +42,19 @@ export type BlockDevice200 = {
   /** @nullable */
   ownerUserId: string | null;
   advertisedEndpoints: string[];
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  listenPort: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  externalPort: number | null;
+  publicIps: string[];
   isHub: boolean;
   role: BlockDevice200Role;
   effectiveRole: BlockDevice200EffectiveRole;

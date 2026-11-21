@@ -134,6 +134,19 @@ export {
   type RollbackPlan,
 } from "./domain/revisions.js";
 export {
+  DEFAULT_HUB_LISTEN_PORT,
+  autoHubEndpoints,
+  effectiveHubEndpoints,
+  effectiveHubExternalPort,
+  effectiveHubListenPort,
+  effectiveListenerUrls,
+  hubPublicIpsChanged,
+  isValidHubPort,
+  normalizePublicIpv4List,
+  type HubEndpointDevice,
+  type HubListenerDevice,
+} from "./domain/hub.js";
+export {
   PEER_URL_MAX_LENGTH,
   PEER_URL_SCHEMES,
   compilePeerList,
@@ -166,6 +179,7 @@ export {
   UnknownTokenRateLimiter,
   DeviceService,
   type DeviceDto,
+  type HubUpdateSettings,
   type RevisionDto,
 } from "./services/device-service.js";
 export { DeviceSessionRegistry } from "./services/device-sessions.js";

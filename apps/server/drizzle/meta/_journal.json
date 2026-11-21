@@ -57,6 +57,13 @@
       "when": 1794946324253,
       "tag": "0007_perfect_obadiah_stane",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795286976628,
+      "tag": "0008_orange_nemesis",
+      "breakpoints": true
     }
   ]
 }

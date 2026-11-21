@@ -48,6 +48,7 @@ import {
   type OnlineState,
 } from "../domain/device-status.js";
 import { effectiveRole, knowsNetworkSecret } from "../domain/credentials.js";
+import { isValidHubPort } from "../domain/hub.js";
 import {
   isConfigReadOnly,
   normalizeDesiredConfig,
@@ -85,6 +86,13 @@ export interface RequestActor {
   role: UserRole;
 }
 
+/** Optional hub settings saved together with the hub flag. */
+export interface HubUpdateSettings {
+  listenPort?: number | null;
+  externalPort?: number | null;
+  endpoints?: readonly string[];
+}
+
 export interface DeviceDto extends DeviceStatus {
   id: string;
   networkId: string;
@@ -106,6 +114,12 @@ export interface DeviceDto extends DeviceStatus {
   ownerUserId: string | null;
   /** Peer URLs other devices dial to reach this one. */
   advertisedEndpoints: string[];
+  /** Port EasyTier binds for a hub (null = default 11010). */
+  listenPort: number | null;
+  /** Port peers dial (null = same as the listen port). */
+  externalPort: number | null;
+  /** Last public IPv4 addresses observed for this device. */
+  publicIps: string[];
   /** `true` when this device is a hub in its network's peer list. */
   isHub: boolean;
   /** Stored role: anchor or member (docs/CREDENTIALS.md). */
@@ -434,6 +448,9 @@ export class DeviceService {
       inviteId: device.inviteId,
       ownerUserId: device.ownerUserId,
       advertisedEndpoints: device.advertisedEndpoints,
+      listenPort: device.listenPort,
+      externalPort: device.externalPort,
+      publicIps: device.publicIps,
       isHub: device.isHub,
       role: device.role,
       effectiveRole: role,
@@ -1405,17 +1422,7 @@ export class DeviceService {
     if (!device) notFound("device not found");
     const network = await getNetworkById(this.options.db, device.networkId);
     if (!network) notFound("network not found");
-    let normalized: string[];
-    try {
-      normalized = dedupePeerUrls(
-        endpoints.map((endpoint) => endpoint.trim()).filter(Boolean),
-      );
-    } catch (error) {
-      invalid(error instanceof Error ? error.message : "invalid endpoint URL");
-    }
-    if (normalized.length > 16) {
-      invalid("a device can advertise at most 16 endpoints");
-    }
+    const normalized = this.normalizeAdvertisedEndpoints(endpoints);
     const updated = await updateDevice(this.options.db, deviceId, {
       advertisedEndpoints: normalized,
     });
@@ -1449,17 +1456,39 @@ export class DeviceService {
    * a device-backed entry, so every other device dials its advertised
    * endpoints. Clearing the flag removes that entry (raw URLs linked to the
    * device are left alone).
+   *
+   * The same request can save the hub's listen/external ports and extra
+   * advertised addresses, so the device page has a single Save action.
    */
   async setHub(
     actor: RequestActor,
     deviceId: string,
     isHub: boolean,
+    settings: HubUpdateSettings = {},
   ): Promise<DeviceDto> {
     const device = await getDevice(this.options.db, actor.orgId, deviceId);
     if (!device) notFound("device not found");
     const network = await getNetworkById(this.options.db, device.networkId);
     if (!network) notFound("network not found");
-    const updated = await updateDevice(this.options.db, deviceId, { isHub });
+    for (const port of [settings.listenPort, settings.externalPort]) {
+      if (port !== undefined && port !== null && !isValidHubPort(port)) {
+        invalid("a port must be between 1 and 65535");
+      }
+    }
+    const endpoints =
+      settings.endpoints !== undefined
+        ? this.normalizeAdvertisedEndpoints(settings.endpoints)
+        : undefined;
+    const updated = await updateDevice(this.options.db, deviceId, {
+      isHub,
+      ...(settings.listenPort !== undefined
+        ? { listenPort: settings.listenPort }
+        : {}),
+      ...(settings.externalPort !== undefined
+        ? { externalPort: settings.externalPort }
+        : {}),
+      ...(endpoints !== undefined ? { advertisedEndpoints: endpoints } : {}),
+    });
     if (!updated) throw new AppError(500, "failed to update the hub flag");
     if (isHub) {
       const existing = await findDeviceBackedPeer(
@@ -1489,7 +1518,9 @@ export class DeviceService {
       targetId: deviceId,
       metadata: {
         networkId: network.id,
-        endpoints: device.advertisedEndpoints,
+        endpoints: updated.advertisedEndpoints,
+        listenPort: updated.listenPort,
+        externalPort: updated.externalPort,
       },
     });
     await this.repushNetwork(network.id, isHub ? "hub enabled" : "hub disabled");
@@ -1502,6 +1533,24 @@ export class DeviceService {
     this.publishDevice(updated, "hub-updated");
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
     return this.dto(updated, network, tags.get(deviceId) ?? []);
+  }
+
+  /** Validates, trims and de-duplicates a hub's extra advertised URLs. */
+  private normalizeAdvertisedEndpoints(
+    endpoints: readonly string[],
+  ): string[] {
+    let normalized: string[];
+    try {
+      normalized = dedupePeerUrls(
+        endpoints.map((endpoint) => endpoint.trim()).filter(Boolean),
+      );
+    } catch (error) {
+      invalid(error instanceof Error ? error.message : "invalid endpoint URL");
+    }
+    if (normalized.length > 16) {
+      invalid("a device can advertise at most 16 endpoints");
+    }
+    return normalized;
   }
 
   /**

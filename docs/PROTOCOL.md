@@ -490,15 +490,24 @@ peer list (`network_peers`), not stored verbatim in the revision. A revision's
 `config.peerUrls` is still accepted and recorded for older clients/rollbacks,
 but the push compiler replaces it:
 
-1. a **device-backed** entry contributes every advertised endpoint of an
-   **approved hub** (`devices.is_hub`), except the target device itself —
-   matched by `device_id` and re-checked by `machine_id`;
+1. a **device-backed** entry contributes every endpoint of an **approved hub**
+   (`devices.is_hub`), except the target device itself — matched by
+   `device_id` and re-checked by `machine_id`. A hub's endpoints are its extra
+   stored URLs plus, automatically, `tcp://<public IPv4>:<external port>` for
+   each STUN address the topology collector observed (the last observed list is
+   persisted on the device, so an offline probe does not erase it). Private,
+   loopback, link-local and CGNAT IPv4 ranges are never advertised;
 2. a **raw** external entry (`url` set) is pushed verbatim to every device,
    unless it is linked to the target device (`network_peers.device_id`), in
    which case only the target skips it;
-3. invalid URLs (scheme outside `tcp/udp/ws/wss/quic/wg/faketcp/ring/txt/srv/
-   unix/http/https`, no host where one is required) are dropped; entries are
-   de-duplicated by URL ignoring trailing slashes and keep peer-list order.
+3. invalid URLs (unsupported scheme, or no host where one is required) are
+   dropped; entries are de-duplicated by URL ignoring trailing slashes and
+   keep peer-list order.
+
+A hub also receives `listener_urls` with `tcp://0.0.0.0:<listen port>` and
+`udp://0.0.0.0:<listen port>` (default 11010) in addition to any listeners
+stored in the revision. Advertising an endpoint is therefore enough to make the
+hub actually listen; the external port only changes the advertised URL.
 
 Consequences: a device that is the only hub gets `peer_urls: []` (it is the
 listener); a hub never receives its own public URL and therefore cannot dial
@@ -507,8 +516,10 @@ list is network state like routes and MagicDNS: changing an endpoint repushes
 the devices that dial it (no new revision, audited, SSE `network.updated`), and
 rollback does not resurrect a stale peer list.
 
-Advertised endpoints are written explicitly by an operator. Nothing is inferred
-from DNS or IPs; a raw URL is only linked to a device on an **exact string
+Advertised extra endpoints are written explicitly by an operator. The public
+IPv4 address is the one exception: it comes from the hub's own STUN report and
+is persisted, but is only used to build the automatic endpoint. Nothing is
+inferred from DNS; a raw URL is only linked to a device on an **exact string
 match** with one of that device's endpoints, and linking converts it into a
 device-backed entry.
 

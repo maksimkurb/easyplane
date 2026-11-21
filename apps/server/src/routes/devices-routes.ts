@@ -317,6 +317,11 @@ export function registerDeviceRoutes(
         },
         request.params.deviceId,
         request.body.isHub,
+        {
+          listenPort: request.body.listenPort,
+          externalPort: request.body.externalPort,
+          endpoints: request.body.endpoints,
+        },
       );
     },
   );

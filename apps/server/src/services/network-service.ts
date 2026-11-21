@@ -39,6 +39,7 @@ import {
   peerUrlKey,
   validatePeerUrl,
 } from "../domain/peers.js";
+import { effectiveHubEndpoints } from "../domain/hub.js";
 import {
   constantTimeEqual,
   generateNetworkSecret,
@@ -204,7 +205,11 @@ function toPeerDto(
     deviceMachineId: device?.machineId ?? null,
     deviceState: device?.state ?? null,
     deviceIsHub: device?.isHub ?? false,
-    endpoints: device?.advertisedEndpoints ?? [],
+    endpoints: device
+      ? device.isHub
+        ? effectiveHubEndpoints(device)
+        : device.advertisedEndpoints
+      : [],
     suggestedDeviceId: suggested?.id ?? null,
     suggestedDeviceHostname:
       suggested?.dnsName ?? suggested?.hostname ?? null,
@@ -266,7 +271,7 @@ export class NetworkService {
         continue;
       }
       if (!device || device.state !== "approved" || !device.isHub) continue;
-      for (const endpoint of device.advertisedEndpoints) {
+      for (const endpoint of effectiveHubEndpoints(device)) {
         if (isValidPeerUrl(endpoint)) endpoints.add(peerUrlKey(endpoint));
       }
     }

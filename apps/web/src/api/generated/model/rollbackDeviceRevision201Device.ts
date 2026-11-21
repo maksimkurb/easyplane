@@ -42,6 +42,19 @@ export type RollbackDeviceRevision201Device = {
   /** @nullable */
   ownerUserId: string | null;
   advertisedEndpoints: string[];
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  listenPort: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  externalPort: number | null;
+  publicIps: string[];
   isHub: boolean;
   role: RollbackDeviceRevision201DeviceRole;
   effectiveRole: RollbackDeviceRevision201DeviceEffectiveRole;

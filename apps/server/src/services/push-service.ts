@@ -27,6 +27,7 @@ import {
   type CredentialMaterial,
 } from "../domain/credentials.js";
 import { formatIpv4, parseIpv4 } from "../domain/ip.js";
+import { effectiveHubEndpoints, effectiveListenerUrls } from "../domain/hub.js";
 import { compilePeerUrls } from "../domain/peers.js";
 import {
   acceptedRoutesFor,
@@ -378,7 +379,7 @@ export class PushService {
               machineId: peerDevice.machineId,
               state: peerDevice.state,
               isHub: peerDevice.isHub,
-              advertisedEndpoints: peerDevice.advertisedEndpoints,
+              advertisedEndpoints: effectiveHubEndpoints(peerDevice),
             }
           : null,
       })),
@@ -434,6 +435,10 @@ export class PushService {
       memberCredentialSecret: credentials.memberCredentialSecret,
       stored,
       peerUrls,
+      // A hub binds its listen port; non-hubs keep whatever the revision
+      // stored. The effective list also makes an existing hub converge even
+      // when it was enabled before this setting existed (port 11010 default).
+      listenerUrls: effectiveListenerUrls(stored.listenerUrls, device),
       assignedIpv4: device.virtualIpv4,
       ipv4Cidr: network.ipv4Cidr,
       magicDnsEnabled: network.magicDnsEnabled,

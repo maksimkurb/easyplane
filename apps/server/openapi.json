@@ -4581,6 +4581,24 @@
                           "type": "string"
                         }
                       },
+                      "listenPort": {
+                        "nullable": true,
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "externalPort": {
+                        "nullable": true,
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "publicIps": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
                       "isHub": {
                         "type": "boolean"
                       },
@@ -4776,6 +4794,9 @@
                       "inviteId",
                       "ownerUserId",
                       "advertisedEndpoints",
+                      "listenPort",
+                      "externalPort",
+                      "publicIps",
                       "isHub",
                       "role",
                       "effectiveRole",
@@ -4928,6 +4949,24 @@
                       "type": "string"
                     },
                     "advertisedEndpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "listenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "externalPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "publicIps": {
                       "type": "array",
                       "items": {
                         "type": "string"
@@ -5128,6 +5167,9 @@
                     "inviteId",
                     "ownerUserId",
                     "advertisedEndpoints",
+                    "listenPort",
+                    "externalPort",
+                    "publicIps",
                     "isHub",
                     "role",
                     "effectiveRole",
@@ -5359,6 +5401,24 @@
                         "type": "string"
                       }
                     },
+                    "listenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "externalPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "publicIps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "isHub": {
                       "type": "boolean"
                     },
@@ -5554,6 +5614,9 @@
                     "inviteId",
                     "ownerUserId",
                     "advertisedEndpoints",
+                    "listenPort",
+                    "externalPort",
+                    "publicIps",
                     "isHub",
                     "role",
                     "effectiveRole",
@@ -5727,6 +5790,24 @@
                         "type": "string"
                       }
                     },
+                    "listenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "externalPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "publicIps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "isHub": {
                       "type": "boolean"
                     },
@@ -5922,6 +6003,9 @@
                     "inviteId",
                     "ownerUserId",
                     "advertisedEndpoints",
+                    "listenPort",
+                    "externalPort",
+                    "publicIps",
                     "isHub",
                     "role",
                     "effectiveRole",
@@ -6078,6 +6162,24 @@
                         "type": "string"
                       }
                     },
+                    "listenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "externalPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "publicIps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "isHub": {
                       "type": "boolean"
                     },
@@ -6273,6 +6375,9 @@
                     "inviteId",
                     "ownerUserId",
                     "advertisedEndpoints",
+                    "listenPort",
+                    "externalPort",
+                    "publicIps",
                     "isHub",
                     "role",
                     "effectiveRole",
@@ -6429,6 +6534,24 @@
                         "type": "string"
                       }
                     },
+                    "listenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "externalPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "publicIps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "isHub": {
                       "type": "boolean"
                     },
@@ -6624,6 +6747,9 @@
                     "inviteId",
                     "ownerUserId",
                     "advertisedEndpoints",
+                    "listenPort",
+                    "externalPort",
+                    "publicIps",
                     "isHub",
                     "role",
                     "effectiveRole",
@@ -6804,6 +6930,24 @@
                           "type": "string"
                         },
                         "advertisedEndpoints": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "listenPort": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "externalPort": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "publicIps": {
                           "type": "array",
                           "items": {
                             "type": "string"
@@ -7004,6 +7148,9 @@
                         "inviteId",
                         "ownerUserId",
                         "advertisedEndpoints",
+                        "listenPort",
+                        "externalPort",
+                        "publicIps",
                         "isHub",
                         "role",
                         "effectiveRole",
@@ -7244,6 +7391,24 @@
                         "type": "string"
                       }
                     },
+                    "listenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "externalPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "publicIps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "isHub": {
                       "type": "boolean"
                     },
@@ -7439,6 +7604,9 @@
                     "inviteId",
                     "ownerUserId",
                     "advertisedEndpoints",
+                    "listenPort",
+                    "externalPort",
+                    "publicIps",
                     "isHub",
                     "role",
                     "effectiveRole",
@@ -7484,6 +7652,27 @@
                 "properties": {
                   "isHub": {
                     "type": "boolean"
+                  },
+                  "listenPort": {
+                    "nullable": true,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "externalPort": {
+                    "nullable": true,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  },
+                  "endpoints": {
+                    "maxItems": 16,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 512
+                    }
                   }
                 },
                 "required": [
@@ -7614,6 +7803,24 @@
                         "type": "string"
                       }
                     },
+                    "listenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "externalPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "publicIps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "isHub": {
                       "type": "boolean"
                     },
@@ -7809,6 +8016,9 @@
                     "inviteId",
                     "ownerUserId",
                     "advertisedEndpoints",
+                    "listenPort",
+                    "externalPort",
+                    "publicIps",
                     "isHub",
                     "role",
                     "effectiveRole",
@@ -8160,6 +8370,24 @@
                             "type": "string"
                           }
                         },
+                        "listenPort": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "externalPort": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "publicIps": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
                         "isHub": {
                           "type": "boolean"
                         },
@@ -8355,6 +8583,9 @@
                         "inviteId",
                         "ownerUserId",
                         "advertisedEndpoints",
+                        "listenPort",
+                        "externalPort",
+                        "publicIps",
                         "isHub",
                         "role",
                         "effectiveRole",
@@ -8601,6 +8832,24 @@
                             "type": "string"
                           }
                         },
+                        "listenPort": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "externalPort": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "publicIps": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
                         "isHub": {
                           "type": "boolean"
                         },
@@ -8796,6 +9045,9 @@
                         "inviteId",
                         "ownerUserId",
                         "advertisedEndpoints",
+                        "listenPort",
+                        "externalPort",
+                        "publicIps",
                         "isHub",
                         "role",
                         "effectiveRole",
@@ -12567,6 +12819,24 @@
                         "type": "string"
                       }
                     },
+                    "listenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "externalPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "publicIps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "isHub": {
                       "type": "boolean"
                     },
@@ -12762,6 +13032,9 @@
                     "inviteId",
                     "ownerUserId",
                     "advertisedEndpoints",
+                    "listenPort",
+                    "externalPort",
+                    "publicIps",
                     "isHub",
                     "role",
                     "effectiveRole",
@@ -12943,6 +13216,24 @@
                         "type": "string"
                       }
                     },
+                    "listenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "externalPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "publicIps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "isHub": {
                       "type": "boolean"
                     },
@@ -13138,6 +13429,9 @@
                     "inviteId",
                     "ownerUserId",
                     "advertisedEndpoints",
+                    "listenPort",
+                    "externalPort",
+                    "publicIps",
                     "isHub",
                     "role",
                     "effectiveRole",
@@ -13316,6 +13610,24 @@
                         "type": "string"
                       }
                     },
+                    "listenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "externalPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "publicIps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "isHub": {
                       "type": "boolean"
                     },
@@ -13511,6 +13823,9 @@
                     "inviteId",
                     "ownerUserId",
                     "advertisedEndpoints",
+                    "listenPort",
+                    "externalPort",
+                    "publicIps",
                     "isHub",
                     "role",
                     "effectiveRole",

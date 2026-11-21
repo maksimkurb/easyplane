@@ -120,6 +120,12 @@ export interface BuildNetworkConfigOptions {
    * conformance/unit callers and for configs compiled outside a network).
    */
   peerUrls?: string[];
+  /**
+   * Listeners resolved at compile time. A hub always binds tcp+udp on its
+   * listen port (see `domain/hub.ts`), so this overrides the stored list;
+   * non-hubs pass the stored list unchanged.
+   */
+  listenerUrls?: string[];
   assignedIpv4: string | null;
   ipv4Cidr: string;
   /** Network-level MagicDNS switch (authoritative). */
@@ -182,7 +188,7 @@ export function buildNetworkConfig(
       options.stored.networkLength ?? cidrPrefix(options.ipv4Cidr),
     publicServerUrl: options.stored.publicServerUrl,
     peerUrls,
-    listenerUrls: options.stored.listenerUrls,
+    listenerUrls: options.listenerUrls ?? options.stored.listenerUrls,
     noTun: options.stored.noTun,
     enableMagicDns: options.magicDnsEnabled ?? false,
     enableRelayNetworkWhitelist:
@@ -324,6 +330,14 @@ export function configMatchesDesired(
   // Url::to_string in the client appends a trailing "/" to
   // "tcp://host:port", so compare normalised forms.
   const normalizeUrl = (value: string) => value.replace(/\/+$/, "");
+  // The desired listeners must be present. Extra listeners the client adds
+  // (its default `ring://<instance-id>`) are fine; a hub listener that is
+  // missing means the port is closed, which is exactly the failure this field
+  // exists to prevent.
+  const remoteListeners = new Set((remote.listenerUrls ?? []).map(normalizeUrl));
+  for (const listener of desired.listenerUrls ?? []) {
+    if (!remoteListeners.has(normalizeUrl(listener))) return false;
+  }
   const remotePeers = new Set(remote.peerUrls.map(normalizeUrl));
   if (remotePeers.size !== desired.peerUrls.length) return false;
   for (const peer of desired.peerUrls) {
@@ -397,6 +411,11 @@ export function describeConfigMismatch(
   }
   check("proxyCidrs", [...(remote.proxyCidrs ?? [])].sort(), [...(desired.proxyCidrs ?? [])].sort());
   check("routes", [...(remote.routes ?? [])].sort(), [...(desired.routes ?? [])].sort());
+  check(
+    "listenerUrls",
+    [...(remote.listenerUrls ?? [])].map((u) => u.replace(/\/+$/, "")).sort(),
+    [...(desired.listenerUrls ?? [])].map((u) => u.replace(/\/+$/, "")).sort(),
+  );
   check("peerUrls", [...remote.peerUrls].map((u) => u.replace(/\/+$/, "")).sort(), [...desired.peerUrls].map((u) => u.replace(/\/+$/, "")).sort());
   check("virtualIpv4", remote.virtualIpv4, desired.virtualIpv4);
   check("networkLength", remote.networkLength, desired.networkLength);

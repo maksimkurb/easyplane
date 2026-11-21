@@ -164,6 +164,9 @@ export const deviceSchema = z.object({
   inviteId: z.string().nullable(),
   ownerUserId: z.string().nullable(),
   advertisedEndpoints: z.array(z.string()),
+  listenPort: z.number().int().nullable(),
+  externalPort: z.number().int().nullable(),
+  publicIps: z.array(z.string()),
   isHub: z.boolean(),
   role: deviceRoleEnum(),
   effectiveRole: deviceRoleEnum(),
@@ -238,7 +241,17 @@ export const updateDeviceEndpointsSchema = z
   .object({ endpoints: z.array(z.string().min(1).max(512)).max(16) })
   .strict();
 
-export const updateDeviceHubSchema = z.object({ isHub: z.boolean() }).strict();
+export const updateDeviceHubSchema = z
+  .object({
+    isHub: z.boolean(),
+    /** Port EasyTier binds; null/omitted leaves it unchanged. */
+    listenPort: z.number().int().min(1).max(65535).nullable().optional(),
+    /** Port peers dial; null means "same as the listen port". */
+    externalPort: z.number().int().min(1).max(65535).nullable().optional(),
+    /** Extra advertised addresses (the existing endpoint validation). */
+    endpoints: z.array(z.string().min(1).max(512)).max(16).optional(),
+  })
+  .strict();
 
 export const revisionSchema = z.object({
   id: z.string(),

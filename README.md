@@ -294,23 +294,27 @@ public URL: that node dials itself through its public address and the core
 loops with `peer id conflict, are you connecting to yourself?`.
 
 EasyPlane never compares hostnames or IPs to avoid this. Each device can
-advertise **endpoints** (the peer URLs others should dial, e.g.
-`tcp://h-1.node.kurb.me:11010`) and be marked **hub**. A network has one ordered
-peer list of device-backed entries and raw external URLs; at push time the
-compiler builds the list per device:
+advertise extra **endpoints** (DDNS names or other transports, e.g.
+`wss://h-1.example.com:443`) and be marked **hub**. A hub also listens on its
+**listen port** (default 11010, tcp+udp) and the panel detects its public IPv4
+automatically, advertising `tcp://<public IP>:<external port>` (the external
+port falls back to the listen port). A network has one ordered peer list of
+device-backed entries and raw external URLs; at push time the compiler builds
+the list per device:
 
-- every advertised endpoint of an **approved hub** except the target device,
-  identified by `device_id` (and re-checked by `machine_id`);
+- the automatic public endpoint and every extra endpoint of an **approved
+  hub** except the target device, identified by `device_id` (and re-checked by
+  `machine_id`);
 - every **raw** URL, unless it is explicitly linked to the target device;
 - de-duplicated by URL and in a stable order.
 
 A device that is the only hub therefore receives an empty list — it is the
-listener. Members can edit a device's endpoints; admins add/remove peer entries,
-link a raw URL to its device and toggle the hub flag. Links are exact string
-matches against advertised endpoints, never DNS or IP guesses. Endpoint changes
-are audited, broadcast over SSE and repush the devices that dial the hub,
-without creating a revision: the peer list is network state compiled at push
-time, like routes and MagicDNS.
+listener. Members can edit a device's extra endpoints; admins add/remove peer
+entries, link a raw URL to its device and toggle the hub flag. Links are exact
+string matches against advertised endpoints, never DNS or IP guesses. Endpoint
+or port changes are audited, broadcast over SSE and repush the devices that dial
+the hub, without creating a revision: the peer list is network state compiled at
+push time, like routes and MagicDNS.
 
 ## Bundled rendezvous node
 

@@ -614,6 +614,41 @@ export const enTranslation = {
         enabled: "Device is now an anchor device",
         disabled: "Device is no longer an anchor device",
         badge: "Anchor device",
+        saved: "Hub settings saved",
+        endpointsSaved: "Extra addresses saved",
+        save: "Save",
+        listenPort: {
+          label: "Listen port",
+          hint: "The port this device listens on.",
+          invalid: "Enter a whole number from 1 to 65535.",
+        },
+        externalPort: {
+          label: "External port",
+          hint: "Leave empty if it is the same as the listen port.",
+          invalid: "Enter a whole number from 1 to 65535.",
+        },
+        auto: {
+          label: "Automatically",
+          unknown: "The public IP is not known yet. It appears after the device connects.",
+        },
+        routerHint:
+          "Set up your router so the external port leads to the device port. The public IP is detected automatically.",
+        extra: {
+          label: "Additional advertised addresses",
+          placeholder:
+            "tcp://example.com:11010\nudp://203.0.113.5:11010\nws://example.com:11011\nwss://example.com:443\nquic://example.com:11012\nwg://example.com:11013",
+          hint: "Only needed for a domain name or another connection type. These are added to the detected address.",
+          infoLabel: "Which addresses can I add?",
+          infoTitle: "One address per line",
+          kinds: {
+            tcp: "— the usual choice; works almost everywhere.",
+            udp: "— usually faster, but some networks block it.",
+            ws: "— through a regular web port.",
+            wss: "— like ws, encrypted; usually port 443.",
+            quic: "— fast, but needs an open UDP port.",
+            wg: "— if you already have a WireGuard address.",
+          },
+        },
       },
       rollback: "Roll back",
       rollbackConfirm: "Restore revision {{revision}} as a new revision?",

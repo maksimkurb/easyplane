@@ -8,4 +8,22 @@
 
 export type UpdateDeviceHubBody = {
   isHub: boolean;
+  /**
+     * @minimum 1
+     * @maximum 65535
+     * @nullable
+     */
+  listenPort?: number | null;
+  /**
+     * @minimum 1
+     * @maximum 65535
+     * @nullable
+     */
+  externalPort?: number | null;
+  /**
+     * @maxItems 16
+     * @items.minLength 1
+     * @items.maxLength 512
+     */
+  endpoints?: string[];
 };

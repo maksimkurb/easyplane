@@ -1,6 +1,7 @@
-import { getNetworkById, listDevicesInNetwork } from "../db/repositories.js";
+import { getNetworkById, listDevicesInNetwork, updateDevice } from "../db/repositories.js";
 import type { DbExecutor } from "../db/repositories.js";
 import type { Device } from "../db/schema.js";
+import { normalizePublicIpv4List } from "../domain/hub.js";
 import type { Logger } from "../logger.js";
 import type { MetricsRegistry } from "../observability/metrics.js";
 import { METRIC_NAMES } from "../observability/metrics.js";
@@ -36,6 +37,16 @@ export interface TopologyServiceOptions extends TopologyIntervalOptions {
   random?: () => number;
   now?: () => number;
   metrics?: MetricsRegistry;
+  /**
+   * Called after a probe changed the durable public IPv4 list of a device.
+   * The app wires this to the push service; the collector itself stays free
+   * of peer-list logic.
+   */
+  onPublicIpsChanged?: (change: {
+    device: Device;
+    previousPublicIps: string[];
+    publicIps: string[];
+  }) => Promise<void> | void;
 }
 
 export interface CollectResult {
@@ -305,6 +316,52 @@ export class TopologyService {
     snapshot.partial = snapshot.partial || truncated || probes.some((probe) => probe.failed);
 
     this.snapshots.set(networkId, snapshot);
+
+    // Keep the last public IPv4 addresses durably: the advertised hub endpoint
+    // is built from them, and an offline device must not lose its address
+    // between topology probes. A probe with no STUN answer keeps the old value.
+    const changes: Array<{
+      device: Device;
+      previousPublicIps: string[];
+      publicIps: string[];
+    }> = [];
+    for (const probe of probes) {
+      const node = snapshot.nodes.find(
+        (candidate) => candidate.deviceId === probe.device.id,
+      );
+      if (!node?.online) continue;
+      const publicIps = normalizePublicIpv4List(node.publicIps);
+      if (publicIps.length === 0) continue;
+      if (sameAddresses(probe.device.publicIps, publicIps)) continue;
+      try {
+        const updated = await updateDevice(this.options.db, probe.device.id, {
+          publicIps,
+        });
+        if (updated) {
+          changes.push({
+            device: updated,
+            previousPublicIps: probe.device.publicIps,
+            publicIps,
+          });
+        }
+      } catch (error) {
+        this.options.logger.debug("failed to store public IPs", {
+          deviceId: probe.device.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+    for (const change of changes) {
+      try {
+        await this.options.onPublicIpsChanged?.(change);
+      } catch (error) {
+        this.options.logger.debug("public IP change handler failed", {
+          deviceId: change.device.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
     this.options.realtime.publish({
       type: "topology.updated",
       orgId: network.orgId,
@@ -329,6 +386,15 @@ export class TopologyService {
     });
     return { snapshot, collected: true };
   }
+}
+
+function sameAddresses(
+  left: readonly string[],
+  right: readonly string[],
+): boolean {
+  if (left.length !== right.length) return false;
+  const set = new Set(left);
+  return right.every((address) => set.has(address));
 }
 
 function withTimeout<T>(
