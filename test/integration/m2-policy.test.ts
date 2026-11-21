@@ -26,6 +26,7 @@ function stubClient(id: string): ManagedClient {
 interface DeviceDto {
   id: string;
   hostname: string;
+  machineId: string;
   dnsName: string | null;
   magicDnsName: string | null;
   magicDnsZone: string;
@@ -70,7 +71,7 @@ describe("M2: policy, MagicDNS and route approval API", () => {
       headers: authed(admin),
     });
     const device = (list.json() as DeviceDto[]).find(
-      (entry) => entry.hostname === hostname,
+      (entry) => entry.machineId === machineId,
     );
     if (!device) throw new Error(`device ${hostname} not found`);
     const approved = await test.app.inject({
