@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
+import type { TFunction } from "i18next"
 import {
+  BracesIcon,
   CheckCircle2Icon,
   HistoryIcon,
   LockIcon,
@@ -11,6 +13,7 @@ import {
   TagIcon,
   Trash2Icon,
   UsersIcon,
+  WrenchIcon,
   XCircleIcon,
   XIcon,
 } from "lucide-react"
@@ -35,7 +38,6 @@ import {
 } from "@/api/generated/easyplane"
 import type { TestNetworkReachabilityBodyProtocol } from "@/api/generated/model"
 import type {
-  AccessChainName,
   AccessDocument,
   AccessMode,
   AccessRule,
@@ -46,6 +48,7 @@ import { normalizeAccessDocument } from "@/lib/access-policy"
 import { formatRelativeTime } from "@/lib/format"
 import { initials } from "@/lib/initials"
 import { Button } from "@/components/ui/button"
+import { OptionSelect } from "@/components/shared/option-select"
 import {
   Dialog,
   DialogContent,
@@ -55,11 +58,24 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   GroupChip,
   PlainDeviceChip,
   TagChip,
 } from "@/components/access/access-chips"
-import { ruleIndexForCompiledName } from "@/components/access/access-rule-summary"
+import {
+  friendlyChainName,
+  isGeneratedRuleName,
+  prettySubnetName,
+  ruleChangeSentence,
+  ruleDisplayTitle,
+  ruleIndexForCompiledName,
+} from "@/components/access/access-rule-summary"
 import { cn } from "@/lib/utils"
 
 function InlineError({ message }: { message?: string }) {
@@ -104,20 +120,31 @@ export function AccessSubnets({ subjects }: { subjects: AccessSubjects }) {
         </p>
       ) : (
         <div className="flex flex-col gap-1.5">
-          {subnets.map((subnet) => (
-            <div
-              className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 rounded-lg bg-surface-2 px-2.5 py-2 text-sm"
-              key={`${subnet.id}-${subnet.cidr}`}
-            >
-              <span className="font-medium">{subnet.name}</span>
-              <span className="font-mono text-[12.5px] [overflow-wrap:anywhere] text-fg-2">
-                {subnet.cidr}
-              </span>
-              <span className="text-[12.5px] text-fg-2">
-                {t("accessA.accordion.via", { device: subnet.viaHostname })}
-              </span>
-            </div>
-          ))}
+          {subnets.map((subnet) => {
+            const pretty = prettySubnetName(
+              subnet.name,
+              subnet.cidr,
+              subnet.viaHostname
+            )
+            return (
+              <div
+                className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 rounded-lg bg-surface-2 px-2.5 py-2 text-sm"
+                key={`${subnet.id}-${subnet.cidr}`}
+              >
+                {!pretty.auto ? (
+                  <span className="font-medium">{pretty.label}</span>
+                ) : null}
+                <span className="font-mono text-[12.5px] whitespace-nowrap text-fg-2">
+                  {subnet.cidr}
+                </span>
+                {pretty.via ? (
+                  <span className="text-[12.5px] text-fg-2">
+                    {t("accessA.accordion.via", { device: pretty.via })}
+                  </span>
+                ) : null}
+              </div>
+            )
+          })}
         </div>
       )}
     </section>
@@ -174,7 +201,7 @@ function TagsBody({
                     aria-label={t("accessA.accordion.deleteTag", {
                       name: tag.name,
                     })}
-                    className="ml-auto grid size-7 flex-none place-items-center rounded-md text-fg-3 hover:bg-err-soft hover:text-err focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+                    className="ml-auto grid size-7 flex-none place-items-center rounded-md text-fg-2 hover:bg-err-soft hover:text-err focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none max-sm:size-11"
                     disabled={deleteTag.isPending}
                     onClick={() => {
                       setError(undefined)
@@ -196,7 +223,7 @@ function TagsBody({
                 {canEdit ? (
                   <button
                     aria-expanded={open}
-                    className="inline-flex min-h-6 items-center gap-1 rounded-[7px] bg-card px-2 text-[13px] text-fg-2 shadow-[inset_0_0_0_1px_var(--line)] hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+                    className="inline-flex min-h-6 items-center gap-1 rounded-[7px] bg-card px-2 text-[13px] text-fg-2 shadow-[inset_0_0_0_1px_var(--line)] hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none max-sm:min-h-11"
                     onClick={() => setAssignOpen(open ? null : tag.id)}
                     type="button"
                   >
@@ -369,7 +396,7 @@ function UserGroupCard({
             aria-label={t("accessA.accordion.deleteGroup", {
               name: group.name,
             })}
-            className="ml-auto grid size-7 flex-none place-items-center rounded-md text-fg-3 hover:bg-err-soft hover:text-err focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+            className="ml-auto grid size-7 flex-none place-items-center rounded-md text-fg-2 hover:bg-err-soft hover:text-err focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none max-sm:size-11"
             disabled={deleteGroup.isPending}
             onClick={() => {
               setError(undefined)
@@ -412,7 +439,7 @@ function UserGroupCard({
                 aria-label={t("accessA.accordion.removeMember", {
                   email: member.email,
                 })}
-                className="grid size-6 flex-none place-items-center rounded-md text-fg-3 hover:bg-err-soft hover:text-err focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+                className="grid size-6 flex-none place-items-center rounded-md text-fg-2 hover:bg-err-soft hover:text-err focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none max-sm:size-11"
                 disabled={removeMember.isPending}
                 onClick={() => {
                   setError(undefined)
@@ -651,13 +678,6 @@ export function AccessTagsGroups({
 
 /* --------------------------------------------------------------- test access */
 
-function chainLabel(chain: string, t: (key: string) => string): string {
-  if (chain === "inbound" || chain === "outbound" || chain === "forward") {
-    return t(`accessA.defaults.${chain as AccessChainName}`)
-  }
-  return chain
-}
-
 function TestAccessForm({
   subjects,
   networkId,
@@ -692,6 +712,11 @@ function TestAccessForm({
           entry.chain === result.decidedBy?.chain
       )?.matchedRule ?? null)
     : null
+  const decidingIndex = ruleIndexForCompiledName(rules, decidingRule)
+  const decidingTitle =
+    decidingIndex !== null
+      ? ruleDisplayTitle(rules[decidingIndex]!, subjects, t)
+      : null
   const decide = () => {
     setError(undefined)
     test.mutate(
@@ -734,85 +759,94 @@ function TestAccessForm({
     <div className="flex flex-col gap-3">
       <InlineError message={error} />
       <div className="grid gap-2 sm:grid-cols-2">
-        <label className="min-w-0">
+        <div className="min-w-0">
           <span className="mb-1 block text-[12.5px] font-medium text-fg-2">
             {t("accessA.accordion.from")}
           </span>
-          <select
+          <OptionSelect
             aria-label={t("accessA.accordion.from")}
-            className="h-10 w-full min-w-0 rounded-lg border border-line-2 bg-card px-2 text-sm text-foreground outline-none focus-visible:border-brand focus-visible:ring-3 focus-visible:ring-brand-soft disabled:bg-surface-2 max-sm:h-12 max-sm:text-base"
             disabled={!canTest}
-            onChange={(event) => {
+            empty={<span>{t("accessA.test.noDevices")}</span>}
+            onValueChange={(value) => {
               test.reset()
               onResult(null)
-              setSrc(event.target.value)
+              setSrc(value)
             }}
+            options={devices.map((device) => ({
+              value: device.id,
+              label: device.name,
+            }))}
+            placeholder={t("accessA.accordion.choose")}
+            triggerClassName="max-w-none"
             value={src}
-          >
-            <option value="">{t("accessA.accordion.choose")}</option>
-            {devices.map((device) => (
-              <option key={device.id} value={device.id}>
-                {device.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="min-w-0">
+          />
+        </div>
+        <div className="min-w-0">
           <span className="mb-1 block text-[12.5px] font-medium text-fg-2">
             {t("accessA.accordion.to")}
           </span>
-          <select
+          <OptionSelect
             aria-label={t("accessA.accordion.to")}
-            className="h-10 w-full min-w-0 rounded-lg border border-line-2 bg-card px-2 text-sm text-foreground outline-none focus-visible:border-brand focus-visible:ring-3 focus-visible:ring-brand-soft disabled:bg-surface-2 max-sm:h-12 max-sm:text-base"
             disabled={!canTest}
-            onChange={(event) => {
+            empty={<span>{t("accessA.test.noDevices")}</span>}
+            onValueChange={(value) => {
               test.reset()
               onResult(null)
-              setDst(event.target.value)
+              setDst(value)
             }}
+            options={[
+              ...devices.map((device) => ({
+                value: device.id,
+                label: device.name,
+              })),
+              ...subnets.map((subnet) => {
+                const pretty = prettySubnetName(
+                  subnet.name,
+                  subnet.cidr,
+                  subnet.viaHostname
+                )
+                return {
+                  value: `cidr:${subnet.cidr}`,
+                  label: pretty.auto
+                    ? pretty.via
+                      ? t("accessA.picker.subnetVia", {
+                          cidr: pretty.label,
+                          device: pretty.via,
+                        })
+                      : pretty.label
+                    : subnet.name,
+                }
+              }),
+            ]}
+            placeholder={t("accessA.accordion.choose")}
+            triggerClassName="max-w-none"
             value={dst}
-          >
-            <option value="">{t("accessA.accordion.choose")}</option>
-            {devices.map((device) => (
-              <option key={device.id} value={device.id}>
-                {device.name}
-              </option>
-            ))}
-            {subnets.map((subnet) => (
-              <option
-                key={`${subnet.id}-${subnet.cidr}`}
-                value={`cidr:${subnet.cidr}`}
-              >
-                {`${subnet.name} (${subnet.cidr})`}
-              </option>
-            ))}
-          </select>
-        </label>
+          />
+        </div>
       </div>
       <div className="flex flex-wrap items-end gap-2">
-        <label className="w-28 min-w-0 flex-none">
+        <div className="w-32 min-w-0 flex-none">
           <span className="mb-1 block text-[12.5px] font-medium text-fg-2">
             {t("accessA.accordion.protocol")}
           </span>
-          <select
+          <OptionSelect
             aria-label={t("accessA.accordion.protocol")}
-            className="h-10 w-full min-w-0 rounded-lg border border-line-2 bg-card px-2 text-sm text-foreground outline-none focus-visible:border-brand focus-visible:ring-3 focus-visible:ring-brand-soft disabled:bg-surface-2 max-sm:h-12 max-sm:text-base"
             disabled={!canTest}
-            onChange={(event) => {
+            onValueChange={(value) => {
               test.reset()
               onResult(null)
-              setProtocol(
-                event.target.value as TestNetworkReachabilityBodyProtocol
-              )
+              setProtocol(value as TestNetworkReachabilityBodyProtocol)
             }}
+            options={[
+              { value: "tcp", label: "TCP" },
+              { value: "udp", label: "UDP" },
+              { value: "icmp", label: "ICMP" },
+              { value: "icmpv6", label: "ICMPv6" },
+            ]}
+            triggerClassName="max-w-none"
             value={protocol}
-          >
-            <option value="tcp">TCP</option>
-            <option value="udp">UDP</option>
-            <option value="icmp">ICMP</option>
-            <option value="icmpv6">ICMPv6</option>
-          </select>
-        </label>
+          />
+        </div>
         <label className="w-28 min-w-0 flex-none">
           <span className="mb-1 block text-[12.5px] font-medium text-fg-2">
             {t("accessA.accordion.port")}
@@ -873,19 +907,19 @@ function TestAccessForm({
             </p>
             {result.decidedBy ? (
               <p className="[overflow-wrap:anywhere] text-fg-2">
-                {decidingRule
+                {decidingTitle
                   ? t("accessA.accordion.decidedBy", {
                       device: result.decidedBy.hostname,
-                      chain: chainLabel(result.decidedBy.chain, t),
-                      rule: decidingRule,
+                      chain: friendlyChainName(result.decidedBy.chain, t),
+                      rule: decidingTitle,
                     })
                   : t("accessA.accordion.decidedByDefault", {
                       device: result.decidedBy.hostname,
-                      chain: chainLabel(result.decidedBy.chain, t),
+                      chain: friendlyChainName(result.decidedBy.chain, t),
                     })}
               </p>
             ) : null}
-            {decidingRule ? (
+            {decidingTitle ? (
               <p className="mt-1 text-[12px] text-fg-2">
                 {t("accessA.test.highlighted")}
               </p>
@@ -899,32 +933,64 @@ function TestAccessForm({
 
 /* -------------------------------------------------------------- compiled ACL */
 
+function chainTitle(chain: string, t: TFunction): string {
+  return friendlyChainName(chain, t)
+}
+
 function compiledAclText(
   data: GetCompiledAcl200 | undefined,
-  noRules: string
+  t: TFunction
 ): string {
   if (!data) return ""
   const header = [
     data.hostname,
     data.virtualIpv4 ?? "",
-    `policy v${data.policyVersion}`,
-    data.mode,
+    t("accessA.compiled.policyVersion", { version: data.policyVersion }),
+    data.mode === "open"
+      ? t("accessA.history.modeOpen")
+      : t("accessA.history.modeRules"),
   ]
     .filter(Boolean)
     .join("  ")
   const chains = data.chains.map((chain) => {
     const lines = [
-      `${chain.name}  enabled: ${chain.enabled}  default_action: ${chain.defaultAction}`,
+      `${chainTitle(chain.name, t)}  ·  ${
+        chain.enabled
+          ? t("accessA.compiled.enabled")
+          : t("accessA.compiled.disabled")
+      }  ·  ${t("accessA.compiled.defaultAction", {
+        action:
+          chain.defaultAction === "Allow"
+            ? t("accessA.defaults.allow")
+            : t("accessA.defaults.block"),
+      })}`,
     ]
-    if (chain.rules.length === 0) lines.push(`  ${noRules}`)
+    if (chain.rules.length === 0) {
+      lines.push(`  ${t("accessA.compiled.noRules")}`)
+    }
     for (const rule of chain.rules) {
-      lines.push(
-        `  ${rule.name}  priority ${rule.priority}  ${rule.action}  ${rule.protocol}  ports ${JSON.stringify(
-          rule.ports
-        )}  ${JSON.stringify(rule.sourceIps)} -> ${JSON.stringify(
-          rule.destinationIps
-        )}  source_ports ${JSON.stringify(rule.sourcePorts)}  stateful: ${rule.stateful}`
-      )
+      const source = rule.sourceIps.length
+        ? rule.sourceIps.join(", ")
+        : t("accessA.compiled.anyone")
+      const destination = rule.destinationIps.length
+        ? rule.destinationIps.join(", ")
+        : t("accessA.compiled.anywhere")
+      const parts = [
+        `  ${rule.name}`,
+        t("accessA.compiled.priority", { priority: rule.priority }),
+        rule.action === "Allow"
+          ? t("accessA.defaults.allow")
+          : t("accessA.defaults.block"),
+        rule.protocol.toUpperCase(),
+        rule.ports.length
+          ? t("accessA.compiled.ports", { ports: rule.ports.join(", ") })
+          : t("accessA.ports.any"),
+        `${source} → ${destination}`,
+        rule.stateful
+          ? t("accessA.compiled.statefulOn")
+          : t("accessA.compiled.statefulOff"),
+      ]
+      lines.push(parts.join("  ·  "))
     }
     return lines.join("\n")
   })
@@ -949,33 +1015,27 @@ function CompiledAclBody({
   const compiled = useGetCompiledAcl(networkId, chosen, {
     query: { enabled: Boolean(chosen) },
   })
-  const text = compiledAclText(
-    compiled.data?.data,
-    t("accessA.accordion.compiledNoRules")
-  )
+  const text = compiledAclText(compiled.data?.data, t)
 
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      <label className="min-w-0 sm:max-w-72">
+      <div className="min-w-0 sm:max-w-72">
         <span className="mb-1 block text-[12.5px] font-medium text-fg-2">
           {t("accessA.accordion.compiledDevice")}
         </span>
-        <select
+        <OptionSelect
           aria-label={t("accessA.accordion.compiledDevice")}
-          className="h-10 w-full min-w-0 rounded-lg border border-line-2 bg-card px-2 text-sm text-foreground outline-none focus-visible:border-brand focus-visible:ring-3 focus-visible:ring-brand-soft max-sm:h-12 max-sm:text-base"
-          onChange={(event) => setDeviceId(event.target.value)}
+          empty={<span>{t("accessA.compiled.noDevices")}</span>}
+          onValueChange={setDeviceId}
+          options={devices.map((device) => ({
+            value: device.id,
+            label: device.name,
+          }))}
+          placeholder={t("accessA.accordion.choose")}
+          triggerClassName="max-w-none"
           value={chosen}
-        >
-          {devices.length === 0 ? (
-            <option value="">{t("common.empty")}</option>
-          ) : null}
-          {devices.map((device) => (
-            <option key={device.id} value={device.id}>
-              {device.name}
-            </option>
-          ))}
-        </select>
-      </label>
+        />
+      </div>
       {chosen && text ? (
         <pre
           className="min-w-0 rounded-lg bg-surface-2 p-2.5 font-mono text-[12.5px] leading-[18px] [overflow-wrap:anywhere] whitespace-pre-wrap shadow-[inset_0_0_0_1px_var(--line)]"
@@ -998,26 +1058,30 @@ function CompiledAclBody({
 
 type RuleChange = {
   kind: "added" | "removed" | "changed"
-  label: string
+  /** A name the user wrote, if there is one. Sentences carry the meaning. */
+  label?: string
   before?: string
   after?: string
 }
 
-function ruleFingerprint(rule: AccessRule): string {
-  return `${rule.action} ${rule.from.join(",")} → ${rule.to.join(",")} · ${
-    rule.protocol === "any" ? "any" : rule.protocol
-  } ${rule.ports.join(",") || "any"}${rule.enabled === false ? " (off)" : ""}`
+function humanRuleName(rule: AccessRule | undefined): string | undefined {
+  const name = rule?.name?.trim()
+  if (!name || isGeneratedRuleName(name)) return undefined
+  return name
 }
 
 function diffDocuments(
   older: AccessDocument | undefined,
-  newer: AccessDocument
+  newer: AccessDocument,
+  subjects: AccessSubjects,
+  t: TFunction
 ): RuleChange[] {
+  const sentence = (rule: AccessRule) => ruleChangeSentence(rule, subjects, t)
   if (!older) {
-    return newer.rules.map((rule, index) => ({
+    return newer.rules.map((rule) => ({
       kind: "added" as const,
-      label: rule.name?.trim() || `#${index + 1}`,
-      after: ruleFingerprint(rule),
+      ...(humanRuleName(rule) ? { label: humanRuleName(rule)! } : {}),
+      after: sentence(rule),
     }))
   }
   const changes: RuleChange[] = []
@@ -1025,11 +1089,19 @@ function diffDocuments(
   for (let index = 0; index < length; index += 1) {
     const before = older.rules[index]
     const after = newer.rules[index]
-    const label = after?.name?.trim() || before?.name?.trim() || `#${index + 1}`
+    const label = humanRuleName(after) ?? humanRuleName(before)
     if (!before && after) {
-      changes.push({ kind: "added", label, after: ruleFingerprint(after) })
+      changes.push({
+        kind: "added",
+        ...(label ? { label } : {}),
+        after: sentence(after),
+      })
     } else if (before && !after) {
-      changes.push({ kind: "removed", label, before: ruleFingerprint(before) })
+      changes.push({
+        kind: "removed",
+        ...(label ? { label } : {}),
+        before: sentence(before),
+      })
     } else if (
       before &&
       after &&
@@ -1037,9 +1109,9 @@ function diffDocuments(
     ) {
       changes.push({
         kind: "changed",
-        label,
-        before: ruleFingerprint(before),
-        after: ruleFingerprint(after),
+        ...(label ? { label } : {}),
+        before: sentence(before),
+        after: sentence(after),
       })
     }
   }
@@ -1058,6 +1130,7 @@ function HistoryDialog({
   networkId,
   versions,
   users,
+  subjects,
   mode,
   canRestore,
   refresh,
@@ -1067,6 +1140,7 @@ function HistoryDialog({
   networkId: string
   versions: ListNetworkPolicyVersions200Item[]
   users: ListUsers200Item[]
+  subjects: AccessSubjects
   mode: AccessMode
   canRestore: boolean
   refresh: () => Promise<void>
@@ -1094,7 +1168,9 @@ function HistoryDialog({
         olderVersion
           ? normalizeAccessDocument(olderVersion.document)
           : undefined,
-        normalizeAccessDocument(selected.document)
+        normalizeAccessDocument(selected.document),
+        subjects,
+        t
       )
     : []
 
@@ -1113,14 +1189,14 @@ function HistoryDialog({
             </p>
           ) : (
             <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
-              <div className="flex max-h-72 flex-col overflow-y-auto rounded-lg bg-surface-2 p-1">
+              <div className="flex max-h-[22rem] scroll-p-1.5 flex-col gap-0.5 overflow-y-auto overscroll-contain rounded-lg bg-surface-2 p-1.5">
                 {versions.map((version) => {
                   const active = selected?.id === version.id
                   return (
                     <button
                       aria-pressed={active}
                       className={cn(
-                        "flex min-h-11 w-full flex-col items-start gap-0.5 rounded-md px-2 py-1.5 text-left text-[12.5px] hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
+                        "flex min-h-12 w-full flex-none flex-col items-start gap-0.5 rounded-md px-2 py-2 text-left text-[12.5px] hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
                         active && "bg-card shadow-[inset_0_0_0_1px_var(--line)]"
                       )}
                       key={version.id}
@@ -1133,14 +1209,14 @@ function HistoryDialog({
                           {t("accessA.accordion.versionTableStatements")}:{" "}
                           {version.summary.statements}
                         </span>
-                        <span className="ml-auto text-fg-3">
+                        <span className="ml-auto text-fg-2">
                           {formatRelativeTime(
                             version.createdAt,
                             i18n.language
                           ) ?? version.createdAt}
                         </span>
                       </span>
-                      <span className="text-fg-3">
+                      <span className="text-fg-2">
                         {t("accessA.accordion.versionTableBy")}:{" "}
                         {userLabel(version.createdBy)}
                         {version.note ? ` · ${version.note}` : ""}
@@ -1182,23 +1258,29 @@ function HistoryDialog({
                             <span className="font-semibold">
                               {t(`accessA.history.${change.kind}`)}
                             </span>
-                            <span className="min-w-0 [overflow-wrap:anywhere]">
-                              {change.label}
-                            </span>
+                            {change.label ? (
+                              <span className="min-w-0 [overflow-wrap:anywhere]">
+                                {change.label}
+                              </span>
+                            ) : null}
                           </div>
                           {change.before ? (
                             <div className="[overflow-wrap:anywhere] text-fg-2">
-                              <span className="sr-only">
-                                {t("accessA.history.before")}:{" "}
-                              </span>
+                              {change.after ? (
+                                <span className="font-medium">
+                                  {t("accessA.history.before")}:{" "}
+                                </span>
+                              ) : null}
                               {change.before}
                             </div>
                           ) : null}
                           {change.after ? (
                             <div className="[overflow-wrap:anywhere]">
-                              <span className="sr-only">
-                                {t("accessA.history.after")}:{" "}
-                              </span>
+                              {change.before ? (
+                                <span className="font-medium text-fg-2">
+                                  {t("accessA.history.after")}:{" "}
+                                </span>
+                              ) : null}
                               {change.after}
                             </div>
                           ) : null}
@@ -1327,7 +1409,9 @@ export function AccessTools({
   networkId,
   canAdmin,
   canTest,
+  jsonMode,
   onHighlightRule,
+  onToggleJson,
   refresh,
 }: {
   subjects: AccessSubjects
@@ -1338,7 +1422,9 @@ export function AccessTools({
   networkId: string
   canAdmin: boolean
   canTest: boolean
+  jsonMode: boolean
   onHighlightRule: (index: number | null) => void
+  onToggleJson: () => void
   refresh: () => Promise<void>
 }) {
   const { t } = useTranslation()
@@ -1352,41 +1438,65 @@ export function AccessTools({
         className="flex min-w-0 flex-wrap items-center gap-1.5"
         data-testid="access-tools"
       >
-        <Button
-          onClick={() => setTestOpen(true)}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          <CheckCircle2Icon aria-hidden="true" />
-          {t("accessA.accordion.test")}
-        </Button>
-        <Button
-          onClick={() => setCompiledOpen(true)}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          <SquareTerminalIcon aria-hidden="true" />
-          {t("accessA.accordion.compiled")}
-        </Button>
-        <Button
-          onClick={() => setHistoryOpen(true)}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          <HistoryIcon aria-hidden="true" />
-          {t("accessA.accordion.history")}
-          {versions.length > 0 ? (
-            <span
-              aria-hidden="true"
-              className="font-mono text-[12px] text-fg-3"
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                aria-label={t("accessA.tools.label")}
+                size="sm"
+                type="button"
+                variant="outline"
+              />
+            }
+          >
+            <WrenchIcon aria-hidden="true" />
+            <span className="max-sm:sr-only">{t("accessA.tools.label")}</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem
+              className="max-sm:min-h-11"
+              onClick={() => setTestOpen(true)}
             >
-              #{versions[0]!.version}
-            </span>
-          ) : null}
-        </Button>
+              <CheckCircle2Icon aria-hidden="true" />
+              {t("accessA.accordion.test")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="max-sm:min-h-11"
+              onClick={() => setHistoryOpen(true)}
+            >
+              <HistoryIcon aria-hidden="true" />
+              {t("accessA.accordion.history")}
+              {versions.length > 0 ? (
+                <span
+                  aria-hidden="true"
+                  className="ml-auto font-mono text-[12px] text-fg-2"
+                >
+                  #{versions[0]!.version}
+                </span>
+              ) : null}
+            </DropdownMenuItem>
+            <div className="mt-1 border-t border-line px-3 pt-2 pb-1 text-[11px] font-semibold tracking-[0.05em] text-fg-2 uppercase">
+              {t("accessA.tools.advanced")}
+            </div>
+            <DropdownMenuItem
+              className="max-sm:min-h-11"
+              onClick={() => setCompiledOpen(true)}
+            >
+              <SquareTerminalIcon aria-hidden="true" />
+              {t("accessA.tools.technical")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="max-sm:min-h-11"
+              disabled={!jsonMode && !canAdmin}
+              onClick={onToggleJson}
+            >
+              <BracesIcon aria-hidden="true" />
+              {jsonMode
+                ? t("accessA.json.backToRules")
+                : t("accessA.tools.json")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <Dialog onOpenChange={setTestOpen} open={testOpen}>
@@ -1411,7 +1521,7 @@ export function AccessTools({
       <Dialog onOpenChange={setCompiledOpen} open={compiledOpen}>
         <DialogContent size="lg">
           <DialogHeader>
-            <DialogTitle>{t("accessA.accordion.compiled")}</DialogTitle>
+            <DialogTitle>{t("accessA.tools.technical")}</DialogTitle>
             <DialogDescription>
               {t("accessA.compiledDialog.hint")}
             </DialogDescription>
@@ -1427,6 +1537,7 @@ export function AccessTools({
         onOpenChange={setHistoryOpen}
         open={historyOpen}
         refresh={refresh}
+        subjects={subjects}
         users={users}
         versions={versions}
       />

@@ -1,11 +1,6 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import {
-  BracesIcon,
-  CheckCircle2Icon,
-  ListChecksIcon,
-  NetworkIcon,
-} from "lucide-react"
+import { CheckCircle2Icon, ListChecksIcon, NetworkIcon } from "lucide-react"
 
 import {
   useGetPolicySubjects,
@@ -113,11 +108,32 @@ function AccessTab({ data }: { data: NetworkShellData }) {
       className="flex min-w-0 flex-col gap-3 max-sm:-mx-1"
       data-testid="access-page"
     >
-      <AccessModeSwitch
-        disabled={!canEdit || editor.saving}
-        onChange={(next) => void editor.changeMode(next)}
-        value={editor.mode}
-      />
+      <div className="flex min-w-0 flex-wrap items-start gap-x-3 gap-y-2">
+        <div className="min-w-0 flex-1">
+          <AccessModeSwitch
+            disabled={!canEdit || editor.saving}
+            onChange={(next) => void editor.changeMode(next)}
+            value={editor.mode}
+          />
+        </div>
+        <AccessTools
+          canAdmin={canEdit}
+          canTest={canManage}
+          jsonMode={jsonMode}
+          mode={editor.mode}
+          networkId={networkId}
+          onHighlightRule={(index) => {
+            setHighlightIndex(index)
+            if (index !== null) setTab("rules")
+          }}
+          onToggleJson={toggleJson}
+          refresh={editor.refresh}
+          rules={editor.document.rules}
+          subjects={subjects}
+          users={users}
+          versions={versions}
+        />
+      </div>
 
       {editor.generalError ? (
         <p
@@ -149,12 +165,23 @@ function AccessTab({ data }: { data: NetworkShellData }) {
 
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         {jsonMode ? (
-          <p className="min-w-0 flex-1 text-[12.5px] leading-[18px] text-fg-2">
-            {t("accessA.json.hint")}
-          </p>
+          <>
+            <p className="min-w-0 flex-1 basis-52 text-[12.5px] leading-[18px] text-fg-2">
+              {t("accessA.json.hint")}
+            </p>
+            <Button
+              disabled={editor.saving}
+              onClick={toggleJson}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {t("accessA.json.backToRules")}
+            </Button>
+          </>
         ) : (
           <Segmented
-            className="min-w-0 max-sm:w-full max-sm:[&>button]:flex-1"
+            className="min-w-0 max-sm:w-full max-sm:[&>button]:h-11 max-sm:[&>button]:flex-1"
             label={t("accessA.tabs.label")}
             onValueChange={setTab}
             options={[
@@ -164,7 +191,7 @@ function AccessTab({ data }: { data: NetworkShellData }) {
                   <span className="inline-flex items-center gap-1.5">
                     <ListChecksIcon aria-hidden="true" className="size-4" />
                     {t("accessA.tabs.rules")}
-                    <span className="text-[12px] font-normal text-fg-3">
+                    <span className="text-[12px] font-normal text-fg-2">
                       {editor.document.rules.length}
                     </span>
                   </span>
@@ -180,7 +207,7 @@ function AccessTab({ data }: { data: NetworkShellData }) {
                     <span className="max-sm:hidden">
                       {t("accessA.tabs.data")}
                     </span>
-                    <span className="text-[12px] font-normal text-fg-3">
+                    <span className="text-[12px] font-normal text-fg-2">
                       {subjects.tags.length + subjects.userGroups.length}
                     </span>
                   </span>
@@ -199,36 +226,6 @@ function AccessTab({ data }: { data: NetworkShellData }) {
             value={tab}
           />
         )}
-        <div className="ml-auto flex min-w-0 flex-wrap items-center gap-1.5 max-sm:ml-0">
-          <AccessTools
-            canAdmin={canEdit}
-            canTest={canManage}
-            mode={editor.mode}
-            networkId={networkId}
-            onHighlightRule={(index) => {
-              setHighlightIndex(index)
-              if (index !== null) setTab("rules")
-            }}
-            refresh={editor.refresh}
-            rules={editor.document.rules}
-            subjects={subjects}
-            users={users}
-            versions={versions}
-          />
-          <Button
-            aria-pressed={jsonMode}
-            disabled={!canEdit || editor.saving}
-            onClick={toggleJson}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <BracesIcon aria-hidden="true" />
-            {jsonMode
-              ? t("accessA.json.backToRules")
-              : t("accessA.json.toggle")}
-          </Button>
-        </div>
       </div>
 
       {jsonMode ? (

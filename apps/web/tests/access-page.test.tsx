@@ -98,25 +98,29 @@ describe("NetworkAccessPage", () => {
     renderWithProviders(<NetworkAccessPage networkId={NETWORK_ID} />)
 
     expect(await screen.findByText("Block SSH to NAS")).toBeInTheDocument()
-    expect(
-      screen.getByRole("radio", { name: /Only allow what rules permit/ })
-    ).toHaveAttribute("aria-checked", "true")
-    expect(
-      screen.getByRole("radio", { name: /Allow all traffic between devices/ })
-    ).toHaveAttribute("aria-checked", "false")
+    expect(screen.getByRole("radio", { name: "Rules" })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    )
+    expect(screen.getByRole("radio", { name: "Open" })).toHaveAttribute(
+      "aria-checked",
+      "false"
+    )
     expect(
       screen.getByText(/Rules are checked top to bottom/)
     ).toBeInTheDocument()
 
-    await user.click(screen.getByRole("button", { name: "Edit as JSON" }))
+    await user.click(screen.getByRole("button", { name: "Tools" }))
+    await user.click(
+      await screen.findByRole("menuitem", { name: "Edit as JSON" })
+    )
     const editor = await screen.findByRole("textbox", { name: "JSON / HuJSON" })
     expect((editor as HTMLTextAreaElement).value).toContain('"version": 2')
     expect((editor as HTMLTextAreaElement).value).toContain(
       '"Block SSH to NAS"'
     )
-    expect(
-      screen.getByRole("button", { name: "Back to rules" })
-    ).toHaveAttribute("aria-pressed", "true")
+    await user.click(screen.getByRole("button", { name: "Back to rules" }))
+    expect(await screen.findByTestId("rules-card")).toBeInTheDocument()
   })
 
   it("confirms switching the mode, with Cancel as the default", async () => {
@@ -125,16 +129,15 @@ describe("NetworkAccessPage", () => {
     renderWithProviders(<NetworkAccessPage networkId={NETWORK_ID} />)
 
     expect(await screen.findByText("Block SSH to NAS")).toBeInTheDocument()
-    await user.click(
-      screen.getByRole("radio", { name: /Allow all traffic between devices/ })
-    )
+    await user.click(screen.getByRole("radio", { name: "Open" }))
     const dialog = screen.getByRole("dialog")
     expect(dialog).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus()
     await user.click(screen.getByRole("button", { name: "Cancel" }))
-    expect(
-      screen.getByRole("radio", { name: /Only allow what rules permit/ })
-    ).toHaveAttribute("aria-checked", "true")
+    expect(screen.getByRole("radio", { name: "Rules" })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    )
   })
 
   it.each(["member", "viewer"] as const)(
@@ -145,9 +148,7 @@ describe("NetworkAccessPage", () => {
 
       expect(await screen.findByText("Block SSH to NAS")).toBeInTheDocument()
       await waitFor(() =>
-        expect(
-          screen.getByRole("radio", { name: /Only allow what rules permit/ })
-        ).toBeDisabled()
+        expect(screen.getByRole("radio", { name: "Rules" })).toBeDisabled()
       )
       expect(
         screen.queryByRole("button", { name: "Add rule" })

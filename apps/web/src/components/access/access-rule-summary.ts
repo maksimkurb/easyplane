@@ -12,6 +12,7 @@ import {
   findDevice,
   findGroup,
   findTag,
+  portsSummary,
   stripSubjectKind,
   subjectChip,
 } from "@/lib/access-policy"
@@ -144,6 +145,49 @@ export function serviceSummary(rule: AccessRule, t: TFunction): string {
   })
 }
 
+/* ----------------------------------------------------------- subnet names */
+
+/**
+ * Imported/auto subnet names encode the route: `owrt-h1-192-168-40-0-23` is
+ * 192.168.40.0/23 behind owrt-h1. Nobody should read that as a name, so the
+ * UI shows the address and the exit device instead.
+ */
+export function parseAutoSubnetName(
+  name: string
+): { cidr: string; via: string } | null {
+  const match =
+    /^(.+?)-(\d{1,3})-(\d{1,3})-(\d{1,3})-(\d{1,3})-(\d{1,2})$/.exec(name)
+  if (!match) return null
+  const octets = match.slice(2, 6).map(Number)
+  const prefix = Number(match[6])
+  if (octets.some((octet) => octet > 255) || prefix > 32) return null
+  return { cidr: `${octets.join(".")}/${prefix}`, via: match[1]! }
+}
+
+export type PrettySubnet = {
+  /** Human name, or the CIDR when the stored name is machine-made. */
+  label: string
+  via?: string
+  /** True when the stored name was replaced by an address. */
+  auto: boolean
+}
+
+export function prettySubnetName(
+  name: string,
+  cidr?: string,
+  via?: string
+): PrettySubnet {
+  const parsed = parseAutoSubnetName(name)
+  if (!parsed) {
+    return { label: name, ...(via ? { via } : {}), auto: false }
+  }
+  return {
+    label: cidr ?? parsed.cidr,
+    via: via ?? parsed.via,
+    auto: true,
+  }
+}
+
 /* ---------------------------------------------------------------- sentences */
 
 function phrase(
@@ -162,7 +206,20 @@ function phrase(
   if (kind === "group") return t("accessA.preview.group", { name })
   if (kind === "subnet") {
     const subnet = subjects.subnets.find((entry) => entry.name === name)
-    return t("accessA.preview.subnet", { name: subnet?.name ?? name })
+    const pretty = prettySubnetName(
+      subnet?.name ?? name,
+      subnet?.cidr,
+      subnet?.viaHostname
+    )
+    if (pretty.auto) {
+      return pretty.via
+        ? t("accessA.preview.subnetVia", {
+            cidr: pretty.label,
+            device: pretty.via,
+          })
+        : t("accessA.preview.subnetCidr", { cidr: pretty.label })
+    }
+    return t("accessA.preview.subnet", { name: pretty.label })
   }
   if (kind === "host") return t("accessA.preview.host", { name })
   if (kind === "cidr") return t("accessA.preview.cidr", { value: name })
@@ -209,7 +266,7 @@ export function suggestedRuleName(
         ? t("accessA.preview.anyone")
         : t("accessA.preview.anywhere")
     }
-    return subjectChip(subject, subjects, side).label
+    return subjectDisplayLabel(subject, subjects, side, t)
   }
   return t("accessA.rules.suggestion", {
     action:
@@ -219,6 +276,103 @@ export function suggestedRuleName(
     from: first("from"),
     to: first("to"),
   })
+}
+
+/**
+ * Stored names can arrive from imports as compiler-ish text
+ * (`Allow KZ -> router-max`, `allow tag:kz -> cidr:…`). Those are data, not a
+ * name a person wrote, and must not become the row heading.
+ */
+export function isGeneratedRuleName(name: string): boolean {
+  const value = name.trim()
+  if (!value) return false
+  if (/^(allow|deny|block|drop)\b/i.test(value) && /->|→/.test(value)) {
+    return true
+  }
+  return /\b(?:tag|group|subnet|device|cidr|host):/i.test(value)
+}
+
+/** Chip-sized label with the same humanising the sentences get. */
+export function subjectDisplayLabel(
+  subject: string,
+  subjects: AccessSubjects,
+  side: "from" | "to",
+  t: TFunction
+): string {
+  const chip = subjectChip(subject, subjects, side)
+  if (chip.kind === "any") {
+    return side === "from"
+      ? t("accessA.picker.anyFrom")
+      : t("accessA.picker.anyTo")
+  }
+  if (chip.kind !== "subnet") return chip.label
+  const subnet = subjects.subnets.find(
+    (entry) => entry.name === stripSubjectKind(subject).name
+  )
+  const pretty = prettySubnetName(chip.label, subnet?.cidr, subnet?.viaHostname)
+  if (!pretty.auto) return pretty.label
+  return pretty.via
+    ? t("accessA.picker.subnetVia", {
+        cidr: pretty.label,
+        device: pretty.via,
+      })
+    : pretty.label
+}
+
+/** One-line, localised summary used as the row heading when no name is set. */
+export function ruleDisplayTitle(
+  rule: AccessRule,
+  subjects: AccessSubjects,
+  t: TFunction
+): string {
+  const name = rule.name?.trim()
+  if (name && !isGeneratedRuleName(name)) return name
+  const labels = (side: "from" | "to") =>
+    (side === "from" ? rule.from : rule.to)
+      .map((subject) => subjectDisplayLabel(subject, subjects, side, t))
+      .join(", ")
+  return t("accessA.rules.summaryTitle", {
+    action:
+      rule.action === "allow"
+        ? t("accessA.rules.allow")
+        : t("accessA.rules.deny"),
+    from: labels("from") || t("accessA.preview.anyone"),
+    to: labels("to") || t("accessA.preview.anywhere"),
+    service: portsSummary(rule, t),
+  })
+}
+
+/** Human diff line for the policy history. */
+export function ruleChangeSentence(
+  rule: AccessRule,
+  subjects: AccessSubjects,
+  t: TFunction
+): string {
+  const from = rule.from
+    .map((subject) => phrase(subject, subjects, "from", t))
+    .join(", ")
+  const to = rule.to
+    .map((subject) => phrase(subject, subjects, "to", t))
+    .join(", ")
+  const sentence = t("accessA.history.ruleSentence", {
+    action:
+      rule.action === "allow"
+        ? t("accessA.rules.allow")
+        : t("accessA.rules.deny"),
+    from: from || t("accessA.preview.anyone"),
+    to: to || t("accessA.preview.anywhere"),
+    service: serviceSummary(rule, t),
+  })
+  return rule.enabled === false
+    ? t("accessA.history.ruleDisabled", { sentence })
+    : sentence
+}
+
+/** Chain names are an implementation detail; show the direction instead. */
+export function friendlyChainName(chain: string, t: TFunction): string {
+  const match = /(inbound|outbound|forward)$/.exec(chain)
+  if (!match) return chain
+  return t(`accessA.defaults.${match[1] as AccessChainName}`)
 }
 
 /* --------------------------------------------------------- compiled rule ids */

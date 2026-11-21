@@ -43,7 +43,7 @@ export function ChainDefaultsForm({
                 {t(`accessA.defaults.${name}`)}
               </span>
               <Segmented
-                className="[&>button]:h-6 [&>button]:min-w-14 [&>button]:px-2.5 [&>button]:text-[12.5px] max-sm:[&>button]:h-8"
+                className="[&>button]:h-6 [&>button]:min-w-14 [&>button]:px-2.5 [&>button]:text-[12.5px] max-sm:[&>button]:h-11"
                 label={t("accessA.defaults.defaultLabel", {
                   chain: t(`accessA.defaults.${name}`),
                 })}
@@ -109,7 +109,7 @@ export function ChainDirectionLabel({ name }: { name: AccessChainName }) {
           render={
             <button
               aria-label={explanation}
-              className="grid size-6 flex-none cursor-help place-items-center rounded-md text-fg-3 hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+              className="grid size-6 flex-none cursor-help place-items-center rounded-md text-fg-2 hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none max-sm:size-11"
               type="button"
             />
           }
@@ -164,7 +164,7 @@ export function DefaultActionsRow({
             >
               <ChainDirectionLabel name={name} />
               <Segmented
-                className="[&>button]:h-6 [&>button]:min-w-12 [&>button]:px-2 [&>button]:text-[12px] max-sm:[&>button]:h-9"
+                className="[&>button]:h-6 [&>button]:min-w-12 [&>button]:px-2 [&>button]:text-[12px] max-sm:[&>button]:h-11"
                 label={t("accessA.defaults.defaultLabel", {
                   chain: t(`accessA.defaults.${name}`),
                 })}
@@ -191,7 +191,7 @@ export function DefaultActionsRow({
         {onToggleAdvanced ? (
           <button
             aria-expanded={expanded}
-            className="ml-auto inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-[12.5px] leading-[18px] font-medium text-fg-2 hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            className="ml-auto inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-[12.5px] leading-[18px] font-medium text-fg-2 hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 max-sm:min-h-11"
             data-testid="default-actions-advanced"
             disabled={disabled}
             onClick={onToggleAdvanced}

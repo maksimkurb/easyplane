@@ -61,6 +61,18 @@ describe("RuleSheet", () => {
     expect(screen.getByRole("button", { name: "Save rule" })).toBeDisabled()
   })
 
+  it("uses the wide desktop sheet so CIDR chips fit", () => {
+    renderSheet(sheet())
+    const panel = screen.getByTestId("rule-sheet")
+    expect(panel.className).toContain("sm:max-w-[560px]")
+    expect(panel.className).not.toContain("max-w-sm")
+    const from = screen.getByTestId("subject-picker-from")
+    const to = screen.getByTestId("subject-picker-to")
+    // From and To are stacked, not two ~160px columns.
+    expect(from).toBeInTheDocument()
+    expect(to).toBeInTheDocument()
+  })
+
   it("presets fill destination ports, never source ports", async () => {
     const onSave = vi.fn()
     const user = userEvent.setup({ document })
@@ -110,6 +122,15 @@ describe("RuleSheet", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }))
     await user.click(screen.getByRole("button", { name: "Discard" }))
     expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it("names the ICMP preset by protocol, not by the ping command", () => {
+    renderSheet(sheet())
+    const service = screen.getByRole("radiogroup", { name: "Service" })
+    expect(
+      within(service).getByRole("radio", { name: "ICMP" })
+    ).toBeInTheDocument()
+    expect(within(service).queryByRole("radio", { name: "Ping" })).toBeNull()
   })
 
   it("only shows protocol and ports for a custom service", async () => {

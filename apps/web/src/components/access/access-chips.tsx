@@ -12,11 +12,14 @@ import {
 } from "lucide-react"
 
 import type { AccessSubjects, SubjectChip } from "@/lib/access-policy"
-import { subjectChip } from "@/lib/access-policy"
+import { findSubnet, stripSubjectKind, subjectChip } from "@/lib/access-policy"
+import { prettySubnetName } from "@/components/access/access-rule-summary"
 import { cn } from "@/lib/utils"
 
+// No `min-w-0`: a chip must move to the next wrapped line as a whole instead of
+// being squeezed until its label breaks in the middle (CIDRs, IPv6, ports).
 const baseChip =
-  "inline-flex min-h-6 max-w-full min-w-0 items-center gap-1.5 rounded-[7px] px-2 py-0.5 text-[13px] leading-[18px]"
+  "inline-flex min-h-6 max-w-full items-center gap-1.5 rounded-[7px] px-2 py-0.5 text-[13px] leading-[18px]"
 
 export function AllowDenyPill({
   action,
@@ -51,7 +54,9 @@ function iconForKind(kind: SubjectChip["kind"]): ReactNode {
       return <ServerIcon aria-hidden="true" className="size-3.5 flex-none" />
     case "cidr":
     case "unknown":
-      return <SquareTerminalIcon aria-hidden="true" className="size-3.5 flex-none" />
+      return (
+        <SquareTerminalIcon aria-hidden="true" className="size-3.5 flex-none" />
+      )
     case "any":
       return <GlobeIcon aria-hidden="true" className="size-3.5 flex-none" />
     case "device":
@@ -94,6 +99,9 @@ export function SubjectChipView({
 }) {
   const { t } = useTranslation()
   const ariaLabel = chipAriaLabel(chip, t)
+  const isAddress = chip.kind === "cidr" || chip.mono === true
+  const detail = chip.detail
+  const detailIsCode = Boolean(detail) && !/\s/.test(detail!)
   return (
     <span
       aria-label={ariaLabel}
@@ -101,7 +109,8 @@ export function SubjectChipView({
         baseChip,
         chip.kind === "tag" &&
           "rounded-[4px] bg-[var(--tag-bg)] text-[var(--tag-fg)] ring-1 ring-[var(--tag-line)]",
-        chip.kind === "group" && "rounded-full bg-[var(--ug-bg)] text-[var(--ug-fg)]",
+        chip.kind === "group" &&
+          "rounded-full bg-[var(--ug-bg)] text-[var(--ug-fg)]",
         (chip.kind === "device" ||
           chip.kind === "subnet" ||
           chip.kind === "host" ||
@@ -115,15 +124,24 @@ export function SubjectChipView({
       {iconForKind(chip.kind)}
       <span
         className={cn(
-          "min-w-0 [overflow-wrap:anywhere]",
-          (chip.mono || chip.kind === "cidr") && "font-mono text-[12.5px]"
+          "min-w-0",
+          isAddress
+            ? "font-mono text-[12.5px] whitespace-nowrap"
+            : "[overflow-wrap:anywhere]"
         )}
       >
         {chip.label}
       </span>
-      {chip.detail ? (
-        <span className="min-w-0 font-mono text-[12px] text-fg-3 [overflow-wrap:anywhere]">
-          {chip.detail}
+      {detail ? (
+        <span
+          className={cn(
+            "min-w-0 text-[12px] text-fg-2",
+            detailIsCode
+              ? "font-mono whitespace-nowrap"
+              : "[overflow-wrap:anywhere]"
+          )}
+        >
+          {detail}
         </span>
       ) : null}
     </span>
@@ -131,16 +149,31 @@ export function SubjectChipView({
 }
 
 /** Plain device name; used inside tag cards, not in rule sentences. */
-export function PlainDeviceChip({ name, className }: { name: string; className?: string }) {
+export function PlainDeviceChip({
+  name,
+  className,
+}: {
+  name: string
+  className?: string
+}) {
   return (
     <span className={cn(baseChip, "bg-card ring-1 ring-line", className)}>
-      <MonitorIcon aria-hidden="true" className="size-3.5 flex-none text-fg-3" />
+      <MonitorIcon
+        aria-hidden="true"
+        className="size-3.5 flex-none text-fg-3"
+      />
       <span className="min-w-0 [overflow-wrap:anywhere]">{name}</span>
     </span>
   )
 }
 
-export function TagChip({ name, className }: { name: string; className?: string }) {
+export function TagChip({
+  name,
+  className,
+}: {
+  name: string
+  className?: string
+}) {
   const { t } = useTranslation()
   return (
     <span
@@ -152,12 +185,20 @@ export function TagChip({ name, className }: { name: string; className?: string 
       )}
     >
       <TagIcon aria-hidden="true" className="size-3.5 flex-none" />
-      <span className="min-w-0 font-medium [overflow-wrap:anywhere]">{name}</span>
+      <span className="min-w-0 font-medium [overflow-wrap:anywhere]">
+        {name}
+      </span>
     </span>
   )
 }
 
-export function GroupChip({ name, className }: { name: string; className?: string }) {
+export function GroupChip({
+  name,
+  className,
+}: {
+  name: string
+  className?: string
+}) {
   const { t } = useTranslation()
   return (
     <span
@@ -169,7 +210,9 @@ export function GroupChip({ name, className }: { name: string; className?: strin
       )}
     >
       <UsersIcon aria-hidden="true" className="size-3.5 flex-none" />
-      <span className="min-w-0 font-medium [overflow-wrap:anywhere]">{name}</span>
+      <span className="min-w-0 font-medium [overflow-wrap:anywhere]">
+        {name}
+      </span>
     </span>
   )
 }
@@ -186,11 +229,57 @@ export function SubjectChips({
   side: "from" | "to"
   className?: string
 }) {
+  const { t } = useTranslation()
   return (
-    <span className={cn("flex min-w-0 flex-wrap items-center gap-1.5", className)}>
-      {values.map((value) => (
-        <SubjectChipView key={value} chip={subjectChip(value, subjects, side)} />
-      ))}
+    <span
+      className={cn("flex min-w-0 flex-wrap items-center gap-1.5", className)}
+    >
+      {values.map((value) => {
+        const chip = subjectChip(value, subjects, side)
+        if (chip.kind === "any") {
+          return (
+            <SubjectChipView
+              chip={{
+                ...chip,
+                label:
+                  side === "from"
+                    ? t("accessA.picker.anyFrom")
+                    : t("accessA.picker.anyTo"),
+              }}
+              key={value}
+            />
+          )
+        }
+        if (chip.kind !== "subnet") {
+          return <SubjectChipView chip={chip} key={value} />
+        }
+        const subnet = findSubnet(subjects, stripSubjectKind(value).name)
+        const pretty = prettySubnetName(
+          chip.label,
+          subnet?.cidr,
+          subnet?.viaHostname
+        )
+        return (
+          <SubjectChipView
+            chip={
+              pretty.auto
+                ? {
+                    ...chip,
+                    label: pretty.label,
+                    ...(pretty.via
+                      ? {
+                          detail: t("accessA.accordion.via", {
+                            device: pretty.via,
+                          }),
+                        }
+                      : { detail: undefined }),
+                  }
+                : chip
+            }
+            key={value}
+          />
+        )
+      })}
     </span>
   )
 }

@@ -12,7 +12,7 @@ import {
 } from "lucide-react"
 
 import type { AccessRule, AccessSubjects } from "@/lib/access-policy"
-import { portsSummary, subjectChip } from "@/lib/access-policy"
+import { portsSummary } from "@/lib/access-policy"
 import { Switch } from "@/components/ui/switch"
 import {
   DropdownMenu,
@@ -21,6 +21,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { AllowDenyPill, SubjectChips } from "@/components/access/access-chips"
+import {
+  isGeneratedRuleName,
+  ruleDisplayTitle,
+  subjectDisplayLabel,
+} from "@/components/access/access-rule-summary"
 import { cn } from "@/lib/utils"
 
 function ruleAria(
@@ -29,10 +34,10 @@ function ruleAria(
   t: TFunction
 ): string {
   const from = rule.from
-    .map((subject) => subjectChip(subject, subjects, "from").label)
+    .map((subject) => subjectDisplayLabel(subject, subjects, "from", t))
     .join(", ")
   const to = rule.to
-    .map((subject) => subjectChip(subject, subjects, "to").label)
+    .map((subject) => subjectDisplayLabel(subject, subjects, "to", t))
     .join(", ")
   return t("accessA.rules.sentence", {
     from,
@@ -81,7 +86,12 @@ export function RuleRow({
   onDrop: () => void
 }) {
   const { t } = useTranslation()
-  const name = rule.name?.trim()
+  const storedName = rule.name?.trim()
+  const name =
+    storedName && !isGeneratedRuleName(storedName) ? storedName : undefined
+  // Every row gets a heading. Without a human name it is the plain-language
+  // summary, so unnamed rules no longer look like a different kind of row.
+  const title = ruleDisplayTitle(rule, subjects, t)
   const aria = ruleAria(rule, subjects, t)
   const label = name
     ? t("accessA.rules.editNamed", { rule: index + 1, name })
@@ -91,7 +101,7 @@ export function RuleRow({
   return (
     <div
       className={cn(
-        "group/rule relative grid min-h-[52px] min-w-0 grid-cols-[20px_minmax(0,1fr)_44px_40px] items-start gap-x-1 px-2 py-1.5 sm:min-h-[52px] sm:grid-cols-[24px_22px_minmax(0,1fr)_40px_40px] sm:items-center sm:gap-x-1.5 sm:px-1",
+        "group/rule relative grid min-h-[52px] min-w-0 grid-cols-[20px_minmax(0,1fr)_44px_44px] items-start gap-x-1 px-2 py-1.5 sm:min-h-[52px] sm:grid-cols-[24px_22px_minmax(0,1fr)_40px_40px] sm:items-center sm:gap-x-1.5 sm:px-1",
         dimmed && "opacity-90",
         highlighted && "bg-brand-soft/70 shadow-[inset_3px_0_0_var(--brand)]"
       )}
@@ -139,16 +149,15 @@ export function RuleRow({
         onClick={onOpen}
         type="button"
       >
-        {name ? (
-          <span
-            className={cn(
-              "max-w-full truncate text-[13.5px] leading-[18px] font-semibold",
-              dimmed && "opacity-55"
-            )}
-          >
-            {name}
-          </span>
-        ) : null}
+        <span
+          className={cn(
+            "max-w-full truncate text-[13.5px] leading-[18px] font-semibold",
+            dimmed && "opacity-55"
+          )}
+          title={title}
+        >
+          {title}
+        </span>
         <span className="flex min-w-0 flex-wrap items-center gap-1">
           <span className="flex min-w-0 flex-wrap items-center gap-1">
             <AllowDenyPill
@@ -180,7 +189,7 @@ export function RuleRow({
           />
           <span
             className={cn(
-              "inline-flex min-h-5 max-w-full items-center rounded-[7px] bg-surface-2 px-2 py-0.5 text-[12.5px] leading-[18px] [overflow-wrap:anywhere] shadow-[inset_0_0_0_1px_var(--line)] sm:min-h-6",
+              "inline-flex min-h-5 max-w-full items-center rounded-[7px] bg-surface-2 px-2 py-0.5 text-[12.5px] leading-[18px] shadow-[inset_0_0_0_1px_var(--line)] sm:min-h-6",
               dimmed && "opacity-55"
             )}
           >
@@ -224,7 +233,7 @@ export function RuleRow({
                 ? t("accessA.rules.actionsNamed", { name })
                 : t("accessA.rules.actions", { rule: index + 1 })
             }
-            className="grid size-8 cursor-pointer place-items-center justify-self-end rounded-lg text-fg-3 outline-none hover:bg-surface-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 sm:justify-self-center"
+            className="grid size-8 cursor-pointer place-items-center justify-self-end rounded-lg text-fg-2 outline-none hover:bg-surface-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 max-sm:size-11 sm:justify-self-center"
             disabled={busy}
             data-testid={`rule-menu-${index}`}
           >

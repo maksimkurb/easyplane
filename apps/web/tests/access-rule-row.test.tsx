@@ -55,6 +55,17 @@ describe("RuleRow", () => {
     ).toBeInTheDocument()
   })
 
+  it("gives an unnamed rule a plain-language heading", () => {
+    render(row({ rule: { ...RULE, name: undefined } }))
+    expect(screen.getByText("Deny Anyone → nas-01, TCP 22")).toBeInTheDocument()
+  })
+
+  it("does not put a machine-made name in the heading", () => {
+    render(row({ rule: { ...RULE, name: "Allow KZ -> router-max" } }))
+    expect(screen.queryByText("Allow KZ -> router-max")).not.toBeInTheDocument()
+    expect(screen.getByText("Deny Anyone → nas-01, TCP 22")).toBeInTheDocument()
+  })
+
   it("hides editing controls for read-only roles", () => {
     render(row({ canEdit: false }))
     expect(screen.getByRole("switch")).toHaveAttribute("aria-disabled", "true")

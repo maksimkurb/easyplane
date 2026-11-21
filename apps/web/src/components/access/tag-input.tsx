@@ -46,7 +46,9 @@ export function TagInput({
   const errorLineId = `${inputId}-error`
 
   const pillErrors = values.map((value) => validate(value))
-  const firstError = pillErrors.find((message): message is string => message !== null)
+  const firstError = pillErrors.find(
+    (message): message is string => message !== null
+  )
 
   const commit = (nextValues: readonly string[], nextDraft: string) => {
     onChange(mergeValues(values, nextValues))
@@ -102,15 +104,15 @@ export function TagInput({
           return (
             <span
               className={cn(
-                "inline-flex h-6 max-w-full min-w-0 items-center rounded-md bg-surface-3 pl-2 font-mono text-[12.5px] leading-6",
+                "inline-flex h-6 max-w-full items-center rounded-md bg-surface-3 pl-2 font-mono text-[12.5px] leading-6",
                 range &&
-                  "bg-brand-soft text-brand-text outline-1 outline-dashed outline-brand/60",
+                  "bg-brand-soft text-brand-text outline-1 outline-brand/60 outline-dashed",
                 message !== null &&
                   "bg-err-soft text-err shadow-[inset_0_0_0_1px_var(--err-line)]"
               )}
               key={`${value}-${index}`}
             >
-              <span className="min-w-0 [overflow-wrap:anywhere]">{value}</span>
+              <span className="whitespace-nowrap">{value}</span>
               <button
                 aria-label={t("accessA.tagInput.remove", { value })}
                 className="relative ml-0.5 grid size-6 flex-none place-items-center rounded-r-md opacity-75 after:absolute after:-inset-2.5 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"

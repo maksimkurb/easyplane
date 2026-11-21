@@ -16,12 +16,10 @@ import {
 } from "lucide-react"
 
 import type { AccessSubjects, SubjectKind } from "@/lib/access-policy"
-import {
-  checkAddress,
-  subjectChip,
-} from "@/lib/access-policy"
+import { checkAddress, subjectChip } from "@/lib/access-policy"
 import { TagInput } from "@/components/access/tag-input"
 import { SubjectChips } from "@/components/access/access-chips"
+import { prettySubnetName } from "@/components/access/access-rule-summary"
 import { cn } from "@/lib/utils"
 
 type PickerItem = {
@@ -74,7 +72,9 @@ function buildSections(
 ): PickerSection[] {
   const anyLabel =
     side === "from" ? t("accessA.picker.anyFrom") : t("accessA.picker.anyTo")
-  const groupDetail = (group: AccessSubjects["userGroups"][number] | undefined) => {
+  const groupDetail = (
+    group: AccessSubjects["userGroups"][number] | undefined
+  ) => {
     if (!group) return ""
     return `${t("accessA.picker.peopleCount", { count: group.peopleCount })}, ${t(
       "accessA.picker.deviceCount",
@@ -115,12 +115,23 @@ function buildSections(
     {
       key: "subnets",
       title: t("accessA.picker.subnets"),
-      items: subjects.subnets.map((subnet) => ({
-        value: `subnet:${subnet.name}`,
-        label: subnet.name,
-        detail: subnet.cidr,
-        kind: "subnet" as const,
-      })),
+      items: subjects.subnets.map((subnet) => {
+        const pretty = prettySubnetName(
+          subnet.name,
+          subnet.cidr,
+          subnet.viaHostname
+        )
+        return {
+          value: `subnet:${subnet.name}`,
+          label: pretty.auto ? pretty.label : subnet.name,
+          detail: pretty.auto
+            ? pretty.via
+              ? t("accessA.accordion.via", { device: pretty.via })
+              : subnet.cidr
+            : subnet.cidr,
+          kind: "subnet" as const,
+        }
+      }),
     },
     {
       key: "hosts",
@@ -152,7 +163,10 @@ function buildSections(
   ]
 }
 
-function filterSections(sections: PickerSection[], query: string): PickerSection[] {
+function filterSections(
+  sections: PickerSection[],
+  query: string
+): PickerSection[] {
   const needle = query.trim().toLowerCase()
   if (!needle) return sections
   return sections
@@ -249,13 +263,17 @@ export function SubjectPickerList({
         role="listbox"
       >
         {sections.length === 0 ? (
-          <p className="px-3 py-3 text-[13px] text-fg-2">{t("accessA.picker.noResults")}</p>
+          <p className="px-3 py-3 text-[13px] text-fg-2">
+            {t("accessA.picker.noResults")}
+          </p>
         ) : null}
         {sections.map((section) => (
           <div key={section.key}>
             <div className="flex items-center justify-between gap-2 px-3 pt-2 pb-1 text-[12.5px] leading-4 font-semibold tracking-[0.05em] text-fg-2 uppercase">
               <span>{section.title}</span>
-              <span className="tabular-nums tracking-normal">{section.items.length}</span>
+              <span className="tracking-normal tabular-nums">
+                {section.items.length}
+              </span>
             </div>
             {section.items.map((item) => {
               const isSelected =
@@ -270,8 +288,12 @@ export function SubjectPickerList({
                   className={cn(
                     "flex min-h-11 w-full cursor-pointer items-center gap-2.5 border-t border-line px-3 py-1.5 text-left text-sm transition-colors",
                     isSelected && "bg-brand-soft text-brand-text",
-                    item.kind === "tag" && !isSelected && "text-[var(--tag-fg)]",
-                    item.kind === "group" && !isSelected && "text-[var(--ug-fg)]",
+                    item.kind === "tag" &&
+                      !isSelected &&
+                      "text-[var(--tag-fg)]",
+                    item.kind === "group" &&
+                      !isSelected &&
+                      "text-[var(--ug-fg)]",
                     !isSelected && "hover:bg-surface-2"
                   )}
                   key={item.value}
@@ -285,12 +307,17 @@ export function SubjectPickerList({
                       {item.label}
                     </span>
                     {item.value !== "*" ? (
-                      <span className="block min-w-0 font-mono text-[12px] text-fg-3 [overflow-wrap:anywhere]">
+                      <span className="block min-w-0 font-mono text-[12px] [overflow-wrap:anywhere] text-fg-2">
                         {itemText(item, t)}
                       </span>
                     ) : null}
                   </span>
-                  {isSelected ? <CheckIcon aria-hidden="true" className="size-4 flex-none" /> : null}
+                  {isSelected ? (
+                    <CheckIcon
+                      aria-hidden="true"
+                      className="size-4 flex-none"
+                    />
+                  ) : null}
                 </button>
               )
             })}
@@ -312,7 +339,10 @@ export function SubjectPickerList({
               )
               onChange(
                 addresses.length > 0
-                  ? [...others, ...addresses.map((address) => `cidr:${address}`)]
+                  ? [
+                      ...others,
+                      ...addresses.map((address) => `cidr:${address}`),
+                    ]
                   : others.length > 0
                     ? others
                     : ["*"]
@@ -366,8 +396,9 @@ export function SubjectPicker({
             : label
         }
         className={cn(
-          "flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-[10px] bg-card px-2.5 py-1 text-left shadow-[inset_0_0_0_1px_var(--line-2)] transition-shadow focus-visible:ring-3 focus-visible:ring-brand-soft focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-surface-2",
-          open && "shadow-[inset_0_0_0_1.5px_var(--brand),0_0_0_3px_var(--brand-soft)]",
+          "flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-[10px] bg-card px-2.5 py-1 text-left shadow-[inset_0_0_0_1px_var(--line-2)] transition-shadow focus-visible:ring-3 focus-visible:ring-brand-soft focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-surface-2 max-sm:min-h-12",
+          open &&
+            "shadow-[inset_0_0_0_1.5px_var(--brand),0_0_0_3px_var(--brand-soft)]",
           error && "shadow-[inset_0_0_0_1.5px_var(--err)]"
         )}
         data-testid={testId}
@@ -378,7 +409,12 @@ export function SubjectPicker({
         }}
         type="button"
       >
-        <SubjectChips className="flex-1" side={side} subjects={subjects} values={values} />
+        <SubjectChips
+          className="flex-1"
+          side={side}
+          subjects={subjects}
+          values={values}
+        />
         <ChevronDownIcon
           aria-hidden="true"
           className={cn(
@@ -388,7 +424,10 @@ export function SubjectPicker({
         />
       </button>
       {error ? (
-        <p aria-live="polite" className="mt-1 text-[12.5px] leading-[18px] text-err">
+        <p
+          aria-live="polite"
+          className="mt-1 text-[12.5px] leading-[18px] text-err"
+        >
           {error}
         </p>
       ) : null}
@@ -455,11 +494,22 @@ export function SubjectValueButton({
         onClick={onClick}
         type="button"
       >
-        <SubjectChips className="flex-1" side={side} subjects={subjects} values={values} />
-        <ChevronRightIcon aria-hidden="true" className="size-4 flex-none text-fg-3" />
+        <SubjectChips
+          className="flex-1"
+          side={side}
+          subjects={subjects}
+          values={values}
+        />
+        <ChevronRightIcon
+          aria-hidden="true"
+          className="size-4 flex-none text-fg-3"
+        />
       </button>
       {error ? (
-        <p aria-live="polite" className="mt-1 text-[12.5px] leading-[18px] text-err">
+        <p
+          aria-live="polite"
+          className="mt-1 text-[12.5px] leading-[18px] text-err"
+        >
           {error}
         </p>
       ) : null}
