@@ -7750,6 +7750,8 @@
                     "externalPort",
                     "publicIps",
                     "isHub",
+                    "wgListenPort",
+                    "wireguardClientCount",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -7950,6 +7952,17 @@
                     },
                     "isHub": {
                       "type": "boolean"
+                    },
+                    "wgListenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "wireguardClientCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "role": {
                       "type": "string",
