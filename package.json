@@ -29,6 +29,8 @@
     "lint": "bun run --cwd apps/web lint",
     "test:web": "bun run --cwd apps/web test",
     "web:dev": "bun run --cwd apps/web dev",
+    "storybook": "bun run --cwd apps/web storybook",
+    "storybook:build": "bun run --cwd apps/web storybook:build",
     "web:build": "bun run --cwd apps/web build",
     "build:all": "bun run build && bun run web:build",
     "test:load": "tsx --tsconfig tsconfig.test.json scripts/load-test.ts"
