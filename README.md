@@ -139,7 +139,15 @@ bun run dev
 
 # UI hot reload (proxies /api to 127.0.0.1:8080):
 bun run web:dev
+
+# Storybook: every component/page from typed fixtures, no backend
+bun run storybook
+bun run storybook:build
 ```
+
+The Storybook setup lives in `apps/web/.storybook`; see its
+[README](apps/web/.storybook/README.md) for the toolbar (light/dark, en/ru,
+1440/768/390), fixtures/MSW conventions and naming rules.
 
 Schema changes:
 

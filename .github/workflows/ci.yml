@@ -41,6 +41,8 @@ jobs:
         run: bun run lint && bun run test:web
       - name: Web production build
         run: bun run web:build
+      - name: Storybook static build (smoke)
+        run: bun run --cwd apps/web storybook:build
       - name: Fail on generated OpenAPI / client drift
         run: |
           bun run openapi:generate

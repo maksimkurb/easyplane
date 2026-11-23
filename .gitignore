@@ -11,3 +11,7 @@ docker/easytier-core/easytier-core
 docker/easytier-core/BUILD_INFO
 # Declared-routes conformance: bind-mounted config dirs written by the container
 test/conformance/device-routes/cfg/
+
+# Storybook static build output
+storybook-static
+apps/web/storybook-static
