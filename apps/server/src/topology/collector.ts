@@ -1,4 +1,4 @@
-import { getNetworkById, listDevicesInNetwork, updateDevice } from "../db/repositories.js";
+import { getNetworkById, listDevicesInNetwork, listWireguardClients, updateDevice } from "../db/repositories.js";
 import type { DbExecutor } from "../db/repositories.js";
 import type { Device } from "../db/schema.js";
 import { normalizePublicIpv4List } from "../domain/hub.js";
@@ -13,8 +13,7 @@ import {
   deriveTopology,
   type NetworkTopologySnapshot,
   type TopologyObserverInput,
-} from "./derive.js";
-import {
+} from "./derive.js";import {
   mapWithConcurrency,
   nextTopologyDelay,
   normalizeTopologyIntervals,
@@ -37,6 +36,11 @@ export interface TopologyServiceOptions extends TopologyIntervalOptions {
   random?: () => number;
   now?: () => number;
   metrics?: MetricsRegistry;
+  /**
+   * Called after a successful probe of an online device that runs a WireGuard
+   * portal. The app wires it to the WireGuard service's status collector.
+   */
+  probeWireguardPortal?: (device: Device, client: ManagedClient) => Promise<void>;
   /**
    * Called after a probe changed the durable public IPv4 list of a device.
    * The app wires this to the push service; the collector itself stays free
@@ -236,6 +240,16 @@ export class TopologyService {
             this.deviceTimeoutMs,
             `CollectNetworkInfo(${device.id}) timed out`,
           );
+          if (device.wgListenPort !== null) {
+            try {
+              await this.options.probeWireguardPortal?.(device, client);
+            } catch (error) {
+              this.options.logger.debug("WireGuard portal probe failed", {
+                deviceId: device.id,
+                error: error instanceof Error ? error.message : String(error),
+              });
+            }
+          }
           const info = response.info?.map[instanceId];
           if (!info) {
             return {
@@ -315,6 +329,12 @@ export class TopologyService {
     });
     snapshot.partial = snapshot.partial || truncated || probes.some((probe) => probe.failed);
 
+    // WireGuard clients are not EasyTier peers, so they never appear in a
+    // `CollectNetworkInfo` response. They are part of the network's device
+    // picture, though, so the map gets one node per client plus a link to the
+    // hub whose portal serves it.
+    await this.appendWireguardNodes(snapshot, limited, offline);
+
     this.snapshots.set(networkId, snapshot);
 
     // Keep the last public IPv4 addresses durably: the advertised hub endpoint
@@ -385,6 +405,116 @@ export class TopologyService {
       durationMs: this.now() - startedAt,
     });
     return { snapshot, collected: true };
+  }
+
+  /**
+   * Adds one node per WireGuard portal client and a `wg` link to its hub. The
+   * link is not measured: the portal reports whether the client is connected,
+   * not its latency, so the node is online/offline and the link carries no
+   * latency or loss instead of invented values.
+   */
+  private async appendWireguardNodes(
+    snapshot: NetworkTopologySnapshot,
+    ...deviceLists: Device[][]
+  ): Promise<void> {
+    let clients;
+    try {
+      clients = await listWireguardClients(this.options.db, snapshot.networkId);
+    } catch (error) {
+      this.options.logger.debug("failed to read WireGuard clients for the map", {
+        networkId: snapshot.networkId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return;
+    }
+    if (clients.length === 0) return;
+    const devices = new Map<string, Device>();
+    for (const list of deviceLists) {
+      for (const device of list) devices.set(device.id, device);
+    }
+    const nodeByDeviceId = new Map<string, NetworkTopologySnapshot["nodes"][number]>();
+    for (const node of snapshot.nodes) {
+      if (node.deviceId) nodeByDeviceId.set(node.deviceId, node);
+    }
+    for (const client of clients) {
+      const hubNode = nodeByDeviceId.get(client.hubDeviceId);
+      const hub = devices.get(client.hubDeviceId);
+      if (!hubNode || !hub) continue;
+      const status =
+        client.reportedStatus && typeof client.reportedStatus === "object"
+          ? (client.reportedStatus as Record<string, unknown>)
+          : {};
+      const online = status.state === "online";
+      const nodeId = `wg:${client.id}`;
+      snapshot.nodes.push({
+        id: nodeId,
+        deviceId: null,
+        hostname: client.name,
+        virtualIpv4: client.virtualIpv4,
+        networkLength: null,
+        version: "",
+        managed: false,
+        online,
+        peerId: typeof status.peerId === "number" ? status.peerId : null,
+        natType: "Unknown",
+        tcpNatType: "Unknown",
+        natFriendly: false,
+        publicIps: [],
+        listeners: [],
+        proxyCidrs: [],
+        featureFlags: {
+          isPublicServer: false,
+          avoidRelayData: false,
+          disableP2p: false,
+          quicInput: false,
+          kcpInput: false,
+        },
+        // A portal client dials the hub; it is not a public/relay-capable peer.
+        reachable: false,
+        relayCapable: false,
+        capabilityReasons: ["WireGuard portal client"],
+        relaysFor: [],
+        observed: false,
+        kind: "wireguard",
+      });
+      snapshot.links.push({
+        id: `wg-link:${client.id}`,
+        source: hubNode.id,
+        target: nodeId,
+        kind: "direct",
+        via: null,
+        viaHostname: null,
+        protocol: "wg",
+        rawTunnelType: "wireguard",
+        latencyMs: null,
+        lossPercent: null,
+        cost: 1,
+        pathLatencyMs: null,
+        direction: "acceptor",
+        localAddr: null,
+        remoteAddr:
+          typeof status.endpoint === "string" && status.endpoint.length > 0
+            ? status.endpoint
+            : null,
+        protocolIsFirstHop: true,
+        asymmetric: false,
+        observedBy: [hubNode.id],
+        evidence: [],
+      });
+    }
+    snapshot.stats.nodes = snapshot.nodes.length;
+    snapshot.stats.managedNodes = snapshot.nodes.filter((node) => node.managed).length;
+    snapshot.stats.links = snapshot.links.length;
+    snapshot.stats.directLinks = snapshot.links.filter(
+      (link) => link.kind === "direct",
+    ).length;
+    snapshot.stats.relayedLinks = snapshot.links.filter(
+      (link) => link.kind === "relayed",
+    ).length;
+    snapshot.stats.reachableNodes = snapshot.nodes.filter(
+      (node) => node.reachable,
+    ).length;
+    snapshot.stats.hasReachableNode = snapshot.stats.reachableNodes > 0;
   }
 }
 

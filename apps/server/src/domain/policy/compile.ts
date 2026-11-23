@@ -78,6 +78,13 @@ export interface CompileInput {
   routes: readonly PolicyRouteInput[];
   subnets?: readonly PolicySubnetInput[];
   userGroups?: readonly PolicyUserGroupInput[];
+  /**
+   * Extra EasyTier group names a device must declare (with the derived
+   * secret) even though no rule references them. Used for WireGuard portal
+   * clients: upstream rejects a portal client whose `groups` are not declared
+   * by the hub instance's ACL.
+   */
+  extraDeclaredGroups?: ReadonlyMap<string, readonly string[]>;
 }
 
 export interface CompiledDeviceAcl {
@@ -491,6 +498,9 @@ export function compilePolicy(
     const memberships = resolved.groupsByDevice.get(device.id) ?? [];
     const declared = new Set<string>(memberships);
     for (const group of verifiedGroups) declared.add(group);
+    for (const group of input.extraDeclaredGroups?.get(device.id) ?? []) {
+      declared.add(group);
+    }
     const declaredList = [...declared].sort();
     declaredGroups.set(device.id, declaredList);
     const group: acl.GroupInfo = {

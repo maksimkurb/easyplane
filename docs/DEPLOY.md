@@ -586,6 +586,29 @@ operator links them:
 
 The old JSON is left in place, so a downgraded image still sees it.
 
+## 4d-2. WireGuard portal (phones and non-EasyTier devices)
+
+A hub can serve ordinary WireGuard clients. Enable **WireGuard access** on the
+hub's device page (admin), set the **UDP port** (default `11013`) and forward
+it on the router to the hub's local address — the panel does not configure
+NAT, it only tells the hub to listen. Then open the network's device page and
+**Add WireGuard client**: the client gets a name, a virtual IP from the network
+pool and optional tags, and the panel shows a QR code plus the `.conf` file to
+import into the WireGuard app.
+
+- The portal needs an **approved hub**. Disabling it is refused while clients
+  exist; delete the clients first (their addresses are released for reuse).
+- Opening the UDP port to the internet is what makes the portal reachable
+  without VPN-to-VPN, so treat the key like the network secret: anyone who has
+  a client config can join. Delete a client and let the hub repush to revoke
+  its derived key.
+- The config is fetched from the hub on demand and is admin-only. It is never
+  cached, stored in a revision or written to the activity log.
+- Tags work exactly like device tags in the policy editor; IP-based rules
+  apply, and tag rules compile the client's `/32` into the destination's ACL.
+- The hub must be online to download or re-open a client's configuration and to
+  see its live connected/not-connected state.
+
 ## 4e. Rendezvous node
 
 A **rendezvous node** is a stock `easytier-core` running as a public node: a

@@ -4602,6 +4602,17 @@
                       "isHub": {
                         "type": "boolean"
                       },
+                      "wgListenPort": {
+                        "nullable": true,
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "wireguardClientCount": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
                       "role": {
                         "type": "string",
                         "enum": [
@@ -4798,6 +4809,8 @@
                       "externalPort",
                       "publicIps",
                       "isHub",
+                      "wgListenPort",
+                      "wireguardClientCount",
                       "role",
                       "effectiveRole",
                       "knowsSecret",
@@ -4974,6 +4987,17 @@
                     },
                     "isHub": {
                       "type": "boolean"
+                    },
+                    "wgListenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "wireguardClientCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "role": {
                       "type": "string",
@@ -5171,6 +5195,8 @@
                     "externalPort",
                     "publicIps",
                     "isHub",
+                    "wgListenPort",
+                    "wireguardClientCount",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -5422,6 +5448,17 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "wgListenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "wireguardClientCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -5618,6 +5655,8 @@
                     "externalPort",
                     "publicIps",
                     "isHub",
+                    "wgListenPort",
+                    "wireguardClientCount",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -5811,6 +5850,17 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "wgListenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "wireguardClientCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -6007,6 +6057,8 @@
                     "externalPort",
                     "publicIps",
                     "isHub",
+                    "wgListenPort",
+                    "wireguardClientCount",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -6183,6 +6235,17 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "wgListenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "wireguardClientCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -6379,6 +6442,8 @@
                     "externalPort",
                     "publicIps",
                     "isHub",
+                    "wgListenPort",
+                    "wireguardClientCount",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -6555,6 +6620,17 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "wgListenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "wireguardClientCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -6751,6 +6827,8 @@
                     "externalPort",
                     "publicIps",
                     "isHub",
+                    "wgListenPort",
+                    "wireguardClientCount",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -6956,6 +7034,17 @@
                         "isHub": {
                           "type": "boolean"
                         },
+                        "wgListenPort": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "wireguardClientCount": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
                         "role": {
                           "type": "string",
                           "enum": [
@@ -7152,6 +7241,8 @@
                         "externalPort",
                         "publicIps",
                         "isHub",
+                        "wgListenPort",
+                        "wireguardClientCount",
                         "role",
                         "effectiveRole",
                         "knowsSecret",
@@ -7412,6 +7503,17 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "wgListenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "wireguardClientCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -7608,6 +7710,8 @@
                     "externalPort",
                     "publicIps",
                     "isHub",
+                    "wgListenPort",
+                    "wireguardClientCount",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -7824,6 +7928,17 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "wgListenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "wireguardClientCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -8020,6 +8135,8 @@
                     "externalPort",
                     "publicIps",
                     "isHub",
+                    "wgListenPort",
+                    "wireguardClientCount",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -8391,6 +8508,17 @@
                         "isHub": {
                           "type": "boolean"
                         },
+                        "wgListenPort": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "wireguardClientCount": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
                         "role": {
                           "type": "string",
                           "enum": [
@@ -8587,6 +8715,8 @@
                         "externalPort",
                         "publicIps",
                         "isHub",
+                        "wgListenPort",
+                        "wireguardClientCount",
                         "role",
                         "effectiveRole",
                         "knowsSecret",
@@ -8853,6 +8983,17 @@
                         "isHub": {
                           "type": "boolean"
                         },
+                        "wgListenPort": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "wireguardClientCount": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
                         "role": {
                           "type": "string",
                           "enum": [
@@ -9049,6 +9190,8 @@
                         "externalPort",
                         "publicIps",
                         "isHub",
+                        "wgListenPort",
+                        "wireguardClientCount",
                         "role",
                         "effectiveRole",
                         "knowsSecret",
@@ -10264,6 +10407,13 @@
                             "items": {
                               "type": "string"
                             }
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "device",
+                              "wireguard"
+                            ]
                           }
                         },
                         "required": [
@@ -10312,6 +10462,13 @@
                                 },
                                 "hostname": {
                                   "type": "string"
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "device",
+                                    "wireguard"
+                                  ]
                                 }
                               },
                               "required": [
@@ -11718,6 +11875,13 @@
                             },
                             "hostname": {
                               "type": "string"
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "device",
+                                "wireguard"
+                              ]
                             }
                           },
                           "required": [
@@ -11813,6 +11977,13 @@
                           },
                           "hostname": {
                             "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "device",
+                              "wireguard"
+                            ]
                           }
                         },
                         "required": [
@@ -11965,6 +12136,13 @@
                           },
                           "hostname": {
                             "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "device",
+                              "wireguard"
+                            ]
                           }
                         },
                         "required": [
@@ -12840,6 +13018,17 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "wgListenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "wireguardClientCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -13036,6 +13225,8 @@
                     "externalPort",
                     "publicIps",
                     "isHub",
+                    "wgListenPort",
+                    "wireguardClientCount",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -13237,6 +13428,17 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "wgListenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "wireguardClientCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -13433,6 +13635,8 @@
                     "externalPort",
                     "publicIps",
                     "isHub",
+                    "wgListenPort",
+                    "wireguardClientCount",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -13631,6 +13835,17 @@
                     "isHub": {
                       "type": "boolean"
                     },
+                    "wgListenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "wireguardClientCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -13827,6 +14042,8 @@
                     "externalPort",
                     "publicIps",
                     "isHub",
+                    "wgListenPort",
+                    "wireguardClientCount",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -14923,6 +15140,13 @@
                           },
                           "observed": {
                             "type": "boolean"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "device",
+                              "wireguard"
+                            ]
                           }
                         },
                         "required": [
@@ -15674,6 +15898,13 @@
                         },
                         "observed": {
                           "type": "boolean"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "device",
+                            "wireguard"
+                          ]
                         }
                       },
                       "required": [
@@ -16179,6 +16410,954 @@
                     "node",
                     "observation",
                     "links"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/networks/{networkId}/wireguard-clients": {
+      "get": {
+        "operationId": "listWireguardClients",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "networkId": {
+                        "type": "string"
+                      },
+                      "hubDeviceId": {
+                        "type": "string"
+                      },
+                      "hubHostname": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "virtualIpv4": {
+                        "type": "string"
+                      },
+                      "tags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "ownerUserId": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "state": {
+                        "type": "string",
+                        "enum": [
+                          "online",
+                          "connecting",
+                          "offline",
+                          "error",
+                          "unknown"
+                        ]
+                      },
+                      "endpoint": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "tunnelIp": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "peerId": {
+                        "nullable": true,
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "error": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "statusAt": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "networkId",
+                      "hubDeviceId",
+                      "hubHostname",
+                      "name",
+                      "virtualIpv4",
+                      "tags",
+                      "ownerUserId",
+                      "state",
+                      "endpoint",
+                      "tunnelIp",
+                      "peerId",
+                      "error",
+                      "statusAt",
+                      "createdAt"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createWireguardClient",
+        "tags": [
+          "devices"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 63
+                  },
+                  "tags": {
+                    "maxItems": 64,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120
+                    }
+                  },
+                  "hubDeviceId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "ownerUserId": {
+                    "nullable": true,
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "networkId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "hubDeviceId": {
+                      "type": "string"
+                    },
+                    "hubHostname": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "virtualIpv4": {
+                      "type": "string"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "connecting",
+                        "offline",
+                        "error",
+                        "unknown"
+                      ]
+                    },
+                    "endpoint": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "tunnelIp": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "peerId": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "error": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "statusAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "hubDeviceId",
+                    "hubHostname",
+                    "name",
+                    "virtualIpv4",
+                    "tags",
+                    "ownerUserId",
+                    "state",
+                    "endpoint",
+                    "tunnelIp",
+                    "peerId",
+                    "error",
+                    "statusAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/wireguard-clients/{clientId}": {
+      "get": {
+        "operationId": "getWireguardClient",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "clientId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "hubDeviceId": {
+                      "type": "string"
+                    },
+                    "hubHostname": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "virtualIpv4": {
+                      "type": "string"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "connecting",
+                        "offline",
+                        "error",
+                        "unknown"
+                      ]
+                    },
+                    "endpoint": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "tunnelIp": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "peerId": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "error": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "statusAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "hubDeviceId",
+                    "hubHostname",
+                    "name",
+                    "virtualIpv4",
+                    "tags",
+                    "ownerUserId",
+                    "state",
+                    "endpoint",
+                    "tunnelIp",
+                    "peerId",
+                    "error",
+                    "statusAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteWireguardClient",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "clientId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/wireguard-clients/{clientId}/name": {
+      "put": {
+        "operationId": "renameWireguardClient",
+        "tags": [
+          "devices"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 63
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "clientId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "hubDeviceId": {
+                      "type": "string"
+                    },
+                    "hubHostname": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "virtualIpv4": {
+                      "type": "string"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "connecting",
+                        "offline",
+                        "error",
+                        "unknown"
+                      ]
+                    },
+                    "endpoint": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "tunnelIp": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "peerId": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "error": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "statusAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "hubDeviceId",
+                    "hubHostname",
+                    "name",
+                    "virtualIpv4",
+                    "tags",
+                    "ownerUserId",
+                    "state",
+                    "endpoint",
+                    "tunnelIp",
+                    "peerId",
+                    "error",
+                    "statusAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/wireguard-clients/{clientId}/tags": {
+      "put": {
+        "operationId": "setWireguardClientTags",
+        "tags": [
+          "devices"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tags": {
+                    "maxItems": 64,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120
+                    }
+                  }
+                },
+                "required": [
+                  "tags"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "clientId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "hubDeviceId": {
+                      "type": "string"
+                    },
+                    "hubHostname": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "virtualIpv4": {
+                      "type": "string"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "connecting",
+                        "offline",
+                        "error",
+                        "unknown"
+                      ]
+                    },
+                    "endpoint": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "tunnelIp": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "peerId": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "error": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "statusAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "hubDeviceId",
+                    "hubHostname",
+                    "name",
+                    "virtualIpv4",
+                    "tags",
+                    "ownerUserId",
+                    "state",
+                    "endpoint",
+                    "tunnelIp",
+                    "peerId",
+                    "error",
+                    "statusAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/wireguard-clients/{clientId}/config": {
+      "get": {
+        "operationId": "getWireguardClientConfig",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "clientId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "config": {
+                      "type": "string"
+                    },
+                    "filename": {
+                      "type": "string"
+                    },
+                    "client": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "networkId": {
+                          "type": "string"
+                        },
+                        "hubDeviceId": {
+                          "type": "string"
+                        },
+                        "hubHostname": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "virtualIpv4": {
+                          "type": "string"
+                        },
+                        "tags": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "ownerUserId": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "online",
+                            "connecting",
+                            "offline",
+                            "error",
+                            "unknown"
+                          ]
+                        },
+                        "endpoint": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "tunnelIp": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "peerId": {
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "error": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "statusAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "networkId",
+                        "hubDeviceId",
+                        "hubHostname",
+                        "name",
+                        "virtualIpv4",
+                        "tags",
+                        "ownerUserId",
+                        "state",
+                        "endpoint",
+                        "tunnelIp",
+                        "peerId",
+                        "error",
+                        "statusAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "config",
+                    "filename",
+                    "client"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/wireguard-clients/{clientId}/config/download": {
+      "get": {
+        "operationId": "downloadWireguardClientConfig",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "clientId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{deviceId}/wireguard-portal": {
+      "put": {
+        "operationId": "updateDeviceWireguardPortal",
+        "tags": [
+          "devices"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "port": {
+                    "nullable": true,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  }
+                },
+                "required": [
+                  "enabled"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "port": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "clientCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "enabled",
+                    "port",
+                    "clientCount"
                   ],
                   "additionalProperties": false
                 }

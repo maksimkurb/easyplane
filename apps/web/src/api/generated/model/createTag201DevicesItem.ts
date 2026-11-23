@@ -5,9 +5,11 @@
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
  * OpenAPI spec version: 0.3.0-M3
  */
+import type { CreateTag201DevicesItemKind } from './createTag201DevicesItemKind';
 
 export type CreateTag201DevicesItem = {
   id: string;
   name: string;
   hostname: string;
+  kind?: CreateTag201DevicesItemKind;
 };

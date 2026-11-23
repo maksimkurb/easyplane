@@ -14,6 +14,7 @@ export type RealtimeEventType =
   | "tag.updated"
   | "user_group.updated"
   | "route.updated"
+  | "wireguard.updated"
   | "topology.updated"
 
 export interface RealtimeEvent {
@@ -58,6 +59,7 @@ const EVENT_TYPES: RealtimeEventType[] = [
   "tag.updated",
   "user_group.updated",
   "route.updated",
+  "wireguard.updated",
   "topology.updated",
 ]
 

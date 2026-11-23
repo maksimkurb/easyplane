@@ -24,6 +24,7 @@ import { PolicyService } from "../services/policy-service.js";
 import { PushService, pushNetworkDevices } from "../services/push-service.js";
 import { RouteService } from "../services/route-service.js";
 import { TopologyService } from "../topology/collector.js";
+import { WireguardService } from "../services/wireguard-service.js";
 
 // Release images set EASYPLANE_VERSION from the image tag (see
 // .github/workflows/_image.yml); a local run keeps the built-in default.
@@ -54,6 +55,7 @@ export interface AppContext {
   devices: DeviceService;
   policies: PolicyService;
   routes: RouteService;
+  wireguard: WireguardService;
   controlPlane: ControlPlaneServer;
   realtime: RealtimeHub;
   topology: TopologyService;
@@ -204,6 +206,16 @@ export async function createAppContext(
   });
   devicesService = devices;
 
+  const wireguard = new WireguardService({
+    db,
+    secretBox,
+    audit,
+    push,
+    sessions: deviceSessions,
+    logger,
+    realtime,
+  });
+
   const topology = new TopologyService({
     db,
     sessions: deviceSessions,
@@ -216,6 +228,9 @@ export async function createAppContext(
     deviceTimeoutMs: env.topologyTimeoutMs,
     maxDevicesPerCycle: env.topologyMaxDevices,
     metrics,
+    probeWireguardPortal: async (device, client) => {
+      await wireguard.collectStatuses(device, client);
+    },
     onPublicIpsChanged: async ({ device, previousPublicIps, publicIps }) => {
       // Only a hub's public address changes what peers dial. Other devices'
       // stored public IPs are informational.
@@ -295,6 +310,7 @@ export async function createAppContext(
     devices,
     policies: policyService,
     routes: routeService,
+    wireguard,
     controlPlane,
     realtime,
     topology,

@@ -11,6 +11,8 @@ import {
   UsersIcon,
 } from "lucide-react"
 
+import { WireguardIcon } from "@/components/device/wireguard-badge"
+
 import type { AccessSubjects, SubjectChip } from "@/lib/access-policy"
 import { findSubnet, stripSubjectKind, subjectChip } from "@/lib/access-policy"
 import { prettySubnetName } from "@/components/access/access-rule-summary"
@@ -152,17 +154,32 @@ export function SubjectChipView({
 export function PlainDeviceChip({
   name,
   className,
+  wireguard = false,
 }: {
   name: string
   className?: string
+  /** The subject is an ordinary WireGuard client served by a hub portal. */
+  wireguard?: boolean
 }) {
   return (
-    <span className={cn(baseChip, "bg-card ring-1 ring-line", className)}>
-      <MonitorIcon
-        aria-hidden="true"
-        className="size-3.5 flex-none text-fg-3"
-      />
+    <span
+      className={cn(baseChip, "bg-card ring-1 ring-line", className)}
+      title={wireguard ? `${name} · WireGuard` : name}
+    >
+      {wireguard ? (
+        <WireguardIcon className="size-3.5 flex-none text-fg-3" />
+      ) : (
+        <MonitorIcon
+          aria-hidden="true"
+          className="size-3.5 flex-none text-fg-3"
+        />
+      )}
       <span className="min-w-0 [overflow-wrap:anywhere]">{name}</span>
+      {wireguard ? (
+        <span className="flex-none text-[10px] font-medium text-fg-3">
+          WireGuard
+        </span>
+      ) : null}
     </span>
   )
 }

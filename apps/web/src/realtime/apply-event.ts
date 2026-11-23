@@ -54,6 +54,13 @@ export function applyRealtimeEvent(
       invalidateByPrefix(queryClient, "/api/devices")
       return
     }
+    case "wireguard.updated": {
+      // Lists live under the network prefix; the hub's DTO carries the client
+      // count and the portal port.
+      invalidateByPrefix(queryClient, "/api/networks")
+      invalidateByPrefix(queryClient, "/api/devices")
+      return
+    }
     case "topology.updated": {
       const data = event.data as {
         networkId?: string

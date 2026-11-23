@@ -56,6 +56,17 @@ export type RenameDevice200 = {
   externalPort: number | null;
   publicIps: string[];
   isHub: boolean;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  wgListenPort: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  wireguardClientCount: number;
   role: RenameDevice200Role;
   effectiveRole: RenameDevice200EffectiveRole;
   knowsSecret: boolean;

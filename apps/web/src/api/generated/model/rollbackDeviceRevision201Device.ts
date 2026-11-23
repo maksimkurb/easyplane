@@ -56,6 +56,17 @@ export type RollbackDeviceRevision201Device = {
   externalPort: number | null;
   publicIps: string[];
   isHub: boolean;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  wgListenPort: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  wireguardClientCount: number;
   role: RollbackDeviceRevision201DeviceRole;
   effectiveRole: RollbackDeviceRevision201DeviceEffectiveRole;
   knowsSecret: boolean;

@@ -179,7 +179,11 @@ export function describeNetworkConfig(
   if (config.credentialFile) unsupported.push("credential file");
   if ((config.portForwards ?? []).length > 0) unsupported.push("port forwarding");
   if ((config.mappedListeners ?? []).length > 0) unsupported.push("mapped listeners");
-  if (config.vpnPortalConfig) unsupported.push("VPN portal");
+  if (config.vpnPortalConfig) {
+    unsupported.push(
+      "VPN portal settings (recreate the clients under WireGuard clients in the network)",
+    );
+  }
   if (config.enableSocks5 || config.socks5Port !== undefined) unsupported.push("SOCKS5 portal");
   if (config.secureMode?.enabled) {
     unsupported.push("secure mode / credential settings");

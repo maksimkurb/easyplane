@@ -56,6 +56,17 @@ export type RenewDeviceCredential200 = {
   externalPort: number | null;
   publicIps: string[];
   isHub: boolean;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  wgListenPort: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  wireguardClientCount: number;
   role: RenewDeviceCredential200Role;
   effectiveRole: RenewDeviceCredential200EffectiveRole;
   knowsSecret: boolean;

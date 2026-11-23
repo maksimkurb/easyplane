@@ -64,6 +64,13 @@
       "when": 1795286976628,
       "tag": "0008_orange_nemesis",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795447780435,
+      "tag": "0009_next_squadron_sinister",
+      "breakpoints": true
     }
   ]
 }

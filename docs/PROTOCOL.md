@@ -351,7 +351,6 @@ Observed behaviour with the real client:
 - **zstd compression of our own RPC bodies.** We always send uncompressed and
   ask the client not to compress responses. Inbound zstd is supported when the
   Node runtime provides `zlib.zstdDecompressSync`.
-
 ## 9. How M0 was verified
 
 `test/conformance/*.test.ts` starts the TypeScript control plane on the host
@@ -800,8 +799,9 @@ and the MagicDNS switch.
 
 Not imported because EasyPlane owns the value through a workflow: proxy CIDRs
 and exit nodes (route approvals), ACL/credentials (policy document), port
-forwards, VPN portal, mapped listeners, IPv6/STUN/whitelist settings. The
-preview lists every dropped item; nothing is silently discarded.
+forwards, VPN portal settings (per-hub portal state, §16), mapped listeners,
+IPv6/STUN/whitelist settings. The preview lists every dropped item; nothing is
+silently discarded.
 
 ### 13.4 Hardening on the channel
 
@@ -1036,3 +1036,96 @@ restarts briefly) [source: `management/full/process_rpc.rs`]. `GetNetworkInstanc
 reports `managedCredentials` and the derived `secureMode.localPublicKey`, which
 is what the push compiler compares to detect revoke/renew drift.
 
+
+## 16. WireGuard portal (ordinary clients on a hub)
+
+EasyTier can run a WireGuard server inside one instance. Ordinary WireGuard
+clients (phones, routers, anything that cannot run EasyTier) connect to it and
+receive a virtual IP from the network pool, so they behave like tagged members
+for ACL purposes without an EasyTier instance of their own. EasyPlane manages
+this as a first-class feature; the server behaviour below is read from the
+pinned sources, not yet exercised against a real container.
+
+### 16.1 Pushed configuration [source]
+
+`NetworkConfig.vpn_portal_config` (api_manage.proto field 69):
+
+```text
+VpnPortalConfig {
+  wireguard_listen      = "0.0.0.0:<udp port>"   # parsed as a SocketAddr
+  wireguard_private_key = base64(32-byte X25519) # REQUIRED, see below
+  clients[]             = { name, virtual_ip, groups[] }
+}
+```
+
+- `wireguard_private_key` is **mandatory**. `portal_master_and_server_key`
+  (`easytier/src/vpn_portal/wireguard.rs`) fails with "WireGuard portal
+  requires a dedicated private key" when it is absent or empty, so the panel
+  generates an X25519 master key per hub, encrypts it at rest (AES-256-GCM,
+  like the network secret) and never returns it through the API.
+- Per-client keypairs are **derived** from the master key and the client name
+  (`HKDF-SHA256`, info `"easytier/wireguard-portal/v1"` + length-prefixed
+  labels). The panel therefore stores no client private key.
+- A client's `groups` must each be declared by the running instance's ACL
+  (`acl.group.declares`); an undeclared group fails the whole portal start
+  ("VPN portal client … uses unknown ACL group"). The push compiler declares
+  the tags of a hub's portal clients, and only sends groups that are actually
+  declared (so a network with no ACL pushes an empty group list).
+- Client names must be unique per portal and the virtual IPs unique. Upstream
+  caps a portal at `MAX_VPN_PORTAL_CLIENTS` (128).
+
+### 16.2 Live status and the client config [source]
+
+`VpnPortalRpc.GetVpnPortalInfo` (api_instance.proto) returns
+`VpnPortalInfo{listener, clients[]}` where every client carries `state`
+(offline/connecting/online/error), `peer_id`, `endpoint`, `tunnel_ip`,
+`error` and the ready-made `client_config` text.
+
+The config-server client registers the **full management surface** on the
+config-server session (`register_management_rpc` → `ServiceRegistry`, copied
+into the session's `BidirectRpcManager`), including `VpnPortalRpcServer` at
+domain `""`, so the panel calls `GetVpnPortalInfo` over the same tunnel it
+already uses for `WebClientService`. [source: `management/full/{mod,web_client}.rs`]
+
+`client_config` embeds a WireGuard private key. EasyPlane fetches it only for a
+single admin request (`GET /api/wireguard-clients/:id/config` and its
+`/download` variant, both `Cache-Control: no-store`), never persists it in a
+revision/status row and never writes it to the audit log or application log.
+The live status snapshot stores state/endpoint/tunnel IP/error only.
+
+### 16.3 What the panel compiles
+
+- The portal is per **hub** (`devices.wg_listen_port`, null = disabled) and
+  only on an approved hub. Disabling is refused while clients exist.
+- Each portal client is a `wireguard_clients` row: network, hub, DNS-label
+  name, address from the **same allocator** as devices (`usedVirtualIps`
+  unions both tables), tags, optional owner. Deleting a client releases the
+  address.
+- A client with tags is a policy subject exactly like a device: it appears in
+  tag membership, `*` and `device:` subjects, and rules compile its `/32` into
+  the destination's inbound chain (the default IP-based mode). With
+  `options.strictTags` the destination also carries `source_groups`; the portal
+  peer advertises the declared group, but whether it can produce the HMAC
+  proof is not verified here — treat strict tag matching for portal clients as
+  unverified.
+- Changing a client or the portal port only repushes the hub; the desired
+  config comparison covers `vpn_portal_config` (listen address, key presence,
+  client name/address/groups), so enable/disable and client edits converge
+  without a new revision.
+- The topology snapshot adds one node per portal client (`kind: "wireguard"`,
+  `id: "wg:<client id>"`) and a `wg` link to its hub, using the last known
+  state. The portal reports connectivity, not latency, so those links have no
+  latency/loss values.
+
+### 16.4 Not verified here
+
+The repository has no conformance test for the portal: the pinned test client
+would need a real WireGuard handshake and a UDP port map. The message shapes,
+the mandatory master key, the HKDF derivation, the ACL-group rule and the RPC
+registration are read from the pinned tree cited above; the panel's own
+compilation and drift logic are unit/integration tested.
+
+Importing a TOML/share-link config still does **not** adopt `vpn_portal_config`
+into the panel: a portal is per-hub state with a key the panel owns, so the
+import preview keeps listing it as dropped and the operator recreates the
+clients here (§13.3).

@@ -56,6 +56,17 @@ export type GetDevice200 = {
   externalPort: number | null;
   publicIps: string[];
   isHub: boolean;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  wgListenPort: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  wireguardClientCount: number;
   role: GetDevice200Role;
   effectiveRole: GetDevice200EffectiveRole;
   knowsSecret: boolean;

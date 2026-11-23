@@ -52,6 +52,8 @@ import type {
   CreateTagBody,
   CreateUserGroup201,
   CreateUserGroupBody,
+  CreateWireguardClient201,
+  CreateWireguardClientBody,
   DecideDeviceRoute200,
   DecideDeviceRouteBody,
   DeleteDevice200,
@@ -61,6 +63,7 @@ import type {
   DeleteNetworkPolicy200,
   DeleteTag200,
   DeleteUserGroup200,
+  DeleteWireguardClient200,
   ExportNetworkConfig200,
   ExportNetworkConfigParams,
   FinishOidcLoginParams,
@@ -77,6 +80,8 @@ import type {
   GetOrganisation200,
   GetPolicySubjects200,
   GetRendezvous200,
+  GetWireguardClient200,
+  GetWireguardClientConfig200,
   Health200,
   Health503,
   LinkNetworkPeer200,
@@ -98,6 +103,7 @@ import type {
   ListTags200Item,
   ListUserGroups200Item,
   ListUsers200Item,
+  ListWireguardClients200Item,
   Logout200,
   PreviewNetworkAccessMode200,
   PreviewNetworkAccessModeBody,
@@ -109,6 +115,8 @@ import type {
   RemoveUserGroupMember200,
   RenameDevice200,
   RenameDeviceBody,
+  RenameWireguardClient200,
+  RenameWireguardClientBody,
   RenewDeviceCredential200,
   RepushMagicDns200,
   RequestDeviceRoute201,
@@ -128,6 +136,8 @@ import type {
   SetDeviceTagsBody,
   SetNetworkPolicyMode200,
   SetNetworkPolicyModeBody,
+  SetWireguardClientTags200,
+  SetWireguardClientTagsBody,
   StartOidcLoginParams,
   SwitchNetworkAccessMode200,
   SwitchNetworkAccessModeBody,
@@ -137,6 +147,8 @@ import type {
   UpdateDeviceEndpointsBody,
   UpdateDeviceHub200,
   UpdateDeviceHubBody,
+  UpdateDeviceWireguardPortal200,
+  UpdateDeviceWireguardPortalBody,
   UpdateNetwork200,
   UpdateNetworkBody,
   ValidateNetworkPolicy200,
@@ -7347,4 +7359,832 @@ export function useGetDeviceTopology<TData = Awaited<ReturnType<typeof getDevice
 
 
 
+
+export type listWireguardClientsResponse200 = {
+  data: ListWireguardClients200Item[]
+  status: 200
+}
+
+export type listWireguardClientsResponseSuccess = (listWireguardClientsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listWireguardClientsResponse = (listWireguardClientsResponseSuccess)
+
+export const getListWireguardClientsUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/wireguard-clients`
+}
+
+export const listWireguardClients = async (networkId: string, options?: Parameters<typeof apiFetch>[1]): Promise<listWireguardClientsResponse> => {
+
+  return apiFetch<listWireguardClientsResponse>(getListWireguardClientsUrl(networkId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWireguardClientsQueryKey = (networkId: string,) => {
+    return [
+    `/api/networks/${networkId}/wireguard-clients`
+    ] as const;
+    }
+
+
+export const getListWireguardClientsQueryOptions = <TData = Awaited<ReturnType<typeof listWireguardClients>>, TError = unknown>(networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listWireguardClients>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWireguardClientsQueryKey(networkId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWireguardClients>>> = ({ signal }) => listWireguardClients(networkId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: networkId !== null && networkId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWireguardClients>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListWireguardClientsQueryResult = NonNullable<Awaited<ReturnType<typeof listWireguardClients>>>
+export type ListWireguardClientsQueryError = unknown
+
+
+export function useListWireguardClients<TData = Awaited<ReturnType<typeof listWireguardClients>>, TError = unknown>(
+ networkId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listWireguardClients>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listWireguardClients>>,
+          TError,
+          Awaited<ReturnType<typeof listWireguardClients>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListWireguardClients<TData = Awaited<ReturnType<typeof listWireguardClients>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listWireguardClients>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listWireguardClients>>,
+          TError,
+          Awaited<ReturnType<typeof listWireguardClients>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListWireguardClients<TData = Awaited<ReturnType<typeof listWireguardClients>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listWireguardClients>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListWireguardClients<TData = Awaited<ReturnType<typeof listWireguardClients>>, TError = unknown>(
+ networkId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listWireguardClients>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListWireguardClientsQueryOptions(networkId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type createWireguardClientResponse201 = {
+  data: CreateWireguardClient201
+  status: 201
+}
+
+export type createWireguardClientResponseSuccess = (createWireguardClientResponse201) & {
+  headers: Headers;
+};
+;
+
+export type createWireguardClientResponse = (createWireguardClientResponseSuccess)
+
+export const getCreateWireguardClientUrl = (networkId: string,) => {
+
+
+
+
+  return `/api/networks/${networkId}/wireguard-clients`
+}
+
+export const createWireguardClient = async (networkId: string,
+    createWireguardClientBody: CreateWireguardClientBody, options?: Parameters<typeof apiFetch>[1]): Promise<createWireguardClientResponse> => {
+
+  return apiFetch<createWireguardClientResponse>(getCreateWireguardClientUrl(networkId),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(createWireguardClientBody)
+  }
+);}
+
+
+
+
+
+export const getCreateWireguardClientMutationKey = () => ['createWireguardClient'] as const;
+
+export const getCreateWireguardClientMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWireguardClient>>, TError,CreateWireguardClientMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createWireguardClient>>, TError,CreateWireguardClientMutationVariables, TContext> => {
+
+const mutationKey = getCreateWireguardClientMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createWireguardClient>>, CreateWireguardClientMutationVariables> = (props) => {
+          const {networkId,data} = props ?? {};
+
+          return  createWireguardClient(networkId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateWireguardClientMutationResult = NonNullable<Awaited<ReturnType<typeof createWireguardClient>>>
+    export type CreateWireguardClientMutationBody = CreateWireguardClientBody
+    export type CreateWireguardClientMutationError = unknown
+    export type CreateWireguardClientMutationVariables = {networkId: string;data: CreateWireguardClientBody}
+
+    export const useCreateWireguardClient = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWireguardClient>>, TError,CreateWireguardClientMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createWireguardClient>>,
+        TError,
+        CreateWireguardClientMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateWireguardClientMutationOptions(options), queryClient);
+    }
+
+export type getWireguardClientResponse200 = {
+  data: GetWireguardClient200
+  status: 200
+}
+
+export type getWireguardClientResponseSuccess = (getWireguardClientResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getWireguardClientResponse = (getWireguardClientResponseSuccess)
+
+export const getGetWireguardClientUrl = (clientId: string,) => {
+
+
+
+
+  return `/api/wireguard-clients/${clientId}`
+}
+
+export const getWireguardClient = async (clientId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getWireguardClientResponse> => {
+
+  return apiFetch<getWireguardClientResponse>(getGetWireguardClientUrl(clientId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWireguardClientQueryKey = (clientId: string,) => {
+    return [
+    `/api/wireguard-clients/${clientId}`
+    ] as const;
+    }
+
+
+export const getGetWireguardClientQueryOptions = <TData = Awaited<ReturnType<typeof getWireguardClient>>, TError = unknown>(clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWireguardClient>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWireguardClientQueryKey(clientId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWireguardClient>>> = ({ signal }) => getWireguardClient(clientId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: clientId !== null && clientId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWireguardClient>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetWireguardClientQueryResult = NonNullable<Awaited<ReturnType<typeof getWireguardClient>>>
+export type GetWireguardClientQueryError = unknown
+
+
+export function useGetWireguardClient<TData = Awaited<ReturnType<typeof getWireguardClient>>, TError = unknown>(
+ clientId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWireguardClient>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWireguardClient>>,
+          TError,
+          Awaited<ReturnType<typeof getWireguardClient>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWireguardClient<TData = Awaited<ReturnType<typeof getWireguardClient>>, TError = unknown>(
+ clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWireguardClient>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWireguardClient>>,
+          TError,
+          Awaited<ReturnType<typeof getWireguardClient>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWireguardClient<TData = Awaited<ReturnType<typeof getWireguardClient>>, TError = unknown>(
+ clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWireguardClient>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWireguardClient<TData = Awaited<ReturnType<typeof getWireguardClient>>, TError = unknown>(
+ clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWireguardClient>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetWireguardClientQueryOptions(clientId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type deleteWireguardClientResponse200 = {
+  data: DeleteWireguardClient200
+  status: 200
+}
+
+export type deleteWireguardClientResponseSuccess = (deleteWireguardClientResponse200) & {
+  headers: Headers;
+};
+;
+
+export type deleteWireguardClientResponse = (deleteWireguardClientResponseSuccess)
+
+export const getDeleteWireguardClientUrl = (clientId: string,) => {
+
+
+
+
+  return `/api/wireguard-clients/${clientId}`
+}
+
+export const deleteWireguardClient = async (clientId: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteWireguardClientResponse> => {
+
+  return apiFetch<deleteWireguardClientResponse>(getDeleteWireguardClientUrl(clientId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteWireguardClientMutationKey = () => ['deleteWireguardClient'] as const;
+
+export const getDeleteWireguardClientMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWireguardClient>>, TError,DeleteWireguardClientMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteWireguardClient>>, TError,DeleteWireguardClientMutationVariables, TContext> => {
+
+const mutationKey = getDeleteWireguardClientMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWireguardClient>>, DeleteWireguardClientMutationVariables> = (props) => {
+          const {clientId} = props ?? {};
+
+          return  deleteWireguardClient(clientId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteWireguardClientMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWireguardClient>>>
+
+    export type DeleteWireguardClientMutationError = unknown
+    export type DeleteWireguardClientMutationVariables = {clientId: string}
+
+    export const useDeleteWireguardClient = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWireguardClient>>, TError,DeleteWireguardClientMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteWireguardClient>>,
+        TError,
+        DeleteWireguardClientMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteWireguardClientMutationOptions(options), queryClient);
+    }
+
+export type renameWireguardClientResponse200 = {
+  data: RenameWireguardClient200
+  status: 200
+}
+
+export type renameWireguardClientResponseSuccess = (renameWireguardClientResponse200) & {
+  headers: Headers;
+};
+;
+
+export type renameWireguardClientResponse = (renameWireguardClientResponseSuccess)
+
+export const getRenameWireguardClientUrl = (clientId: string,) => {
+
+
+
+
+  return `/api/wireguard-clients/${clientId}/name`
+}
+
+export const renameWireguardClient = async (clientId: string,
+    renameWireguardClientBody: RenameWireguardClientBody, options?: Parameters<typeof apiFetch>[1]): Promise<renameWireguardClientResponse> => {
+
+  return apiFetch<renameWireguardClientResponse>(getRenameWireguardClientUrl(clientId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(renameWireguardClientBody)
+  }
+);}
+
+
+
+
+
+export const getRenameWireguardClientMutationKey = () => ['renameWireguardClient'] as const;
+
+export const getRenameWireguardClientMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameWireguardClient>>, TError,RenameWireguardClientMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameWireguardClient>>, TError,RenameWireguardClientMutationVariables, TContext> => {
+
+const mutationKey = getRenameWireguardClientMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameWireguardClient>>, RenameWireguardClientMutationVariables> = (props) => {
+          const {clientId,data} = props ?? {};
+
+          return  renameWireguardClient(clientId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameWireguardClientMutationResult = NonNullable<Awaited<ReturnType<typeof renameWireguardClient>>>
+    export type RenameWireguardClientMutationBody = RenameWireguardClientBody
+    export type RenameWireguardClientMutationError = unknown
+    export type RenameWireguardClientMutationVariables = {clientId: string;data: RenameWireguardClientBody}
+
+    export const useRenameWireguardClient = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameWireguardClient>>, TError,RenameWireguardClientMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof renameWireguardClient>>,
+        TError,
+        RenameWireguardClientMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRenameWireguardClientMutationOptions(options), queryClient);
+    }
+
+export type setWireguardClientTagsResponse200 = {
+  data: SetWireguardClientTags200
+  status: 200
+}
+
+export type setWireguardClientTagsResponseSuccess = (setWireguardClientTagsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type setWireguardClientTagsResponse = (setWireguardClientTagsResponseSuccess)
+
+export const getSetWireguardClientTagsUrl = (clientId: string,) => {
+
+
+
+
+  return `/api/wireguard-clients/${clientId}/tags`
+}
+
+export const setWireguardClientTags = async (clientId: string,
+    setWireguardClientTagsBody: SetWireguardClientTagsBody, options?: Parameters<typeof apiFetch>[1]): Promise<setWireguardClientTagsResponse> => {
+
+  return apiFetch<setWireguardClientTagsResponse>(getSetWireguardClientTagsUrl(clientId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(setWireguardClientTagsBody)
+  }
+);}
+
+
+
+
+
+export const getSetWireguardClientTagsMutationKey = () => ['setWireguardClientTags'] as const;
+
+export const getSetWireguardClientTagsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setWireguardClientTags>>, TError,SetWireguardClientTagsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setWireguardClientTags>>, TError,SetWireguardClientTagsMutationVariables, TContext> => {
+
+const mutationKey = getSetWireguardClientTagsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setWireguardClientTags>>, SetWireguardClientTagsMutationVariables> = (props) => {
+          const {clientId,data} = props ?? {};
+
+          return  setWireguardClientTags(clientId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetWireguardClientTagsMutationResult = NonNullable<Awaited<ReturnType<typeof setWireguardClientTags>>>
+    export type SetWireguardClientTagsMutationBody = SetWireguardClientTagsBody
+    export type SetWireguardClientTagsMutationError = unknown
+    export type SetWireguardClientTagsMutationVariables = {clientId: string;data: SetWireguardClientTagsBody}
+
+    export const useSetWireguardClientTags = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setWireguardClientTags>>, TError,SetWireguardClientTagsMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof setWireguardClientTags>>,
+        TError,
+        SetWireguardClientTagsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetWireguardClientTagsMutationOptions(options), queryClient);
+    }
+
+export type getWireguardClientConfigResponse200 = {
+  data: GetWireguardClientConfig200
+  status: 200
+}
+
+export type getWireguardClientConfigResponseSuccess = (getWireguardClientConfigResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getWireguardClientConfigResponse = (getWireguardClientConfigResponseSuccess)
+
+export const getGetWireguardClientConfigUrl = (clientId: string,) => {
+
+
+
+
+  return `/api/wireguard-clients/${clientId}/config`
+}
+
+export const getWireguardClientConfig = async (clientId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getWireguardClientConfigResponse> => {
+
+  return apiFetch<getWireguardClientConfigResponse>(getGetWireguardClientConfigUrl(clientId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWireguardClientConfigQueryKey = (clientId: string,) => {
+    return [
+    `/api/wireguard-clients/${clientId}/config`
+    ] as const;
+    }
+
+
+export const getGetWireguardClientConfigQueryOptions = <TData = Awaited<ReturnType<typeof getWireguardClientConfig>>, TError = unknown>(clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWireguardClientConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWireguardClientConfigQueryKey(clientId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWireguardClientConfig>>> = ({ signal }) => getWireguardClientConfig(clientId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: clientId !== null && clientId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWireguardClientConfig>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetWireguardClientConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getWireguardClientConfig>>>
+export type GetWireguardClientConfigQueryError = unknown
+
+
+export function useGetWireguardClientConfig<TData = Awaited<ReturnType<typeof getWireguardClientConfig>>, TError = unknown>(
+ clientId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWireguardClientConfig>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWireguardClientConfig>>,
+          TError,
+          Awaited<ReturnType<typeof getWireguardClientConfig>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWireguardClientConfig<TData = Awaited<ReturnType<typeof getWireguardClientConfig>>, TError = unknown>(
+ clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWireguardClientConfig>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWireguardClientConfig>>,
+          TError,
+          Awaited<ReturnType<typeof getWireguardClientConfig>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWireguardClientConfig<TData = Awaited<ReturnType<typeof getWireguardClientConfig>>, TError = unknown>(
+ clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWireguardClientConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWireguardClientConfig<TData = Awaited<ReturnType<typeof getWireguardClientConfig>>, TError = unknown>(
+ clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWireguardClientConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetWireguardClientConfigQueryOptions(clientId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type downloadWireguardClientConfigResponse200 = {
+  data: string
+  status: 200
+}
+
+export type downloadWireguardClientConfigResponseSuccess = (downloadWireguardClientConfigResponse200) & {
+  headers: Headers;
+};
+;
+
+export type downloadWireguardClientConfigResponse = (downloadWireguardClientConfigResponseSuccess)
+
+export const getDownloadWireguardClientConfigUrl = (clientId: string,) => {
+
+
+
+
+  return `/api/wireguard-clients/${clientId}/config/download`
+}
+
+export const downloadWireguardClientConfig = async (clientId: string, options?: Parameters<typeof apiFetch>[1]): Promise<downloadWireguardClientConfigResponse> => {
+
+  return apiFetch<downloadWireguardClientConfigResponse>(getDownloadWireguardClientConfigUrl(clientId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadWireguardClientConfigQueryKey = (clientId: string,) => {
+    return [
+    `/api/wireguard-clients/${clientId}/config/download`
+    ] as const;
+    }
+
+
+export const getDownloadWireguardClientConfigQueryOptions = <TData = Awaited<ReturnType<typeof downloadWireguardClientConfig>>, TError = unknown>(clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadWireguardClientConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadWireguardClientConfigQueryKey(clientId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadWireguardClientConfig>>> = ({ signal }) => downloadWireguardClientConfig(clientId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: clientId !== null && clientId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadWireguardClientConfig>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DownloadWireguardClientConfigQueryResult = NonNullable<Awaited<ReturnType<typeof downloadWireguardClientConfig>>>
+export type DownloadWireguardClientConfigQueryError = unknown
+
+
+export function useDownloadWireguardClientConfig<TData = Awaited<ReturnType<typeof downloadWireguardClientConfig>>, TError = unknown>(
+ clientId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadWireguardClientConfig>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadWireguardClientConfig>>,
+          TError,
+          Awaited<ReturnType<typeof downloadWireguardClientConfig>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadWireguardClientConfig<TData = Awaited<ReturnType<typeof downloadWireguardClientConfig>>, TError = unknown>(
+ clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadWireguardClientConfig>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadWireguardClientConfig>>,
+          TError,
+          Awaited<ReturnType<typeof downloadWireguardClientConfig>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadWireguardClientConfig<TData = Awaited<ReturnType<typeof downloadWireguardClientConfig>>, TError = unknown>(
+ clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadWireguardClientConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadWireguardClientConfig<TData = Awaited<ReturnType<typeof downloadWireguardClientConfig>>, TError = unknown>(
+ clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadWireguardClientConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDownloadWireguardClientConfigQueryOptions(clientId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type updateDeviceWireguardPortalResponse200 = {
+  data: UpdateDeviceWireguardPortal200
+  status: 200
+}
+
+export type updateDeviceWireguardPortalResponseSuccess = (updateDeviceWireguardPortalResponse200) & {
+  headers: Headers;
+};
+;
+
+export type updateDeviceWireguardPortalResponse = (updateDeviceWireguardPortalResponseSuccess)
+
+export const getUpdateDeviceWireguardPortalUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/devices/${deviceId}/wireguard-portal`
+}
+
+export const updateDeviceWireguardPortal = async (deviceId: string,
+    updateDeviceWireguardPortalBody: UpdateDeviceWireguardPortalBody, options?: Parameters<typeof apiFetch>[1]): Promise<updateDeviceWireguardPortalResponse> => {
+
+  return apiFetch<updateDeviceWireguardPortalResponse>(getUpdateDeviceWireguardPortalUrl(deviceId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(updateDeviceWireguardPortalBody)
+  }
+);}
+
+
+
+
+
+export const getUpdateDeviceWireguardPortalMutationKey = () => ['updateDeviceWireguardPortal'] as const;
+
+export const getUpdateDeviceWireguardPortalMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDeviceWireguardPortal>>, TError,UpdateDeviceWireguardPortalMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDeviceWireguardPortal>>, TError,UpdateDeviceWireguardPortalMutationVariables, TContext> => {
+
+const mutationKey = getUpdateDeviceWireguardPortalMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDeviceWireguardPortal>>, UpdateDeviceWireguardPortalMutationVariables> = (props) => {
+          const {deviceId,data} = props ?? {};
+
+          return  updateDeviceWireguardPortal(deviceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDeviceWireguardPortalMutationResult = NonNullable<Awaited<ReturnType<typeof updateDeviceWireguardPortal>>>
+    export type UpdateDeviceWireguardPortalMutationBody = UpdateDeviceWireguardPortalBody
+    export type UpdateDeviceWireguardPortalMutationError = unknown
+    export type UpdateDeviceWireguardPortalMutationVariables = {deviceId: string;data: UpdateDeviceWireguardPortalBody}
+
+    export const useUpdateDeviceWireguardPortal = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDeviceWireguardPortal>>, TError,UpdateDeviceWireguardPortalMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateDeviceWireguardPortal>>,
+        TError,
+        UpdateDeviceWireguardPortalMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateDeviceWireguardPortalMutationOptions(options), queryClient);
+    }
 

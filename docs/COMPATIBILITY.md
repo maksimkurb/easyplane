@@ -78,6 +78,7 @@ The control plane degrades rather than crashes on a newer client:
 | UDP config-server | needs a client built with UDP support (the pinned build is) | PROTOCOL.md §13.1 |
 | rendezvous node private mode | **secure mode on both sides**: the shared-secret proof is only sent by the Noise handshake, which the core only performs in secure mode | PROTOCOL.md §14.3, DEPLOY.md §4e |
 | rendezvous data relay | `disable_relay_data` is a TOML/management flag, not a CLI flag; `RENDEZVOUS_RELAY_DATA` maps to it | PROTOCOL.md §14.2 |
+| WireGuard portal | `NetworkConfig.vpn_portal_config` with a mandatory master key; `VpnPortalRpc.GetVpnPortalInfo` on the config-server session. Compiled from the pinned sources, **not** exercised against a real container (no conformance test) | PROTOCOL.md §16 |
 
 ## Re-syncing to a new upstream ref
 

@@ -29,6 +29,7 @@ import type {
 } from "@/api/generated/model"
 import { DeviceIcon } from "@/components/device/device-icon"
 import { ExitNodeBadge, type ExitNodeState } from "@/components/exit-node-badge"
+import { WireguardIcon } from "@/components/device/wireguard-badge"
 import { Badge } from "@/components/ui/badge"
 import { layoutTopology } from "@/lib/topology-layout"
 import { cn } from "@/lib/utils"
@@ -176,7 +177,10 @@ export function TopologyNodeCard({
 }) {
   const { t } = useTranslation()
   const isSelected = selected || highlighted
-  const glyph = os ? (
+  const wireguard = node.kind === "wireguard"
+  const glyph = wireguard ? (
+    <WireguardIcon className="size-4" />
+  ) : os ? (
     <DeviceIcon className="size-4" os={os} />
   ) : (
     <ServerIcon aria-hidden="true" className="size-4" />
@@ -220,6 +224,11 @@ export function TopologyNodeCard({
             <span className="block truncate font-mono text-xs leading-4 text-fg-2">
               {node.virtualIpv4 ?? t("common.none")}
             </span>
+            {wireguard ? (
+              <span className="block truncate text-[10px] leading-4 text-fg-3">
+                {t("wireguard.badge")}
+              </span>
+            ) : null}
           </span>
           {node.relayCapable ? (
             <span
@@ -245,7 +254,9 @@ export function TopologyNodeCard({
   const tooltip = [
     node.hostname,
     node.virtualIpv4 ? `IP ${node.virtualIpv4}` : null,
-    `NAT ${node.natType}${node.tcpNatType !== "Unknown" ? ` (tcp ${node.tcpNatType})` : ""}`,
+    wireguard
+      ? "WireGuard"
+      : `NAT ${node.natType}${node.tcpNatType !== "Unknown" ? ` (tcp ${node.tcpNatType})` : ""}`,
     node.publicIps.length > 0 ? `Public ${node.publicIps.join(", ")}` : null,
     node.version ? `EasyTier ${node.version}` : null,
     node.relaysFor.length > 0
@@ -300,7 +311,14 @@ export function TopologyNodeCard({
           <Badge className="px-1.5 py-0 text-[9px]" variant="outline">
             {node.natType}
           </Badge>
-          {node.managed ? (
+          {wireguard ? (
+            <Badge
+              className="px-1.5 py-0 text-[9px]"
+              variant="outline"
+            >
+              {t("wireguard.badge")}
+            </Badge>
+          ) : node.managed ? (
             <Badge className="px-1.5 py-0 text-[9px]" variant="outline">
               {t("topology.managed")}
             </Badge>

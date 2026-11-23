@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.3.0-M3
  */
 import type { GetDeviceTopology200NodeFeatureFlags } from './getDeviceTopology200NodeFeatureFlags';
+import type { GetDeviceTopology200NodeKind } from './getDeviceTopology200NodeKind';
 
 /**
  * @nullable
@@ -44,4 +45,5 @@ export type GetDeviceTopology200Node = {
   capabilityReasons: string[];
   relaysFor: string[];
   observed: boolean;
+  kind?: GetDeviceTopology200NodeKind;
 } | null;

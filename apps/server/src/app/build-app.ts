@@ -30,6 +30,7 @@ import { registerPolicyRoutes } from "../routes/policy-routes.js";
 import { registerRouteRoutes } from "../routes/route-routes.js";
 import { registerSystemRoutes } from "../routes/system-routes.js";
 import { registerTopologyRoutes } from "../routes/topology-routes.js";
+import { registerWireguardRoutes } from "../routes/wireguard-routes.js";
 import { registerEventRoutes } from "../realtime/sse.js";
 
 export interface BuildAppOptions {
@@ -132,6 +133,7 @@ export async function buildApp(
   registerRouteRoutes(app, context);
   registerAuditRoutes(app, context);
   registerTopologyRoutes(app, context);
+  registerWireguardRoutes(app, context);
   registerEventRoutes(app, context);
 
   app.get(

@@ -97,6 +97,7 @@ data: {"seq":42,"type":"device.updated","at":"…","orgId":"…","networkId":"�
 | `network.updated` / `network.deleted` | network created/updated/secret rotated/deleted | networks, devices, invites |
 | `policy.updated` | policy saved or disabled (with the new version) | networks (policy/versions), devices (revisions) |
 | `route.updated` | route requested/decided, or a client route report changed | networks (routes/reports), devices |
+| `wireguard.updated` | a portal client was created/renamed/tagged/deleted, the portal toggled, or its live status changed | networks (WireGuard clients), devices (hub count/port) |
 | `topology.updated` | each topology collection (whole snapshot, without raw observations) | patches the map query in place |
 
 Heartbeats arrive every second per device, so `device.updated` is coalesced: an

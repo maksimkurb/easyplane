@@ -56,6 +56,17 @@ export type CreateDeviceRevision201Device = {
   externalPort: number | null;
   publicIps: string[];
   isHub: boolean;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  wgListenPort: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  wireguardClientCount: number;
   role: CreateDeviceRevision201DeviceRole;
   effectiveRole: CreateDeviceRevision201DeviceEffectiveRole;
   knowsSecret: boolean;
