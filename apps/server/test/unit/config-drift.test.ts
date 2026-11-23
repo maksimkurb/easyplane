@@ -113,6 +113,28 @@ describe("desired config fingerprint", () => {
     expect(desiredFingerprint(a)).toMatch(/^[0-9a-f]{64}$/);
   });
 
+  it("handles bigint and undefined fields (credentials configs carry them)", () => {
+    // protobuf-es NetworkConfig has bigint fields (e.g. the receive bandwidth
+    // limit); JSON.stringify throws on them, which used to fail every push of
+    // such a device ("Do not know how to serialize a BigInt").
+    const withBigint = {
+      ...config(),
+      instanceRecvBpsLimit: 123456789012345678n,
+      socketMark: undefined,
+    } as unknown as manage.NetworkConfig;
+    const same = {
+      ...config(),
+      instanceRecvBpsLimit: 123456789012345678n,
+    } as unknown as manage.NetworkConfig;
+    const other = {
+      ...config(),
+      instanceRecvBpsLimit: 123456789012345679n,
+    } as unknown as manage.NetworkConfig;
+    expect(() => desiredFingerprint(withBigint)).not.toThrow();
+    expect(desiredFingerprint(withBigint)).toBe(desiredFingerprint(same));
+    expect(desiredFingerprint(withBigint)).not.toBe(desiredFingerprint(other));
+  });
+
   it("changes when the desired config changes", () => {
     const base = config();
     expect(desiredFingerprint(base)).not.toBe(

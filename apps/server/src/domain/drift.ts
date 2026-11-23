@@ -33,7 +33,15 @@ export function driftBackoffMs(attempt: number): number {
 
 /** Sorted-key JSON so the fingerprint does not depend on property order. */
 function canonicalJson(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  // protobuf-es configs carry `bigint` fields (expiry timestamps, bandwidth
+  // limits, ...) which `JSON.stringify` refuses to serialise: a throw here
+  // fails every push of such a device, so handle them (and `undefined`)
+  // explicitly.
+  if (typeof value === "bigint") return `"${value.toString()}n"`;
+  if (value === undefined) return "null";
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value) ?? "null";
+  }
   if (Array.isArray(value)) {
     return `[${value.map((entry) => canonicalJson(entry)).join(",")}]`;
   }
@@ -41,7 +49,9 @@ function canonicalJson(value: unknown): string {
     return JSON.stringify(Buffer.from(value).toString("base64"));
   }
   const record = value as Record<string, unknown>;
-  const keys = Object.keys(record).sort();
+  const keys = Object.keys(record)
+    .filter((key) => record[key] !== undefined)
+    .sort();
   return `{${keys
     .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
     .join(",")}}`;
