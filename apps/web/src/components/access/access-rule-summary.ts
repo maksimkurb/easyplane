@@ -11,6 +11,7 @@ import {
   checkPort,
   findDevice,
   findGroup,
+  findSubnet,
   findTag,
   portsSummary,
   stripSubjectKind,
@@ -317,6 +318,42 @@ export function subjectDisplayLabel(
         device: pretty.via,
       })
     : pretty.label
+}
+
+/**
+ * The text a subject chip renders, exactly as SubjectChips/SubjectChipView
+ * draw it. Used to build accessible names that contain their visible text.
+ */
+export function subjectVisibleText(
+  subject: string,
+  subjects: AccessSubjects,
+  side: "from" | "to",
+  t: TFunction
+): string {
+  const chip = subjectChip(subject, subjects, side)
+  if (chip.kind === "any") {
+    return side === "from"
+      ? t("accessA.picker.anyFrom")
+      : t("accessA.picker.anyTo")
+  }
+  if (chip.kind === "subnet") {
+    const subnet = findSubnet(subjects, stripSubjectKind(subject).name)
+    const pretty = prettySubnetName(
+      chip.label,
+      subnet?.cidr,
+      subnet?.viaHostname
+    )
+    if (pretty.auto) {
+      return [
+        pretty.label,
+        pretty.via ? t("accessA.accordion.via", { device: pretty.via }) : null,
+      ]
+        .filter(Boolean)
+        .join(" ")
+    }
+    return [chip.label, subnet?.cidr ?? chip.detail].filter(Boolean).join(" ")
+  }
+  return [chip.label, chip.detail].filter(Boolean).join(" ")
 }
 
 /** One-line, localised summary used as the row heading when no name is set. */

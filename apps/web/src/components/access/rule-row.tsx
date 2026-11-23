@@ -24,26 +24,43 @@ import { AllowDenyPill, SubjectChips } from "@/components/access/access-chips"
 import {
   isGeneratedRuleName,
   ruleDisplayTitle,
-  subjectDisplayLabel,
+  subjectVisibleText,
 } from "@/components/access/access-rule-summary"
 import { cn } from "@/lib/utils"
 
-function ruleAria(
+/**
+ * The row is one big button whose accessible name must contain every visible
+ * fragment in reading order: heading, action, both chip lists, ports, the off
+ * pill and any error. The purpose ("Edit rule N") goes last so the name still
+ * starts with the visible heading.
+ */
+function ruleVisibleName(
   rule: AccessRule,
   subjects: AccessSubjects,
+  title: string,
+  label: string,
+  error: string | undefined,
   t: TFunction
 ): string {
-  const from = rule.from
-    .map((subject) => subjectDisplayLabel(subject, subjects, "from", t))
-    .join(", ")
-  const to = rule.to
-    .map((subject) => subjectDisplayLabel(subject, subjects, "to", t))
-    .join(", ")
-  return t("accessA.rules.sentence", {
-    from,
-    to,
-    ports: portsSummary(rule, t),
-  })
+  const action =
+    rule.action === "allow" ? t("accessA.rules.allow") : t("accessA.rules.deny")
+  const subjectsText = [
+    ...rule.from.map((subject) =>
+      subjectVisibleText(subject, subjects, "from", t)
+    ),
+    ...rule.to.map((subject) => subjectVisibleText(subject, subjects, "to", t)),
+  ]
+  return [
+    title,
+    action,
+    ...subjectsText,
+    portsSummary(rule, t),
+    rule.enabled === false ? t("accessA.rules.off") : null,
+    error ?? null,
+    label,
+  ]
+    .filter(Boolean)
+    .join(" ")
 }
 
 /**
@@ -92,17 +109,14 @@ export function RuleRow({
   // Every row gets a heading. Without a human name it is the plain-language
   // summary, so unnamed rules no longer look like a different kind of row.
   const title = ruleDisplayTitle(rule, subjects, t)
-  const aria = ruleAria(rule, subjects, t)
-  const label = name
-    ? t("accessA.rules.editNamed", { rule: index + 1, name })
-    : t("accessA.rules.edit", { rule: index + 1 })
+  const purpose = t("accessA.rules.edit", { rule: index + 1 })
+  const visibleName = ruleVisibleName(rule, subjects, title, purpose, error, t)
   const dimmed = rule.enabled === false
 
   return (
     <div
       className={cn(
         "group/rule relative grid min-h-[52px] min-w-0 grid-cols-[20px_minmax(0,1fr)_44px_44px] items-start gap-x-1 px-2 py-1.5 sm:min-h-[52px] sm:grid-cols-[24px_22px_minmax(0,1fr)_40px_40px] sm:items-center sm:gap-x-1.5 sm:px-1",
-        dimmed && "opacity-90",
         highlighted && "bg-brand-soft/70 shadow-[inset_3px_0_0_var(--brand)]"
       )}
       data-highlighted={highlighted ? "true" : undefined}
@@ -143,71 +157,53 @@ export function RuleRow({
       </span>
 
       <button
-        aria-label={`${label}. ${aria}`}
+        aria-label={visibleName}
         className="flex min-w-0 cursor-pointer flex-col gap-1 text-left focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
         data-testid={`rule-open-${index}`}
         onClick={onOpen}
         type="button"
       >
         <span
-          className={cn(
-            "max-w-full truncate text-[13.5px] leading-[18px] font-semibold",
-            dimmed && "opacity-55"
-          )}
+          className="max-w-full truncate text-[13.5px] leading-[18px] font-semibold"
           title={title}
         >
           {title}
-        </span>
+        </span>{" "}
         <span className="flex min-w-0 flex-wrap items-center gap-1">
           <span className="flex min-w-0 flex-wrap items-center gap-1">
             <AllowDenyPill
               action={rule.action}
-              className={cn(
-                "h-5 min-w-[48px] px-1.5 sm:h-6 sm:min-w-[52px]",
-                dimmed && "opacity-55"
-              )}
-            />
-            <SubjectChips
-              className={cn("min-w-0", dimmed && "opacity-55")}
-              side="from"
-              subjects={subjects}
-              values={rule.from}
-            />
+              className="h-5 min-w-[48px] px-1.5 sm:h-6 sm:min-w-[52px]"
+            />{" "}
+            <SubjectChips side="from" subjects={subjects} values={rule.from} />{" "}
             <ArrowRightIcon
               aria-hidden="true"
-              className={cn(
-                "size-3.5 flex-none text-fg-3",
-                dimmed && "opacity-55"
-              )}
+              className="size-3.5 flex-none text-fg-3"
             />
-          </span>
-          <SubjectChips
-            className={cn("min-w-0", dimmed && "opacity-55")}
-            side="to"
-            subjects={subjects}
-            values={rule.to}
-          />
-          <span
-            className={cn(
-              "inline-flex min-h-5 max-w-full items-center rounded-[7px] bg-surface-2 px-2 py-0.5 text-[12.5px] leading-[18px] shadow-[inset_0_0_0_1px_var(--line)] sm:min-h-6",
-              dimmed && "opacity-55"
-            )}
-          >
+          </span>{" "}
+          <SubjectChips side="to" subjects={subjects} values={rule.to} />{" "}
+          <span className="inline-flex min-h-5 max-w-full items-center rounded-[7px] bg-surface-2 px-2 py-0.5 text-[12.5px] leading-[18px] shadow-[inset_0_0_0_1px_var(--line)] sm:min-h-6">
             {portsSummary(rule, t)}
           </span>
           {dimmed ? (
-            <span className="inline-flex h-[18px] flex-none items-center rounded-full bg-surface-3 px-1.5 text-[12px] leading-[18px] font-semibold text-fg-2">
-              {t("accessA.rules.off")}
-            </span>
+            <>
+              {" "}
+              <span className="inline-flex h-[18px] flex-none items-center rounded-full bg-surface-3 px-1.5 text-[12px] leading-[18px] font-semibold text-fg-2">
+                {t("accessA.rules.off")}
+              </span>
+            </>
           ) : null}
         </span>
         {error ? (
-          <span
-            aria-live="polite"
-            className="text-[12px] leading-[18px] text-err"
-          >
-            {error}
-          </span>
+          <>
+            {" "}
+            <span
+              aria-live="polite"
+              className="text-[12px] leading-[18px] text-err"
+            >
+              {error}
+            </span>
+          </>
         ) : null}
       </button>
 

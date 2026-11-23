@@ -16,11 +16,14 @@ import {
 } from "lucide-react"
 
 import type { AccessSubjects, SubjectKind } from "@/lib/access-policy"
-import { checkAddress, subjectChip } from "@/lib/access-policy"
+import { checkAddress } from "@/lib/access-policy"
 import { TagInput } from "@/components/access/tag-input"
 import { SubjectChips } from "@/components/access/access-chips"
 import { WireguardBadge } from "@/components/device/wireguard-badge"
-import { prettySubnetName } from "@/components/access/access-rule-summary"
+import {
+  prettySubnetName,
+  subjectVisibleText,
+} from "@/components/access/access-rule-summary"
 import { cn } from "@/lib/utils"
 
 type PickerItem = {
@@ -66,6 +69,26 @@ function itemText(item: PickerItem, t: TFunction): string {
     return t("accessA.picker.customHint")
   }
   return item.detail ?? ""
+}
+
+/**
+ * The trigger's name must contain the text of every chip it shows, including
+ * the non-primary ones the old label used to drop.
+ */
+function triggerLabel(
+  values: string[],
+  subjects: AccessSubjects,
+  side: "from" | "to",
+  field: string,
+  t: TFunction
+): string {
+  if (values.length === 0) return field
+  return t("accessA.picker.trigger", {
+    field,
+    value: values
+      .map((value) => subjectVisibleText(value, subjects, side, t))
+      .join(", "),
+  })
 }
 
 function buildSections(
@@ -386,8 +409,6 @@ export function SubjectPicker({
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
-  const [primary] = values
-  const chip = primary ? subjectChip(primary, subjects, side) : null
 
   return (
     <div className="relative min-w-0" ref={rootRef}>
@@ -395,11 +416,7 @@ export function SubjectPicker({
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-invalid={error ? true : undefined}
-        aria-label={
-          chip
-            ? t("accessA.picker.trigger", { field: label, value: chip.label })
-            : label
-        }
+        aria-label={triggerLabel(values, subjects, side, label, t)}
         className={cn(
           "flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-[10px] bg-card px-2.5 py-1 text-left shadow-[inset_0_0_0_1px_var(--line-2)] transition-shadow focus-visible:ring-3 focus-visible:ring-brand-soft focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-surface-2 max-sm:min-h-12",
           open &&
@@ -481,16 +498,10 @@ export function SubjectValueButton({
   error?: string
 }) {
   const { t } = useTranslation()
-  const [primary] = values
-  const chip = primary ? subjectChip(primary, subjects, side) : null
   return (
     <div className="min-w-0">
       <button
-        aria-label={
-          chip
-            ? t("accessA.picker.trigger", { field: label, value: chip.label })
-            : label
-        }
+        aria-label={triggerLabel(values, subjects, side, label, t)}
         className={cn(
           "flex min-h-12 w-full cursor-pointer items-center gap-2.5 rounded-[10px] bg-card px-3 py-1.5 text-left shadow-[inset_0_0_0_1px_var(--line-2)] focus-visible:ring-3 focus-visible:ring-brand-soft focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-surface-2",
           error && "shadow-[inset_0_0_0_1.5px_var(--err)]"

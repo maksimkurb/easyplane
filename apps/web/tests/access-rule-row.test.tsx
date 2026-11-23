@@ -51,7 +51,9 @@ describe("RuleRow", () => {
     expect(screen.getByText("TCP 22")).toBeInTheDocument()
     expect(screen.getByRole("switch")).not.toBeChecked()
     expect(
-      screen.getByRole("button", { name: /Anyone to nas-01 on TCP 22/ })
+      screen.getByRole("button", {
+        name: /^Block SSH to NAS Deny Anyone nas-01 TCP 22 Off .*Edit rule 1/,
+      })
     ).toBeInTheDocument()
   })
 

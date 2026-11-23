@@ -34,6 +34,7 @@ export const enTranslation = {
   },
   account: {
     menuLabel: "Account, language and theme",
+    menuLabelNamed: "{{name}} — account, language and theme",
   },
   auth: {
     loading: "Loading EasyPlane…",

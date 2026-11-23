@@ -3,7 +3,10 @@ import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 
 import "@/i18n"
-import { SubjectPicker, SubjectPickerList } from "@/components/access/subject-picker"
+import {
+  SubjectPicker,
+  SubjectPickerList,
+} from "@/components/access/subject-picker"
 import { SUBJECTS } from "./access-fixtures"
 
 describe("SubjectPicker", () => {
@@ -34,15 +37,34 @@ describe("SubjectPicker", () => {
     ]
     const positions = order.map((title) => text.indexOf(title))
     expect(positions.every((position) => position >= 0)).toBe(true)
-    expect([...positions].sort((left, right) => left - right)).toEqual(positions)
+    expect([...positions].sort((left, right) => left - right)).toEqual(
+      positions
+    )
 
     const search = within(panel).getByRole("searchbox", { name: "Search From" })
     await user.type(search, "nas")
-    expect(within(panel).getByRole("option", { name: /nas-01/ })).toBeInTheDocument()
+    expect(
+      within(panel).getByRole("option", { name: /nas-01/ })
+    ).toBeInTheDocument()
     expect(within(panel).queryByText("Tags")).not.toBeInTheDocument()
 
     await user.click(within(panel).getByRole("option", { name: /nas-01/ }))
     expect(onChange).toHaveBeenCalledWith(["device:nas-01"])
+  })
+
+  it("names the trigger after every visible chip, not just the first", () => {
+    render(
+      <SubjectPicker
+        label="To"
+        onChange={() => undefined}
+        side="to"
+        subjects={SUBJECTS}
+        values={["cidr:10.42.1.0/24", "subnet:office"]}
+      />
+    )
+    expect(
+      screen.getByRole("button", { name: "To: 10.42.1.0/24, office" })
+    ).toBeInTheDocument()
   })
 
   it("opens the address tag input for Custom and validates a pasted CIDR", async () => {
@@ -59,7 +81,9 @@ describe("SubjectPicker", () => {
     )
     await user.click(screen.getByRole("button", { name: "To: Anywhere" }))
     await user.click(screen.getByRole("option", { name: /Custom…/ }))
-    const input = screen.getByRole("textbox", { name: "To IP addresses or CIDRs" })
+    const input = screen.getByRole("textbox", {
+      name: "To IP addresses or CIDRs",
+    })
     await user.type(input, "192.168.55.0/24{Enter}")
     expect(onChange).toHaveBeenCalledWith(["cidr:192.168.55.0/24"])
   })
@@ -79,6 +103,8 @@ describe("SubjectPicker", () => {
     const search = screen.getByRole("searchbox", { name: "Search From" })
     await user.type(search, "vps")
     expect(screen.getByRole("option", { name: /vps-fra/ })).toBeInTheDocument()
-    expect(screen.queryByRole("option", { name: /nas-01/ })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("option", { name: /nas-01/ })
+    ).not.toBeInTheDocument()
   })
 })

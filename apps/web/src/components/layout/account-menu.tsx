@@ -58,13 +58,23 @@ export function AccountMenu({
 
   const user = me?.user
   const label = user?.displayName || user?.email || ""
+  const initialsText = user ? initials(user.displayName, user.email) : "?"
+  // The visible initials/name/email must be part of the accessible name; the
+  // avatar alone would otherwise be announced only as "Account…".
+  const visibleName = [initialsText]
+  if (variant === "sidebar" && !collapsed) {
+    visibleName.push(label || t("account.menuLabel"))
+    if (user && user.email !== label) visibleName.push(user.email)
+  }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
           <button
-            aria-label={t("account.menuLabel")}
+            aria-label={t("account.menuLabelNamed", {
+              name: visibleName.join(" "),
+            })}
             className={cn(
               "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
               variant === "avatar"
@@ -79,18 +89,18 @@ export function AccountMenu({
       >
         {user ? (
           <span className="grid size-8 flex-none place-items-center rounded-full bg-brand-soft text-xs font-semibold text-brand-text">
-            {initials(user.displayName, user.email)}
+            {initials(user.displayName, user.email)}{" "}
           </span>
         ) : (
           <span className="grid size-8 flex-none place-items-center rounded-full bg-surface-2 text-xs font-semibold text-fg-2">
-            ?
+            ?{" "}
           </span>
         )}
         {variant === "sidebar" && !collapsed ? (
           <>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[13px] font-medium">
-                {label || t("account.menuLabel")}
+                {label || t("account.menuLabel")}{" "}
               </span>
               {user && user.email !== label ? (
                 <span className="block truncate text-xs text-fg-3">

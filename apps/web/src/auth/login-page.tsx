@@ -50,7 +50,7 @@ export function LoginPage() {
     <main className="grid min-h-svh grid-cols-1 grid-rows-[auto_minmax(0,1fr)_auto] bg-background md:h-svh md:grid-cols-[minmax(300px,38%)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)_auto] md:overflow-hidden">
       <aside
         aria-label="EasyPlane"
-        className="flex min-w-0 items-center bg-brand px-5 py-4 text-white md:col-start-1 md:row-start-1 md:justify-center md:p-12"
+        className="flex min-w-0 items-center bg-brand-panel px-5 py-4 text-white md:col-start-1 md:row-start-1 md:justify-center md:p-12"
       >
         <div className="flex min-w-0 items-center gap-3 md:gap-4">
           <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-white/10 md:size-14 md:rounded-[13px]">
@@ -60,7 +60,7 @@ export function LoginPage() {
             <p className="text-base leading-tight font-semibold tracking-tight md:text-[22px]">
               EasyPlane
             </p>
-            <p className="mt-1 text-xs text-white/60 md:mt-1.5 md:text-[13px]">
+            <p className="mt-1 text-xs text-white/80 md:mt-1.5 md:text-[13px]">
               {t("brand.tagline")}
             </p>
           </div>
@@ -171,8 +171,8 @@ export function LoginPage() {
         </div>
       </section>
 
-      <footer className="border-t bg-background px-5 pt-4 pb-[max(1.125rem,env(safe-area-inset-bottom))] md:col-start-1 md:row-start-2 md:border-white/10 md:bg-brand md:px-6 md:pt-4.5 md:pb-5.5 md:text-white">
-        <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 md:gap-2.5 [&_p]:text-muted-foreground md:[&_p]:text-white/55 [&_[data-slot=select-trigger]]:bg-background md:[&_[data-slot=select-trigger]]:border-white/15 md:[&_[data-slot=select-trigger]]:bg-white/5 md:[&_[data-slot=select-trigger]]:text-white">
+      <footer className="border-t bg-background px-5 pt-4 pb-[max(1.125rem,env(safe-area-inset-bottom))] md:col-start-1 md:row-start-2 md:border-white/10 md:bg-brand-panel md:px-6 md:pt-4.5 md:pb-5.5 md:text-white">
+        <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 md:gap-2.5 [&_p]:text-muted-foreground md:[&_p]:text-white/80 [&_[data-slot=select-trigger]]:bg-background md:[&_[data-slot=select-trigger]]:border-white/15 md:[&_[data-slot=select-trigger]]:bg-white/5 md:[&_[data-slot=select-trigger]]:text-white">
           <LanguageSelector />
           <ThemeSelector />
         </div>

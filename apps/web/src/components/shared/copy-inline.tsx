@@ -39,7 +39,7 @@ export function CopyInline({
 
   return (
     <button
-      aria-label={label}
+      aria-label={`${label} ${value}`}
       className={cn(
         "inline-flex h-8 min-w-0 max-w-full cursor-pointer items-center gap-1.5 rounded-md px-1.5 font-mono text-xs text-fg-2 hover:bg-surface-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
         className

@@ -367,7 +367,7 @@ function NavItem({
         <span className="sr-only">{label}</span>
       ) : (
         <>
-          <span className="min-w-0 flex-1 truncate">{label}</span>
+          <span className="min-w-0 flex-1 truncate">{label} </span>
           {showBadge ? (
             <Chip className="h-5 px-1.5" variant="warn">
               {badge}

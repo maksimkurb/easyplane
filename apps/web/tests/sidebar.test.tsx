@@ -87,12 +87,12 @@ describe("Sidebar", () => {
     ).toHaveAttribute("href", "/audit")
 
     const approvals = screen.getByRole("link", {
-      name: /Waiting for approval/,
+      name: "Waiting for approval, 2 waiting",
     })
     expect(await within(approvals).findByText("2")).toBeInTheDocument()
 
     const account = screen.getByRole("button", {
-      name: "Account, language and theme",
+      name: "AD Admin admin@example.com — account, language and theme",
     })
     expect(account).toBeInTheDocument()
     expect(screen.getByText("admin@example.com")).toBeInTheDocument()
@@ -118,6 +118,11 @@ describe("Sidebar", () => {
     expect(
       screen.queryByRole("link", { name: "Home lab" })
     ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole("button", {
+        name: "AD — account, language and theme",
+      })
+    ).toBeInTheDocument()
     expect(window.localStorage.getItem("easyplane-sidebar-collapsed")).toBe("1")
   })
 })

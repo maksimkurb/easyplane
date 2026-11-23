@@ -36,6 +36,7 @@ export const ruTranslation: Translation = {
   },
   account: {
     menuLabel: "Аккаунт, язык и тема",
+    menuLabelNamed: "{{name}} — аккаунт, язык и тема",
   },
   auth: {
     loading: "Загрузка EasyPlane…",

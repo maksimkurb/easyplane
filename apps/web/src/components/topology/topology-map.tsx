@@ -242,7 +242,7 @@ export function TopologyNodeCard({
         {exitNode !== "none" ? (
           <span className="absolute -bottom-2 left-2 bg-card">
             <ExitNodeBadge
-              className="px-1.5 py-0 text-[9px]"
+              className="px-1.5 py-0 text-[11px]"
               state={exitNode}
             />
           </span>
@@ -308,32 +308,35 @@ export function TopologyNodeCard({
       ) : null}
       {!compact ? (
         <div className="mt-1.5 flex flex-wrap items-center gap-1">
-          <Badge className="px-1.5 py-0 text-[9px]" variant="outline">
+          <Badge className="text-fg px-1.5 py-0 text-[11px]" variant="outline">
             {node.natType}
           </Badge>
           {wireguard ? (
             <Badge
-              className="px-1.5 py-0 text-[9px]"
+              className="text-fg px-1.5 py-0 text-[11px]"
               variant="outline"
             >
               {t("wireguard.badge")}
             </Badge>
           ) : node.managed ? (
-            <Badge className="px-1.5 py-0 text-[9px]" variant="outline">
+            <Badge
+              className="text-fg px-1.5 py-0 text-[11px]"
+              variant="outline"
+            >
               {t("topology.managed")}
             </Badge>
           ) : (
             <Badge
-              className="border-amber-500/40 px-1.5 py-0 text-[9px] text-amber-700 dark:text-amber-300"
+              className="border-amber-500/40 px-1.5 py-0 text-[11px] text-amber-700 dark:text-amber-300"
               variant="outline"
             >
               {t("topology.unmanaged")}
             </Badge>
           )}
-          <ExitNodeBadge className="px-1.5 py-0 text-[9px]" state={exitNode} />
+          <ExitNodeBadge className="px-1.5 py-0 text-[11px]" state={exitNode} />
           {node.relaysFor.length > 0 ? (
             <Badge
-              className="border-violet-500/40 px-1.5 py-0 text-[9px] text-violet-700 dark:text-violet-300"
+              className="border-violet-500/40 px-1.5 py-0 text-[11px] text-violet-700 dark:text-violet-300"
               variant="outline"
             >
               {t("topology.relayCount", { count: node.relaysFor.length })}

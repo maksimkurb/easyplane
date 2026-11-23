@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { Fragment } from "react"
 import type { TFunction } from "i18next"
 import { useTranslation } from "react-i18next"
 import {
@@ -135,16 +136,19 @@ export function SubjectChipView({
         {chip.label}
       </span>
       {detail ? (
-        <span
-          className={cn(
-            "min-w-0 text-[12px] text-fg-2",
-            detailIsCode
-              ? "font-mono whitespace-nowrap"
-              : "[overflow-wrap:anywhere]"
-          )}
-        >
-          {detail}
-        </span>
+        <>
+          {" "}
+          <span
+            className={cn(
+              "min-w-0 text-[12px] text-fg-2",
+              detailIsCode
+                ? "font-mono whitespace-nowrap"
+                : "[overflow-wrap:anywhere]"
+            )}
+          >
+            {detail}
+          </span>
+        </>
       ) : null}
     </span>
   )
@@ -251,24 +255,31 @@ export function SubjectChips({
     <span
       className={cn("flex min-w-0 flex-wrap items-center gap-1.5", className)}
     >
-      {values.map((value) => {
+      {values.map((value, index) => {
         const chip = subjectChip(value, subjects, side)
         if (chip.kind === "any") {
           return (
-            <SubjectChipView
-              chip={{
-                ...chip,
-                label:
-                  side === "from"
-                    ? t("accessA.picker.anyFrom")
-                    : t("accessA.picker.anyTo"),
-              }}
-              key={value}
-            />
+            <Fragment key={value}>
+              {index > 0 ? " " : null}
+              <SubjectChipView
+                chip={{
+                  ...chip,
+                  label:
+                    side === "from"
+                      ? t("accessA.picker.anyFrom")
+                      : t("accessA.picker.anyTo"),
+                }}
+              />
+            </Fragment>
           )
         }
         if (chip.kind !== "subnet") {
-          return <SubjectChipView chip={chip} key={value} />
+          return (
+            <Fragment key={value}>
+              {index > 0 ? " " : null}
+              <SubjectChipView chip={chip} />
+            </Fragment>
+          )
         }
         const subnet = findSubnet(subjects, stripSubjectKind(value).name)
         const pretty = prettySubnetName(
@@ -277,24 +288,26 @@ export function SubjectChips({
           subnet?.viaHostname
         )
         return (
-          <SubjectChipView
-            chip={
-              pretty.auto
-                ? {
-                    ...chip,
-                    label: pretty.label,
-                    ...(pretty.via
-                      ? {
-                          detail: t("accessA.accordion.via", {
-                            device: pretty.via,
-                          }),
-                        }
-                      : { detail: undefined }),
-                  }
-                : chip
-            }
-            key={value}
-          />
+          <Fragment key={value}>
+            {index > 0 ? " " : null}
+            <SubjectChipView
+              chip={
+                pretty.auto
+                  ? {
+                      ...chip,
+                      label: pretty.label,
+                      ...(pretty.via
+                        ? {
+                            detail: t("accessA.accordion.via", {
+                              device: pretty.via,
+                            }),
+                          }
+                        : { detail: undefined }),
+                    }
+                  : chip
+              }
+            />
+          </Fragment>
         )
       })}
     </span>
