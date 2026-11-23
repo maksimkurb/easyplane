@@ -510,7 +510,7 @@ export const ruTranslation: Translation = {
     ownedBy: "Владелец {{owner}}",
     breadcrumbs: "Хлебные крошки",
     searchLabel: "Поиск устройств",
-    searchPlaceholder: "Имя, IP или тег",
+    searchPlaceholder: "Имя, IP, тег или описание",
     filterLabel: "Фильтр устройств",
     filterAll: "Все",
     filterOnline: "В сети",
@@ -524,6 +524,17 @@ export const ruTranslation: Translation = {
     tagsHint:
       "Теги — субъекты политики: они определяют, какие правила применяются к устройству.",
     tagsSaved: "Теги сохранены",
+    deviceDescription: {
+      title: "Описание устройства",
+      hint: "Короткая заметка для тех, кто не знает, что означает ID устройства.",
+      placeholder: "Добавьте описание: где стоит устройство и для чего оно",
+      empty: "Описания пока нет",
+      edit: "Изменить описание",
+      saved: "Описание сохранено",
+      field: "Описание",
+      counter: "{{value}} / {{max}}",
+      tooLong: "Не больше {{max}} символов.",
+    },
     chips: {
       configNotApplied: "Конфигурация не применена",
       pushFailed: "Ошибка отправки",
@@ -674,7 +685,7 @@ export const ruTranslation: Translation = {
     pendingDescription:
       "Устройства, подключившиеся по приглашению и ожидающие решения администратора.",
     searchLabel: "Поиск устройств",
-    searchPlaceholder: "Имя, IP или тег",
+    searchPlaceholder: "Имя, IP, тег или описание",
     networkFilter: "Сеть",
     allNetworks: "Все сети",
     filterLabel: "Фильтр устройств",
@@ -1709,6 +1720,8 @@ export const ruTranslation: Translation = {
         "{{actor}} попросил {{target}} получить конфигурацию",
       device_renamed: "{{actor}} переименовал {{target}} в {{name}}",
       device_tags_updated: "{{actor}} обновил теги {{target}}",
+      device_description_updated:
+        "{{actor}} обновил описание {{target}}",
       device_owner_updated: "{{actor}} сменил владельца {{target}}",
       device_endpoints_updated:
         "{{actor}} обновил объявленные адреса {{target}}",

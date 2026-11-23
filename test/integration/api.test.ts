@@ -372,6 +372,110 @@ describe("networks, invites, devices, desired state and audit", () => {
     ]);
   });
 
+  it("sets, normalizes, clears and audits the device description", async () => {
+    const set = await test.app.inject({
+      method: "PUT",
+      url: `/api/devices/${deviceId}/description`,
+      headers: headers(),
+      payload: { description: "  Дача,\nOpenWrt\n\n за шкафом  " },
+    });
+    expect(set.statusCode).toBe(200);
+    const updated = set.json() as { description: string | null };
+    // Newlines and repeated spaces collapse into one paragraph, edges trimmed.
+    expect(updated.description).toBe("Дача, OpenWrt за шкафом");
+
+    const got = await test.app.inject({
+      method: "GET",
+      url: `/api/devices/${deviceId}`,
+      headers: authed(admin),
+    });
+    expect((got.json() as { description: string | null }).description).toBe(
+      "Дача, OpenWrt за шкафом",
+    );
+
+    const listed = await test.app.inject({
+      method: "GET",
+      url: "/api/devices",
+      headers: authed(admin),
+    });
+    const row = (listed.json() as Array<{ id: string; description: string | null }>).find(
+      (device) => device.id === deviceId,
+    );
+    expect(row?.description).toBe("Дача, OpenWrt за шкафом");
+
+    // Above the 280-character limit the request fails with a 400.
+    const tooLong = await test.app.inject({
+      method: "PUT",
+      url: `/api/devices/${deviceId}/description`,
+      headers: headers(),
+      payload: { description: "я".repeat(281) },
+    });
+    expect(tooLong.statusCode).toBe(400);
+    expect(tooLong.body).toMatch(/280/);
+
+    // The limit applies to the whole input; a multi-line paste over 280 is
+    // rejected as well (newlines still collapse when the text fits).
+    const splitLines = await test.app.inject({
+      method: "PUT",
+      url: `/api/devices/${deviceId}/description`,
+      headers: headers(),
+      payload: { description: `${"я".repeat(200)}\n${"я".repeat(100)}` },
+    });
+    expect(splitLines.statusCode).toBe(400);
+
+    // Mutations keep the same CSRF and role checks as the rename.
+    const withoutCsrf = await test.app.inject({
+      method: "PUT",
+      url: `/api/devices/${deviceId}/description`,
+      headers: authed(admin),
+      payload: { description: "no csrf" },
+    });
+    expect(withoutCsrf.statusCode).toBe(403);
+
+    const viewer = await loginWithMockIdp(test, "viewer");
+    const asViewer = await test.app.inject({
+      method: "PUT",
+      url: `/api/devices/${deviceId}/description`,
+      headers: authed(viewer, { "x-csrf-token": viewer.csrfToken }),
+      payload: { description: "viewer edit" },
+    });
+    expect(asViewer.statusCode).toBe(403);
+
+    const audit = await test.app.inject({
+      method: "GET",
+      url: "/api/audit",
+      headers: authed(admin),
+    });
+    const event = (
+      audit.json() as Array<{
+        action: string;
+        metadata: Record<string, unknown> | null;
+      }>
+    ).find((entry) => entry.action === "device.description_updated");
+    expect(event?.metadata).toMatchObject({
+      previous: null,
+      description: "Дача, OpenWrt за шкафом",
+    });
+
+    const cleared = await test.app.inject({
+      method: "PUT",
+      url: `/api/devices/${deviceId}/description`,
+      headers: headers(),
+      payload: { description: null },
+    });
+    expect(cleared.statusCode).toBe(200);
+    expect((cleared.json() as { description: string | null }).description).toBeNull();
+
+    const blank = await test.app.inject({
+      method: "PUT",
+      url: `/api/devices/${deviceId}/description`,
+      headers: headers(),
+      payload: { description: "   " },
+    });
+    expect(blank.statusCode).toBe(200);
+    expect((blank.json() as { description: string | null }).description).toBeNull();
+  });
+
   it("records a push error and recovers on the next revision", async () => {
     const remote = activeFake.client.remote as unknown as {
       runNetworkInstance: ReturnType<typeof vi.fn>;

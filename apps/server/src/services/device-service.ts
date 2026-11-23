@@ -47,6 +47,11 @@ import {
   type DeviceStatus,
   type OnlineState,
 } from "../domain/device-status.js";
+import {
+  DEVICE_DESCRIPTION_MAX_LENGTH,
+  isDeviceDescriptionLengthValid,
+  normalizeDeviceDescription,
+} from "../domain/device-description.js";
 import { effectiveRole, knowsNetworkSecret } from "../domain/credentials.js";
 import { isValidHubPort } from "../domain/hub.js";
 import {
@@ -112,6 +117,8 @@ export interface DeviceDto extends DeviceStatus {
   virtualIpv4: string | null;
   inviteId: string | null;
   ownerUserId: string | null;
+  /** Short human note about the device ("Роутер в гараже"); null when unset. */
+  description: string | null;
   /** Peer URLs other devices dial to reach this one. */
   advertisedEndpoints: string[];
   /** Port EasyTier binds for a hub (null = default 11010). */
@@ -447,6 +454,7 @@ export class DeviceService {
       virtualIpv4: device.virtualIpv4,
       inviteId: device.inviteId,
       ownerUserId: device.ownerUserId,
+      description: device.description,
       advertisedEndpoints: device.advertisedEndpoints,
       listenPort: device.listenPort,
       externalPort: device.externalPort,
@@ -1376,6 +1384,50 @@ export class DeviceService {
     this.options.push.schedule(deviceId, "tags updated");
     this.publishDevice(updated, "tags-updated");
     return this.dto(updated, network, normalized);
+  }
+
+  /**
+   * Sets or clears the short human description. It lives only in the panel —
+   * it is never compiled into the client config — so no push is scheduled; the
+   * realtime event refreshes open lists in other tabs.
+   */
+  async setDescription(
+    actor: RequestActor,
+    deviceId: string,
+    requested: string | null,
+  ): Promise<DeviceDto> {
+    const device = await getDevice(this.options.db, actor.orgId, deviceId);
+    if (!device) notFound("device not found");
+    const network = await getNetworkById(this.options.db, device.networkId);
+    if (!network) notFound("network not found");
+    const description = normalizeDeviceDescription(requested);
+    if (description && !isDeviceDescriptionLengthValid(description)) {
+      invalid(
+        `description must be at most ${DEVICE_DESCRIPTION_MAX_LENGTH} characters`,
+      );
+    }
+    const previous = device.description;
+    if (previous === description) {
+      const tags = await this.tagsByDevice(actor.orgId, deviceId);
+      return this.dto(device, network, tags.get(deviceId) ?? []);
+    }
+    const updated = await updateDevice(this.options.db, deviceId, { description });
+    if (!updated) {
+      throw new AppError(500, "failed to update the device description");
+    }
+    await this.options.audit.record({
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: "device.description_updated",
+      targetType: "device",
+      targetId: deviceId,
+      metadata: { previous, description, networkId: network.id },
+    });
+    // Cooldown 0: the coalescing signature tracks status only, so a
+    // description-only change would otherwise wait for the next heartbeat.
+    this.publishDevice(updated, "description-updated", {}, 0);
+    const tags = await this.tagsByDevice(actor.orgId, deviceId);
+    return this.dto(updated, network, tags.get(deviceId) ?? []);
   }
 
   /** Assigns the owning account used by policy `group:` subjects. */

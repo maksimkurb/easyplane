@@ -175,4 +175,22 @@ describe("DevicesPage", () => {
     expect(screen.getByText("kz")).toBeInTheDocument()
     expect(screen.queryByText("tag:kz")).not.toBeInTheDocument()
   })
+
+  it("shows the device description as one truncated line with the full text in the title", async () => {
+    const description = "Роутер в гараже, рядом с полкой с инструментами"
+    stubApi([
+      makeDevice({
+        id: "d-desc",
+        hostname: "garage-router",
+        dnsName: "garage-router",
+        description,
+      }),
+    ])
+    renderWithProviders(<DevicesPage />)
+
+    const line = await screen.findByText(description)
+    expect(line.tagName).toBe("P")
+    expect(line).toHaveAttribute("title", description)
+    expect(line.className).toContain("truncate")
+  })
 })

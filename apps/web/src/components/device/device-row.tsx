@@ -47,6 +47,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { ConfirmDialog } from "@/components/device/confirm-dialog"
 import { DeviceIcon } from "@/components/device/device-icon"
+import { DeviceDescriptionSummary } from "@/components/device/device-description"
 import { DeviceRenameDialog } from "@/components/device/device-rename-dialog"
 import { DeviceStatusCell } from "@/components/device/device-status-cell"
 import { DeviceTagsDialog } from "@/components/device/device-tags-dialog"
@@ -239,6 +240,10 @@ export function DeviceRow({
               <Chip variant="ok">{t("devices.chips.new")}</Chip>
             ) : null}
           </div>
+          <DeviceDescriptionSummary
+            className="mt-0.5"
+            description={device.description}
+          />
           <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-3">
             {secondaryHostname ? (
               <span

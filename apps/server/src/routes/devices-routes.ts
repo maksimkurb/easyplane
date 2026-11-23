@@ -18,6 +18,7 @@ import {
   revisionSchema,
   setDeviceRoleResponseSchema,
   setDeviceRoleSchema,
+  updateDeviceDescriptionSchema,
   updateDeviceEndpointsSchema,
   updateDeviceHubSchema,
 } from "../app/schemas.js";
@@ -291,6 +292,32 @@ export function registerDeviceRoutes(
         },
         request.params.deviceId,
         request.body.endpoints,
+      );
+    },
+  );
+
+  typed.put(
+    "/api/devices/:deviceId/description",
+    {
+      schema: {
+        operationId: "updateDeviceDescription",
+        tags: ["devices"],
+        params: paramsDeviceSchema,
+        body: updateDeviceDescriptionSchema,
+        response: { 200: deviceSchema },
+      },
+    },
+    async (request) => {
+      // Same permission model as the rename: anyone who can manage devices.
+      const auth = requireRole(request, ["admin", "member"]);
+      return context.devices.setDescription(
+        {
+          orgId: auth.organisation.id,
+          userId: auth.user.id,
+          role: auth.user.role,
+        },
+        request.params.deviceId,
+        request.body.description,
       );
     },
   );

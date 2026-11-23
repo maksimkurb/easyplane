@@ -133,6 +133,8 @@ import type {
   SwitchNetworkAccessModeBody,
   TestNetworkReachability200,
   TestNetworkReachabilityBody,
+  UpdateDeviceDescription200,
+  UpdateDeviceDescriptionBody,
   UpdateDeviceEndpoints200,
   UpdateDeviceEndpointsBody,
   UpdateDeviceHub200,
@@ -4064,6 +4066,87 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getUpdateDeviceEndpointsMutationOptions(options), queryClient);
+    }
+
+export type updateDeviceDescriptionResponse200 = {
+  data: UpdateDeviceDescription200
+  status: 200
+}
+
+export type updateDeviceDescriptionResponseSuccess = (updateDeviceDescriptionResponse200) & {
+  headers: Headers;
+};
+;
+
+export type updateDeviceDescriptionResponse = (updateDeviceDescriptionResponseSuccess)
+
+export const getUpdateDeviceDescriptionUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/devices/${deviceId}/description`
+}
+
+export const updateDeviceDescription = async (deviceId: string,
+    updateDeviceDescriptionBody: UpdateDeviceDescriptionBody, options?: Parameters<typeof apiFetch>[1]): Promise<updateDeviceDescriptionResponse> => {
+
+  return apiFetch<updateDeviceDescriptionResponse>(getUpdateDeviceDescriptionUrl(deviceId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(updateDeviceDescriptionBody)
+  }
+);}
+
+
+
+
+
+export const getUpdateDeviceDescriptionMutationKey = () => ['updateDeviceDescription'] as const;
+
+export const getUpdateDeviceDescriptionMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDeviceDescription>>, TError,UpdateDeviceDescriptionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDeviceDescription>>, TError,UpdateDeviceDescriptionMutationVariables, TContext> => {
+
+const mutationKey = getUpdateDeviceDescriptionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDeviceDescription>>, UpdateDeviceDescriptionMutationVariables> = (props) => {
+          const {deviceId,data} = props ?? {};
+
+          return  updateDeviceDescription(deviceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDeviceDescriptionMutationResult = NonNullable<Awaited<ReturnType<typeof updateDeviceDescription>>>
+    export type UpdateDeviceDescriptionMutationBody = UpdateDeviceDescriptionBody
+    export type UpdateDeviceDescriptionMutationError = unknown
+    export type UpdateDeviceDescriptionMutationVariables = {deviceId: string;data: UpdateDeviceDescriptionBody}
+
+    export const useUpdateDeviceDescription = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDeviceDescription>>, TError,UpdateDeviceDescriptionMutationVariables, TContext>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateDeviceDescription>>,
+        TError,
+        UpdateDeviceDescriptionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateDeviceDescriptionMutationOptions(options), queryClient);
     }
 
 export type updateDeviceHubResponse200 = {

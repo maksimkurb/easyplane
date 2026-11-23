@@ -87,6 +87,7 @@ function DevicesTab({ data }: { data: NetworkShellData }) {
         deviceName(device),
         device.hostname,
         device.label,
+        device.description ?? "",
         device.dnsName ?? "",
         device.virtualIpv4 ?? "",
         device.machineId,

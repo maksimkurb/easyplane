@@ -87,6 +87,11 @@ export {
   type SyncState,
 } from "./domain/device-status.js";
 export {
+  DEVICE_DESCRIPTION_MAX_LENGTH,
+  isDeviceDescriptionLengthValid,
+  normalizeDeviceDescription,
+} from "./domain/device-description.js";
+export {
   desiredConfigSchema,
   normalizeDesiredConfig,
   buildNetworkConfig,

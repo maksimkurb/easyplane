@@ -510,7 +510,7 @@ export const enTranslation = {
     ownedBy: "Owner {{owner}}",
     breadcrumbs: "Breadcrumb",
     searchLabel: "Search devices",
-    searchPlaceholder: "Name, IP or tag",
+    searchPlaceholder: "Name, IP, tag or description",
     filterLabel: "Filter devices",
     filterAll: "All",
     filterOnline: "Online",
@@ -524,6 +524,17 @@ export const enTranslation = {
     tagsHint:
       "Tags are policy subjects: they decide which rules apply to this device.",
     tagsSaved: "Tags saved",
+    deviceDescription: {
+      title: "Device description",
+      hint: "A short note for people who do not know what the device ID means.",
+      placeholder: "Add a description: where the device is and what it is for",
+      empty: "No description yet",
+      edit: "Edit description",
+      saved: "Description saved",
+      field: "Description",
+      counter: "{{value}} / {{max}}",
+      tooLong: "Keep it under {{max}} characters.",
+    },
     chips: {
       configNotApplied: "Config not applied",
       pushFailed: "Push failed",
@@ -672,7 +683,7 @@ export const enTranslation = {
     pendingDescription:
       "Devices that connected with an invite and wait for an admin decision.",
     searchLabel: "Search devices",
-    searchPlaceholder: "Name, IP or tag",
+    searchPlaceholder: "Name, IP, tag or description",
     networkFilter: "Network",
     allNetworks: "All networks",
     filterLabel: "Filter devices",
@@ -1701,6 +1712,8 @@ export const enTranslation = {
       device_push_requested: "{{actor}} asked {{target}} to pull its config",
       device_renamed: "{{actor}} renamed {{target}} to {{name}}",
       device_tags_updated: "{{actor}} updated the tags of {{target}}",
+      device_description_updated:
+        "{{actor}} updated the description of {{target}}",
       device_owner_updated: "{{actor}} changed the owner of {{target}}",
       device_endpoints_updated:
         "{{actor}} updated the advertised endpoints of {{target}}",

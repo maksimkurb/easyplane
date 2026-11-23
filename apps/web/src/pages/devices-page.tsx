@@ -93,6 +93,7 @@ export function DevicesPage({
         deviceName(device),
         device.hostname,
         device.label,
+        device.description ?? "",
         device.dnsName ?? "",
         device.virtualIpv4 ?? "",
         device.machineId,
