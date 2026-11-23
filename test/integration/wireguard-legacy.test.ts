@@ -624,7 +624,14 @@ describe("WireGuard portal generations", () => {
       headers: adminHeaders(),
     });
     expect(retry.statusCode).toBe(200);
-    expect(rejecting.pushCount).toBeGreaterThan(beforeRetry);
+    // A retry that lands while a queued push is in flight joins it and runs as
+    // the follow-up pass a moment later, so wait for the push instead of
+    // asserting the counter synchronously.
+    await waitFor(
+      () => rejecting.pushCount,
+      (count) => count > beforeRetry,
+    );
+    await waitQuiet(() => rejecting.pushCount);
     expect(rejecting.lastRun?.config.vpnPortalConfig).toBeUndefined();
   });
 });
