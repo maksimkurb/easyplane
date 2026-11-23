@@ -72,7 +72,11 @@ export function PendingDeviceRow({
     <div className="flex flex-col gap-3 px-4 py-3 transition-colors hover:bg-surface-2/70 md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-4 md:px-5">
       <div className="flex min-w-0 items-start gap-3.5">
         <span className="grid size-9 flex-none place-items-center rounded-[9px] bg-surface-2 text-fg-2 ring-1 ring-line">
-          <DeviceIcon className="size-4" os={device.os} />
+          <DeviceIcon
+            className="size-4"
+            hostname={device.hostname}
+            os={device.os}
+          />
         </span>
         <div className="min-w-0">
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">

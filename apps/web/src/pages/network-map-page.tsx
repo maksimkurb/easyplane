@@ -394,7 +394,11 @@ function MapSidePanel({
       <div className="flex items-start gap-3 border-b border-line px-4 py-4">
         <span className="grid size-11 flex-none place-items-center rounded-xl bg-surface-2 text-fg-2 ring-1 ring-line">
           {device ? (
-            <DeviceIcon className="size-5" os={device.os} />
+            <DeviceIcon
+              className="size-5"
+              hostname={device?.hostname}
+              os={device.os}
+            />
           ) : (
             <ServerIcon aria-hidden="true" className="size-5" />
           )}

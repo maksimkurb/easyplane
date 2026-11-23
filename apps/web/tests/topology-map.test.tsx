@@ -307,7 +307,7 @@ describe("topology map", () => {
       />
     )
     expect(container.firstElementChild?.className).toContain("ring-brand")
-    expect(container.querySelector(".lucide-server")).not.toBeNull()
+    expect(container.querySelector('[data-os-icon="debian"]')).not.toBeNull()
   })
 
   it("reports the clicked node so the page can open the drawer", () => {

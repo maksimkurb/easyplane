@@ -144,7 +144,11 @@ export function ApprovalsPanel({
                 key={device.id}
               >
                 <span className="grid size-9 flex-none place-items-center rounded-[9px] bg-surface-2 text-fg-2 ring-1 ring-line">
-                  <DeviceIcon className="size-4" os={device.os} />
+                  <DeviceIcon
+                    className="size-4"
+                    hostname={hostnameOf(device)}
+                    os={device.os}
+                  />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex min-w-0 flex-wrap items-center gap-2">

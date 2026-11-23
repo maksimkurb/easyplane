@@ -249,7 +249,11 @@ export function DeviceDetailPage() {
           </nav>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3 sm:flex-nowrap">
             <span className="grid size-12 flex-none place-items-center rounded-xl bg-surface-2 text-fg-2 ring-1 ring-line">
-              <DeviceIcon className="size-6" os={device.os} />
+              <DeviceIcon
+                className="size-6"
+                hostname={device.hostname}
+                os={device.os}
+              />
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 flex-wrap items-center gap-2 max-sm:[&>*:nth-child(n+2)]:hidden">
