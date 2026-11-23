@@ -59,6 +59,8 @@ function storyDevice(input: StoryDeviceInput): DeviceFixture {
     externalPort: null,
     publicIps: [],
     isHub: false,
+    wgListenPort: null,
+    wireguardClientCount: 0,
     role: "member",
     effectiveRole: "member",
     knowsSecret: true,
