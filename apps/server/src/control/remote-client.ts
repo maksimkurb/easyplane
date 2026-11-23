@@ -1,7 +1,13 @@
 import { manage } from "@easyplane/proto";
+import { instance } from "@easyplane/proto";
 import { protoToUuid, uuidToProto } from "@easyplane/shared";
 
-import { WEB_CLIENT_SERVICE, WebClientMethod } from "../rpc/descriptors.js";
+import {
+  VPN_PORTAL_SERVICE,
+  VpnPortalMethod,
+  WEB_CLIENT_SERVICE,
+  WebClientMethod,
+} from "../rpc/descriptors.js";
 import { RpcSession } from "../rpc/session.js";
 
 /**
@@ -95,5 +101,26 @@ export class RemoteWebClient {
       }).finish(),
     });
     return manage.ListNetworkInstanceMetaResponse.decode(response);
+  }
+
+  /**
+   * Live WireGuard portal state and the ready-made client configs.
+   *
+   * `VpnPortalRpc` is registered at domain "" on the client's config-server
+   * session alongside `WebClientService`, so no extra channel is needed. The
+   * response embeds private keys; callers must not log it.
+   */
+  async getVpnPortalInfo(
+    instId: string,
+    timeoutMs = 8_000,
+  ): Promise<instance.GetVpnPortalInfoResponse> {
+    const response = await this.session.call({
+      descriptor: { ...VPN_PORTAL_SERVICE, methodIndex: VpnPortalMethod.GetVpnPortalInfo },
+      payload: instance.GetVpnPortalInfoRequest.encode({
+        instance: { selector: { $case: "id", id: uuidToProto(instId) } },
+      }).finish(),
+      timeoutMs,
+    });
+    return instance.GetVpnPortalInfoResponse.decode(response);
   }
 }

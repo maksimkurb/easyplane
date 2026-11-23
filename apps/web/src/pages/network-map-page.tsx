@@ -113,7 +113,12 @@ function MapTab({ data }: { data: NetworkShellData }) {
   // The default panel is the first node in stable name+id order. Picking
   // `nodes[0]` meant a reordered snapshot silently switched the panel to a
   // different device; an explicit selection wins as long as it still exists.
-  const defaultNode = useMemo(() => firstTopologyNode(nodes), [nodes])
+  const defaultNode = useMemo(
+    () =>
+      firstTopologyNode(nodes.filter((node) => node.kind !== "wireguard")) ??
+      firstTopologyNode(nodes),
+    [nodes]
+  )
   const selectedNode = useMemo(() => {
     if (selectedNodeId) {
       const explicit = nodes.find((node) => node.id === selectedNodeId)

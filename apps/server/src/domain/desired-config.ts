@@ -3,6 +3,7 @@ import { acl, manage } from "@easyplane/proto";
 import { buildMinimalNetworkConfig } from "../config/network-config.js";
 import { credentialPublicKey } from "../security/credential-keys.js";
 import { managedCredentialsMatch } from "./credentials.js";
+import { vpnPortalConfigMatches, describeVpnPortalMismatch } from "./wireguard.js";
 import { cidrPrefix, parseIpv4 } from "./ip.js";
 import { canonicalAcl } from "./policy/canonical.js";
 import { z } from "zod";
@@ -162,6 +163,11 @@ export interface BuildNetworkConfigOptions {
    * node.
    */
   managedCredentials?: manage.ManagedCredentialConfig[];
+  /**
+   * WireGuard portal settings for a hub (network state, not revision
+   * content). Absent means the portal is disabled.
+   */
+  vpnPortalConfig?: manage.VpnPortalConfig;
 }
 
 /** Turns a stored revision into the protobuf config pushed to the client. */
@@ -210,6 +216,9 @@ export function buildNetworkConfig(
     exitNodes: [],
     ...(options.managedCredentials !== undefined
       ? { managedCredentials: options.managedCredentials }
+      : {}),
+    ...(options.vpnPortalConfig !== undefined
+      ? { vpnPortalConfig: options.vpnPortalConfig }
       : {}),
     ...(options.stored.mtu !== undefined ? { mtu: options.stored.mtu } : {}),
     ...(options.stored.disableP2p !== undefined
@@ -293,6 +302,11 @@ export function configMatchesDesired(
     if (!managedCredentialsMatch(remote.managedCredentials, desired.managedCredentials ?? [])) {
       return false;
     }
+  }
+  // WireGuard portal: enabling/disabling or changing the client list must
+  // converge on the hub even when the revision number did not change.
+  if (!vpnPortalConfigMatches(remote.vpnPortalConfig, desired.vpnPortalConfig)) {
+    return false;
   }
 
   const sameSet = (left: readonly string[], right: readonly string[]) => {
@@ -419,6 +433,7 @@ export function describeConfigMismatch(
   check("peerUrls", [...remote.peerUrls].map((u) => u.replace(/\/+$/, "")).sort(), [...desired.peerUrls].map((u) => u.replace(/\/+$/, "")).sort());
   check("virtualIpv4", remote.virtualIpv4, desired.virtualIpv4);
   check("networkLength", remote.networkLength, desired.networkLength);
+  reasons.push(...describeVpnPortalMismatch(remote.vpnPortalConfig, desired.vpnPortalConfig));
   if (canonicalAcl(remote.acl) !== canonicalAcl(desired.acl)) {
     reasons.push("acl differs");
   }

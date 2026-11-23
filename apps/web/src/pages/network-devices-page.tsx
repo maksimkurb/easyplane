@@ -10,6 +10,7 @@ import {
   type NetworkShellData,
 } from "@/components/network/network-shell"
 import { DeviceRow } from "@/components/device/device-row"
+import { WireguardClientsCard } from "@/components/device/wireguard-clients-card"
 import { RouteLoadError } from "@/components/routes/route-load-error"
 import {
   Empty,
@@ -215,6 +216,8 @@ function DevicesTab({ data }: { data: NetworkShellData }) {
           )}
         </div>
       )}
+
+      <WireguardClientsCard devices={data.devices} networkId={data.network.id} />
     </>
   )
 }

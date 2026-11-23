@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.3.0-M3
  */
 import type { GetNetworkTopology200NodesItemFeatureFlags } from './getNetworkTopology200NodesItemFeatureFlags';
+import type { GetNetworkTopology200NodesItemKind } from './getNetworkTopology200NodesItemKind';
 
 export type GetNetworkTopology200NodesItem = {
   id: string;
@@ -41,4 +42,5 @@ export type GetNetworkTopology200NodesItem = {
   capabilityReasons: string[];
   relaysFor: string[];
   observed: boolean;
+  kind?: GetNetworkTopology200NodesItemKind;
 };

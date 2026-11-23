@@ -10,6 +10,7 @@ import {
   listDeviceRoutes,
   listNetworkPeerRecords,
   listRevisions,
+  listWireguardClientsForHub,
   updateDevice,
 } from "../db/repositories.js";
 import type { Device, Network } from "../db/schema.js";
@@ -29,6 +30,8 @@ import {
 import { formatIpv4, parseIpv4 } from "../domain/ip.js";
 import { effectiveHubEndpoints, effectiveListenerUrls } from "../domain/hub.js";
 import { compilePeerUrls } from "../domain/peers.js";
+import { buildVpnPortalConfig } from "../domain/wireguard.js";
+import { tagGroupName } from "../domain/policy/resolve.js";
 import {
   acceptedRoutesFor,
   approvedExitNode,
@@ -389,6 +392,7 @@ export class PushService {
         ? (this.options.rendezvousEndpoints ?? [])
         : [],
     });
+    const vpnPortal = await this.vpnPortalConfigFor(device, compiledAcl);
     return this.buildConfig(
       device,
       network,
@@ -399,6 +403,38 @@ export class PushService {
       compiledAcl,
       peerUrls,
       { managedCredentials, memberCredentialSecret, role },
+      vpnPortal,
+    );
+  }
+
+  /**
+   * WireGuard portal settings for a hub. The master key is decrypted only here
+   * (it goes into the pushed config, never into a revision or a log) and the
+   * client groups are filtered to the ones the hub's compiled ACL declares —
+   * upstream refuses to start the portal for an undeclared group.
+   */
+  private async vpnPortalConfigFor(
+    device: Device,
+    compiledAcl: acl.Acl | undefined,
+  ): Promise<manage.VpnPortalConfig | undefined> {
+    if (!device.isHub || device.wgListenPort === null) return undefined;
+    if (!device.wgPrivateKeyCiphertext) return undefined;
+    const clients = await listWireguardClientsForHub(this.options.db, device.id);
+    const declared = new Set(
+      (compiledAcl?.aclV1?.group?.declares ?? []).map((entry) => entry.groupName),
+    );
+    return buildVpnPortalConfig(
+      {
+        listenPort: device.wgListenPort,
+        privateKey: this.options.secretBox.decrypt(device.wgPrivateKeyCiphertext),
+      },
+      clients.map((client) => ({
+        name: client.name,
+        virtualIpv4: client.virtualIpv4,
+        groups: client.tags
+          .map(tagGroupName)
+          .filter((group) => group.startsWith("tag:") && declared.has(group)),
+      })),
     );
   }
 
@@ -416,6 +452,7 @@ export class PushService {
       memberCredentialSecret?: string;
       role: "anchor" | "member";
     },
+    vpnPortalConfig?: manage.VpnPortalConfig,
   ): manage.NetworkConfig {
     const stored = normalizeDesiredConfig(rawConfig);
     const credentialMode = network.accessMode === "credentials";
@@ -425,6 +462,7 @@ export class PushService {
       instanceId: instanceIdFor(network.id, device.id),
       hostname: device.dnsName ?? (device.hostname || "easyplane-device"),
       networkName: network.networkName,
+      vpnPortalConfig,
       // A credential member must not receive the secret: `gen_config` only
       // takes the credential path when `network_secret` is absent.
       networkSecret:

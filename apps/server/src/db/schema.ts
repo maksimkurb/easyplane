@@ -343,6 +343,19 @@ export const devices = pgTable(
      */
     isHub: boolean("is_hub").notNull().default(false),
     /**
+     * WireGuard portal UDP port on this hub. Null means the portal is
+     * disabled. The portal lets ordinary WireGuard clients (phones, routers)
+     * join the overlay with a virtual IP from the same pool as devices.
+     */
+    wgListenPort: integer("wg_listen_port"),
+    /**
+     * AES-256-GCM ciphertext of `base64(32-byte X25519 private key)` that the
+     * hub uses as its WireGuard portal master key. EasyTier requires the key
+     * to be provided and derives each client's keypair from it, so the panel
+     * generates it once and never returns it through the API.
+     */
+    wgPrivateKeyCiphertext: text("wg_private_key_ciphertext"),
+    /**
      * Last route report collected from the client: instances it runs, proxy
      * CIDRs it advertises, and which of those were not approved here.
      */
@@ -442,6 +455,68 @@ export const networkPeers = pgTable(
       .on(table.networkId, table.url)
       .where(sql`${table.url} IS NOT NULL`),
     index("network_peers_network_idx").on(table.networkId),
+  ],
+);
+
+/**
+ * An ordinary WireGuard client that joins the overlay through one hub's
+ * built-in WireGuard portal (phones, routers and other devices that cannot run
+ * EasyTier).
+ *
+ * The portal derives each client's WireGuard keypair from the hub's master key
+ * and the client name, so no client secret is stored here: the ready-to-use
+ * configuration is fetched from the hub on demand (`GetVpnPortalInfo`).
+ */
+export const wireguardClients = pgTable(
+  "wireguard_clients",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organisations.id, { onDelete: "cascade" }),
+    networkId: uuid("network_id")
+      .notNull()
+      .references(() => networks.id, { onDelete: "cascade" }),
+    /** The hub whose portal serves this client. */
+    hubDeviceId: uuid("hub_device_id")
+      .notNull()
+      .references(() => devices.id, { onDelete: "cascade" }),
+    /** DNS-label-safe name; unique per network (case-insensitive). */
+    name: text("name").notNull(),
+    /** Address from the network pool, shared with devices (never collides). */
+    virtualIpv4: text("virtual_ipv4").notNull(),
+    /** EasyTier ACL group names (`tag:...`) derived from these tags. */
+    tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
+    /** Owning account, for policy `group:` subjects. */
+    ownerUserId: uuid("owner_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    /**
+     * Last `GetVpnPortalInfo` snapshot for this client: connection state,
+     * endpoint, tunnel IP, peer id and error. Never contains the client's
+     * WireGuard config.
+     */
+    reportedStatus: jsonb("reported_status")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    reportedStatusAt: timestamp("reported_status_at", { withTimezone: true }),
+    createdAt,
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("wireguard_clients_network_name_uq").on(
+      table.networkId,
+      sql`lower(${table.name})`,
+    ),
+    uniqueIndex("wireguard_clients_network_ip_uq").on(
+      table.networkId,
+      table.virtualIpv4,
+    ),
+    index("wireguard_clients_network_idx").on(table.networkId),
+    index("wireguard_clients_hub_idx").on(table.hubDeviceId),
   ],
 );
 
@@ -797,6 +872,20 @@ export const networkPeersRelations = relations(networkPeers, ({ one }) => ({
   }),
 }));
 
+export const wireguardClientsRelations = relations(
+  wireguardClients,
+  ({ one }) => ({
+    network: one(networks, {
+      fields: [wireguardClients.networkId],
+      references: [networks.id],
+    }),
+    hub: one(devices, {
+      fields: [wireguardClients.hubDeviceId],
+      references: [devices.id],
+    }),
+  }),
+);
+
 export type Organisation = typeof organisations.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type UserRole = User["role"];
@@ -815,5 +904,6 @@ export type DeviceRoute = typeof deviceRoutes.$inferSelect;
 export type DeviceRouteKind = DeviceRoute["kind"];
 export type DeviceRouteState = DeviceRoute["state"];
 export type NetworkPeer = typeof networkPeers.$inferSelect;
+export type WireguardClient = typeof wireguardClients.$inferSelect;
 export type UserGroup = typeof userGroups.$inferSelect;
 export type UserGroupMember = typeof userGroupMembers.$inferSelect;

@@ -46,6 +46,12 @@ export interface RealtimeEventData {
     deleted?: boolean;
   };
   "route.updated": { networkId: string; routeId?: string; deviceId?: string };
+  "wireguard.updated": {
+    networkId: string;
+    clientId?: string;
+    hubDeviceId?: string;
+    reason: string;
+  };
   "topology.updated": {
     networkId: string;
     collectedAt: string;
@@ -104,6 +110,8 @@ export function defaultTopics(type: RealtimeEventType): RealtimeTopic[] {
       return ["policy", "devices"];
     case "route.updated":
       return ["routes", "devices"];
+    case "wireguard.updated":
+      return ["devices", "network"];
     case "topology.updated":
       return ["topology"];
     case "resync":

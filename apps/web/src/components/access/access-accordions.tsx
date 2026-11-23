@@ -218,7 +218,11 @@ function TagsBody({
               </div>
               <div className="flex min-w-0 flex-wrap gap-1.5">
                 {tag.devices.map((device) => (
-                  <PlainDeviceChip key={device.id} name={device.name} />
+                  <PlainDeviceChip
+                    key={device.id}
+                    name={device.name}
+                    wireguard={device.kind === "wireguard"}
+                  />
                 ))}
                 {canEdit ? (
                   <button

@@ -50,6 +50,8 @@ const DEVICE: GetDevice200 = {
   externalPort: null,
   publicIps: [],
   isHub: false,
+  wgListenPort: null,
+  wireguardClientCount: 0,
   role: "anchor",
   effectiveRole: "anchor",
   knowsSecret: true,

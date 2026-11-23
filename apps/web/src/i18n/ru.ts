@@ -517,6 +517,8 @@ export const ruTranslation: Translation = {
     filterIssues: "Требуют внимания",
     noMatches: "Нет устройств по этому запросу.",
     noTags: "Тегов пока нет. Создайте их в редакторе политики.",
+    renameHint:
+      "Ключ WireGuard зависит от имени, поэтому после переименования отсканируйте или скачайте настройку заново.",
     tagsTitle: "Теги {{name}}",
     ownerSaved: "Владелец обновлён",
     copyMachineId: "Скопировать machine ID",
@@ -1993,5 +1995,87 @@ export const ruTranslation: Translation = {
     clients: "Подключённые устройства",
     ok: "OK",
     degraded: "Деградация",
+  },
+
+  wireguard: {
+    badge: "WireGuard",
+    title: "Доступ по WireGuard",
+    description:
+      "Телефоны и другие устройства, на которые нельзя установить EasyTier, подключаются к сети через WireGuard-сервер на узле.",
+    networkTitle: "WireGuard-клиенты",
+    networkDescription:
+      "Обычные WireGuard-устройства, которые подключаются через WireGuard-сервер на узле. Это не устройства EasyTier, поэтому у них отдельная метка.",
+    empty: "WireGuard-клиентов пока нет.",
+    add: "Добавить WireGuard-клиента",
+    addTitle: "Новый WireGuard-клиент",
+    addDescription:
+      "Дайте устройству имя и, если хотите, метки — тогда на него будут действовать правила доступа.",
+    name: "Имя",
+    namePlaceholder: "my-phone",
+    nameHint:
+      "Строчные латинские буквы, цифры и дефисы. Это имя устройства в сети.",
+    hub: "Узел",
+    hubHint: "Узел, WireGuard-сервер которого примет этого клиента.",
+    noHub: "В этой сети нет одобренного узла.",
+    tags: "Метки",
+    noTags: "Меток пока нет. Их можно добавить позже.",
+    create: "Создать клиента",
+    created: "WireGuard-клиент создан",
+    deleted: "WireGuard-клиент удалён",
+    saved: "Сохранено",
+    renameTitle: "Переименовать WireGuard-клиента",
+    tagsTitle: "Метки для {{name}}",
+    deleteTitle: "Удалить этого WireGuard-клиента?",
+    deleteConfirm:
+      "Устройство потеряет доступ, как только узел применит новую настройку.",
+    configTitle: "Настройка WireGuard",
+    configDescription:
+      "Откройте приложение WireGuard на телефоне, выберите «Добавить туннель» и отсканируйте код. Или скачайте файл .conf.",
+    configHint: "В настройке есть закрытый ключ. Не передавайте её другим.",
+    download: "Скачать .conf",
+    configUnavailable: "Настройка пока недоступна",
+    configOffline:
+      "Узел не в сети. Подключите его и откройте настройку снова.",
+    loadingConfig: "Загружаем настройку…",
+    qrLabel: "QR-код настройки WireGuard",
+    showConfig: "Показать настройку",
+    status: {
+      online: "Подключён",
+      connecting: "Подключается",
+      offline: "Не подключён",
+      error: "Ошибка",
+      unknown: "Состояние неизвестно",
+    },
+    statusNever: "Ждём, когда узел сообщит состояние",
+    lastEndpoint: "Последний адрес: {{endpoint}}",
+    hubLabel: "через {{hub}}",
+    portal: {
+      title: "Доступ по WireGuard",
+      description:
+        "Разрешить телефонам и устройствам без EasyTier подключаться через этот узел.",
+      enable: "Включить WireGuard-портал",
+      port: "Порт WireGuard",
+      portHint:
+        "Порт UDP. Пробросьте его на роутере, чтобы клиенты могли подключаться из интернета.",
+      portInvalid: "Введите порт от 1 до 65535",
+      enabled: "WireGuard-портал включён",
+      disabled: "WireGuard-портал выключен",
+      save: "Сохранить порт",
+      routerHint:
+        "Пробросьте этот UDP-порт на роутере на локальный адрес узла.",
+      defaultPort: "По умолчанию: {{port}} (UDP)",
+      clients: "Клиенты на этом узле",
+      noClients: "На этом узле пока нет клиентов.",
+      disableBlocked: "Удалите всех клиентов, чтобы выключить портал.",
+      needsHub: "Сначала сделайте это устройство узлом.",
+    },
+    columns: { client: "Клиент", address: "Адрес", status: "Состояние" },
+    actions: {
+      menu: "Действия для {{name}}",
+      config: "Настройка",
+      rename: "Переименовать",
+      tags: "Метки",
+      delete: "Удалить",
+    },
   },
 }

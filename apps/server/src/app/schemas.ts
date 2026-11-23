@@ -170,6 +170,10 @@ export const deviceSchema = z.object({
   externalPort: z.number().int().nullable(),
   publicIps: z.array(z.string()),
   isHub: z.boolean(),
+  /** UDP port of this hub's WireGuard portal (null = portal disabled). */
+  wgListenPort: z.number().int().nullable(),
+  /** WireGuard portal clients served by this hub. */
+  wireguardClientCount: z.number().int(),
   role: deviceRoleEnum(),
   effectiveRole: deviceRoleEnum(),
   knowsSecret: z.boolean(),
@@ -566,7 +570,13 @@ export const policyTagSchema = z.object({
   color: z.string(),
   deviceCount: z.number().int(),
   devices: z.array(
-    z.object({ id: z.string(), name: z.string(), hostname: z.string() }),
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      hostname: z.string(),
+      /** `wireguard` marks a portal client rather than an EasyTier device. */
+      kind: z.enum(["device", "wireguard"]).optional(),
+    }),
   ),
 });
 
@@ -609,6 +619,7 @@ export const policyCatalogSchema = z.object({
       virtualIpv4: z.string().nullable(),
       state: z.string(),
       tags: z.array(z.string()),
+      kind: z.enum(["device", "wireguard"]).optional(),
     }),
   ),
   tags: z.array(policyTagSchema),
@@ -809,7 +820,12 @@ export const tagSchema = z.object({
   color: z.string(),
   deviceCount: z.number().int(),
   devices: z.array(
-    z.object({ id: z.string(), name: z.string(), hostname: z.string() }),
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      hostname: z.string(),
+      kind: z.enum(["device", "wireguard"]).optional(),
+    }),
   ),
 });
 
@@ -905,3 +921,78 @@ export const decideRouteSchema = z
     note: z.string().max(500).optional(),
   })
   .strict();
+
+// ---------------------------------------------------------------------------
+// WireGuard portal clients
+// ---------------------------------------------------------------------------
+
+export const wireguardClientStateSchema = z.enum([
+  "online",
+  "connecting",
+  "offline",
+  "error",
+  "unknown",
+]);
+
+export const wireguardClientSchema = z.object({
+  id: z.string(),
+  networkId: z.string(),
+  hubDeviceId: z.string(),
+  hubHostname: z.string(),
+  name: z.string(),
+  virtualIpv4: z.string(),
+  tags: z.array(z.string()),
+  ownerUserId: z.string().nullable(),
+  /** Last `GetVpnPortalInfo` state (`unknown` before the first probe). */
+  state: wireguardClientStateSchema,
+  /** Underlay address the WireGuard handshake came from. */
+  endpoint: z.string().nullable(),
+  tunnelIp: z.string().nullable(),
+  peerId: z.number().int().nullable(),
+  error: z.string().nullable(),
+  statusAt: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+export const createWireguardClientSchema = z
+  .object({
+    name: z.string().min(1).max(63),
+    tags: z.array(z.string().min(1).max(120)).max(64).optional(),
+    /** Required when the network has more than one approved hub. */
+    hubDeviceId: z.string().uuid().optional(),
+    ownerUserId: z.string().uuid().nullable().optional(),
+  })
+  .strict();
+
+export const renameWireguardClientSchema = z
+  .object({ name: z.string().min(1).max(63) })
+  .strict();
+
+export const wireguardClientTagsSchema = z
+  .object({ tags: z.array(z.string().min(1).max(120)).max(64) })
+  .strict();
+
+export const wireguardPortalSchema = z
+  .object({
+    enabled: z.boolean(),
+    /** UDP port; defaults to the current one or 11013. */
+    port: z.number().int().min(1).max(65535).nullable().optional(),
+  })
+  .strict();
+
+export const wireguardPortalSchemaResponse = z.object({
+  enabled: z.boolean(),
+  port: z.number().int().nullable(),
+  clientCount: z.number().int(),
+});
+
+export const wireguardConfigSchema = z.object({
+  /** Ready-to-use WireGuard client config (contains a private key). */
+  config: z.string(),
+  filename: z.string(),
+  client: wireguardClientSchema,
+});
+
+export const paramsWireguardClientSchema = z.object({
+  clientId: z.string().uuid(),
+});

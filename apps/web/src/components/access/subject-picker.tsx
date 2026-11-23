@@ -19,6 +19,7 @@ import type { AccessSubjects, SubjectKind } from "@/lib/access-policy"
 import { checkAddress, subjectChip } from "@/lib/access-policy"
 import { TagInput } from "@/components/access/tag-input"
 import { SubjectChips } from "@/components/access/access-chips"
+import { WireguardBadge } from "@/components/device/wireguard-badge"
 import { prettySubnetName } from "@/components/access/access-rule-summary"
 import { cn } from "@/lib/utils"
 
@@ -27,6 +28,8 @@ type PickerItem = {
   label: string
   detail?: string
   kind: SubjectKind | "custom" | "any"
+  /** The subject is an ordinary WireGuard client served by a hub portal. */
+  wireguard?: boolean
 }
 
 type PickerSection = {
@@ -90,6 +93,7 @@ function buildSections(
         label: device.name,
         ...(device.virtualIpv4 ? { detail: device.virtualIpv4 } : {}),
         kind: "device" as const,
+        ...(device.kind === "wireguard" ? { wireguard: true } : {}),
       })),
     },
     {
@@ -303,8 +307,9 @@ export function SubjectPickerList({
                 >
                   <span className="flex-none">{sectionIcon(item.kind)}</span>
                   <span className="min-w-0 flex-1">
-                    <span className="block min-w-0 font-medium [overflow-wrap:anywhere]">
+                    <span className="flex min-w-0 flex-wrap items-center gap-1.5 font-medium [overflow-wrap:anywhere]">
                       {item.label}
+                      {item.wireguard ? <WireguardBadge compact /> : null}
                     </span>
                     {item.value !== "*" ? (
                       <span className="block min-w-0 font-mono text-[12px] [overflow-wrap:anywhere] text-fg-2">

@@ -23,6 +23,8 @@ const BASE_DEVICE = {
   ownerUserId: null,
   advertisedEndpoints: [],
   isHub: false,
+  wgListenPort: null,
+  wireguardClientCount: 0,
   role: "member",
   effectiveRole: "member",
   knowsSecret: true,

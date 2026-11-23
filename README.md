@@ -238,6 +238,14 @@ described in [docs/PROTOCOL.md](docs/PROTOCOL.md) §13.2.
   it is audited and rollbackable.
 - **MagicDNS** is a per-network switch with a zone and unique, renameable DNS
   names per network (enforced in the API and by a DB index).
+- **WireGuard portal**: a hub can serve ordinary WireGuard clients (phones,
+  routers, devices that cannot run EasyTier). They are managed in the panel as
+  a separate kind with their own badge, get a virtual IP from the same pool as
+  devices, carry tags so the same policy applies, report live
+  connected/not-connected state, and the admin can show a QR code or download
+  the `.conf` (fetched on demand from the hub, admin-only, never cached). See
+  [docs/PROTOCOL.md](docs/PROTOCOL.md) §16 and
+  [docs/DEPLOY.md](docs/DEPLOY.md) §4d-2.
 - **Subnet/exit-node routes** are requested by members or **declared by the
   device itself** (Tailscale-style: stop the client, add `[[proxy_network]]` /
   `enable_exit_node` to its persisted config, start it) and approved by admins.

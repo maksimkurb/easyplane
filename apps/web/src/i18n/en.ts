@@ -517,6 +517,8 @@ export const enTranslation = {
     filterIssues: "Needs attention",
     noMatches: "No devices match your search.",
     noTags: "No tags yet. Create tags in the policy editor.",
+    renameHint:
+      "The WireGuard key is derived from the name, so after renaming, scan or download the configuration again.",
     tagsTitle: "Tags for {{name}}",
     ownerSaved: "Owner updated",
     copyMachineId: "Copy machine ID",
@@ -1980,6 +1982,87 @@ export const enTranslation = {
     clients: "Connected devices",
     ok: "OK",
     degraded: "Degraded",
+  },
+
+  wireguard: {
+    badge: "WireGuard",
+    title: "WireGuard access",
+    description:
+      "Phones and other devices that cannot run EasyTier can join this network through a hub's built-in WireGuard server.",
+    networkTitle: "WireGuard clients",
+    networkDescription:
+      "Ordinary WireGuard devices that connect through a hub's WireGuard server. They are not EasyTier devices and appear with a separate badge.",
+    empty: "No WireGuard clients yet.",
+    add: "Add WireGuard client",
+    addTitle: "New WireGuard client",
+    addDescription:
+      "Give the device a name and, if you want access rules to apply, one or more tags.",
+    name: "Name",
+    namePlaceholder: "my-phone",
+    nameHint: "Lowercase letters, digits and dashes. This becomes the device name in the network.",
+    hub: "Hub",
+    hubHint: "The hub whose WireGuard server accepts this client.",
+    noHub: "This network has no approved hub.",
+    tags: "Tags",
+    noTags: "No tags yet. You can add them later.",
+    create: "Create client",
+    created: "WireGuard client created",
+    deleted: "WireGuard client deleted",
+    saved: "Saved",
+    renameTitle: "Rename WireGuard client",
+    tagsTitle: "Tags for {{name}}",
+    deleteTitle: "Delete this WireGuard client?",
+    deleteConfirm:
+      "The device loses access as soon as the hub applies the new configuration.",
+    configTitle: "WireGuard configuration",
+    configDescription:
+      "Open the WireGuard app on the phone, choose Add tunnel, and scan this code. Or download the .conf file.",
+    configHint: "The configuration contains a private key. Do not share it.",
+    download: "Download .conf",
+    configUnavailable: "The configuration is not available yet",
+    configOffline:
+      "The hub is offline. Connect it, then open the configuration again.",
+    loadingConfig: "Loading the configuration…",
+    qrLabel: "WireGuard configuration QR code",
+    showConfig: "Show configuration",
+    status: {
+      online: "Connected",
+      connecting: "Connecting",
+      offline: "Not connected",
+      error: "Error",
+      unknown: "Status unknown",
+    },
+    statusNever: "Waiting for the hub to report the status",
+    lastEndpoint: "Last address: {{endpoint}}",
+    hubLabel: "via {{hub}}",
+    portal: {
+      title: "WireGuard access",
+      description:
+        "Let phones and other devices without EasyTier join through this hub.",
+      enable: "Enable the WireGuard portal",
+      port: "WireGuard port",
+      portHint:
+        "UDP port. Forward it on the router so clients can connect from the internet.",
+      portInvalid: "Enter a port between 1 and 65535",
+      enabled: "WireGuard portal enabled",
+      disabled: "WireGuard portal disabled",
+      save: "Save port",
+      routerHint:
+        "Forward this UDP port on the router to the hub's local address.",
+      defaultPort: "Default: {{port}} (UDP)",
+      clients: "Clients on this hub",
+      noClients: "No clients on this hub yet.",
+      disableBlocked: "Delete every client before disabling the portal.",
+      needsHub: "Turn this device into a hub first.",
+    },
+    columns: { client: "Client", address: "Address", status: "Status" },
+    actions: {
+      menu: "Actions for {{name}}",
+      config: "Configuration",
+      rename: "Rename",
+      tags: "Tags",
+      delete: "Delete",
+    },
   },
 }
 

@@ -20,15 +20,18 @@ import {
   listUserGroupMembers,
   listUserGroups,
   listUsers,
+  listOrgWireguardClients,
+  listWireguardClients,
   removeUserGroupMember,
   replaceUserGroupMembers,
   setTagDevices,
+  updateWireguardClient,
   upsertTag,
   upsertUserGroup,
   updateDevice,
   updateNetwork,
 } from "../db/repositories.js";
-import type { Network, User } from "../db/schema.js";
+import type { Network, User, WireguardClient } from "../db/schema.js";
 import { normalizeDesiredConfig } from "../domain/desired-config.js";
 import {
   PolicyValidationError,
@@ -153,7 +156,12 @@ export interface PolicyTagDto {
   subject: string;
   color: string;
   deviceCount: number;
-  devices: Array<{ id: string; name: string; hostname: string }>;
+  devices: Array<{
+    id: string;
+    name: string;
+    hostname: string;
+    kind?: "device" | "wireguard";
+  }>;
 }
 
 export interface PolicyUserGroupDto {
@@ -195,6 +203,8 @@ export interface PolicyCatalog {
     virtualIpv4: string | null;
     state: string;
     tags: string[];
+    /** `wireguard` clients are policy subjects served by a hub portal. */
+    kind?: "device" | "wireguard";
   }>;
   tags: PolicyTagDto[];
   userGroups: PolicyUserGroupDto[];
@@ -298,6 +308,10 @@ interface LoadedInput {
   userGroups: PolicyUserGroupInput[];
   /** Approved device rows (for revision bookkeeping). */
   deviceRows: Awaited<ReturnType<typeof listDevicesForReconcile>>;
+  /** WireGuard portal clients of this network (policy subjects, not devices). */
+  wireguardRows: WireguardClient[];
+  /** Groups a device must declare for its portal clients (`tag:...`). */
+  extraDeclaredGroups: Map<string, string[]>;
   /** Tag rows with device links, for the catalog/view. */
   tagRows: Array<{ id: string; name: string; color: string }>;
   tagLinks: Array<{ deviceId: string; tagName: string }>;
@@ -469,7 +483,7 @@ export class PolicyService {
       document: document as unknown as Record<string, unknown>,
       rules: this.ruleViews(document, resolved.statements, loaded, network),
       summary: describePolicy(document),
-      deviceCount: loaded.devices.length,
+      deviceCount: loaded.deviceRows.length,
     };
   }
 
@@ -492,6 +506,7 @@ export class PolicyService {
       routeRows,
       groupRows,
       groupMembers,
+      wireguardRows,
     ] = await Promise.all([
       listTags(this.db, network.orgId),
       listDeviceTags(this.db, network.orgId),
@@ -500,6 +515,7 @@ export class PolicyService {
       approvedRoutesForNetwork(this.db, network.id),
       listUserGroups(this.db, network.orgId),
       listUserGroupMembers(this.db, network.orgId),
+      listWireguardClients(this.db, network.id),
     ]);
     const tagsByDevice = new Map<string, string[]>();
     for (const link of tagLinks) {
@@ -527,7 +543,31 @@ export class PolicyService {
       virtualIpv4: device.virtualIpv4 ?? "",
       ownerUserId: device.ownerUserId,
       tags: tagsByDevice.get(device.id) ?? [],
+      kind: "device",
     }));
+    // WireGuard portal clients are first-class policy subjects: they own an
+    // address from the same pool and carry tags, but they are not EasyTier
+    // instances. A hub's compiled ACL declares the groups its portal clients
+    // use, because upstream rejects a client whose groups are not declared.
+    for (const client of wireguardRows) {
+      devices.push({
+        id: client.id,
+        hostname: client.name,
+        virtualIpv4: client.virtualIpv4,
+        ownerUserId: client.ownerUserId,
+        tags: client.tags,
+        kind: "wireguard",
+      });
+    }
+    const extraDeclaredGroups = new Map<string, string[]>();
+    for (const client of wireguardRows) {
+      const groups = client.tags
+        .map(tagGroupName)
+        .filter((group) => group.startsWith("tag:"));
+      if (groups.length === 0) continue;
+      const current = extraDeclaredGroups.get(client.hubDeviceId) ?? [];
+      extraDeclaredGroups.set(client.hubDeviceId, [...new Set([...current, ...groups])]);
+    }
 
     let document: PolicyDocument | null = null;
     if (network.policyVersion > 0) {
@@ -562,6 +602,8 @@ export class PolicyService {
       subnets,
       userGroups,
       deviceRows: networkDevices,
+      wireguardRows,
+      extraDeclaredGroups,
       tagRows: tagRows.map((row) => ({
         id: row.id,
         name: row.name,
@@ -671,6 +713,7 @@ export class PolicyService {
       routes: loaded.routes,
       subnets: loaded.subnets,
       userGroups: loaded.userGroups,
+      extraDeclaredGroups: loaded.extraDeclaredGroups,
     };
   }
 
@@ -730,6 +773,15 @@ export class PolicyService {
       if (!name) continue;
       const key = link.tagName.replace(/^tag:/, "");
       tags[key] = [...new Set([...(tags[key] ?? []), name])].sort();
+    }
+    // WireGuard portal clients carry their own tags and appear in the same
+    // tag membership, so the document round-trips them instead of dropping
+    // them on the next save.
+    for (const client of loaded.wireguardRows) {
+      for (const raw of client.tags) {
+        const key = raw.replace(/^tag:/, "");
+        tags[key] = [...new Set([...(tags[key] ?? []), client.name])].sort();
+      }
     }
     const userGroups: Record<string, { source: "manual" | "oidc"; members: string[] }> = {};
     for (const group of loaded.userGroups) {
@@ -890,6 +942,7 @@ export class PolicyService {
   ): CompiledAclSummary[] {
     const byId = new Map(devices.map((device) => [device.id, device]));
     return [...compiled.byDevice.values()]
+      .filter((entry) => byId.get(entry.deviceId)?.kind !== "wireguard")
       .map((entry) => {
         const chains = entry.acl.aclV1?.chains ?? [];
         const count = (type: acl.ChainType) =>
@@ -962,6 +1015,10 @@ export class PolicyService {
         device,
       ]),
     );
+    const wireguardRows = await listWireguardClients(this.db, network.id);
+    const wireguardByName = new Map(
+      wireguardRows.map((client) => [client.name.toLowerCase(), client]),
+    );
     if (document.userGroups) {
       for (const [name, group] of Object.entries(document.userGroups)) {
         const bare = name.startsWith("group:") ? name.slice("group:".length) : name;
@@ -985,14 +1042,36 @@ export class PolicyService {
           name: tagName,
         });
         const deviceIds: string[] = [];
+        const wireguardIds = new Set<string>();
         for (const deviceName of deviceNames) {
           const device = byName.get(deviceName.toLowerCase());
-          if (!device) {
-            throw invalid(`tag "${name}": device "${deviceName}" is not in this network`);
+          if (device) {
+            deviceIds.push(device.id);
+            continue;
           }
-          deviceIds.push(device.id);
+          const client = wireguardByName.get(deviceName.toLowerCase());
+          if (client) {
+            wireguardIds.add(client.id);
+            continue;
+          }
+          throw invalid(`tag "${name}": device "${deviceName}" is not in this network`);
         }
         await setTagDevices(this.db, tag.id, deviceIds);
+        // WireGuard clients are not devices; their tags live on their own row.
+        for (const client of wireguardRows) {
+          const next = new Set(
+            client.tags.map((entry) => entry.toLowerCase()),
+          );
+          if (wireguardIds.has(client.id)) next.add(tagName);
+          else next.delete(tagName);
+          const tags = [...next].sort();
+          const same =
+            tags.length === client.tags.length &&
+            tags.every((entry, index) => entry === client.tags[index]?.toLowerCase());
+          if (same) continue;
+          const updated = await updateWireguardClient(this.db, client.id, { tags });
+          if (updated) client.tags = updated.tags;
+        }
       }
     }
   }
@@ -1469,15 +1548,16 @@ export class PolicyService {
 
   /** A tag with its device assignments, independent of any one network. */
   private async tagDto(actor: RequestActor, tagId: string): Promise<PolicyTagDto> {
-    const [tagRows, links, devices] = await Promise.all([
+    const [tagRows, links, devices, wireguardRows] = await Promise.all([
       listTags(this.db, actor.orgId),
       listDeviceTags(this.db, actor.orgId),
       listDevicesForReconcile(this.db, actor.orgId),
+      listOrgWireguardClients(this.db, actor.orgId),
     ]);
     const tag = tagRows.find((row) => row.id === tagId);
     if (!tag) notFound("tag not found");
     const byId = new Map(devices.map((device) => [device.id, device]));
-    const assigned = links
+    const assigned: PolicyTagDto["devices"] = links
       .filter((link) => link.tagName === tag.name)
       .map((link) => byId.get(link.deviceId))
       .filter((device): device is NonNullable<typeof device> => Boolean(device))
@@ -1485,11 +1565,23 @@ export class PolicyService {
         id: device.id,
         name: device.dnsName ?? device.hostname,
         hostname: device.hostname,
-      }))
-      .sort(
-        (left, right) =>
-          left.name.localeCompare(right.name) || left.id.localeCompare(right.id),
-      );
+        kind: "device" as const,
+      }));
+    for (const client of wireguardRows) {
+      if (!client.tags.some((entry) => entry.toLowerCase() === tag.name.toLowerCase())) {
+        continue;
+      }
+      assigned.push({
+        id: client.id,
+        name: client.name,
+        hostname: client.name,
+        kind: "wireguard",
+      });
+    }
+    assigned.sort(
+      (left, right) =>
+        left.name.localeCompare(right.name) || left.id.localeCompare(right.id),
+    );
     return {
       id: tag.id,
       name: tag.name.replace(/^tag:/, ""),
@@ -1782,7 +1874,7 @@ export class PolicyService {
       list.push(link.tagName);
       tagsByDevice.set(link.deviceId, list);
     }
-    const devices = loaded.deviceRows
+    const devices: PolicyCatalog["devices"] = loaded.deviceRows
       .filter((row) => row.networkId === network.id)
       .map((row) => ({
         id: row.id,
@@ -1791,13 +1883,33 @@ export class PolicyService {
         virtualIpv4: row.virtualIpv4,
         state: row.state,
         tags: (tagsByDevice.get(row.id) ?? []).map((tag) => tag.replace(/^tag:/, "")),
-      }))
-      .sort(
-        (left, right) =>
-          left.name.localeCompare(right.name) || left.id.localeCompare(right.id),
-      );
+        kind: "device" as const,
+      }));
+    for (const client of loaded.wireguardRows) {
+      devices.push({
+        id: client.id,
+        name: client.name,
+        hostname: client.name,
+        virtualIpv4: client.virtualIpv4,
+        state: "approved",
+        tags: client.tags.map((tag) => tag.replace(/^tag:/, "")),
+        kind: "wireguard",
+      });
+    }
+    devices.sort(
+      (left, right) =>
+        left.name.localeCompare(right.name) || left.id.localeCompare(right.id),
+    );
 
-    const devicesByTag = new Map<string, Array<{ id: string; name: string; hostname: string }>>();
+    const devicesByTag = new Map<
+      string,
+      Array<{
+        id: string;
+        name: string;
+        hostname: string;
+        kind?: "device" | "wireguard";
+      }>
+    >();
     for (const [deviceId, tagNames] of tagsByDevice) {
       const row = deviceById.get(deviceId);
       if (!row || row.networkId !== network.id) continue;
@@ -1805,11 +1917,26 @@ export class PolicyService {
         id: row.id,
         name: row.dnsName ?? row.hostname,
         hostname: row.hostname,
+        kind: "device" as const,
       };
       for (const tag of tagNames) {
         const list = devicesByTag.get(tag) ?? [];
         list.push(entry);
         devicesByTag.set(tag, list);
+      }
+    }
+    for (const client of loaded.wireguardRows) {
+      const entry = {
+        id: client.id,
+        name: client.name,
+        hostname: client.name,
+        kind: "wireguard" as const,
+      };
+      for (const tag of client.tags) {
+        const key = tagGroupName(tag);
+        const list = devicesByTag.get(key) ?? [];
+        list.push(entry);
+        devicesByTag.set(key, list);
       }
     }
     const tags: PolicyTagDto[] = loaded.tagRows.map((tag) => {

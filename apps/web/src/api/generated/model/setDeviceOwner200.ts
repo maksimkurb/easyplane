@@ -58,6 +58,17 @@ export type SetDeviceOwner200 = {
   externalPort: number | null;
   publicIps: string[];
   isHub: boolean;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  wgListenPort: number | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  wireguardClientCount: number;
   role: SetDeviceOwner200Role;
   effectiveRole: SetDeviceOwner200EffectiveRole;
   knowsSecret: boolean;

@@ -66,6 +66,12 @@ export interface TopologyNode {
   relaysFor: string[];
   /** True when this node's own instance reported the peer list (a probe). */
   observed: boolean;
+  /**
+   * `wireguard` marks a portal client added by the control plane, not an
+   * EasyTier peer. It has an overlay address and a link to its hub, but no
+   * instance, listeners or NAT information.
+   */
+  kind?: "device" | "wireguard";
 }
 
 export interface TopologyLinkEvidence {

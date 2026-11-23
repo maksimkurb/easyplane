@@ -220,6 +220,17 @@ the source groups of rules when strict mode is on). With
 `options.strictTags`/`strictGroups` a rule additionally carries
 `source_groups`, so EasyTier verifies the sender's group proof (see §6).
 
+**WireGuard portal clients are subjects too.** A client managed in the
+WireGuard section (§16 in PROTOCOL.md) has an overlay `/32` and tags, so it
+resolves from `tag:`/`device:`/`*` exactly like a device and its address is
+compiled into the same inbound/egress rules. Because upstream rejects a portal
+client whose `groups` are not declared by the hub's ACL, the compiler declares
+the portal clients' tags on their hub and the pushed portal config only carries
+declared groups (empty when the network has no ACL). Treat strict tag matching
+for a portal client as unverified: it advertises the group, but the HMAC group
+proof path was not exercised for portal peers; the default IP-based rules are
+what the panel guarantees.
+
 ## 4. Tailscale construct -> EasyTier primitive
 
 | Tailscale | EasyPlane / EasyTier | Status |

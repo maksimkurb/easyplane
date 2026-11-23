@@ -48,6 +48,7 @@ import { DeviceDetailsCard } from "@/components/device/device-details-card"
 import { DeviceHistoryCard } from "@/components/device/device-history-card"
 import { DeviceIcon } from "@/components/device/device-icon"
 import { DeviceHubCard } from "@/components/device/device-hub-card"
+import { WireguardPortalCard } from "@/components/device/wireguard-portal-card"
 import { DeviceRenameDialog } from "@/components/device/device-rename-dialog"
 import { DeviceStatusCell } from "@/components/device/device-status-cell"
 import { DeviceTagsDialog } from "@/components/device/device-tags-dialog"
@@ -447,6 +448,7 @@ export function DeviceDetailPage() {
               ) : null}
               <DeviceRoutesCard device={device} routes={routes} />
               <DeviceHubCard device={device} />
+              {device.isHub ? <WireguardPortalCard device={device} /> : null}
               <DeviceHistoryCard device={device} revisions={revisions} />
             </div>
 

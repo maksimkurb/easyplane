@@ -43,6 +43,8 @@ export const topologyNodeSchema = z.object({
   capabilityReasons: z.array(z.string()),
   relaysFor: z.array(z.string()),
   observed: z.boolean(),
+  /** `wireguard` nodes are portal clients, not EasyTier instances. */
+  kind: z.enum(["device", "wireguard"]).optional(),
 });
 
 export const topologyLinkEvidenceSchema = z.object({

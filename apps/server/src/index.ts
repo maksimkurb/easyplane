@@ -124,6 +124,23 @@ export {
   type CredentialKeypair,
 } from "./security/credential-keys.js";
 export {
+  DEFAULT_WIREGUARD_PORT,
+  MAX_WIREGUARD_CLIENTS_PER_HUB,
+  buildVpnPortalConfig,
+  describeVpnPortalMismatch,
+  findClientConfig,
+  isValidWireguardPort,
+  mapPortalState,
+  portalListener,
+  portalStatuses,
+  vpnPortalConfigMatches,
+  wireguardListenAddress,
+  type WireguardClientState,
+  type WireguardPortalClient,
+  type WireguardPortalSettings,
+  type WireguardPortalStatus,
+} from "./domain/wireguard.js";
+export {
   CredentialService,
   fingerprint,
   publicKeyOf,
@@ -246,6 +263,12 @@ export {
   type DeviceRouteDto,
   type RouteReportDto,
 } from "./services/route-service.js";
+export {
+  WireguardService,
+  type CreateWireguardClientInput,
+  type WireguardClientDto,
+  type WireguardPortalSettingsDto,
+} from "./services/wireguard-service.js";
 export { AppError } from "./services/errors.js";
 
 // M4: import flows, hardening and observability

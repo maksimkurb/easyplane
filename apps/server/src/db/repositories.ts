@@ -20,11 +20,13 @@ import {
   userGroups,
   userIdentities,
   users,
+  wireguardClients,
   type Device,
   type DeviceRoute,
   type DeviceRouteKind,
   type DeviceRouteState,
   type Credential,
+  type WireguardClient,
   type DeviceState,
   type NetworkPeer,
   type User,
@@ -568,15 +570,22 @@ export async function usedVirtualIps(
   db: DbExecutor,
   networkId: string,
 ): Promise<string[]> {
-  const rows = await db
-    .select({ ip: devices.virtualIpv4 })
-    .from(devices)
-    .where(
-      and(eq(devices.networkId, networkId), sql`${devices.virtualIpv4} IS NOT NULL`),
-    );
-  return rows
-    .map((row) => row.ip)
-    .filter((ip): ip is string => typeof ip === "string" && ip.length > 0);
+  const [deviceRows, clientRows] = await Promise.all([
+    db
+      .select({ ip: devices.virtualIpv4 })
+      .from(devices)
+      .where(
+        and(eq(devices.networkId, networkId), sql`${devices.virtualIpv4} IS NOT NULL`),
+      ),
+    db
+      .select({ ip: wireguardClients.virtualIpv4 })
+      .from(wireguardClients)
+      .where(eq(wireguardClients.networkId, networkId)),
+  ]);
+  const values = [...deviceRows, ...clientRows].map((row) => row.ip);
+  return values.filter(
+    (ip): ip is string => typeof ip === "string" && ip.length > 0,
+  );
 }
 
 export async function listDevicesInNetwork(
@@ -1548,4 +1557,132 @@ export async function compactNetworkPeerPositions(
       .set({ position: index })
       .where(eq(networkPeers.id, row.id));
   }
+}
+
+// ---------------------------------------------------------------------------
+// WireGuard portal clients
+// ---------------------------------------------------------------------------
+
+export async function listWireguardClients(
+  db: DbExecutor,
+  networkId: string,
+): Promise<WireguardClient[]> {
+  return db
+    .select()
+    .from(wireguardClients)
+    .where(eq(wireguardClients.networkId, networkId))
+    .orderBy(asc(wireguardClients.createdAt), asc(wireguardClients.id));
+}
+
+export async function listOrgWireguardClients(
+  db: DbExecutor,
+  orgId: string,
+): Promise<WireguardClient[]> {
+  return db
+    .select()
+    .from(wireguardClients)
+    .where(eq(wireguardClients.orgId, orgId))
+    .orderBy(asc(wireguardClients.createdAt), asc(wireguardClients.id));
+}
+
+export async function listWireguardClientsForHub(
+  db: DbExecutor,
+  hubDeviceId: string,
+): Promise<WireguardClient[]> {
+  return db
+    .select()
+    .from(wireguardClients)
+    .where(eq(wireguardClients.hubDeviceId, hubDeviceId))
+    .orderBy(asc(wireguardClients.createdAt), asc(wireguardClients.id));
+}
+
+export async function countWireguardClientsForHub(
+  db: DbExecutor,
+  hubDeviceId: string,
+): Promise<number> {
+  const rows = await db
+    .select({ value: count() })
+    .from(wireguardClients)
+    .where(eq(wireguardClients.hubDeviceId, hubDeviceId));
+  return Number(rows[0]?.value ?? 0);
+}
+
+export async function getWireguardClient(
+  db: DbExecutor,
+  orgId: string,
+  id: string,
+): Promise<WireguardClient | undefined> {
+  const rows = await db
+    .select()
+    .from(wireguardClients)
+    .where(
+      and(eq(wireguardClients.orgId, orgId), eq(wireguardClients.id, id)),
+    )
+    .limit(1);
+  return rows[0];
+}
+
+export async function findWireguardClientByName(
+  db: DbExecutor,
+  networkId: string,
+  name: string,
+  excludeId?: string,
+): Promise<WireguardClient | undefined> {
+  const rows = await db
+    .select()
+    .from(wireguardClients)
+    .where(
+      and(
+        eq(wireguardClients.networkId, networkId),
+        sql`lower(${wireguardClients.name}) = lower(${name})`,
+        ...(excludeId ? [ne(wireguardClients.id, excludeId)] : []),
+      ),
+    )
+    .limit(1);
+  return rows[0];
+}
+
+export async function insertWireguardClient(
+  db: DbExecutor,
+  values: typeof wireguardClients.$inferInsert,
+): Promise<WireguardClient> {
+  const rows = await db.insert(wireguardClients).values(values).returning();
+  if (!rows[0]) throw new Error("failed to create the WireGuard client");
+  return rows[0];
+}
+
+export async function updateWireguardClient(
+  db: DbExecutor,
+  id: string,
+  values: Partial<typeof wireguardClients.$inferInsert>,
+): Promise<WireguardClient | undefined> {
+  const rows = await db
+    .update(wireguardClients)
+    .set({ ...values, updatedAt: new Date() })
+    .where(eq(wireguardClients.id, id))
+    .returning();
+  return rows[0];
+}
+
+export async function deleteWireguardClient(
+  db: DbExecutor,
+  id: string,
+): Promise<void> {
+  await db.delete(wireguardClients).where(eq(wireguardClients.id, id));
+}
+
+/**
+ * Persists the last portal status snapshot for one client. `reportedStatus`
+ * never contains the WireGuard config (it carries a private key).
+ */
+export async function recordWireguardStatus(
+  db: DbExecutor,
+  id: string,
+  status: Record<string, unknown>,
+  at: Date,
+): Promise<void> {
+  await db
+    .update(wireguardClients)
+    .set({ reportedStatus: status, reportedStatusAt: at, updatedAt: at })
+    .where(eq(wireguardClients.id, id));
 }

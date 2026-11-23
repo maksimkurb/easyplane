@@ -33,6 +33,12 @@ export interface PolicyDevice {
   ownerUserId: string | null;
   /** Bare or namespaced tag names; normalized to `tag:...` here. */
   tags: string[];
+  /**
+   * `wireguard` marks an ordinary WireGuard client served by a hub's portal.
+   * It is a policy subject with an address and tags, but it is not an
+   * EasyTier instance, so it never receives a pushed ACL.
+   */
+  kind?: "device" | "wireguard";
 }
 
 export interface PolicyUser {

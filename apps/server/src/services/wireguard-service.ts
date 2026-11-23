@@ -1,0 +1,693 @@
+import type { DbExecutor } from "../db/repositories.js";
+import {
+  countWireguardClientsForHub,
+  deleteWireguardClient,
+  findUserById,
+  findWireguardClientByName,
+  getDeviceById,
+  getNetworkById,
+  getWireguardClient,
+  insertWireguardClient,
+  listDevicesInNetwork,
+  listOrgWireguardClients,
+  listTags,
+  listWireguardClients,
+  listWireguardClientsForHub,
+  recordWireguardStatus,
+  takenDnsNames,
+  updateDevice,
+  updateWireguardClient,
+  usedVirtualIps,
+} from "../db/repositories.js";
+import type { instance } from "@easyplane/proto";
+
+import type { Device, Network, WireguardClient } from "../db/schema.js";
+import { allocateIpv4 } from "../domain/ip.js";
+import { isValidDnsLabel } from "../domain/magic-dns.js";
+import {
+  DEFAULT_WIREGUARD_PORT,
+  MAX_WIREGUARD_CLIENTS_PER_HUB,
+  isValidWireguardPort,
+  portalStatuses,
+  findClientConfig,
+  type WireguardClientState,
+} from "../domain/wireguard.js";
+import type { ManagedClient } from "../control/managed-client.js";
+import type { Logger } from "../logger.js";
+import type { RealtimeHub } from "../realtime/hub.js";
+import { generateCredentialKeypair } from "../security/credential-keys.js";
+import type { SecretBox } from "../security/crypto.js";
+import type { AuditService } from "./audit.js";
+import type { DeviceSessionRegistry } from "./device-sessions.js";
+import { AppError, conflict, invalid, notFound } from "./errors.js";
+import type { RequestActor } from "./device-service.js";
+import { instanceIdFor, type PushService } from "./push-service.js";
+
+export interface WireguardClientDto {
+  id: string;
+  networkId: string;
+  hubDeviceId: string;
+  /** Hub name shown in the UI (DNS name when available). */
+  hubHostname: string;
+  name: string;
+  virtualIpv4: string;
+  tags: string[];
+  ownerUserId: string | null;
+  /** Last `GetVpnPortalInfo` state; `unknown` before the first successful probe. */
+  state: WireguardClientState;
+  /** Underlay address the WireGuard handshake came from. */
+  endpoint: string | null;
+  /** Tunnel address reported by the portal, when connected. */
+  tunnelIp: string | null;
+  peerId: number | null;
+  error: string | null;
+  statusAt: string | null;
+  createdAt: string;
+}
+
+export interface CreateWireguardClientInput {
+  name: string;
+  tags?: string[];
+  hubDeviceId?: string;
+  ownerUserId?: string | null;
+}
+
+export interface WireguardPortalSettingsDto {
+  enabled: boolean;
+  port: number | null;
+  clientCount: number;
+}
+
+export interface WireguardServiceOptions {
+  db: DbExecutor;
+  secretBox: SecretBox;
+  audit: AuditService;
+  push: PushService;
+  sessions: DeviceSessionRegistry;
+  logger: Logger;
+  realtime?: RealtimeHub;
+}
+
+function statusRecord(row: WireguardClient): Record<string, unknown> {
+  return row.reportedStatus && typeof row.reportedStatus === "object"
+    ? row.reportedStatus
+    : {};
+}
+
+function dto(row: WireguardClient, hub: Device | undefined): WireguardClientDto {
+  const status = statusRecord(row);
+  const state = status.state as WireguardClientState | undefined;
+  const stringOrNull = (value: unknown): string | null =>
+    typeof value === "string" && value.length > 0 ? value : null;
+  const numberOrNull = (value: unknown): number | null =>
+    typeof value === "number" && Number.isFinite(value) ? value : null;
+  return {
+    id: row.id,
+    networkId: row.networkId,
+    hubDeviceId: row.hubDeviceId,
+    hubHostname: hub ? (hub.dnsName ?? hub.hostname) : "",
+    name: row.name,
+    virtualIpv4: row.virtualIpv4,
+    tags: [...row.tags],
+    ownerUserId: row.ownerUserId,
+    state: state ?? "unknown",
+    endpoint: stringOrNull(status.endpoint),
+    tunnelIp: stringOrNull(status.tunnelIp),
+    peerId: numberOrNull(status.peerId),
+    error: stringOrNull(status.error),
+    statusAt: row.reportedStatusAt?.toISOString() ?? null,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+/**
+ * WireGuard portal clients: CRUD, allocation from the network address pool,
+ * portal enable/disable on a hub, on-demand config download and live status.
+ *
+ * Client keypairs are derived by the hub from its master key and the client
+ * name, so this service stores no per-client secret. The ready-to-use config
+ * (which contains that key) is fetched from the hub for one authorised request
+ * and never persisted or logged.
+ */
+export class WireguardService {
+  /** Same read-then-write protection as device approval (single process). */
+  private readonly networkLocks = new Map<string, Promise<unknown>>();
+
+  constructor(private readonly options: WireguardServiceOptions) {}
+
+  private async withNetworkLock<T>(
+    networkId: string,
+    task: () => Promise<T>,
+  ): Promise<T> {
+    const previous = this.networkLocks.get(networkId) ?? Promise.resolve();
+    const run = previous.catch(() => undefined).then(task);
+    const tail = run.catch(() => undefined);
+    this.networkLocks.set(networkId, tail);
+    try {
+      return await run;
+    } finally {
+      if (this.networkLocks.get(networkId) === tail) {
+        this.networkLocks.delete(networkId);
+      }
+    }
+  }
+
+  private async loadNetwork(
+    actor: RequestActor,
+    networkId: string,
+  ): Promise<Network> {
+    const network = await getNetworkById(this.options.db, networkId);
+    if (!network || network.orgId !== actor.orgId) notFound("network not found");
+    return network;
+  }
+
+  async list(
+    actor: RequestActor,
+    networkId: string,
+  ): Promise<WireguardClientDto[]> {
+    const network = await this.loadNetwork(actor, networkId);
+    const [rows, devices] = await Promise.all([
+      listWireguardClients(this.options.db, network.id),
+      listDevicesInNetwork(this.options.db, network.id),
+    ]);
+    const byId = new Map(devices.map((device) => [device.id, device]));
+    return rows.map((row) => dto(row, byId.get(row.hubDeviceId)));
+  }
+
+  async listForOrg(actor: RequestActor): Promise<WireguardClientDto[]> {
+    const rows = await listOrgWireguardClients(this.options.db, actor.orgId);
+    const devices = new Map<string, Device>();
+    for (const row of rows) {
+      if (devices.has(row.hubDeviceId)) continue;
+      const device = await getDeviceById(this.options.db, row.hubDeviceId);
+      if (device) devices.set(row.hubDeviceId, device);
+    }
+    return rows.map((row) => dto(row, devices.get(row.hubDeviceId)));
+  }
+
+  async get(actor: RequestActor, clientId: string): Promise<WireguardClientDto> {
+    const { client, hub } = await this.requireClient(actor, clientId);
+    return dto(client, hub);
+  }
+
+  private async requireClient(
+    actor: RequestActor,
+    clientId: string,
+  ): Promise<{ client: WireguardClient; network: Network; hub: Device }> {
+    const client = await getWireguardClient(this.options.db, actor.orgId, clientId);
+    if (!client) notFound("WireGuard client not found");
+    const network = await getNetworkById(this.options.db, client.networkId);
+    if (!network) notFound("network not found");
+    const hub = await getDeviceById(this.options.db, client.hubDeviceId);
+    if (!hub) notFound("hub device not found");
+    return { client, network, hub };
+  }
+
+  private validateName(value: string): string {
+    const name = value.trim().toLowerCase();
+    if (!isValidDnsLabel(name)) {
+      invalid(
+        "name must be 1-63 lowercase letters, digits or dashes and must not start or end with a dash",
+      );
+    }
+    return name;
+  }
+
+  private normalizeTags(tags: string[] | undefined): string[] {
+    return [...new Set((tags ?? []).map((tag) => tag.trim()).filter(Boolean))];
+  }
+
+  private async assertTagsKnown(orgId: string, tags: string[]): Promise<void> {
+    if (tags.length === 0) return;
+    const known = new Set(
+      (await listTags(this.options.db, orgId)).map((tag) => tag.name.toLowerCase()),
+    );
+    const unknown = tags.filter((tag) => !known.has(tag.toLowerCase()));
+    if (unknown.length > 0) invalid(`unknown tag(s): ${unknown.join(", ")}`);
+  }
+
+  private async assertNameFree(
+    networkId: string,
+    name: string,
+    excludeId?: string,
+  ): Promise<void> {
+    const existing = await findWireguardClientByName(
+      this.options.db,
+      networkId,
+      name,
+      excludeId,
+    );
+    if (existing) conflict(`the name "${name}" is already used in this network`);
+    // Device DNS names share the policy namespace (`device:<name>`), so a
+    // client may not shadow a device either.
+    const taken = await takenDnsNames(this.options.db, networkId);
+    if (taken.some((entry) => entry.toLowerCase() === name)) {
+      conflict(`the name "${name}" is already used by a device in this network`);
+    }
+  }
+
+  /** Picks the hub for a new client: explicit, or the only approved hub. */
+  private async resolveHub(
+    network: Network,
+    requestedHubId: string | undefined,
+  ): Promise<Device> {
+    if (requestedHubId) {
+      const hub = await getDeviceById(this.options.db, requestedHubId);
+      if (!hub || hub.networkId !== network.id) {
+        invalid("the selected hub is not a device of this network");
+      }
+      if (hub.state !== "approved") {
+        throw new AppError(
+          409,
+          "the WireGuard portal can only run on an approved hub device",
+          "wireguard_portal_hub_not_approved",
+        );
+      }
+      if (!hub.isHub) {
+        throw new AppError(
+          409,
+          "the selected device is not a hub; only a hub can serve WireGuard clients",
+          "wireguard_portal_hub_required",
+        );
+      }
+      return hub;
+    }
+    const hubs = (await listDevicesInNetwork(this.options.db, network.id)).filter(
+      (device) => device.isHub && device.state === "approved",
+    );
+    if (hubs.length === 0) {
+      throw new AppError(
+        409,
+        "this network has no approved hub. Enable the WireGuard portal on a hub first.",
+        "wireguard_portal_hub_required",
+      );
+    }
+    if (hubs.length > 1) {
+      invalid("choose which hub should serve this WireGuard client");
+    }
+    return hubs[0]!;
+  }
+
+  /**
+   * Ensures the portal is on for the hub. A client cannot be served by a
+   * disabled portal, and requiring an extra trip to the hub page to flip a
+   * switch is a poor first-run experience, so enabling is implicit and audited.
+   */
+  private async ensurePortal(
+    actor: RequestActor,
+    hub: Device,
+  ): Promise<Device> {
+    if (hub.wgListenPort !== null) return hub;
+    const port = DEFAULT_WIREGUARD_PORT;
+    if (!isValidWireguardPort(port)) throw new AppError(500, "invalid default port");
+    const keypair = generateCredentialKeypair();
+    const updated = await updateDevice(this.options.db, hub.id, {
+      wgListenPort: port,
+      wgPrivateKeyCiphertext: this.options.secretBox.encrypt(keypair.secret),
+    });
+    if (!updated) throw new AppError(500, "failed to enable the WireGuard portal");
+    await this.options.audit.record({
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: "device.wireguard_portal_enabled",
+      targetType: "device",
+      targetId: hub.id,
+      metadata: { networkId: hub.networkId, port, reason: "first WireGuard client" },
+    });
+    return updated;
+  }
+
+  async create(
+    actor: RequestActor,
+    networkId: string,
+    input: CreateWireguardClientInput,
+  ): Promise<WireguardClientDto> {
+    const network = await this.loadNetwork(actor, networkId);
+    const name = this.validateName(input.name);
+    const tags = this.normalizeTags(input.tags);
+    await this.assertTagsKnown(actor.orgId, tags);
+    if (input.ownerUserId) {
+      const user = await findUserById(this.options.db, input.ownerUserId);
+      if (!user || user.orgId !== actor.orgId) notFound("user not found");
+    }
+    return this.withNetworkLock(network.id, async () => {
+      await this.assertNameFree(network.id, name);
+      const hub = await this.ensurePortal(
+        actor,
+        await this.resolveHub(network, input.hubDeviceId),
+      );
+      const count = await countWireguardClientsForHub(this.options.db, hub.id);
+      if (count >= MAX_WIREGUARD_CLIENTS_PER_HUB) {
+        throw new AppError(
+          409,
+          `a hub serves at most ${MAX_WIREGUARD_CLIENTS_PER_HUB} WireGuard clients`,
+          "wireguard_client_limit",
+        );
+      }
+      // Same allocator and used-address set as device approval: a client can
+      // never collide with a device or another client.
+      const used = await usedVirtualIps(this.options.db, network.id);
+      const address = allocateIpv4(network.ipv4Cidr, used);
+      if (!address) {
+        throw new AppError(
+          409,
+          `no free address left in ${network.ipv4Cidr}`,
+          "address_pool_exhausted",
+        );
+      }
+      const row = await insertWireguardClient(this.options.db, {
+        orgId: actor.orgId,
+        networkId: network.id,
+        hubDeviceId: hub.id,
+        name,
+        virtualIpv4: address,
+        tags,
+        ownerUserId: input.ownerUserId ?? actor.userId,
+      });
+      await this.options.audit.record({
+        orgId: actor.orgId,
+        actorUserId: actor.userId,
+        action: "wireguard_client.created",
+        targetType: "wireguard_client",
+        targetId: row.id,
+        metadata: {
+          networkId: network.id,
+          hubDeviceId: hub.id,
+          name,
+          virtualIpv4: address,
+          tags,
+        },
+      });
+      // The hub's pushed config carries the client list; nobody else changes.
+      this.options.push.schedule(hub.id, "wireguard client created");
+      this.publish(network.orgId, network.id, { clientId: row.id, hubDeviceId: hub.id, reason: "created" });
+      return dto(row, hub);
+    });
+  }
+
+  async rename(
+    actor: RequestActor,
+    clientId: string,
+    requested: string,
+  ): Promise<WireguardClientDto> {
+    const { client, network, hub } = await this.requireClient(actor, clientId);
+    const name = this.validateName(requested);
+    return this.withNetworkLock(network.id, async () => {
+      await this.assertNameFree(network.id, name, client.id);
+      const updated = await updateWireguardClient(this.options.db, client.id, {
+        name,
+      });
+      if (!updated) throw new AppError(500, "failed to rename the WireGuard client");
+      await this.options.audit.record({
+        orgId: actor.orgId,
+        actorUserId: actor.userId,
+        action: "wireguard_client.renamed",
+        targetType: "wireguard_client",
+        targetId: client.id,
+        metadata: { networkId: network.id, previous: client.name, name },
+      });
+      this.options.push.schedule(hub.id, "wireguard client renamed");
+      this.publish(network.orgId, network.id, { clientId: client.id, hubDeviceId: hub.id, reason: "renamed" });
+      return dto(updated, hub);
+    });
+  }
+
+  async setTags(
+    actor: RequestActor,
+    clientId: string,
+    tags: string[],
+  ): Promise<WireguardClientDto> {
+    const { client, network, hub } = await this.requireClient(actor, clientId);
+    const normalized = this.normalizeTags(tags);
+    await this.assertTagsKnown(actor.orgId, normalized);
+    const updated = await updateWireguardClient(this.options.db, client.id, {
+      tags: normalized,
+    });
+    if (!updated) throw new AppError(500, "failed to update the WireGuard client tags");
+    await this.options.audit.record({
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: "wireguard_client.tags_updated",
+      targetType: "wireguard_client",
+      targetId: client.id,
+      metadata: { networkId: network.id, tags: normalized },
+    });
+    this.options.push.schedule(hub.id, "wireguard client tags updated");
+    this.publish(network.orgId, network.id, { clientId: client.id, hubDeviceId: hub.id, reason: "tags" });
+    return dto(updated, hub);
+  }
+
+  async remove(actor: RequestActor, clientId: string): Promise<void> {
+    const { client, network, hub } = await this.requireClient(actor, clientId);
+    await deleteWireguardClient(this.options.db, client.id);
+    await this.options.audit.record({
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: "wireguard_client.deleted",
+      targetType: "wireguard_client",
+      targetId: client.id,
+      metadata: {
+        networkId: network.id,
+        hubDeviceId: hub.id,
+        name: client.name,
+        virtualIpv4: client.virtualIpv4,
+      },
+    });
+    this.options.push.schedule(hub.id, "wireguard client deleted");
+    this.publish(network.orgId, network.id, { clientId: client.id, hubDeviceId: hub.id, reason: "deleted" });
+  }
+
+  /**
+   * Portal toggle for a hub. Disabling is refused while clients exist: their
+   * configs would keep pointing at a closed port, and the hub would drop them
+   * without the panel saying so.
+   */
+  async updatePortal(
+    actor: RequestActor,
+    deviceId: string,
+    input: { enabled: boolean; port?: number | null },
+  ): Promise<WireguardPortalSettingsDto> {
+    const device = await getDeviceById(this.options.db, deviceId);
+    if (!device || device.orgId !== actor.orgId) notFound("device not found");
+    if (input.enabled) {
+      if (device.state !== "approved") {
+        throw new AppError(
+          409,
+          "the WireGuard portal needs an approved hub device",
+          "wireguard_portal_hub_not_approved",
+        );
+      }
+      if (!device.isHub) {
+        throw new AppError(
+          409,
+          "only a hub can serve WireGuard clients; enable the hub first",
+          "wireguard_portal_hub_required",
+        );
+      }
+      const port = input.port ?? device.wgListenPort ?? DEFAULT_WIREGUARD_PORT;
+      if (!isValidWireguardPort(port)) invalid("port must be between 1 and 65535");
+      const keypair = device.wgPrivateKeyCiphertext
+        ? null
+        : generateCredentialKeypair();
+      const updated = await updateDevice(this.options.db, device.id, {
+        wgListenPort: port,
+        ...(keypair
+          ? { wgPrivateKeyCiphertext: this.options.secretBox.encrypt(keypair.secret) }
+          : {}),
+      });
+      if (!updated) throw new AppError(500, "failed to enable the WireGuard portal");
+      await this.options.audit.record({
+        orgId: actor.orgId,
+        actorUserId: actor.userId,
+        action:
+          device.wgListenPort === null
+            ? "device.wireguard_portal_enabled"
+            : "device.wireguard_portal_updated",
+        targetType: "device",
+        targetId: device.id,
+        metadata: { networkId: device.networkId, port },
+      });
+      this.options.push.schedule(device.id, "wireguard portal updated");
+      this.publish(device.orgId, device.networkId, {
+        hubDeviceId: device.id,
+        reason: "portal-updated",
+      });
+      return {
+        enabled: true,
+        port,
+        clientCount: await countWireguardClientsForHub(this.options.db, device.id),
+      };
+    }
+    const clientCount = await countWireguardClientsForHub(this.options.db, device.id);
+    if (clientCount > 0) {
+      throw new AppError(
+        409,
+        `this hub still serves ${clientCount} WireGuard client(s). Delete them before disabling the portal.`,
+        "wireguard_portal_has_clients",
+      );
+    }
+    await updateDevice(this.options.db, device.id, {
+      wgListenPort: null,
+      wgPrivateKeyCiphertext: null,
+    });
+    await this.options.audit.record({
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: "device.wireguard_portal_disabled",
+      targetType: "device",
+      targetId: device.id,
+      metadata: { networkId: device.networkId, port: device.wgListenPort },
+    });
+    this.options.push.schedule(device.id, "wireguard portal disabled");
+    this.publish(device.orgId, device.networkId, { hubDeviceId: device.id, reason: "portal-disabled" });
+    return { enabled: false, port: null, clientCount: 0 };
+  }
+
+  private async portalInfo(hub: Device): Promise<instance.VpnPortalInfo | undefined> {
+    if (hub.state !== "approved") {
+      throw new AppError(409, "the hub device is not approved", "wireguard_portal_hub_not_approved");
+    }
+    if (hub.wgListenPort === null) {
+      throw new AppError(409, "the WireGuard portal is disabled on this hub", "wireguard_portal_disabled");
+    }
+    const client = this.options.sessions.get(hub.id);
+    if (!client || client.isClosed) {
+      throw new AppError(409, "the hub is offline; the config can be downloaded once it reconnects", "hub_offline");
+    }
+    const response = await client.remote.getVpnPortalInfo(
+      instanceIdFor(hub.networkId, hub.id),
+    );
+    return response.vpnPortalInfo;
+  }
+
+  /**
+   * The ready-made WireGuard config for one client. Admin-only at the route;
+   * the value contains a private key, so it is returned once, never cached,
+   * audited or logged.
+   */
+  async clientConfig(
+    actor: RequestActor,
+    clientId: string,
+  ): Promise<{ config: string; client: WireguardClientDto; filename: string }> {
+    const { client, network, hub } = await this.requireClient(actor, clientId);
+    let info: instance.VpnPortalInfo | undefined;
+    try {
+      info = await this.portalInfo(hub);
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      this.options.logger.warn("failed to read the WireGuard portal info", {
+        clientId: client.id,
+        hubDeviceId: hub.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new AppError(
+        409,
+        "the hub did not answer the WireGuard portal query; try again when it is online",
+        "wireguard_portal_unavailable",
+      );
+    }
+    const config = findClientConfig(info, client.name);
+    if (!config) {
+      const portalError = (info?.clients ?? []).find(
+        (entry) => entry.name === client.name,
+      )?.error;
+      throw new AppError(
+        409,
+        portalError
+          ? `the hub reported an error for this client: ${portalError}`
+          : "the hub has not generated a config for this client yet; make sure the portal is running",
+        "wireguard_config_unavailable",
+      );
+    }
+    await this.options.audit.record({
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: "wireguard_client.config_viewed",
+      targetType: "wireguard_client",
+      targetId: client.id,
+      metadata: { networkId: network.id, hubDeviceId: hub.id, name: client.name },
+    });
+    return {
+      config,
+      client: dto(client, hub),
+      filename: `${client.name}.conf`,
+    };
+  }
+
+  /**
+   * Probes a hub's portal and stores each client's live state. Called by the
+   * topology collector for online hubs; failures are logged, never thrown, so
+   * one hub cannot break a topology cycle.
+   */
+  async collectStatuses(device: Device, client: ManagedClient): Promise<void> {
+    if (device.wgListenPort === null) return;
+    const rows = await listWireguardClientsForHub(this.options.db, device.id);
+    if (rows.length === 0) return;
+    let info;
+    try {
+      const response = await client.remote.getVpnPortalInfo(
+        instanceIdFor(device.networkId, device.id),
+      );
+      info = response.vpnPortalInfo;
+    } catch (error) {
+      this.options.logger.debug("WireGuard portal probe failed", {
+        deviceId: device.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return;
+    }
+    if (!info) return;
+    const statuses = new Map(
+      portalStatuses(info).map((status) => [status.name, status]),
+    );
+    const now = new Date();
+    let changed = false;
+    for (const row of rows) {
+      const status = statuses.get(row.name);
+      if (!status) continue;
+      const previous = statusRecord(row);
+      const next = {
+        state: status.state,
+        endpoint: status.endpoint,
+        tunnelIp: status.tunnelIp,
+        peerId: status.peerId,
+        error: status.error,
+      };
+      const same =
+        previous.state === next.state &&
+        previous.endpoint === next.endpoint &&
+        previous.tunnelIp === next.tunnelIp &&
+        previous.peerId === next.peerId &&
+        previous.error === next.error;
+      if (same) continue;
+      await recordWireguardStatus(this.options.db, row.id, next, now);
+      changed = true;
+    }
+    if (changed) {
+      this.publish(device.orgId, device.networkId, {
+        hubDeviceId: device.id,
+        reason: "status",
+      });
+    }
+  }
+
+  private publish(
+    orgId: string,
+    networkId: string,
+    input: { clientId?: string; hubDeviceId?: string; reason: string },
+  ): void {
+    const realtime = this.options.realtime;
+    if (!realtime) return;
+    realtime.publish({
+      type: "wireguard.updated",
+      orgId,
+      networkId,
+      data: {
+        networkId,
+        reason: input.reason,
+        ...(input.clientId ? { clientId: input.clientId } : {}),
+        ...(input.hubDeviceId ? { hubDeviceId: input.hubDeviceId } : {}),
+      },
+    });
+  }
+}

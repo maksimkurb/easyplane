@@ -23,9 +23,11 @@ import {
   listDeviceTags,
   listDevices,
   listOrgDeviceRoutes,
+  listOrgWireguardClients,
   listRevisions,
   listRevisionsWithAuthor,
   listTags,
+  countWireguardClientsForHub,
   nextNetworkPeerPosition,
   pendingDeviceCount,
   setDeviceTags,
@@ -129,6 +131,10 @@ export interface DeviceDto extends DeviceStatus {
   publicIps: string[];
   /** `true` when this device is a hub in its network's peer list. */
   isHub: boolean;
+  /** UDP port of this hub's WireGuard portal (null = portal disabled). */
+  wgListenPort: number | null;
+  /** Number of WireGuard portal clients served by this hub. */
+  wireguardClientCount: number;
   /** Stored role: anchor or member (docs/CREDENTIALS.md). */
   role: "anchor" | "member";
   /** Role in effect: always `anchor` in shared-secret mode. */
@@ -400,7 +406,10 @@ export class DeviceService {
       credential === undefined
         ? await getCredentialByDevice(this.options.db, device.id)
         : credential;
-    const routes = await listDeviceRoutes(this.options.db, device.id);
+    const [routes, wireguardClientCount] = await Promise.all([
+      listDeviceRoutes(this.options.db, device.id),
+      countWireguardClientsForHub(this.options.db, device.id),
+    ]);
     return this.toDto(
       device,
       network,
@@ -408,6 +417,7 @@ export class DeviceService {
       row ?? null,
       new Date(),
       exitNodeStateFor(routes, device.id),
+      wireguardClientCount,
     );
   }
 
@@ -418,6 +428,7 @@ export class DeviceService {
     credential: Credential | null = null,
     now = new Date(),
     exitNode: "none" | "proposed" | "approved" = "none",
+    wireguardClientCount = 0,
   ): DeviceDto {
     const status = computeDeviceStatus({
       state: device.state,
@@ -460,6 +471,8 @@ export class DeviceService {
       externalPort: device.externalPort,
       publicIps: device.publicIps,
       isHub: device.isHub,
+      wgListenPort: device.wgListenPort,
+      wireguardClientCount,
       role: device.role,
       effectiveRole: role,
       knowsSecret: knowsNetworkSecret(accessMode, device.role),
@@ -680,6 +693,13 @@ export class DeviceService {
       list.push(route);
       orgRoutes.set(route.deviceId, list);
     }
+    const wireguardCounts = new Map<string, number>();
+    for (const client of await listOrgWireguardClients(this.options.db, actor.orgId)) {
+      wireguardCounts.set(
+        client.hubDeviceId,
+        (wireguardCounts.get(client.hubDeviceId) ?? 0) + 1,
+      );
+    }
     return devices.map((device) =>
       this.toDto(
         device,
@@ -688,6 +708,7 @@ export class DeviceService {
         credentials.get(device.id) ?? null,
         new Date(),
         exitNodeStateFor(orgRoutes.get(device.id) ?? [], device.id),
+        wireguardCounts.get(device.id) ?? 0,
       ),
     );
   }
@@ -1531,6 +1552,16 @@ export class DeviceService {
       settings.endpoints !== undefined
         ? this.normalizeAdvertisedEndpoints(settings.endpoints)
         : undefined;
+    if (!isHub && device.isHub && device.wgListenPort !== null) {
+      const clients = await countWireguardClientsForHub(this.options.db, deviceId);
+      if (clients > 0) {
+        throw new AppError(
+          409,
+          `this hub serves ${clients} WireGuard client(s). Delete them and disable the WireGuard portal before turning the hub off.`,
+          "wireguard_portal_has_clients",
+        );
+      }
+    }
     const updated = await updateDevice(this.options.db, deviceId, {
       isHub,
       ...(settings.listenPort !== undefined
