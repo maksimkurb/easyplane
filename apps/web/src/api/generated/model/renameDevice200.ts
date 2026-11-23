@@ -15,6 +15,8 @@ import type { RenameDevice200ReportedState } from './renameDevice200ReportedStat
 import type { RenameDevice200Role } from './renameDevice200Role';
 import type { RenameDevice200State } from './renameDevice200State';
 import type { RenameDevice200Sync } from './renameDevice200Sync';
+import type { RenameDevice200WgPortalMode } from './renameDevice200WgPortalMode';
+import type { RenameDevice200WgPortalState } from './renameDevice200WgPortalState';
 
 export type RenameDevice200 = {
   id: string;
@@ -69,6 +71,22 @@ export type RenameDevice200 = {
      * @maximum 9007199254740991
      */
   wireguardClientCount: number;
+  wgPortalMode: RenameDevice200WgPortalMode;
+  /** WireGuard portal lifecycle state as last observed by the panel */
+  wgPortalState: RenameDevice200WgPortalState;
+  /** @nullable */
+  wgPortalError: string | null;
+  /** @nullable */
+  wgLegacyClientCidr: string | null;
+  /** @nullable */
+  driftReason: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  driftAttempts: number;
+  /** @nullable */
+  driftRetryAt: string | null;
   role: RenameDevice200Role;
   effectiveRole: RenameDevice200EffectiveRole;
   knowsSecret: boolean;

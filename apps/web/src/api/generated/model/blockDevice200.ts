@@ -15,6 +15,8 @@ import type { BlockDevice200ReportedState } from './blockDevice200ReportedState'
 import type { BlockDevice200Role } from './blockDevice200Role';
 import type { BlockDevice200State } from './blockDevice200State';
 import type { BlockDevice200Sync } from './blockDevice200Sync';
+import type { BlockDevice200WgPortalMode } from './blockDevice200WgPortalMode';
+import type { BlockDevice200WgPortalState } from './blockDevice200WgPortalState';
 
 export type BlockDevice200 = {
   id: string;
@@ -69,6 +71,22 @@ export type BlockDevice200 = {
      * @maximum 9007199254740991
      */
   wireguardClientCount: number;
+  wgPortalMode: BlockDevice200WgPortalMode;
+  /** WireGuard portal lifecycle state as last observed by the panel */
+  wgPortalState: BlockDevice200WgPortalState;
+  /** @nullable */
+  wgPortalError: string | null;
+  /** @nullable */
+  wgLegacyClientCidr: string | null;
+  /** @nullable */
+  driftReason: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  driftAttempts: number;
+  /** @nullable */
+  driftRetryAt: string | null;
   role: BlockDevice200Role;
   effectiveRole: BlockDevice200EffectiveRole;
   knowsSecret: boolean;

@@ -132,7 +132,7 @@ describe("WireGuard portal clients", () => {
       token,
       machineId,
       hostname,
-      easytierVersion: "2.6.4-81487c36",
+      easytierVersion: "2.7.1-81487c36",
       osType: "linux",
       osVersion: "6.8",
       osDistribution: "debian",
@@ -237,7 +237,13 @@ describe("WireGuard portal clients", () => {
       payload: { enabled: true, port: 11013 },
     });
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ enabled: true, port: 11013, clientCount: 0 });
+    expect(response.json()).toEqual({
+      enabled: true,
+      port: 11013,
+      clientCount: 0,
+      mode: "per-client",
+      legacyClientCidr: null,
+    });
     const device = await getDevice(hubId);
     expect(device.wgListenPort).toBe(11013);
   });
@@ -280,8 +286,10 @@ describe("WireGuard portal clients", () => {
     );
     expect(pushed.config.vpnPortalConfig?.wireguardListen).toBe("0.0.0.0:11013");
     expect(pushed.config.vpnPortalConfig?.wireguardPrivateKey?.length).toBeGreaterThan(0);
+    // EasyTier >= 2.7.0 requires `addr/prefix` (the network's prefix); a bare
+    // address is a /32 and the portal refuses to start ("unusable virtual IP").
     expect(pushed.config.vpnPortalConfig?.clients).toEqual([
-      { name: "phone", virtualIp: "10.144.146.4", groups: [] },
+      { name: "phone", virtualIp: "10.144.146.4/24", groups: [] },
     ]);
     // No ACL is active, so the client's tag is not declared and must not be
     // sent as a group (upstream rejects undeclared groups).
@@ -467,7 +475,7 @@ describe("WireGuard portal clients", () => {
     );
     expect(hubPushed.config.vpnPortalConfig?.clients[0]).toEqual({
       name: "phone-maxim",
-      virtualIp: "10.144.146.4",
+      virtualIp: "10.144.146.4/24",
       groups: ["tag:phone"],
     });
     const declared = (hubPushed.config.acl?.aclV1?.group?.declares ?? []).map(

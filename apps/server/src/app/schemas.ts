@@ -174,6 +174,25 @@ export const deviceSchema = z.object({
   wgListenPort: z.number().int().nullable(),
   /** WireGuard portal clients served by this hub. */
   wireguardClientCount: z.number().int(),
+  /**
+   * Detected WireGuard portal generation: `per-client` (EasyTier >= 2.7.0),
+   * `legacy` (2.6.x, one shared config) or `unknown` (version unparseable).
+   */
+  wgPortalMode: z.enum(["per-client", "legacy", "unknown"]),
+  /** Last known portal state of a hub. */
+  wgPortalState: z
+    .enum(["disabled", "starting", "running", "unsupported", "error"])
+    .describe("WireGuard portal lifecycle state as last observed by the panel"),
+  /** Plain-language portal problem; never contains a key or client config. */
+  wgPortalError: z.string().nullable(),
+  /** Legacy (< 2.7.0) portal address pool (`client_cidr`), when configured. */
+  wgLegacyClientCidr: z.string().nullable(),
+  /** Why the client keeps reporting a config different from the desired one. */
+  driftReason: z.string().nullable(),
+  /** Consecutive pushes that did not converge (backoff counter). */
+  driftAttempts: z.number().int(),
+  /** The panel will not repush before this time (exponential backoff). */
+  driftRetryAt: z.string().nullable(),
   role: deviceRoleEnum(),
   effectiveRole: deviceRoleEnum(),
   knowsSecret: z.boolean(),
@@ -977,6 +996,11 @@ export const wireguardPortalSchema = z
     enabled: z.boolean(),
     /** UDP port; defaults to the current one or 11013. */
     port: z.number().int().min(1).max(65535).nullable().optional(),
+    /**
+     * Legacy (< 2.7.0) portal pool. Required to enable a legacy portal for the
+     * first time; the panel suggests a free range beside the network CIDR.
+     */
+    clientCidr: z.string().min(1).max(64).nullable().optional(),
   })
   .strict();
 
@@ -984,6 +1008,22 @@ export const wireguardPortalSchemaResponse = z.object({
   enabled: z.boolean(),
   port: z.number().int().nullable(),
   clientCount: z.number().int(),
+  /** Which portal generation the hub supports (see the device schema). */
+  mode: z.enum(["per-client", "legacy", "unknown"]),
+  /** Legacy portal pool; null in per-client mode or when unset. */
+  legacyClientCidr: z.string().nullable(),
+});
+
+export const wireguardPortalConfigSchema = z.object({
+  /** Ready-to-use shared WireGuard config (contains a private key). */
+  config: z.string(),
+  filename: z.string(),
+  mode: z.enum(["per-client", "legacy", "unknown"]),
+  port: z.number().int().nullable(),
+  clientCidr: z.string().nullable(),
+  /** Names the legacy portal reports as connected. */
+  connectedClients: z.array(z.string()),
+  listener: z.string().nullable(),
 });
 
 export const wireguardConfigSchema = z.object({

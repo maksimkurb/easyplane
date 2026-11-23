@@ -39,12 +39,39 @@ export function WireguardClientsCard({
   const hubs = useMemo(
     () =>
       devices
-        .filter((device) => device.isHub && device.state === "approved")
+        .filter(
+          (device) =>
+            device.isHub &&
+            device.state === "approved" &&
+            device.wgPortalMode === "per-client" &&
+            device.wgPortalState !== "unsupported"
+        )
         .map((device) => ({
           id: device.id,
           name: device.dnsName ?? device.hostname,
         }))
         .sort((left, right) => left.name.localeCompare(right.name)),
+    [devices]
+  )
+  const legacyHubs = useMemo(
+    () =>
+      devices.filter(
+        (device) =>
+          device.isHub &&
+          device.state === "approved" &&
+          device.wgPortalMode !== "per-client"
+      ),
+    [devices]
+  )
+  const unsupportedHubs = useMemo(
+    () =>
+      devices.filter(
+        (device) =>
+          device.isHub &&
+          device.state === "approved" &&
+          device.wgPortalMode === "per-client" &&
+          device.wgPortalState === "unsupported"
+      ),
     [devices]
   )
 
@@ -80,6 +107,16 @@ export function WireguardClientsCard({
           </Button>
         ) : null}
       </div>
+
+      {hubs.length === 0 ? (
+        <p className="border-t border-line px-4 py-3 text-[13px] text-pretty text-fg-3 sm:px-5">
+          {unsupportedHubs.length > 0
+            ? t("wireguard.hubBuildUnsupported")
+            : legacyHubs.length > 0
+              ? t("wireguard.noPerClientHub")
+              : t("wireguard.noHub")}
+        </p>
+      ) : null}
 
       {clientsQuery.isLoading ? (
         <div className="border-t border-line">

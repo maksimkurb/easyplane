@@ -15,6 +15,8 @@ import type { UpdateDeviceHub200ReportedState } from './updateDeviceHub200Report
 import type { UpdateDeviceHub200Role } from './updateDeviceHub200Role';
 import type { UpdateDeviceHub200State } from './updateDeviceHub200State';
 import type { UpdateDeviceHub200Sync } from './updateDeviceHub200Sync';
+import type { UpdateDeviceHub200WgPortalMode } from './updateDeviceHub200WgPortalMode';
+import type { UpdateDeviceHub200WgPortalState } from './updateDeviceHub200WgPortalState';
 
 export type UpdateDeviceHub200 = {
   id: string;
@@ -69,6 +71,22 @@ export type UpdateDeviceHub200 = {
      * @maximum 9007199254740991
      */
   wireguardClientCount: number;
+  wgPortalMode: UpdateDeviceHub200WgPortalMode;
+  /** WireGuard portal lifecycle state as last observed by the panel */
+  wgPortalState: UpdateDeviceHub200WgPortalState;
+  /** @nullable */
+  wgPortalError: string | null;
+  /** @nullable */
+  wgLegacyClientCidr: string | null;
+  /** @nullable */
+  driftReason: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  driftAttempts: number;
+  /** @nullable */
+  driftRetryAt: string | null;
   role: UpdateDeviceHub200Role;
   effectiveRole: UpdateDeviceHub200EffectiveRole;
   knowsSecret: boolean;

@@ -1043,10 +1043,67 @@ EasyTier can run a WireGuard server inside one instance. Ordinary WireGuard
 clients (phones, routers, anything that cannot run EasyTier) connect to it and
 receive a virtual IP from the network pool, so they behave like tagged members
 for ACL purposes without an EasyTier instance of their own. EasyPlane manages
-this as a first-class feature; the server behaviour below is read from the
-pinned sources, not yet exercised against a real container.
+this as a first-class feature.
 
-### 16.1 Pushed configuration [source]
+### 16.0 Two portal generations (verified against upstream tags)
+
+The portal changed shape in **v2.7.0**, and the two generations are not
+compatible. EasyPlane detects the generation from the heartbeat's
+`easytier_version` (numeric `major.minor.patch`; `2.6.4-8428a89d` and
+`2.7.0-nightly` compare as `2.6.4`/`2.7.0`) and only ever uses the form that
+generation understands:
+
+| EasyTier | form | named clients | config source |
+| --- | --- | --- | --- |
+| `< 2.7.0` (e.g. 2.6.4 `8428a89d`, the stable release and the common OpenWrt package) | `VpnPortalConfig{client_cidr, wireguard_listen}` | no — one shared config and one address pool | **device CLI/TOML only** (`--vpn-portal wg://host:port/<CIDR>`); `NetworkConfig` has **no** portal field at all |
+| `>= 2.7.0` (2.7.0/2.7.1 are pre-releases at the time of writing) | `VpnPortalConfig{wireguard_listen, wireguard_private_key, clients[]}` | yes — name, virtual IP, ACL groups, per-client state | pushed in `NetworkConfig.vpn_portal_config` (field 69) and reported back by `GetNetworkInstanceConfig` |
+| no `wireguard` feature in the build | — | no | `GetVpnPortalInfo` answers `vpn_type = "null"` |
+
+Verified in the upstream trees:
+
+- `v2.6.4` (`easytier/src/proto/api_manage.proto`): `NetworkConfig` ends at
+  field 66; there is no `VpnPortalConfig` message and no portal field. The
+  portal lives in `TomlConfigLoader` (`common/config.rs`:
+  `VpnPortalConfig { client_cidr, wireguard_listen }`) and is set from the
+  `--vpn-portal` CLI flag (`core.rs`, `wg://host:port/<CIDR>`).
+- `v2.6.4` (`rpc_service/vpn_portal.rs`, `vpn_portal/wireguard.rs`): the RPC is
+  registered on the config-server session, but `dump_client_config` returns the
+  literal `ERROR: Wireguard VPN Portal Not Started` when the instance was
+  started without the flag. That is the string `easytier-cli vpn-portal` shows
+  on the production hub h-1. A build without the feature answers
+  `vpn_type = "null"`.
+- `v2.7.0`/`v2.7.1`: `easytier-proto/proto/api_manage.proto` has
+  `optional VpnPortalConfig vpn_portal_config = 69` with
+  `wireguard_listen = 1`, `optional wireguard_private_key = 2`,
+  `repeated VpnPortalClientConfig clients = 3` (and `optional bool enabled = 4`
+  in 2.7.x). The v2.7.0 release notes (PRs #2502/#2514/#2537) introduce the
+  per-client portal; the legacy `wg://host:port/CIDR` path is rejected
+  ("legacy VPN portal CIDR paths are no longer supported").
+- The pinned commit `81487c36` (`easytier-core/src/config/api_input.rs`,
+  `gen_config`) maps the proto into the TOML config and fails on the old
+  `enable_vpn_portal` flag, so a per-client config reaches a running instance
+  only through this field.
+- `virtual_ip` is an **IPv4 address with a prefix**. The released v2.7.x tree
+  types it as `cidr::Ipv4Inet` and the CLI documents `--vpn-portal-client
+  NAME=CIDR` (verified on the 2.7.1 binary and in `core.rs`, which rejects a
+  value without `/`). The pinned commit `81487c36` is older (`Ipv4Addr`, bare
+  address), which is why EasyPlane first sent a bare IP and prod h-1 answered
+  `VPN portal client keen-h2 has an unusable virtual IP 10.144.144.8`; that
+  build reports a 2.6.4 version string and is handled as legacy. EasyPlane now
+  sends `<ip>/<network prefix length>` (e.g. `10.144.144.8/24`).
+- `wireguard_private_key` is `base64` (STANDARD alphabet) of exactly 32 bytes;
+  `portal_master_and_server_key` (`easytier/src/vpn_portal/wireguard.rs`)
+  rejects other lengths and an empty value ("requires a dedicated private
+  key"). EasyPlane's generated key is base64 of 32 raw X25519 bytes.
+
+**Assumed / not verified here:** there is no legacy field to push, so the
+panel deliberately does not invent one. Everything about a 2.6.x portal beyond
+the CLI/TOML form above (in particular any hypothetical proto encoding) is
+**assumed absent**, which matches the v2.6.4 sources we read. `2.7.0`/`2.7.1`
+are pre-releases; their exact runtime behaviour was not exercised against a
+real container (the repository has no portal conformance test).
+
+### 16.1 Per-client generation: pushed configuration [source]
 
 `NetworkConfig.vpn_portal_config` (api_manage.proto field 69):
 
@@ -1054,18 +1111,18 @@ pinned sources, not yet exercised against a real container.
 VpnPortalConfig {
   wireguard_listen      = "0.0.0.0:<udp port>"   # parsed as a SocketAddr
   wireguard_private_key = base64(32-byte X25519) # REQUIRED, see below
-  clients[]             = { name, virtual_ip, groups[] }
+  clients[]             = { name, virtual_ip, groups[] }  # virtual_ip = "10.x.y.z/<network prefix>"
 }
 ```
 
 - `wireguard_private_key` is **mandatory**. `portal_master_and_server_key`
-  (`easytier/src/vpn_portal/wireguard.rs`) fails with "WireGuard portal
-  requires a dedicated private key" when it is absent or empty, so the panel
-  generates an X25519 master key per hub, encrypts it at rest (AES-256-GCM,
-  like the network secret) and never returns it through the API.
+  fails with "WireGuard portal requires a dedicated private key" when it is
+  absent or empty, so the panel generates an X25519 master key per hub,
+  encrypts it at rest (AES-256-GCM, like the network secret) and never returns
+  it through the API.
 - Per-client keypairs are **derived** from the master key and the client name
-  (`HKDF-SHA256`, info `"easytier/wireguard-portal/v1"` + length-prefixed
-  labels). The panel therefore stores no client private key.
+  (`HKDF-SHA256`, domain labels `wireguard-client`/`attached-noise`). The panel
+  therefore stores no client private key.
 - A client's `groups` must each be declared by the running instance's ACL
   (`acl.group.declares`); an undeclared group fails the whole portal start
   ("VPN portal client … uses unknown ACL group"). The push compiler declares
@@ -1073,30 +1130,109 @@ VpnPortalConfig {
   declared (so a network with no ACL pushes an empty group list).
 - Client names must be unique per portal and the virtual IPs unique. Upstream
   caps a portal at `MAX_VPN_PORTAL_CLIENTS` (128).
+- `virtual_ip` is an **IPv4 address with the virtual network's prefix length**
+  (`10.144.144.8/24`), not a bare address: v2.7.x types it as
+  `cidr::Ipv4Inet` (`easytier-core/src/config/toml.rs`) and the CLI documents
+  `--vpn-portal-client NAME=CIDR` ("alice=10.144.0.5/16"). A bare address is
+  parsed as a `/32`, whose first and last address are the client itself, and
+  `validate_runtime_compatibility` (`gateway/vpn_portal/runtime.rs`) fails the
+  whole instance with `VPN portal client <name> has an unusable virtual IP
+  <addr>`; that is exactly what prod h-1 reported for `keen-h2` /
+  `10.144.144.8` in `10.144.144.0/24` before the encoding was fixed. The same
+  validation also rejects a client address equal to the hub's own overlay
+  address or to the first/last address of the client's prefix. The pinned tree
+  `81487c36` still typed the field as `Ipv4Addr`; that is a pre-2.7 build and
+  reports a 2.6.4 version string, so it never takes this path.
+- A client's `groups` must each be declared by the running instance's ACL
+  (`acl.group.declares`); an undeclared group fails the whole portal start
+  ("VPN portal client … uses unknown ACL group"). The names are compared
+  verbatim (`gateway/vpn_portal/runtime.rs`, `validate_clients`), which matches
+  EasyPlane's declared `tag:<name>` groups. The push compiler declares the
+  tags of a hub's portal clients, and only sends groups that are actually
+  declared (so a network with no ACL pushes an empty group list).
+- Client names must be unique per portal and the virtual IPs unique. Upstream
+  caps a portal at `MAX_VPN_PORTAL_CLIENTS` (128). Names are validated as
+  1–63 ASCII alphanumerics/dashes (same rule EasyPlane enforces for its DNS
+  labels).
+- The field is compared semantically on every reconcile (the address is
+  compared with or without a prefix, a differing prefix is drift). A client
+  that does not echo it back is **drift**, and repeated non-converging pushes
+  back off exponentially (15 s → 30 s → 1 min → … → 15 min, per desired-config
+  fingerprint) instead of repushing every tick. The counter resets on a desired
+  change, a reconnect or the operator's "retry now". The reason is shown on the
+  device as `driftReason` and the `sync` badge turns `stale`.
+- **Safety guard.** A portal field the device rejects fails the *whole*
+  instance ("failed to create instance: …"), so the panel records the device's
+  exact error, marks the hub's portal state `error` and immediately repushes
+  the same config **without** `vpn_portal_config` once, keeping the network
+  running and the client rows intact. The rejected portal config's fingerprint
+  is stored (`reported_state.wgPortalApplyError`), so the next reconcile does
+  not repeat it (the desired config without the portal matches); a client or
+  port change produces a new fingerprint and is tried again, and "retry now"
+  clears the marker. A device apply error also backs off like drift, so a
+  permanently failing config is not re-applied every 15 s.
 
-### 16.2 Live status and the client config [source]
+### 16.2 Legacy generation (`< 2.7.0`): CLI/TOML only [verified]
+
+There is no protocol field to push, so EasyPlane:
+
+- stores the operator's intent (`devices.wg_listen_port`,
+  `devices.wg_legacy_client_cidr`, default suggestion `10.14.14.0/24`), validates
+  the pool against the network CIDR and approved subnet routes, and **never
+  puts `vpn_portal_config` into the pushed config** — that is what used to make
+  a 2.6.4 hub report "drift" and repush revision 38 every 15 s forever;
+- shows the exact device-side form on the hub card:
+
+  ```text
+  --vpn-portal wg://0.0.0.0:11013/10.14.14.0/24
+  # or in the instance file
+  [vpn_portal_config]
+  client_cidr = "10.14.14.0/24"
+  wireguard_listen = "0.0.0.0:11013"
+  ```
+
+- reads the ready-made shared client config from `GetVpnPortalInfo`
+  (`client_config`, legacy field 2) and the names in `connected_clients`
+  (legacy field 3) on demand; the config contains a private key and is
+  admin-only, `no-store`, never cached or logged;
+- reports `ERROR: Wireguard VPN Portal Not Started` as "portal not running" and
+  `vpn_type = "null"` as "this build has no WireGuard support" instead of the
+  generic "not generated yet".
+
+In this generation there are no per-client names, tags, ACL groups or live
+per-client state. Creating a named client is refused with
+`wireguard_portal_needs_newer_easytier` and the UI says plainly that
+per-client management needs EasyTier 2.7.0 or newer.
+
+### 16.3 Live status and the client config [source]
 
 `VpnPortalRpc.GetVpnPortalInfo` (api_instance.proto) returns
-`VpnPortalInfo{listener, clients[]}` where every client carries `state`
-(offline/connecting/online/error), `peer_id`, `endpoint`, `tunnel_ip`,
-`error` and the ready-made `client_config` text.
+`VpnPortalInfo{vpn_type, listener, clients[], client_config, connected_clients}`.
+`clients[]` is the per-client generation (name, state, peer id, endpoint, tunnel
+IP, error, `client_config`); `client_config`/`connected_clients` are the
+deprecated legacy fields 2/3.
 
 The config-server client registers the **full management surface** on the
 config-server session (`register_management_rpc` → `ServiceRegistry`, copied
 into the session's `BidirectRpcManager`), including `VpnPortalRpcServer` at
 domain `""`, so the panel calls `GetVpnPortalInfo` over the same tunnel it
-already uses for `WebClientService`. [source: `management/full/{mod,web_client}.rs`]
+already uses for `WebClientService`. [source; the 2.6.4 tree registers
+`VpnPortalRpcServer` in `rpc_service/api.rs`, and the panel reads the not-started
+reply from it]
 
 `client_config` embeds a WireGuard private key. EasyPlane fetches it only for a
 single admin request (`GET /api/wireguard-clients/:id/config` and its
-`/download` variant, both `Cache-Control: no-store`), never persists it in a
-revision/status row and never writes it to the audit log or application log.
-The live status snapshot stores state/endpoint/tunnel IP/error only.
+`/download` variant in per-client mode, `GET
+/api/devices/:deviceId/wireguard-portal/config` in legacy mode; all
+`Cache-Control: no-store`), never persists it in a revision/status row and
+never writes it to the audit log or application log. The live status snapshot
+stores state/endpoint/tunnel IP/error, the portal generation, the portal state
+and the connected-client count only.
 
-### 16.3 What the panel compiles
+### 16.4 What the panel compiles
 
 - The portal is per **hub** (`devices.wg_listen_port`, null = disabled) and
-  only on an approved hub. Disabling is refused while clients exist.
+  only on an approved hub. Disabling is refused while per-client clients exist.
 - Each portal client is a `wireguard_clients` row: network, hub, DNS-label
   name, address from the **same allocator** as devices (`usedVirtualIps`
   unions both tables), tags, optional owner. Deleting a client releases the
@@ -1111,19 +1247,22 @@ The live status snapshot stores state/endpoint/tunnel IP/error only.
 - Changing a client or the portal port only repushes the hub; the desired
   config comparison covers `vpn_portal_config` (listen address, key presence,
   client name/address/groups), so enable/disable and client edits converge
-  without a new revision.
+  without a new revision — but only for the per-client generation.
 - The topology snapshot adds one node per portal client (`kind: "wireguard"`,
   `id: "wg:<client id>"`) and a `wg` link to its hub, using the last known
   state. The portal reports connectivity, not latency, so those links have no
-  latency/loss values.
+  latency/loss values. A legacy portal has no per-client rows, so it adds no
+  topology nodes.
 
-### 16.4 Not verified here
+### 16.5 Not verified here
 
 The repository has no conformance test for the portal: the pinned test client
 would need a real WireGuard handshake and a UDP port map. The message shapes,
 the mandatory master key, the HKDF derivation, the ACL-group rule and the RPC
 registration are read from the pinned tree cited above; the panel's own
-compilation and drift logic are unit/integration tested.
+compilation, generation detection and drift/backoff logic are unit/integration
+tested against fake clients (a 2.6.4-style client that cannot echo the portal
+and a 2.7-style client that does).
 
 Importing a TOML/share-link config still does **not** adopt `vpn_portal_config`
 into the panel: a portal is per-hub state with a key the panel owns, so the

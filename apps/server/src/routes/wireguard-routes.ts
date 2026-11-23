@@ -14,6 +14,7 @@ import {
   wireguardClientSchema,
   wireguardClientTagsSchema,
   wireguardConfigSchema,
+  wireguardPortalConfigSchema,
   wireguardPortalSchema,
   wireguardPortalSchemaResponse,
 } from "../app/schemas.js";
@@ -225,6 +226,61 @@ export function registerWireguardRoutes(
           role: auth.user.role,
         },
         request.params.clientId,
+      );
+      const filename = result.filename.replace(/[^a-z0-9._-]+/gi, "-");
+      reply.header("cache-control", "no-store");
+      reply.header("content-disposition", `attachment; filename="${filename}"`);
+      return reply.type("text/plain; charset=utf-8").send(result.config);
+    },
+  );
+
+  typed.get(
+    "/api/devices/:deviceId/wireguard-portal/config",
+    {
+      config: { rateLimit: { max: 60, timeWindow: "1 minute" } },
+      schema: {
+        operationId: "getDeviceWireguardPortalConfig",
+        tags: ["devices"],
+        params: paramsDeviceSchema,
+        response: { 200: wireguardPortalConfigSchema },
+      },
+    },
+    async (request, reply) => {
+      // Admin-only: the legacy shared config embeds a private key too.
+      const auth = requireRole(request, ["admin"]);
+      const result = await context.wireguard.legacyPortalConfig(
+        {
+          orgId: auth.organisation.id,
+          userId: auth.user.id,
+          role: auth.user.role,
+        },
+        request.params.deviceId,
+      );
+      reply.header("cache-control", "no-store");
+      return result;
+    },
+  );
+
+  typed.get(
+    "/api/devices/:deviceId/wireguard-portal/config/download",
+    {
+      config: { rateLimit: { max: 60, timeWindow: "1 minute" } },
+      schema: {
+        operationId: "downloadDeviceWireguardPortalConfig",
+        tags: ["devices"],
+        params: paramsDeviceSchema,
+        response: { 200: z.string() },
+      },
+    },
+    async (request, reply) => {
+      const auth = requireRole(request, ["admin"]);
+      const result = await context.wireguard.legacyPortalConfig(
+        {
+          orgId: auth.organisation.id,
+          userId: auth.user.id,
+          role: auth.user.role,
+        },
+        request.params.deviceId,
       );
       const filename = result.filename.replace(/[^a-z0-9._-]+/gi, "-");
       reply.header("cache-control", "no-store");

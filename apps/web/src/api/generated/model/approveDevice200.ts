@@ -15,6 +15,8 @@ import type { ApproveDevice200ReportedState } from './approveDevice200ReportedSt
 import type { ApproveDevice200Role } from './approveDevice200Role';
 import type { ApproveDevice200State } from './approveDevice200State';
 import type { ApproveDevice200Sync } from './approveDevice200Sync';
+import type { ApproveDevice200WgPortalMode } from './approveDevice200WgPortalMode';
+import type { ApproveDevice200WgPortalState } from './approveDevice200WgPortalState';
 
 export type ApproveDevice200 = {
   id: string;
@@ -69,6 +71,22 @@ export type ApproveDevice200 = {
      * @maximum 9007199254740991
      */
   wireguardClientCount: number;
+  wgPortalMode: ApproveDevice200WgPortalMode;
+  /** WireGuard portal lifecycle state as last observed by the panel */
+  wgPortalState: ApproveDevice200WgPortalState;
+  /** @nullable */
+  wgPortalError: string | null;
+  /** @nullable */
+  wgLegacyClientCidr: string | null;
+  /** @nullable */
+  driftReason: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  driftAttempts: number;
+  /** @nullable */
+  driftRetryAt: string | null;
   role: ApproveDevice200Role;
   effectiveRole: ApproveDevice200EffectiveRole;
   knowsSecret: boolean;

@@ -20,6 +20,13 @@ export interface DeviceStatusInput {
   desiredRevision: number | null;
   appliedRevision: number | null;
   lastPushError: string | null;
+  /**
+   * The client keeps reporting a config that differs from the desired one even
+   * after a push (see `domain/drift.ts`). The instance is running, so
+   * `appliedRevision` looks current, but the device is not on the desired
+   * config: "stale", not "in-sync".
+   */
+  driftPending?: boolean;
 }
 
 export interface DeviceStatus {
@@ -49,7 +56,8 @@ export function computeDeviceStatus(input: DeviceStatusInput): DeviceStatus {
     sync = "not-applicable";
   } else if (
     input.appliedRevision === null ||
-    input.appliedRevision < input.desiredRevision
+    input.appliedRevision < input.desiredRevision ||
+    input.driftPending === true
   ) {
     sync = "stale";
   } else {

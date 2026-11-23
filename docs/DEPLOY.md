@@ -591,10 +591,56 @@ The old JSON is left in place, so a downgraded image still sees it.
 A hub can serve ordinary WireGuard clients. Enable **WireGuard access** on the
 hub's device page (admin), set the **UDP port** (default `11013`) and forward
 it on the router to the hub's local address — the panel does not configure
-NAT, it only tells the hub to listen. Then open the network's device page and
-**Add WireGuard client**: the client gets a name, a virtual IP from the network
-pool and optional tags, and the panel shows a QR code plus the `.conf` file to
-import into the WireGuard app.
+NAT, it only tells the hub to listen.
+
+### Which EasyTier builds support which mode
+
+EasyTier changed the portal in **2.7.0**; the two generations are not
+interchangeable (docs/PROTOCOL.md §16.0):
+
+| Hub EasyTier | Panel behaviour |
+| --- | --- |
+| `>= 2.7.0` | per-client mode: add named clients on the network page, each gets a virtual IP, optional tags and its own QR/`.conf`; the hub card lists them with live state. |
+| `< 2.7.0` (2.6.4 `8428a89d`, the stable release and the usual OpenWrt package) | subnet mode: one shared config and one `client_cidr` pool. The panel **cannot push** the portal to these builds (their `NetworkConfig` has no portal field), so it shows the exact flag to put on the device and then reads the ready config back. |
+| built without the `wireguard` feature | the hub card says the build has no WireGuard support; install a build compiled with it. |
+
+### 2.6.x / OpenWrt (subnet mode)
+
+1. On the hub card enable the portal and enter the client subnet (default
+   suggestion `10.14.14.0/24`; it must not overlap the network or an approved
+   subnet route).
+2. Add the flag to the device's EasyTier service and restart it:
+
+   ```text
+   easytier-core ... --vpn-portal wg://0.0.0.0:11013/10.14.14.0/24
+   ```
+
+   The equivalent instance-file section is shown on the card as well.
+3. Check it locally with `easytier-cli vpn-portal`:
+
+   - `ERROR: Wireguard VPN Portal Not Started` — the flag is missing or was
+     not applied (the panel shows the same message and refuses to hand out a
+     config);
+   - `ERROR: VPN Portal Config Not Set` — the version expects the newer
+     per-client form;
+   - a `client_config_start … client_config_end` block plus `connected_clients`
+     — the portal is up, and the panel's **Show shared configuration** button
+     returns exactly that config with a QR code and a `.conf` download.
+
+   If an OpenWrt package prints no `--vpn-portal` in `easytier-core --help`,
+   that build lacks the `wireguard` feature; use a build with it (the panel
+   detects `vpn_type = "null"` and says so).
+
+In subnet mode there are no per-client names, tags or ACL groups: every client
+shares one config and one address pool. The panel refuses to create a named
+client and points at 2.7.0+, which is the first release with the per-client
+portal (still a pre-release at the time of writing).
+
+### 2.7.0+ (per-client mode)
+
+Open the network's device page and **Add WireGuard client**: the client gets a
+name, a virtual IP from the network pool and optional tags, and the panel shows
+a QR code plus the `.conf` file to import into the WireGuard app.
 
 - The portal needs an **approved hub**. Disabling it is refused while clients
   exist; delete the clients first (their addresses are released for reuse).
@@ -608,6 +654,29 @@ import into the WireGuard app.
   apply, and tag rules compile the client's `/32` into the destination's ACL.
 - The hub must be online to download or re-open a client's configuration and to
   see its live connected/not-connected state.
+
+### When the panel stops repushing
+
+If a hub keeps reporting a config that differs from the desired one after a
+push (for example a build that cannot express a field, or a client that
+normalises it), the panel backs the retries off — 15 s, 30 s, 1 min, … up to 15
+minutes for the same desired config — and shows a calm inline notice with
+**Retry now** on the hub card. A reconnect, a config change or the manual
+retry resets the schedule. A device stuck this way shows `stale`, not
+`in-sync`. The previous behaviour (repushing the same revision every 15
+seconds forever) is what a 2.6.4 hub with a per-client portal config used to
+trigger; subnet mode does not push portal fields at all.
+
+EasyTier applies the whole config at once, so a portal field it rejects takes
+the **entire instance** down (`failed to create instance: VPN portal client …
+has an unusable virtual IP …` was seen on prod for a bare address in 2.7.1).
+The panel therefore parses the device's apply error: it records that exact
+text, shows it on the hub card, and automatically repushes the same config
+without the portal so the network keeps running. Client rows are kept, the
+rejected portal config is not retried on every cycle, and **Retry now** (or
+any portal/client change) tries the portal again. If the error mentions
+WireGuard, update the hub to a build whose portal accepts the config — the
+message tells you exactly what it rejected.
 
 ## 4e. Rendezvous node
 

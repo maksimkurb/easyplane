@@ -1,0 +1,1 @@
+ALTER TABLE "devices" ADD COLUMN "wg_legacy_client_cidr" text;

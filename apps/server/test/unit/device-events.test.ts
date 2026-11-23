@@ -35,6 +35,7 @@ function device(overrides: Partial<Device> = {}): Device {
     isHub: false,
     wgListenPort: null,
     wgPrivateKeyCiphertext: null,
+    wgLegacyClientCidr: null,
     reportedState: {},
     reportedStateAt: null,
     desiredRevision: 1,

@@ -72,6 +72,12 @@ import {
 } from "../domain/magic-dns.js";
 import { nextRevisionNumber, planRollback } from "../domain/revisions.js";
 import { dedupePeerUrls } from "../domain/peers.js";
+import { readDriftState } from "../domain/drift.js";
+import {
+  readPortalApplyError,
+  readPortalSnapshot,
+  portalModeForDevice,
+} from "../domain/wireguard.js";
 import type { ManagedClient } from "../control/managed-client.js";
 import type { Logger } from "../logger.js";
 import type { DeviceChangedField } from "../realtime/events.js";
@@ -136,6 +142,23 @@ export interface DeviceDto extends DeviceStatus {
   wgListenPort: number | null;
   /** Number of WireGuard portal clients served by this hub. */
   wireguardClientCount: number;
+  /**
+   * Portal generation of a hub: `per-client` (EasyTier >= 2.7.0), `legacy`
+   * (2.6.x, one shared config) or `unknown`.
+   */
+  wgPortalMode: "per-client" | "legacy" | "unknown";
+  /** Last known portal state (disabled/starting/running/unsupported/error). */
+  wgPortalState: "disabled" | "starting" | "running" | "unsupported" | "error";
+  /** Plain-language portal problem, or null. */
+  wgPortalError: string | null;
+  /** Legacy (< 2.7.0) portal pool (`client_cidr`), when configured. */
+  wgLegacyClientCidr: string | null;
+  /** Why the client still reports a config different from the desired one. */
+  driftReason: string | null;
+  /** Consecutive non-converging pushes (exponential backoff counter). */
+  driftAttempts: number;
+  /** No repush before this time; null when there is no active drift. */
+  driftRetryAt: string | null;
   /** Stored role: anchor or member (docs/CREDENTIALS.md). */
   role: "anchor" | "member";
   /** Role in effect: always `anchor` in shared-secret mode. */
@@ -480,6 +503,7 @@ export class DeviceService {
     exitNode: "none" | "proposed" | "approved" = "none",
     wireguardClientCount = 0,
   ): DeviceDto {
+    const drift = readDriftState(device.reportedState);
     const status = computeDeviceStatus({
       state: device.state,
       lastSeenAt: device.lastSeenAt,
@@ -488,7 +512,23 @@ export class DeviceService {
       desiredRevision: device.desiredRevision,
       appliedRevision: device.appliedRevision,
       lastPushError: device.lastPushError,
+      driftPending: drift !== null,
     });
+    const portalMode = device.isHub ? portalModeForDevice(device) : "unknown";
+    const portalSnapshot = readPortalSnapshot(device.reportedState);
+    const portalApplyError = readPortalApplyError(device.reportedState);
+    const portalUnsupported = portalSnapshot?.state === "unsupported";
+    const portalState =
+      device.wgListenPort === null
+        ? ("disabled" as const)
+        : portalUnsupported
+          ? ("unsupported" as const)
+          : portalApplyError
+            ? ("error" as const)
+            : (portalSnapshot?.state ?? ("starting" as const));
+    const portalError = portalUnsupported
+      ? (portalSnapshot?.error ?? null)
+      : (portalApplyError?.message ?? portalSnapshot?.error ?? null);
     const zone = network?.magicDnsZone ?? DEFAULT_MAGIC_DNS_ZONE;
     const magicDnsEnabled = network?.magicDnsEnabled ?? false;
     const accessMode = network?.accessMode ?? "shared_secret";
@@ -523,6 +563,13 @@ export class DeviceService {
       isHub: device.isHub,
       wgListenPort: device.wgListenPort,
       wireguardClientCount,
+      wgPortalMode: portalMode,
+      wgPortalState: portalState,
+      wgPortalError: portalError,
+      wgLegacyClientCidr: device.wgLegacyClientCidr,
+      driftReason: drift?.reason ?? null,
+      driftAttempts: drift?.attempts ?? 0,
+      driftRetryAt: drift?.nextRetryAt ?? null,
       role: device.role,
       effectiveRole: role,
       knowsSecret: knowsNetworkSecret(accessMode, device.role),
@@ -1236,7 +1283,7 @@ export class DeviceService {
       targetType: "device",
       targetId: deviceId,
     });
-    return this.options.push.ensure(deviceId);
+    return this.options.push.retry(deviceId);
   }
 
   async createRevision(

@@ -2050,15 +2050,63 @@ export const ruTranslation: Translation = {
     statusNever: "Ждём, когда узел сообщит состояние",
     lastEndpoint: "Последний адрес: {{endpoint}}",
     hubLabel: "через {{hub}}",
+    noPerClientHub:
+      "В этой сети нет узла, который поддерживает отдельных клиентов WireGuard. EasyTier старше 2.7.0 выдаёт одну общую настройку — откройте карточку WireGuard на узле.",
+    hubBuildUnsupported:
+      "Этот EasyTier на узле собран без WireGuard — обновите или установите сборку с поддержкой WireGuard, чтобы добавлять клиентов.",
+    sharedConfigTitle: "Общая настройка WireGuard",
+    sharedConfigDescription:
+      "EasyTier до 2.7.0 выдаёт одну настройку на весь портал. Отсканируйте её на устройстве или скачайте файл .conf.",
+    sharedConfigPool: "Пул адресов портала: {{cidr}}",
+    connectedClients: "Подключено клиентов: {{count}}",
+    sharedConfigUnavailable: "Общая настройка недоступна",
+    sharedConfigNotRunning:
+      "Портал на узле ещё не запущен. Настройте его на устройстве, как описано в карточке узла, и попробуйте снова.",
+    drift: {
+      title: "Устройство сообщает другую конфигурацию.",
+      body: "Конфигурация отправлялась {{count}} раз(а), но не совпала; повторы замедляются автоматически. Ничего не потеряно — панель попробует снова.",
+      retryNow: "Повторить сейчас",
+      retried: "Запрошена отправка",
+    },
+    deviceError: {
+      title: "Устройство отклонило конфигурацию:",
+    },
     portal: {
       title: "Доступ по WireGuard",
       description:
         "Разрешить телефонам и устройствам без EasyTier подключаться через этот узел.",
+      modePerClient:
+        "Режим WireGuard: клиенты по отдельности (EasyTier {{version}}, 2.7.0 или новее)",
+      modeLegacy:
+        "Режим WireGuard: подсеть (EasyTier {{version}}, старше 2.7.0)",
+      modeUnknown:
+        "Режим WireGuard: подсеть. Версия EasyTier на узле неизвестна, поэтому управление отдельными клиентами выключено.",
+      stateRunning: "Портал работает.",
+      stateRunningPerClient: "У клиентов свои ключи, ими можно управлять по отдельности.",
+      stateRunningLegacy: "Узел выдаёт одну общую настройку на весь пул адресов.",
+      stateStarting: "Портал запускается.",
+      stateStartingHint:
+        "Панель ещё не получила состояние портала; оно обновится при следующей проверке.",
+      stateErrorTitle: "Портал не запущен.",
+      stateError: "Настройте портал на устройстве и попробуйте снова.",
+      stateUnsupportedTitle: "Этот EasyTier собран без WireGuard.",
+      stateUnsupported:
+        "Обновите или установите сборку с поддержкой WireGuard.",
       enable: "Включить WireGuard-портал",
       port: "Порт WireGuard",
       portHint:
         "Порт UDP. Пробросьте его на роутере, чтобы клиенты могли подключаться из интернета.",
       portInvalid: "Введите порт от 1 до 65535",
+      legacyCidr: "Подсеть клиентов",
+      legacyCidrHint:
+        "Отдельный диапазон для клиентов WireGuard, вне сети и одобренных подсетей.",
+      legacyCidrInvalid: "Введите подсеть IPv4, например 10.14.14.0/24",
+      legacyHint:
+        "У EasyTier до 2.7.0 нет поля протокола для портала, поэтому панель не может его отправить. Запустите устройство с параметром: --vpn-portal {{url}}",
+      legacyNoClients:
+        "В этой сборке нет именованных клиентов WireGuard: у всех одна настройка и один пул адресов. Управление отдельными клиентами нужно EasyTier 2.7.0 или новее.",
+      showSharedConfig: "Показать общую настройку",
+      defaultLegacyPort: "По умолчанию: {{port}} (UDP), подсеть клиентов {{cidr}}",
       enabled: "WireGuard-портал включён",
       disabled: "WireGuard-портал выключен",
       save: "Сохранить порт",

@@ -2036,15 +2036,63 @@ export const enTranslation = {
     statusNever: "Waiting for the hub to report the status",
     lastEndpoint: "Last address: {{endpoint}}",
     hubLabel: "via {{hub}}",
+    noPerClientHub:
+      "No hub in this network supports per-client WireGuard clients. EasyTier older than 2.7.0 serves one shared configuration instead — open the hub's WireGuard card to see it.",
+    hubBuildUnsupported:
+      "This hub's EasyTier was built without WireGuard support, so per-client clients cannot be added. Install or update to a build compiled with WireGuard.",
+    sharedConfigTitle: "Shared WireGuard configuration",
+    sharedConfigDescription:
+      "EasyTier before 2.7.0 serves one configuration for the whole portal. Scan it on the device or download the .conf file.",
+    sharedConfigPool: "Portal address pool: {{cidr}}",
+    connectedClients: "Connected clients: {{count}}",
+    sharedConfigUnavailable: "The shared configuration is not available",
+    sharedConfigNotRunning:
+      "The portal is not running on the hub yet. Configure it on the device as described in the hub card, then try again.",
+    drift: {
+      title: "The device keeps reporting a different configuration.",
+      body: "It was pushed {{count}} time(s) without matching; retries are slowed down automatically. Nothing is lost — the panel will try again.",
+      retryNow: "Retry now",
+      retried: "Push requested",
+    },
+    deviceError: {
+      title: "The device rejected the configuration:",
+    },
     portal: {
       title: "WireGuard access",
       description:
         "Let phones and other devices without EasyTier join through this hub.",
+      modePerClient:
+        "WireGuard mode: per-client (EasyTier {{version}}, 2.7.0 or newer)",
+      modeLegacy:
+        "WireGuard mode: subnet (EasyTier {{version}}, older than 2.7.0)",
+      modeUnknown:
+        "WireGuard mode: subnet. The hub's EasyTier version is unknown, so per-client management stays off.",
+      stateRunning: "Portal is running.",
+      stateRunningPerClient: "Clients get their own keys and can be managed individually.",
+      stateRunningLegacy: "The hub serves one shared configuration for its address pool.",
+      stateStarting: "Portal is starting.",
+      stateStartingHint:
+        "The panel has not received the hub's portal status yet; it updates on the next check.",
+      stateErrorTitle: "The portal is not running.",
+      stateError: "Configure the portal on the device and try again.",
+      stateUnsupportedTitle: "This EasyTier build has no WireGuard support.",
+      stateUnsupported:
+        "Install or update to a build compiled with WireGuard support.",
       enable: "Enable the WireGuard portal",
       port: "WireGuard port",
       portHint:
         "UDP port. Forward it on the router so clients can connect from the internet.",
       portInvalid: "Enter a port between 1 and 65535",
+      legacyCidr: "Client subnet",
+      legacyCidrHint:
+        "A separate range for WireGuard clients, outside the network and approved subnets.",
+      legacyCidrInvalid: "Enter an IPv4 subnet, for example 10.14.14.0/24",
+      legacyHint:
+        "EasyTier before 2.7.0 has no protocol field for the portal, so the panel cannot push it. Start the device with: --vpn-portal {{url}}",
+      legacyNoClients:
+        "This build has no named WireGuard clients: every client shares one configuration and one address pool. Per-client management needs EasyTier 2.7.0 or newer.",
+      showSharedConfig: "Show shared configuration",
+      defaultLegacyPort: "Default: {{port}} (UDP), client subnet {{cidr}}",
       enabled: "WireGuard portal enabled",
       disabled: "WireGuard portal disabled",
       save: "Save port",

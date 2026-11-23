@@ -1,5 +1,6 @@
 import type { DbExecutor } from "../db/repositories.js";
 import {
+  approvedRoutesForNetwork,
   countWireguardClientsForHub,
   deleteWireguardClient,
   findUserById,
@@ -22,15 +23,29 @@ import {
 import type { instance } from "@easyplane/proto";
 
 import type { Device, Network, WireguardClient } from "../db/schema.js";
-import { allocateIpv4 } from "../domain/ip.js";
+import { allocateIpv4, formatIpv4, parseCidr } from "../domain/ip.js";
 import { isValidDnsLabel } from "../domain/magic-dns.js";
 import {
+  DEFAULT_LEGACY_CLIENT_CIDR,
   DEFAULT_WIREGUARD_PORT,
   MAX_WIREGUARD_CLIENTS_PER_HUB,
+  PER_CLIENT_PORTAL_MIN_VERSION,
+  cidrOverlapsAny,
+  interpretPortalProbe,
   isValidWireguardPort,
+  legacyClientConfig,
+  legacyConnectedClients,
+  legacyPortalConfigHint,
+  legacyPortalReplyError,
+  portalListener,
+  portalModeForDevice,
   portalStatuses,
+  portalVirtualIpProblem,
   findClientConfig,
+  readPortalSnapshot,
+  withPortalSnapshot,
   type WireguardClientState,
+  type WireguardPortalMode,
 } from "../domain/wireguard.js";
 import type { ManagedClient } from "../control/managed-client.js";
 import type { Logger } from "../logger.js";
@@ -77,6 +92,22 @@ export interface WireguardPortalSettingsDto {
   enabled: boolean;
   port: number | null;
   clientCount: number;
+  /** Which EasyTier portal generation this hub supports. */
+  mode: WireguardPortalMode;
+  /** Legacy (< 2.7.0) portal pool; null in per-client mode or when unset. */
+  legacyClientCidr: string | null;
+}
+
+export interface WireguardPortalConfigDto {
+  /** Ready-to-use WireGuard config (contains a private key); never cached. */
+  config: string;
+  filename: string;
+  mode: WireguardPortalMode;
+  port: number | null;
+  clientCidr: string | null;
+  /** Names the legacy portal reports as connected (2.6.x string form). */
+  connectedClients: string[];
+  listener: string | null;
 }
 
 export interface WireguardServiceOptions {
@@ -151,6 +182,35 @@ export class WireguardService {
         this.networkLocks.delete(networkId);
       }
     }
+  }
+
+  /** Portal generation this hub supports (see `domain/wireguard.ts`). */
+  private mode(hub: Device): WireguardPortalMode {
+    return portalModeForDevice(hub);
+  }
+
+  /**
+   * Per-client portal management needs EasyTier >= 2.7.0. On 2.6.x the panel
+   * cannot push or address named clients at all, so the request is refused
+   * with a precise code instead of silently doing nothing.
+   */
+  private assertPerClientPortal(hub: Device): void {
+    if (this.mode(hub) === "per-client") {
+      const snapshot = readPortalSnapshot(hub.reportedState);
+      if (snapshot?.state === "unsupported") {
+        throw new AppError(
+          409,
+          "this hub's EasyTier build has no WireGuard support; install or update to a build compiled with the wireguard feature",
+          "wireguard_portal_unsupported",
+        );
+      }
+      return;
+    }
+    throw new AppError(
+      409,
+      `per-client WireGuard clients need EasyTier ${PER_CLIENT_PORTAL_MIN_VERSION} or newer on the hub, but this hub reports "${hub.easytierVersion || "an unknown version"}". Use subnet mode (one shared config) instead.`,
+      "wireguard_portal_needs_newer_easytier",
+    );
   }
 
   private async loadNetwork(
@@ -333,10 +393,9 @@ export class WireguardService {
     }
     return this.withNetworkLock(network.id, async () => {
       await this.assertNameFree(network.id, name);
-      const hub = await this.ensurePortal(
-        actor,
-        await this.resolveHub(network, input.hubDeviceId),
-      );
+      const hub = await this.resolveHub(network, input.hubDeviceId);
+      this.assertPerClientPortal(hub);
+      await this.ensurePortal(actor, hub);
       const count = await countWireguardClientsForHub(this.options.db, hub.id);
       if (count >= MAX_WIREGUARD_CLIENTS_PER_HUB) {
         throw new AppError(
@@ -354,6 +413,22 @@ export class WireguardService {
           409,
           `no free address left in ${network.ipv4Cidr}`,
           "address_pool_exhausted",
+        );
+      }
+      // Defence in depth: EasyTier refuses a portal client on the hub's own
+      // address or on the first/last address of its prefix ("unusable virtual
+      // IP") and that failure takes the whole instance down. The allocator
+      // already excludes those, so this only catches corrupt rows.
+      const addressProblem = portalVirtualIpProblem({
+        virtualIpv4: address,
+        prefixLength: parseCidr(network.ipv4Cidr).prefix,
+        hubVirtualIpv4: hub.virtualIpv4,
+      });
+      if (addressProblem) {
+        throw new AppError(
+          409,
+          `the allocated address ${address} cannot be used by a WireGuard client: it ${addressProblem}`,
+          "wireguard_unusable_address",
         );
       }
       const row = await insertWireguardClient(this.options.db, {
@@ -392,6 +467,7 @@ export class WireguardService {
     requested: string,
   ): Promise<WireguardClientDto> {
     const { client, network, hub } = await this.requireClient(actor, clientId);
+    this.assertPerClientPortal(hub);
     const name = this.validateName(requested);
     return this.withNetworkLock(network.id, async () => {
       await this.assertNameFree(network.id, name, client.id);
@@ -419,6 +495,7 @@ export class WireguardService {
     tags: string[],
   ): Promise<WireguardClientDto> {
     const { client, network, hub } = await this.requireClient(actor, clientId);
+    this.assertPerClientPortal(hub);
     const normalized = this.normalizeTags(tags);
     await this.assertTagsKnown(actor.orgId, normalized);
     const updated = await updateWireguardClient(this.options.db, client.id, {
@@ -459,17 +536,22 @@ export class WireguardService {
   }
 
   /**
-   * Portal toggle for a hub. Disabling is refused while clients exist: their
-   * configs would keep pointing at a closed port, and the hub would drop them
-   * without the panel saying so.
+   * Portal toggle for a hub. Disabling is refused while per-client clients
+   * exist (their configs would keep pointing at a closed port).
+   *
+   * The accepted input depends on the hub's EasyTier generation:
+   * - per-client (>= 2.7.0): port + master key, client rows are pushed;
+   * - legacy (< 2.7.0): port + client CIDR, stored as operator intent because
+   *   2.6.x has no protocol field for the portal.
    */
   async updatePortal(
     actor: RequestActor,
     deviceId: string,
-    input: { enabled: boolean; port?: number | null },
+    input: { enabled: boolean; port?: number | null; clientCidr?: string | null },
   ): Promise<WireguardPortalSettingsDto> {
     const device = await getDeviceById(this.options.db, deviceId);
     if (!device || device.orgId !== actor.orgId) notFound("device not found");
+    const mode = this.mode(device);
     if (input.enabled) {
       if (device.state !== "approved") {
         throw new AppError(
@@ -487,6 +569,42 @@ export class WireguardService {
       }
       const port = input.port ?? device.wgListenPort ?? DEFAULT_WIREGUARD_PORT;
       if (!isValidWireguardPort(port)) invalid("port must be between 1 and 65535");
+      if (mode !== "per-client") {
+        const clientCidr = await this.resolveLegacyClientCidr(
+          device,
+          input.clientCidr ?? device.wgLegacyClientCidr ?? DEFAULT_LEGACY_CLIENT_CIDR,
+        );
+        const updated = await updateDevice(this.options.db, device.id, {
+          wgListenPort: port,
+          wgLegacyClientCidr: clientCidr,
+        });
+        if (!updated) throw new AppError(500, "failed to enable the WireGuard portal");
+        await this.options.audit.record({
+          orgId: actor.orgId,
+          actorUserId: actor.userId,
+          action:
+            device.wgListenPort === null
+              ? "device.wireguard_portal_enabled"
+              : "device.wireguard_portal_updated",
+          targetType: "device",
+          targetId: device.id,
+          metadata: { networkId: device.networkId, port, mode, clientCidr },
+        });
+        // The pushed config carries no portal field in this generation; a push
+        // clears a stale per-client portal left over from an earlier config.
+        this.options.push.schedule(device.id, "wireguard portal updated");
+        this.publish(device.orgId, device.networkId, {
+          hubDeviceId: device.id,
+          reason: "portal-updated",
+        });
+        return {
+          enabled: true,
+          port,
+          clientCount: await countWireguardClientsForHub(this.options.db, device.id),
+          mode,
+          legacyClientCidr: clientCidr,
+        };
+      }
       const keypair = device.wgPrivateKeyCiphertext
         ? null
         : generateCredentialKeypair();
@@ -506,7 +624,7 @@ export class WireguardService {
             : "device.wireguard_portal_updated",
         targetType: "device",
         targetId: device.id,
-        metadata: { networkId: device.networkId, port },
+        metadata: { networkId: device.networkId, port, mode },
       });
       this.options.push.schedule(device.id, "wireguard portal updated");
       this.publish(device.orgId, device.networkId, {
@@ -517,10 +635,12 @@ export class WireguardService {
         enabled: true,
         port,
         clientCount: await countWireguardClientsForHub(this.options.db, device.id),
+        mode,
+        legacyClientCidr: null,
       };
     }
     const clientCount = await countWireguardClientsForHub(this.options.db, device.id);
-    if (clientCount > 0) {
+    if (clientCount > 0 && mode === "per-client") {
       throw new AppError(
         409,
         `this hub still serves ${clientCount} WireGuard client(s). Delete them before disabling the portal.`,
@@ -530,6 +650,7 @@ export class WireguardService {
     await updateDevice(this.options.db, device.id, {
       wgListenPort: null,
       wgPrivateKeyCiphertext: null,
+      wgLegacyClientCidr: null,
     });
     await this.options.audit.record({
       orgId: actor.orgId,
@@ -537,14 +658,54 @@ export class WireguardService {
       action: "device.wireguard_portal_disabled",
       targetType: "device",
       targetId: device.id,
-      metadata: { networkId: device.networkId, port: device.wgListenPort },
+      metadata: { networkId: device.networkId, port: device.wgListenPort, mode },
     });
     this.options.push.schedule(device.id, "wireguard portal disabled");
     this.publish(device.orgId, device.networkId, { hubDeviceId: device.id, reason: "portal-disabled" });
-    return { enabled: false, port: null, clientCount: 0 };
+    return { enabled: false, port: null, clientCount: 0, mode, legacyClientCidr: null };
   }
 
-  private async portalInfo(hub: Device): Promise<instance.VpnPortalInfo | undefined> {
+  /**
+   * Validates the legacy portal pool: a CIDR that does not overlap the
+   * network's own address pool or any approved subnet route (and therefore
+   * no device or per-client address, which all live inside those).
+   */
+  private async resolveLegacyClientCidr(
+    device: Device,
+    requested: string,
+  ): Promise<string> {
+    const value = requested.trim();
+    let parsed;
+    try {
+      parsed = parseCidr(value);
+    } catch {
+      invalid(
+        "clientCidr must be an IPv4 CIDR with a prefix between 8 and 30 (for example 10.14.14.0/24)",
+      );
+    }
+    const network = await getNetworkById(this.options.db, device.networkId);
+    if (!network) notFound("network not found");
+    const routes = await approvedRoutesForNetwork(this.options.db, network.id);
+    const conflicts = [
+      network.ipv4Cidr,
+      ...routes
+        .filter((route) => route.kind === "subnet")
+        .map((route) => route.cidr),
+    ];
+    if (cidrOverlapsAny(value, conflicts)) {
+      invalid(
+        `clientCidr ${value} overlaps the network address pool or an approved subnet route; pick a separate range such as ${DEFAULT_LEGACY_CLIENT_CIDR}`,
+      );
+    }
+    // Normalise to the network address so the value stored is canonical.
+    return `${formatIpv4(parsed.base)}/${parsed.prefix}`;
+  }
+
+  private async portalInfo(hub: Device): Promise<{
+    info: instance.VpnPortalInfo | undefined;
+    mode: WireguardPortalMode;
+  }> {
+    const mode = this.mode(hub);
     if (hub.state !== "approved") {
       throw new AppError(409, "the hub device is not approved", "wireguard_portal_hub_not_approved");
     }
@@ -553,45 +714,72 @@ export class WireguardService {
     }
     const client = this.options.sessions.get(hub.id);
     if (!client || client.isClosed) {
-      throw new AppError(409, "the hub is offline; the config can be downloaded once it reconnects", "hub_offline");
+      throw new AppError(
+        409,
+        "the hub is offline; the config can be downloaded once it reconnects",
+        "hub_offline",
+      );
     }
-    const response = await client.remote.getVpnPortalInfo(
-      instanceIdFor(hub.networkId, hub.id),
-    );
-    return response.vpnPortalInfo;
+    let response;
+    try {
+      response = await client.remote.getVpnPortalInfo(
+        instanceIdFor(hub.networkId, hub.id),
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.options.logger.warn("failed to read the WireGuard portal info", {
+        hubDeviceId: hub.id,
+        mode,
+        error: message,
+      });
+      throw new AppError(
+        409,
+        `the hub did not answer the WireGuard portal query (${message.slice(0, 200)}); try again when it is online`,
+        "wireguard_portal_unavailable",
+      );
+    }
+    const info = response.vpnPortalInfo;
+    if ((info?.vpnType ?? "").trim() === "null") {
+      throw new AppError(
+        409,
+        "this EasyTier build has no WireGuard support (the portal reports vpn_type = null); install a build compiled with the wireguard feature",
+        "wireguard_portal_unsupported",
+      );
+    }
+    return { info, mode };
   }
 
   /**
-   * The ready-made WireGuard config for one client. Admin-only at the route;
-   * the value contains a private key, so it is returned once, never cached,
-   * audited or logged.
+   * The ready-made WireGuard config for one per-client client. Admin-only at
+   * the route; the value contains a private key, so it is returned once, never
+   * cached, audited or logged.
    */
   async clientConfig(
     actor: RequestActor,
     clientId: string,
   ): Promise<{ config: string; client: WireguardClientDto; filename: string }> {
     const { client, network, hub } = await this.requireClient(actor, clientId);
-    let info: instance.VpnPortalInfo | undefined;
-    try {
-      info = await this.portalInfo(hub);
-    } catch (error) {
-      if (error instanceof AppError) throw error;
-      this.options.logger.warn("failed to read the WireGuard portal info", {
-        clientId: client.id,
-        hubDeviceId: hub.id,
-        error: error instanceof Error ? error.message : String(error),
-      });
+    if (this.mode(hub) !== "per-client") {
       throw new AppError(
         409,
-        "the hub did not answer the WireGuard portal query; try again when it is online",
-        "wireguard_portal_unavailable",
+        `per-client WireGuard configs need EasyTier ${PER_CLIENT_PORTAL_MIN_VERSION} or newer on the hub; this hub uses subnet mode, download the shared config instead`,
+        "wireguard_portal_needs_newer_easytier",
       );
     }
+    const { info } = await this.portalInfo(hub);
     const config = findClientConfig(info, client.name);
     if (!config) {
       const portalError = (info?.clients ?? []).find(
         (entry) => entry.name === client.name,
       )?.error;
+      const legacyError = legacyPortalReplyError(info?.clientConfig);
+      if (legacyError) {
+        throw new AppError(
+          409,
+          `the WireGuard portal is not running on the hub: ${legacyError}`,
+          "wireguard_portal_not_running",
+        );
+      }
       throw new AppError(
         409,
         portalError
@@ -616,25 +804,146 @@ export class WireguardService {
   }
 
   /**
-   * Probes a hub's portal and stores each client's live state. Called by the
-   * topology collector for online hubs; failures are logged, never thrown, so
-   * one hub cannot break a topology cycle.
+   * Shared WireGuard config of a legacy (< 2.7.0) portal. 2.6.x hands out one
+   * ready-made config for the whole `client_cidr` pool; there are no named
+   * clients. Same handling as the per-client config: admin-only, `no-store`,
+   * never logged or persisted.
+   */
+  async legacyPortalConfig(
+    actor: RequestActor,
+    hubDeviceId: string,
+  ): Promise<WireguardPortalConfigDto> {
+    const hub = await getDeviceById(this.options.db, hubDeviceId);
+    if (!hub || hub.orgId !== actor.orgId) notFound("device not found");
+    if (!hub.isHub) {
+      throw new AppError(
+        409,
+        "the WireGuard portal runs on a hub; this device is not a hub",
+        "wireguard_portal_hub_required",
+      );
+    }
+    const mode = this.mode(hub);
+    if (mode === "per-client") {
+      throw new AppError(
+        409,
+        "this hub uses per-client WireGuard; open the configuration of a specific client instead",
+        "wireguard_portal_per_client_mode",
+      );
+    }
+    const { info } = await this.portalInfo(hub);
+    const replyError = legacyPortalReplyError(info?.clientConfig);
+    if (replyError) {
+      const hint =
+        hub.wgListenPort !== null && hub.wgLegacyClientCidr
+          ? ` Start EasyTier on the device with: ${legacyPortalConfigHint(hub.wgListenPort, hub.wgLegacyClientCidr).cli}`
+          : "";
+      throw new AppError(
+        409,
+        `the WireGuard portal is not running on the hub: ${replyError}.${hint}`,
+        "wireguard_portal_not_running",
+      );
+    }
+    const config = legacyClientConfig(info);
+    if (!config) {
+      throw new AppError(
+        409,
+        "the hub has not generated the shared WireGuard config yet",
+        "wireguard_portal_not_running",
+      );
+    }
+    await this.options.audit.record({
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: "wireguard_portal.config_viewed",
+      targetType: "device",
+      targetId: hub.id,
+      metadata: { networkId: hub.networkId, mode },
+    });
+    return {
+      config,
+      filename: `${hub.dnsName ?? hub.hostname ?? "wireguard"}.conf`,
+      mode,
+      port: hub.wgListenPort,
+      clientCidr: hub.wgLegacyClientCidr,
+      connectedClients: legacyConnectedClients(info),
+      listener: portalListener(info),
+    };
+  }
+
+  /**
+   * Probes a hub's portal and records the generation, state and (for the
+   * per-client generation) each client's live status. Called by the topology
+   * collector for online devices with a portal enabled; failures are logged,
+   * never thrown, so one hub cannot break a topology cycle.
+   *
+   * The probe runs even when there are no per-client rows: a legacy portal has
+   * only the shared config, and an unsupported build must surface as such
+   * instead of looking "starting" forever.
    */
   async collectStatuses(device: Device, client: ManagedClient): Promise<void> {
     if (device.wgListenPort === null) return;
-    const rows = await listWireguardClientsForHub(this.options.db, device.id);
-    if (rows.length === 0) return;
-    let info;
+    const mode = this.mode(device);
+    let info: instance.VpnPortalInfo | undefined;
+    let rawError: string | null = null;
     try {
       const response = await client.remote.getVpnPortalInfo(
         instanceIdFor(device.networkId, device.id),
       );
       info = response.vpnPortalInfo;
     } catch (error) {
+      rawError = error instanceof Error ? error.message : String(error);
       this.options.logger.debug("WireGuard portal probe failed", {
         deviceId: device.id,
-        error: error instanceof Error ? error.message : String(error),
+        mode,
+        error: rawError,
       });
+    }
+    const snapshot = rawError
+      ? {
+          state: "error" as const,
+          error: `the hub did not answer the WireGuard portal query: ${rawError}`.slice(0, 500),
+          vpnType: null,
+          connectedClients: 0,
+          perClientClients: false,
+          checkedAt: new Date().toISOString(),
+        }
+      : interpretPortalProbe(info, mode);
+    const detectedMode: WireguardPortalMode =
+      snapshot.perClientClients ? "per-client" : mode;
+    const reportedState = withPortalSnapshot(
+      device.reportedState,
+      snapshot,
+      detectedMode,
+    );
+    const previousSnapshot = readPortalSnapshot(device.reportedState);
+    const snapshotChanged =
+      previousSnapshot?.state !== snapshot.state ||
+      previousSnapshot?.error !== snapshot.error ||
+      previousSnapshot?.connectedClients !== snapshot.connectedClients ||
+      previousSnapshot?.perClientClients !== snapshot.perClientClients ||
+      (device.reportedState as Record<string, unknown>).wgPortalMode !== detectedMode;
+    if (snapshotChanged) {
+      await updateDevice(this.options.db, device.id, { reportedState });
+      device.reportedState = reportedState;
+    }
+
+    if (detectedMode !== "per-client") {
+      if (snapshotChanged) {
+        this.publish(device.orgId, device.networkId, {
+          hubDeviceId: device.id,
+          reason: "status",
+        });
+      }
+      return;
+    }
+    const rows = await listWireguardClientsForHub(this.options.db, device.id);
+    if (rows.length === 0) {
+      if (snapshotChanged) {
+        this.publish(device.orgId, device.networkId, {
+          hubDeviceId: device.id,
+          reason: "status",
+        });
+      }
       return;
     }
     if (!info) return;

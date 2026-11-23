@@ -23,14 +23,31 @@ import {
   CONFIG_PERMISSION_READ_ONLY,
 } from "../domain/desired-config.js";
 import {
+  desiredFingerprint,
+  nextDriftState,
+  readDriftState,
+  shouldBackOff,
+  shortFingerprint,
+  withoutDriftState,
+} from "../domain/drift.js";
+import {
+  buildVpnPortalConfig,
+  isPortalApplyError,
+  portalModeForDevice,
+  readPortalApplyError,
+  readPortalSnapshot,
+  withoutPortalApplyError,
+  withPortalApplyError,
+  type WireguardPortalMode,
+} from "../domain/wireguard.js";
+import {
   buildManagedCredentials,
   effectiveRole,
   type CredentialMaterial,
 } from "../domain/credentials.js";
-import { formatIpv4, parseIpv4 } from "../domain/ip.js";
+import { cidrPrefix, formatIpv4, parseIpv4 } from "../domain/ip.js";
 import { effectiveHubEndpoints, effectiveListenerUrls } from "../domain/hub.js";
 import { compilePeerUrls } from "../domain/peers.js";
-import { buildVpnPortalConfig } from "../domain/wireguard.js";
 import { tagGroupName } from "../domain/policy/resolve.js";
 import {
   acceptedRoutesFor,
@@ -166,6 +183,10 @@ export class PushService {
   private readonly inFlight = new Map<string, Promise<PushResult>>();
   private readonly queued = new Set<string>();
   private readonly lastReportAt = new Map<string, number>();
+  /** Last config-server session seen per device; a change means a reconnect. */
+  private readonly lastSessionByDevice = new Map<string, string>();
+  /** Throttles the drift log: one info line per fingerprint + attempt. */
+  private readonly lastLoggedDrift = new Map<string, string>();
   private timer: NodeJS.Timeout | undefined;
   private stopped = true;
 
@@ -217,6 +238,17 @@ export class PushService {
   }
 
   /**
+   * Operator "retry now": clears the drift backoff (so the next attempt is
+   * immediate instead of waiting up to 15 minutes) and converges. Used by the
+   * manual push endpoint and the inline notice in the UI.
+   */
+  async retry(deviceId: string): Promise<PushResult> {
+    await this.clearDrift(deviceId, "manual retry");
+    await this.clearPortalRejection(deviceId);
+    return this.ensure(deviceId);
+  }
+
+  /**
    * One push per device at a time. A caller that arrives during a push joins it
    * and marks a follow-up run, so the newest revision is never dropped.
    */
@@ -254,6 +286,19 @@ export class PushService {
     }
     const client = this.options.sessions.get(deviceId);
     if (!client) return { status: "skipped", reason: "offline" };
+
+    // A reconnect resets the drift schedule: the client may have been
+    // upgraded, restarted with a new config or fixed by the operator. Without
+    // this, a device that reconnects right after a drift stays silent for up
+    // to 15 minutes.
+    const previousSession = this.lastSessionByDevice.get(deviceId);
+    if (previousSession !== client.id) {
+      this.lastSessionByDevice.set(deviceId, client.id);
+      if (previousSession !== undefined) {
+        await this.clearDrift(deviceId, "device reconnected");
+        device.reportedState = withoutDriftState(device.reportedState);
+      }
+    }
 
     if (
       isConfigReadOnly(device.reportedState) &&
@@ -312,7 +357,22 @@ export class PushService {
               latest.config,
               latest.policyVersion,
             );
-            if (configMatchesDesired(reported.config, desired)) {
+            if (configMatchesDesired(reported.config, desired.config)) {
+              if (readDriftState(device.reportedState)) {
+                await this.clearDrift(deviceId, "config matches desired");
+                device.reportedState = withoutDriftState(device.reportedState);
+              }
+              // A device that echoes our per-client portal back is a newer
+              // build even if its version string is missing/garbled; remember
+              // that so the UI and the client endpoints stop treating it as
+              // legacy.
+              if (
+                desired.config.vpnPortalConfig !== undefined &&
+                reported.config?.vpnPortalConfig !== undefined &&
+                portalModeForDevice(device) !== "per-client"
+              ) {
+                await this.persistPortalMode(device, "per-client");
+              }
               await this.collectReport(device, client);
               this.options.metrics?.inc(METRIC_NAMES.pushes, { status: "in-sync" });
               return {
@@ -320,9 +380,27 @@ export class PushService {
                 revision: latest.revision,
               };
             }
-            this.options.logger.debug("config differs; repushing", {
-              deviceId,
-              mismatch: describeConfigMismatch(reported.config, desired),
+            const driftReasons = describeConfigMismatch(
+              reported.config,
+              desired.config,
+            );
+            const fingerprint = desiredFingerprint(desired.config);
+            const drift = readDriftState(device.reportedState);
+            const now = new Date();
+            if (shouldBackOff(drift, fingerprint, now)) {
+              this.logDrift(deviceId, drift!, fingerprint, "backoff");
+              this.options.metrics?.inc(METRIC_NAMES.pushes, { status: "backoff" });
+              return {
+                status: "skipped",
+                reason: `config drift; next retry at ${drift!.nextRetryAt}`,
+                revision: latest.revision,
+              };
+            }
+            return this.doPush(deviceId, {
+              drift: {
+                fingerprint,
+                reason: driftReasons.join("; ").slice(0, 1000),
+              },
             });
           }
         }
@@ -341,8 +419,7 @@ export class PushService {
     network: Network,
     rawConfig: Record<string, unknown>,
     policyVersion: number | null,
-  ): Promise<manage.NetworkConfig> {
-    const [approvedRoutes, deviceRoutes, compiledAcl, peerRecords] = await Promise.all([
+  ): Promise<{ config: manage.NetworkConfig; portalFingerprint: string | null }> {    const [approvedRoutes, deviceRoutes, compiledAcl, peerRecords] = await Promise.all([
       approvedRoutesForNetwork(this.options.db, network.id),
       listDeviceRoutes(this.options.db, device.id),
       this.aclFor(network, device, policyVersion),
@@ -392,8 +469,35 @@ export class PushService {
         ? (this.options.rendezvousEndpoints ?? [])
         : [],
     });
-    const vpnPortal = await this.vpnPortalConfigFor(device, compiledAcl);
-    return this.buildConfig(
+    // WireGuard portal settings are only expressible from EasyTier 2.7.0 on.
+    // 2.6.x has no `vpn_portal_config` field in NetworkConfig at all, so
+    // pushing one produces permanent "drift" and an endless repush (prod h-1,
+    // 2.6.4-8428a89d). Its portal is configured on the device
+    // (`--vpn-portal wg://host:port/<client CIDR>`) and only read back here.
+    const portalMode: WireguardPortalMode = device.isHub
+      ? portalModeForDevice(device)
+      : "legacy";
+    if (device.isHub && device.wgListenPort !== null && portalMode !== "per-client") {
+      this.logLegacyPortalOnce(device, portalMode);
+    }
+    // A probe that proved the build has no WireGuard support (`vpn_type =
+    // "null"`) means pushing the field can never converge: stop sending it
+    // instead of drifting forever. The probe re-adds it as soon as the device
+    // reports a working portal (e.g. after an upgrade).
+    const portalUnsupported =
+      readPortalSnapshot(device.reportedState)?.state === "unsupported";
+    // EasyTier >= 2.7.0 validates each client's `virtual_ip` as an Ipv4Inet:
+    // a bare address becomes a /32 whose first and last address are the client
+    // itself, so the portal refuses to start ("has an unusable virtual IP").
+    // The prefix must be the virtual network's prefix.
+    const networkPrefixLength =
+      normalizeDesiredConfig(rawConfig).networkLength ??
+      cidrPrefix(network.ipv4Cidr);
+    const vpnPortal =
+      portalMode === "per-client" && !portalUnsupported
+        ? await this.vpnPortalConfigFor(device, compiledAcl, networkPrefixLength)
+        : undefined;
+    const config = this.buildConfig(
       device,
       network,
       rawConfig,
@@ -405,6 +509,16 @@ export class PushService {
       { managedCredentials, memberCredentialSecret, role },
       vpnPortal,
     );
+    if (!vpnPortal) return { config, portalFingerprint: null };
+    const portalFingerprint = desiredFingerprint(config);
+    // The device rejected this exact portal config before. Keep our rows and
+    // the network running: push the same config without the portal field.
+    const rejected = readPortalApplyError(device.reportedState);
+    if (rejected?.fingerprint === portalFingerprint) {
+      const { vpnPortalConfig: _omitted, ...rest } = config;
+      return { config: rest as manage.NetworkConfig, portalFingerprint };
+    }
+    return { config, portalFingerprint };
   }
 
   /**
@@ -416,6 +530,7 @@ export class PushService {
   private async vpnPortalConfigFor(
     device: Device,
     compiledAcl: acl.Acl | undefined,
+    networkPrefixLength: number,
   ): Promise<manage.VpnPortalConfig | undefined> {
     if (!device.isHub || device.wgListenPort === null) return undefined;
     if (!device.wgPrivateKeyCiphertext) return undefined;
@@ -427,6 +542,7 @@ export class PushService {
       {
         listenPort: device.wgListenPort,
         privateKey: this.options.secretBox.decrypt(device.wgPrivateKeyCiphertext),
+        networkPrefixLength,
       },
       clients.map((client) => ({
         name: client.name,
@@ -528,7 +644,10 @@ export class PushService {
     }
   }
 
-  private async doPush(deviceId: string): Promise<PushResult> {
+  private async doPush(
+    deviceId: string,
+    options: { drift?: { fingerprint: string; reason: string } } = {},
+  ): Promise<PushResult> {
     const device = await getDeviceById(this.options.db, deviceId);
     if (!device) return { status: "skipped", reason: "device not found" };
     if (device.state !== "approved") {
@@ -558,9 +677,9 @@ export class PushService {
     const latest = revisions[0];
     if (!latest) return { status: "skipped", reason: "no desired config" };
 
-    let config: manage.NetworkConfig;
+    let desired: { config: manage.NetworkConfig; portalFingerprint: string | null };
     try {
-      config = await this.desiredConfigFor(
+      desired = await this.desiredConfigFor(
         device,
         network,
         latest.config,
@@ -571,7 +690,129 @@ export class PushService {
       await this.recordFailure(device, message);
       return { status: "error", reason: message, revision: latest.revision };
     }
+    const config = desired.config;
+    const fingerprint = desiredFingerprint(config);
+    // A previous attempt for this exact config failed on the device (an apply
+    // error, not a silent mismatch). Honour the backoff instead of hammering;
+    // the manual retry clears it. A desired change produces a new fingerprint
+    // and is attempted immediately.
+    const drift = readDriftState(device.reportedState);
+    if (!options.drift && shouldBackOff(drift, fingerprint, new Date())) {
+      this.logDrift(deviceId, drift!, fingerprint, "backoff");
+      this.options.metrics?.inc(METRIC_NAMES.pushes, { status: "backoff" });
+      return {
+        status: "skipped",
+        reason: `config drift; next retry at ${drift!.nextRetryAt}`,
+        revision: latest.revision,
+      };
+    }
 
+    let applied = await this.applyConfig(client, instanceId, config);
+    let portalFallback = false;
+    if (
+      !applied.ok &&
+      config.vpnPortalConfig !== undefined &&
+      isPortalApplyError(applied.error)
+    ) {
+      // The device rejected the portal part of the config and the whole
+      // instance failed to start. Record its exact message, then push the same
+      // config without the portal once so the network keeps running.
+      await this.recordPortalRejection(device, applied.error, fingerprint);
+      const { vpnPortalConfig: _omitted, ...rest } = config;
+      applied = await this.applyConfig(
+        client,
+        instanceId,
+        rest as manage.NetworkConfig,
+      );
+      portalFallback = true;
+      if (applied.ok) {
+        this.options.logger.warn(
+          "hub rejected the WireGuard portal config; repushed without the portal",
+          { deviceId, revision: latest.revision },
+        );
+      }
+    }
+    if (!applied.ok) {
+      const message = applied.error;
+      if (/is read-only/i.test(message)) {
+        await this.markConfigReadOnly(device, message);
+        return {
+          status: "skipped",
+          reason: "config is locally managed (read-only)",
+          revision: latest.revision,
+        };
+      }
+      await this.recordFailure(device, message, fingerprint);
+      await this.options.audit.record({
+        orgId: device.orgId,
+        actorType: "system",
+        action: "device.config.push_failed",
+        targetType: "device",
+        targetId: device.id,
+        metadata: { revision: latest.revision, error: message.slice(0, 500) },
+      });
+      return {
+        status: "error",
+        reason: message,
+        revision: latest.revision,
+      };
+    }
+
+    const now = new Date();
+    let reportedState = device.reportedState;
+    if (options.drift) {
+      // The client kept reporting a different config after the previous push.
+      // Schedule the next attempt with exponential backoff instead of
+      // repushing every reconcile tick.
+      const next = nextDriftState(drift, {
+        fingerprint: options.drift.fingerprint,
+        reason: options.drift.reason,
+        now,
+      });
+      reportedState = { ...reportedState, drift: next };
+      this.logDrift(deviceId, next, next.fingerprint, "observed");
+    }
+    await updateDevice(this.options.db, device.id, {
+      appliedRevision: latest.revision,
+      appliedAt: now,
+      lastPushAt: now,
+      lastPushError: null,
+      manualRoutesEnforcedAt: now,
+      ...(reportedState !== device.reportedState ? { reportedState } : {}),
+    });
+    await this.options.audit.record({
+      orgId: device.orgId,
+      actorType: "system",
+      action: portalFallback
+        ? "device.config.pushed_without_wireguard_portal"
+        : "device.config.pushed",
+      targetType: "device",
+      targetId: device.id,
+      metadata: { revision: latest.revision, instanceId, portalFallback },
+    });
+    this.options.logger.info("config pushed", {
+      deviceId,
+      revision: latest.revision,
+      instanceId,
+      ...(portalFallback ? { portalFallback: true } : {}),
+    });
+    this.options.metrics?.inc(METRIC_NAMES.pushes, {
+      status: portalFallback ? "pushed-without-portal" : "pushed",
+    });
+    await this.notifyChanged(deviceId, "config-pushed");
+    return { status: "pushed", revision: latest.revision };
+  }
+
+  /**
+   * `RunNetworkInstance` + wait for the instance to report running. Returns the
+   * device's own error text (exactly as reported) instead of throwing, so the
+   * caller can distinguish a portal rejection from a transport failure.
+   */
+  private async applyConfig(
+    client: ManagedClient,
+    instanceId: string,
+    config: manage.NetworkConfig,
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
     try {
       await client.remote.runNetworkInstance({
         instId: instanceId,
@@ -581,74 +822,36 @@ export class PushService {
         timeoutMs: 20_000,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (/is read-only/i.test(message)) {
-        await this.markConfigReadOnly(device, message);
-        return {
-          status: "skipped",
-          reason: "config is locally managed (read-only)",
-          revision: latest.revision,
-        };
-      }
-      await this.recordFailure(device, message);
-      await this.options.audit.record({
-        orgId: device.orgId,
-        actorType: "system",
-        action: "device.config.push_failed",
-        targetType: "device",
-        targetId: device.id,
-        metadata: { revision: latest.revision, error: message.slice(0, 500) },
-      });
-      this.options.logger.warn("config push failed", {
-        deviceId,
-        revision: latest.revision,
-        error: message,
-      });
-      return { status: "error", reason: message, revision: latest.revision };
-    }
-
-    const running = await this.waitForRunning(client, instanceId);
-    if (!running.ok) {
-      await this.recordFailure(device, running.error);
-      await this.options.audit.record({
-        orgId: device.orgId,
-        actorType: "system",
-        action: "device.config.push_failed",
-        targetType: "device",
-        targetId: device.id,
-        metadata: { revision: latest.revision, error: running.error.slice(0, 500) },
-      });
       return {
-        status: "error",
-        reason: running.error,
-        revision: latest.revision,
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
+    return this.waitForRunning(client, instanceId);
+  }
 
-    const now = new Date();
-    await updateDevice(this.options.db, device.id, {
-      appliedRevision: latest.revision,
-      appliedAt: now,
-      lastPushAt: now,
-      lastPushError: null,
-      manualRoutesEnforcedAt: now,
+  /** Persists the device's portal rejection so the same config is not retried. */
+  private async recordPortalRejection(
+    device: Device,
+    message: string,
+    fingerprint: string,
+  ): Promise<void> {
+    const at = new Date().toISOString();
+    const reportedState = withPortalApplyError(device.reportedState, {
+      message: message.slice(0, 2000),
+      fingerprint,
+      at,
     });
+    device.reportedState = reportedState;
+    await updateDevice(this.options.db, device.id, { reportedState });
     await this.options.audit.record({
       orgId: device.orgId,
       actorType: "system",
-      action: "device.config.pushed",
+      action: "device.wireguard_portal.rejected",
       targetType: "device",
       targetId: device.id,
-      metadata: { revision: latest.revision, instanceId },
+      metadata: { error: message.slice(0, 500) },
     });
-    this.options.logger.info("config pushed", {
-      deviceId,
-      revision: latest.revision,
-      instanceId,
-    });
-    this.options.metrics?.inc(METRIC_NAMES.pushes, { status: "pushed" });
-    await this.notifyChanged(deviceId, "config-pushed");
-    return { status: "pushed", revision: latest.revision };
   }
 
   private async waitForRunning(
@@ -737,13 +940,133 @@ export class PushService {
     }
   }
 
-  private async recordFailure(device: Device, message: string): Promise<void> {
+  private async recordFailure(
+    device: Device,
+    message: string,
+    fingerprint?: string,
+  ): Promise<void> {
     this.options.metrics?.inc(METRIC_NAMES.pushes, { status: "failed" });
+    const now = new Date();
+    let reportedState = device.reportedState;
+    if (fingerprint) {
+      // A device-side apply error is persistent until the config or the device
+      // changes: back off instead of re-running a config that fails to start.
+      reportedState = {
+        ...reportedState,
+        drift: nextDriftState(readDriftState(reportedState), {
+          fingerprint,
+          reason: `push failed: ${message}`.slice(0, 1000),
+          now,
+        }),
+      };
+    }
     await updateDevice(this.options.db, device.id, {
       lastPushError: message.slice(0, 2000),
-      lastPushAt: new Date(),
+      lastPushAt: now,
+      ...(reportedState !== device.reportedState ? { reportedState } : {}),
+    });
+    this.options.logger.warn("config push failed", {
+      deviceId: device.id,
+      error: message.slice(0, 300),
     });
     await this.notifyChanged(device.id, "config-push-failed");
+  }
+
+  /** Clears the "device rejected the portal" marker (manual retry only). */
+  private async clearPortalRejection(deviceId: string): Promise<void> {
+    const device = await getDeviceById(this.options.db, deviceId);
+    if (!device) return;
+    const reportedState = withoutPortalApplyError(device.reportedState);
+    if (reportedState === device.reportedState) return;
+    device.reportedState = reportedState;
+    await updateDevice(this.options.db, device.id, { reportedState });
+    this.options.logger.info("WireGuard portal rejection cleared for retry", {
+      deviceId,
+    });
+  }
+
+  /**
+   * Info-level, throttled drift log: the first observation and every change of
+   * the mismatch reasons/attempt is worth an operator line; repeating it every
+   * reconcile tick is not. The reasons never contain a secret.
+   */
+  private logDrift(
+    deviceId: string,
+    state: { reason: string; attempts: number; nextRetryAt: string },
+    fingerprint: string,
+    phase: "observed" | "backoff",
+  ): void {
+    const key = `${fingerprint}:${state.attempts}:${phase}`;
+    if (this.lastLoggedDrift.get(deviceId) === key) return;
+    this.lastLoggedDrift.set(deviceId, key);
+    this.options.logger.info(
+      phase === "backoff" ? "config drift persists; push backed off" : "config drift detected",
+      {
+        deviceId,
+        desiredFingerprint: shortFingerprint(fingerprint),
+        attempts: state.attempts,
+        nextRetryAt: state.nextRetryAt,
+        mismatch: state.reason,
+      },
+    );
+  }
+
+  /** Removes the drift record (converged, desired changed, reconnect, retry). */
+  private async clearDrift(deviceId: string, reason: string): Promise<void> {
+    const device = await getDeviceById(this.options.db, deviceId);
+    if (!device) return;
+    const drift = readDriftState(device.reportedState);
+    if (!drift) {
+      this.lastLoggedDrift.delete(deviceId);
+      return;
+    }
+    const reportedState = withoutDriftState(device.reportedState);
+    await updateDevice(this.options.db, device.id, { reportedState });
+    this.lastLoggedDrift.delete(deviceId);
+    this.options.logger.info("config drift cleared", {
+      deviceId,
+      reason,
+      attempts: drift.attempts,
+    });
+  }
+
+  /**
+   * One info line per generation change: the operator needs to know why the
+   * panel is not pushing a portal to this hub instead of debugging a silent
+   * no-op (2.6.x cannot receive `vpn_portal_config` at all).
+   */
+  private logLegacyPortalOnce(device: Device, mode: WireguardPortalMode): void {
+    const key = `portal-mode:${mode}`;
+    if (this.lastLoggedDrift.get(device.id) === key) return;
+    this.lastLoggedDrift.set(device.id, key);
+    this.options.logger.info(
+      "hub uses the legacy WireGuard portal; per-client portal is not pushed",
+      {
+        deviceId: device.id,
+        easytierVersion: device.easytierVersion,
+        mode,
+        hint:
+          mode === "legacy"
+            ? "configure --vpn-portal on the device; the panel reads the shared client config back"
+            : "the reported EasyTier version could not be parsed; per-client portal is disabled",
+      },
+    );
+  }
+
+  /** Records a detected portal generation on the device (no secret). */
+  private async persistPortalMode(
+    device: Device,
+    mode: "per-client" | "legacy",
+  ): Promise<void> {
+    if (device.reportedState.wgPortalMode === mode) return;
+    const reportedState = { ...device.reportedState, wgPortalMode: mode };
+    device.reportedState = reportedState;
+    await updateDevice(this.options.db, device.id, { reportedState });
+    this.options.logger.info("WireGuard portal generation detected", {
+      deviceId: device.id,
+      mode,
+      easytierVersion: device.easytierVersion,
+    });
   }
 
   private async notifyChanged(deviceId: string, reason: string): Promise<void> {

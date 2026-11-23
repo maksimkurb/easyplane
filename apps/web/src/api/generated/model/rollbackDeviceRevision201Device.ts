@@ -15,6 +15,8 @@ import type { RollbackDeviceRevision201DeviceReportedState } from './rollbackDev
 import type { RollbackDeviceRevision201DeviceRole } from './rollbackDeviceRevision201DeviceRole';
 import type { RollbackDeviceRevision201DeviceState } from './rollbackDeviceRevision201DeviceState';
 import type { RollbackDeviceRevision201DeviceSync } from './rollbackDeviceRevision201DeviceSync';
+import type { RollbackDeviceRevision201DeviceWgPortalMode } from './rollbackDeviceRevision201DeviceWgPortalMode';
+import type { RollbackDeviceRevision201DeviceWgPortalState } from './rollbackDeviceRevision201DeviceWgPortalState';
 
 export type RollbackDeviceRevision201Device = {
   id: string;
@@ -69,6 +71,22 @@ export type RollbackDeviceRevision201Device = {
      * @maximum 9007199254740991
      */
   wireguardClientCount: number;
+  wgPortalMode: RollbackDeviceRevision201DeviceWgPortalMode;
+  /** WireGuard portal lifecycle state as last observed by the panel */
+  wgPortalState: RollbackDeviceRevision201DeviceWgPortalState;
+  /** @nullable */
+  wgPortalError: string | null;
+  /** @nullable */
+  wgLegacyClientCidr: string | null;
+  /** @nullable */
+  driftReason: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  driftAttempts: number;
+  /** @nullable */
+  driftRetryAt: string | null;
   role: RollbackDeviceRevision201DeviceRole;
   effectiveRole: RollbackDeviceRevision201DeviceEffectiveRole;
   knowsSecret: boolean;

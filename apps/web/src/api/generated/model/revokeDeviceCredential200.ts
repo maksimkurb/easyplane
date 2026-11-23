@@ -15,6 +15,8 @@ import type { RevokeDeviceCredential200ReportedState } from './revokeDeviceCrede
 import type { RevokeDeviceCredential200Role } from './revokeDeviceCredential200Role';
 import type { RevokeDeviceCredential200State } from './revokeDeviceCredential200State';
 import type { RevokeDeviceCredential200Sync } from './revokeDeviceCredential200Sync';
+import type { RevokeDeviceCredential200WgPortalMode } from './revokeDeviceCredential200WgPortalMode';
+import type { RevokeDeviceCredential200WgPortalState } from './revokeDeviceCredential200WgPortalState';
 
 export type RevokeDeviceCredential200 = {
   id: string;
@@ -69,6 +71,22 @@ export type RevokeDeviceCredential200 = {
      * @maximum 9007199254740991
      */
   wireguardClientCount: number;
+  wgPortalMode: RevokeDeviceCredential200WgPortalMode;
+  /** WireGuard portal lifecycle state as last observed by the panel */
+  wgPortalState: RevokeDeviceCredential200WgPortalState;
+  /** @nullable */
+  wgPortalError: string | null;
+  /** @nullable */
+  wgLegacyClientCidr: string | null;
+  /** @nullable */
+  driftReason: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  driftAttempts: number;
+  /** @nullable */
+  driftRetryAt: string | null;
   role: RevokeDeviceCredential200Role;
   effectiveRole: RevokeDeviceCredential200EffectiveRole;
   knowsSecret: boolean;

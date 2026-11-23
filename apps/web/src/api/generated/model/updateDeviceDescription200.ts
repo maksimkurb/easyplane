@@ -15,6 +15,8 @@ import type { UpdateDeviceDescription200ReportedState } from './updateDeviceDesc
 import type { UpdateDeviceDescription200Role } from './updateDeviceDescription200Role';
 import type { UpdateDeviceDescription200State } from './updateDeviceDescription200State';
 import type { UpdateDeviceDescription200Sync } from './updateDeviceDescription200Sync';
+import type { UpdateDeviceDescription200WgPortalMode } from './updateDeviceDescription200WgPortalMode';
+import type { UpdateDeviceDescription200WgPortalState } from './updateDeviceDescription200WgPortalState';
 
 export type UpdateDeviceDescription200 = {
   id: string;
@@ -69,6 +71,22 @@ export type UpdateDeviceDescription200 = {
      * @maximum 9007199254740991
      */
   wireguardClientCount: number;
+  wgPortalMode: UpdateDeviceDescription200WgPortalMode;
+  /** WireGuard portal lifecycle state as last observed by the panel */
+  wgPortalState: UpdateDeviceDescription200WgPortalState;
+  /** @nullable */
+  wgPortalError: string | null;
+  /** @nullable */
+  wgLegacyClientCidr: string | null;
+  /** @nullable */
+  driftReason: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  driftAttempts: number;
+  /** @nullable */
+  driftRetryAt: string | null;
   role: UpdateDeviceDescription200Role;
   effectiveRole: UpdateDeviceDescription200EffectiveRole;
   knowsSecret: boolean;

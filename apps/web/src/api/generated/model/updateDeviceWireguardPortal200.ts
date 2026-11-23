@@ -5,6 +5,7 @@
  * Control plane for EasyTier. Session-cookie authenticated; state-changing requests require the X-CSRF-Token header.
  * OpenAPI spec version: 0.3.0-M3
  */
+import type { UpdateDeviceWireguardPortal200Mode } from './updateDeviceWireguardPortal200Mode';
 
 export type UpdateDeviceWireguardPortal200 = {
   enabled: boolean;
@@ -19,4 +20,7 @@ export type UpdateDeviceWireguardPortal200 = {
      * @maximum 9007199254740991
      */
   clientCount: number;
+  mode: UpdateDeviceWireguardPortal200Mode;
+  /** @nullable */
+  legacyClientCidr: string | null;
 };

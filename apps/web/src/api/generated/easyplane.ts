@@ -72,6 +72,7 @@ import type {
   GetDevice200,
   GetDeviceTopology200,
   GetDeviceTopologyParams,
+  GetDeviceWireguardPortalConfig200,
   GetMe200,
   GetNetwork200,
   GetNetworkPolicy200,
@@ -8178,6 +8179,218 @@ export function useDownloadWireguardClientConfig<TData = Awaited<ReturnType<type
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getDownloadWireguardClientConfigQueryOptions(clientId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getDeviceWireguardPortalConfigResponse200 = {
+  data: GetDeviceWireguardPortalConfig200
+  status: 200
+}
+
+export type getDeviceWireguardPortalConfigResponseSuccess = (getDeviceWireguardPortalConfigResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getDeviceWireguardPortalConfigResponse = (getDeviceWireguardPortalConfigResponseSuccess)
+
+export const getGetDeviceWireguardPortalConfigUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/devices/${deviceId}/wireguard-portal/config`
+}
+
+export const getDeviceWireguardPortalConfig = async (deviceId: string, options?: Parameters<typeof apiFetch>[1]): Promise<getDeviceWireguardPortalConfigResponse> => {
+
+  return apiFetch<getDeviceWireguardPortalConfigResponse>(getGetDeviceWireguardPortalConfigUrl(deviceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDeviceWireguardPortalConfigQueryKey = (deviceId: string,) => {
+    return [
+    `/api/devices/${deviceId}/wireguard-portal/config`
+    ] as const;
+    }
+
+
+export const getGetDeviceWireguardPortalConfigQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>, TError = unknown>(deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDeviceWireguardPortalConfigQueryKey(deviceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>> = ({ signal }) => getDeviceWireguardPortalConfig(deviceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: deviceId !== null && deviceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetDeviceWireguardPortalConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>>
+export type GetDeviceWireguardPortalConfigQueryError = unknown
+
+
+export function useGetDeviceWireguardPortalConfig<TData = Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>, TError = unknown>(
+ deviceId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceWireguardPortalConfig<TData = Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>, TError = unknown>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceWireguardPortalConfig<TData = Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>, TError = unknown>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceWireguardPortalConfig<TData = Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>, TError = unknown>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceWireguardPortalConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetDeviceWireguardPortalConfigQueryOptions(deviceId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type downloadDeviceWireguardPortalConfigResponse200 = {
+  data: string
+  status: 200
+}
+
+export type downloadDeviceWireguardPortalConfigResponseSuccess = (downloadDeviceWireguardPortalConfigResponse200) & {
+  headers: Headers;
+};
+;
+
+export type downloadDeviceWireguardPortalConfigResponse = (downloadDeviceWireguardPortalConfigResponseSuccess)
+
+export const getDownloadDeviceWireguardPortalConfigUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/devices/${deviceId}/wireguard-portal/config/download`
+}
+
+export const downloadDeviceWireguardPortalConfig = async (deviceId: string, options?: Parameters<typeof apiFetch>[1]): Promise<downloadDeviceWireguardPortalConfigResponse> => {
+
+  return apiFetch<downloadDeviceWireguardPortalConfigResponse>(getDownloadDeviceWireguardPortalConfigUrl(deviceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadDeviceWireguardPortalConfigQueryKey = (deviceId: string,) => {
+    return [
+    `/api/devices/${deviceId}/wireguard-portal/config/download`
+    ] as const;
+    }
+
+
+export const getDownloadDeviceWireguardPortalConfigQueryOptions = <TData = Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>, TError = unknown>(deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadDeviceWireguardPortalConfigQueryKey(deviceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>> = ({ signal }) => downloadDeviceWireguardPortalConfig(deviceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: deviceId !== null && deviceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type DownloadDeviceWireguardPortalConfigQueryResult = NonNullable<Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>>
+export type DownloadDeviceWireguardPortalConfigQueryError = unknown
+
+
+export function useDownloadDeviceWireguardPortalConfig<TData = Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>, TError = unknown>(
+ deviceId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>,
+          TError,
+          Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadDeviceWireguardPortalConfig<TData = Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>, TError = unknown>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>,
+          TError,
+          Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadDeviceWireguardPortalConfig<TData = Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>, TError = unknown>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadDeviceWireguardPortalConfig<TData = Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>, TError = unknown>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadDeviceWireguardPortalConfig>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDownloadDeviceWireguardPortalConfigQueryOptions(deviceId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

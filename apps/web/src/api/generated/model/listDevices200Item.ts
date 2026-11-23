@@ -15,6 +15,8 @@ import type { ListDevices200ItemReportedState } from './listDevices200ItemReport
 import type { ListDevices200ItemRole } from './listDevices200ItemRole';
 import type { ListDevices200ItemState } from './listDevices200ItemState';
 import type { ListDevices200ItemSync } from './listDevices200ItemSync';
+import type { ListDevices200ItemWgPortalMode } from './listDevices200ItemWgPortalMode';
+import type { ListDevices200ItemWgPortalState } from './listDevices200ItemWgPortalState';
 
 export type ListDevices200Item = {
   id: string;
@@ -69,6 +71,22 @@ export type ListDevices200Item = {
      * @maximum 9007199254740991
      */
   wireguardClientCount: number;
+  wgPortalMode: ListDevices200ItemWgPortalMode;
+  /** WireGuard portal lifecycle state as last observed by the panel */
+  wgPortalState: ListDevices200ItemWgPortalState;
+  /** @nullable */
+  wgPortalError: string | null;
+  /** @nullable */
+  wgLegacyClientCidr: string | null;
+  /** @nullable */
+  driftReason: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  driftAttempts: number;
+  /** @nullable */
+  driftRetryAt: string | null;
   role: ListDevices200ItemRole;
   effectiveRole: ListDevices200ItemEffectiveRole;
   knowsSecret: boolean;

@@ -15,6 +15,8 @@ import type { SetDeviceTags200ReportedState } from './setDeviceTags200ReportedSt
 import type { SetDeviceTags200Role } from './setDeviceTags200Role';
 import type { SetDeviceTags200State } from './setDeviceTags200State';
 import type { SetDeviceTags200Sync } from './setDeviceTags200Sync';
+import type { SetDeviceTags200WgPortalMode } from './setDeviceTags200WgPortalMode';
+import type { SetDeviceTags200WgPortalState } from './setDeviceTags200WgPortalState';
 
 export type SetDeviceTags200 = {
   id: string;
@@ -69,6 +71,22 @@ export type SetDeviceTags200 = {
      * @maximum 9007199254740991
      */
   wireguardClientCount: number;
+  wgPortalMode: SetDeviceTags200WgPortalMode;
+  /** WireGuard portal lifecycle state as last observed by the panel */
+  wgPortalState: SetDeviceTags200WgPortalState;
+  /** @nullable */
+  wgPortalError: string | null;
+  /** @nullable */
+  wgLegacyClientCidr: string | null;
+  /** @nullable */
+  driftReason: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  driftAttempts: number;
+  /** @nullable */
+  driftRetryAt: string | null;
   role: SetDeviceTags200Role;
   effectiveRole: SetDeviceTags200EffectiveRole;
   knowsSecret: boolean;

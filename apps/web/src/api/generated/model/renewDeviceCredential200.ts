@@ -15,6 +15,8 @@ import type { RenewDeviceCredential200ReportedState } from './renewDeviceCredent
 import type { RenewDeviceCredential200Role } from './renewDeviceCredential200Role';
 import type { RenewDeviceCredential200State } from './renewDeviceCredential200State';
 import type { RenewDeviceCredential200Sync } from './renewDeviceCredential200Sync';
+import type { RenewDeviceCredential200WgPortalMode } from './renewDeviceCredential200WgPortalMode';
+import type { RenewDeviceCredential200WgPortalState } from './renewDeviceCredential200WgPortalState';
 
 export type RenewDeviceCredential200 = {
   id: string;
@@ -69,6 +71,22 @@ export type RenewDeviceCredential200 = {
      * @maximum 9007199254740991
      */
   wireguardClientCount: number;
+  wgPortalMode: RenewDeviceCredential200WgPortalMode;
+  /** WireGuard portal lifecycle state as last observed by the panel */
+  wgPortalState: RenewDeviceCredential200WgPortalState;
+  /** @nullable */
+  wgPortalError: string | null;
+  /** @nullable */
+  wgLegacyClientCidr: string | null;
+  /** @nullable */
+  driftReason: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  driftAttempts: number;
+  /** @nullable */
+  driftRetryAt: string | null;
   role: RenewDeviceCredential200Role;
   effectiveRole: RenewDeviceCredential200EffectiveRole;
   knowsSecret: boolean;

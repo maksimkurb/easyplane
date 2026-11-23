@@ -4617,6 +4617,46 @@
                         "minimum": -9007199254740991,
                         "maximum": 9007199254740991
                       },
+                      "wgPortalMode": {
+                        "type": "string",
+                        "enum": [
+                          "per-client",
+                          "legacy",
+                          "unknown"
+                        ]
+                      },
+                      "wgPortalState": {
+                        "type": "string",
+                        "enum": [
+                          "disabled",
+                          "starting",
+                          "running",
+                          "unsupported",
+                          "error"
+                        ],
+                        "description": "WireGuard portal lifecycle state as last observed by the panel"
+                      },
+                      "wgPortalError": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "wgLegacyClientCidr": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "driftReason": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "driftAttempts": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "driftRetryAt": {
+                        "nullable": true,
+                        "type": "string"
+                      },
                       "role": {
                         "type": "string",
                         "enum": [
@@ -4816,6 +4856,13 @@
                       "isHub",
                       "wgListenPort",
                       "wireguardClientCount",
+                      "wgPortalMode",
+                      "wgPortalState",
+                      "wgPortalError",
+                      "wgLegacyClientCidr",
+                      "driftReason",
+                      "driftAttempts",
+                      "driftRetryAt",
                       "role",
                       "effectiveRole",
                       "knowsSecret",
@@ -5007,6 +5054,46 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
+                    },
+                    "wgPortalMode": {
+                      "type": "string",
+                      "enum": [
+                        "per-client",
+                        "legacy",
+                        "unknown"
+                      ]
+                    },
+                    "wgPortalState": {
+                      "type": "string",
+                      "enum": [
+                        "disabled",
+                        "starting",
+                        "running",
+                        "unsupported",
+                        "error"
+                      ],
+                      "description": "WireGuard portal lifecycle state as last observed by the panel"
+                    },
+                    "wgPortalError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "wgLegacyClientCidr": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftReason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftAttempts": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "driftRetryAt": {
+                      "nullable": true,
+                      "type": "string"
                     },
                     "role": {
                       "type": "string",
@@ -5207,6 +5294,13 @@
                     "isHub",
                     "wgListenPort",
                     "wireguardClientCount",
+                    "wgPortalMode",
+                    "wgPortalState",
+                    "wgPortalError",
+                    "wgLegacyClientCidr",
+                    "driftReason",
+                    "driftAttempts",
+                    "driftRetryAt",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -5473,6 +5567,46 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "wgPortalMode": {
+                      "type": "string",
+                      "enum": [
+                        "per-client",
+                        "legacy",
+                        "unknown"
+                      ]
+                    },
+                    "wgPortalState": {
+                      "type": "string",
+                      "enum": [
+                        "disabled",
+                        "starting",
+                        "running",
+                        "unsupported",
+                        "error"
+                      ],
+                      "description": "WireGuard portal lifecycle state as last observed by the panel"
+                    },
+                    "wgPortalError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "wgLegacyClientCidr": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftReason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftAttempts": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "driftRetryAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -5672,6 +5806,13 @@
                     "isHub",
                     "wgListenPort",
                     "wireguardClientCount",
+                    "wgPortalMode",
+                    "wgPortalState",
+                    "wgPortalError",
+                    "wgLegacyClientCidr",
+                    "driftReason",
+                    "driftAttempts",
+                    "driftRetryAt",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -5880,6 +6021,46 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "wgPortalMode": {
+                      "type": "string",
+                      "enum": [
+                        "per-client",
+                        "legacy",
+                        "unknown"
+                      ]
+                    },
+                    "wgPortalState": {
+                      "type": "string",
+                      "enum": [
+                        "disabled",
+                        "starting",
+                        "running",
+                        "unsupported",
+                        "error"
+                      ],
+                      "description": "WireGuard portal lifecycle state as last observed by the panel"
+                    },
+                    "wgPortalError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "wgLegacyClientCidr": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftReason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftAttempts": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "driftRetryAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -6079,6 +6260,13 @@
                     "isHub",
                     "wgListenPort",
                     "wireguardClientCount",
+                    "wgPortalMode",
+                    "wgPortalState",
+                    "wgPortalError",
+                    "wgLegacyClientCidr",
+                    "driftReason",
+                    "driftAttempts",
+                    "driftRetryAt",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -6270,6 +6458,46 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "wgPortalMode": {
+                      "type": "string",
+                      "enum": [
+                        "per-client",
+                        "legacy",
+                        "unknown"
+                      ]
+                    },
+                    "wgPortalState": {
+                      "type": "string",
+                      "enum": [
+                        "disabled",
+                        "starting",
+                        "running",
+                        "unsupported",
+                        "error"
+                      ],
+                      "description": "WireGuard portal lifecycle state as last observed by the panel"
+                    },
+                    "wgPortalError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "wgLegacyClientCidr": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftReason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftAttempts": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "driftRetryAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -6469,6 +6697,13 @@
                     "isHub",
                     "wgListenPort",
                     "wireguardClientCount",
+                    "wgPortalMode",
+                    "wgPortalState",
+                    "wgPortalError",
+                    "wgLegacyClientCidr",
+                    "driftReason",
+                    "driftAttempts",
+                    "driftRetryAt",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -6660,6 +6895,46 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "wgPortalMode": {
+                      "type": "string",
+                      "enum": [
+                        "per-client",
+                        "legacy",
+                        "unknown"
+                      ]
+                    },
+                    "wgPortalState": {
+                      "type": "string",
+                      "enum": [
+                        "disabled",
+                        "starting",
+                        "running",
+                        "unsupported",
+                        "error"
+                      ],
+                      "description": "WireGuard portal lifecycle state as last observed by the panel"
+                    },
+                    "wgPortalError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "wgLegacyClientCidr": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftReason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftAttempts": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "driftRetryAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -6859,6 +7134,13 @@
                     "isHub",
                     "wgListenPort",
                     "wireguardClientCount",
+                    "wgPortalMode",
+                    "wgPortalState",
+                    "wgPortalError",
+                    "wgLegacyClientCidr",
+                    "driftReason",
+                    "driftAttempts",
+                    "driftRetryAt",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -7079,6 +7361,46 @@
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
                         },
+                        "wgPortalMode": {
+                          "type": "string",
+                          "enum": [
+                            "per-client",
+                            "legacy",
+                            "unknown"
+                          ]
+                        },
+                        "wgPortalState": {
+                          "type": "string",
+                          "enum": [
+                            "disabled",
+                            "starting",
+                            "running",
+                            "unsupported",
+                            "error"
+                          ],
+                          "description": "WireGuard portal lifecycle state as last observed by the panel"
+                        },
+                        "wgPortalError": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "wgLegacyClientCidr": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "driftReason": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "driftAttempts": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "driftRetryAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
                         "role": {
                           "type": "string",
                           "enum": [
@@ -7278,6 +7600,13 @@
                         "isHub",
                         "wgListenPort",
                         "wireguardClientCount",
+                        "wgPortalMode",
+                        "wgPortalState",
+                        "wgPortalError",
+                        "wgLegacyClientCidr",
+                        "driftReason",
+                        "driftAttempts",
+                        "driftRetryAt",
                         "role",
                         "effectiveRole",
                         "knowsSecret",
@@ -7553,6 +7882,46 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "wgPortalMode": {
+                      "type": "string",
+                      "enum": [
+                        "per-client",
+                        "legacy",
+                        "unknown"
+                      ]
+                    },
+                    "wgPortalState": {
+                      "type": "string",
+                      "enum": [
+                        "disabled",
+                        "starting",
+                        "running",
+                        "unsupported",
+                        "error"
+                      ],
+                      "description": "WireGuard portal lifecycle state as last observed by the panel"
+                    },
+                    "wgPortalError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "wgLegacyClientCidr": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftReason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftAttempts": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "driftRetryAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -7752,6 +8121,13 @@
                     "isHub",
                     "wgListenPort",
                     "wireguardClientCount",
+                    "wgPortalMode",
+                    "wgPortalState",
+                    "wgPortalError",
+                    "wgLegacyClientCidr",
+                    "driftReason",
+                    "driftAttempts",
+                    "driftRetryAt",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -7964,6 +8340,46 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "wgPortalMode": {
+                      "type": "string",
+                      "enum": [
+                        "per-client",
+                        "legacy",
+                        "unknown"
+                      ]
+                    },
+                    "wgPortalState": {
+                      "type": "string",
+                      "enum": [
+                        "disabled",
+                        "starting",
+                        "running",
+                        "unsupported",
+                        "error"
+                      ],
+                      "description": "WireGuard portal lifecycle state as last observed by the panel"
+                    },
+                    "wgPortalError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "wgLegacyClientCidr": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftReason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftAttempts": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "driftRetryAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -8163,6 +8579,13 @@
                     "isHub",
                     "wgListenPort",
                     "wireguardClientCount",
+                    "wgPortalMode",
+                    "wgPortalState",
+                    "wgPortalError",
+                    "wgLegacyClientCidr",
+                    "driftReason",
+                    "driftAttempts",
+                    "driftRetryAt",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -8394,6 +8817,46 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "wgPortalMode": {
+                      "type": "string",
+                      "enum": [
+                        "per-client",
+                        "legacy",
+                        "unknown"
+                      ]
+                    },
+                    "wgPortalState": {
+                      "type": "string",
+                      "enum": [
+                        "disabled",
+                        "starting",
+                        "running",
+                        "unsupported",
+                        "error"
+                      ],
+                      "description": "WireGuard portal lifecycle state as last observed by the panel"
+                    },
+                    "wgPortalError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "wgLegacyClientCidr": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftReason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftAttempts": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "driftRetryAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -8593,6 +9056,13 @@
                     "isHub",
                     "wgListenPort",
                     "wireguardClientCount",
+                    "wgPortalMode",
+                    "wgPortalState",
+                    "wgPortalError",
+                    "wgLegacyClientCidr",
+                    "driftReason",
+                    "driftAttempts",
+                    "driftRetryAt",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -8979,6 +9449,46 @@
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
                         },
+                        "wgPortalMode": {
+                          "type": "string",
+                          "enum": [
+                            "per-client",
+                            "legacy",
+                            "unknown"
+                          ]
+                        },
+                        "wgPortalState": {
+                          "type": "string",
+                          "enum": [
+                            "disabled",
+                            "starting",
+                            "running",
+                            "unsupported",
+                            "error"
+                          ],
+                          "description": "WireGuard portal lifecycle state as last observed by the panel"
+                        },
+                        "wgPortalError": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "wgLegacyClientCidr": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "driftReason": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "driftAttempts": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "driftRetryAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
                         "role": {
                           "type": "string",
                           "enum": [
@@ -9178,6 +9688,13 @@
                         "isHub",
                         "wgListenPort",
                         "wireguardClientCount",
+                        "wgPortalMode",
+                        "wgPortalState",
+                        "wgPortalError",
+                        "wgLegacyClientCidr",
+                        "driftReason",
+                        "driftAttempts",
+                        "driftRetryAt",
                         "role",
                         "effectiveRole",
                         "knowsSecret",
@@ -9459,6 +9976,46 @@
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
                         },
+                        "wgPortalMode": {
+                          "type": "string",
+                          "enum": [
+                            "per-client",
+                            "legacy",
+                            "unknown"
+                          ]
+                        },
+                        "wgPortalState": {
+                          "type": "string",
+                          "enum": [
+                            "disabled",
+                            "starting",
+                            "running",
+                            "unsupported",
+                            "error"
+                          ],
+                          "description": "WireGuard portal lifecycle state as last observed by the panel"
+                        },
+                        "wgPortalError": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "wgLegacyClientCidr": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "driftReason": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "driftAttempts": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "driftRetryAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
                         "role": {
                           "type": "string",
                           "enum": [
@@ -9658,6 +10215,13 @@
                         "isHub",
                         "wgListenPort",
                         "wireguardClientCount",
+                        "wgPortalMode",
+                        "wgPortalState",
+                        "wgPortalError",
+                        "wgLegacyClientCidr",
+                        "driftReason",
+                        "driftAttempts",
+                        "driftRetryAt",
                         "role",
                         "effectiveRole",
                         "knowsSecret",
@@ -13499,6 +14063,46 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "wgPortalMode": {
+                      "type": "string",
+                      "enum": [
+                        "per-client",
+                        "legacy",
+                        "unknown"
+                      ]
+                    },
+                    "wgPortalState": {
+                      "type": "string",
+                      "enum": [
+                        "disabled",
+                        "starting",
+                        "running",
+                        "unsupported",
+                        "error"
+                      ],
+                      "description": "WireGuard portal lifecycle state as last observed by the panel"
+                    },
+                    "wgPortalError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "wgLegacyClientCidr": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftReason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftAttempts": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "driftRetryAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -13698,6 +14302,13 @@
                     "isHub",
                     "wgListenPort",
                     "wireguardClientCount",
+                    "wgPortalMode",
+                    "wgPortalState",
+                    "wgPortalError",
+                    "wgLegacyClientCidr",
+                    "driftReason",
+                    "driftAttempts",
+                    "driftRetryAt",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -13914,6 +14525,46 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "wgPortalMode": {
+                      "type": "string",
+                      "enum": [
+                        "per-client",
+                        "legacy",
+                        "unknown"
+                      ]
+                    },
+                    "wgPortalState": {
+                      "type": "string",
+                      "enum": [
+                        "disabled",
+                        "starting",
+                        "running",
+                        "unsupported",
+                        "error"
+                      ],
+                      "description": "WireGuard portal lifecycle state as last observed by the panel"
+                    },
+                    "wgPortalError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "wgLegacyClientCidr": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftReason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftAttempts": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "driftRetryAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -14113,6 +14764,13 @@
                     "isHub",
                     "wgListenPort",
                     "wireguardClientCount",
+                    "wgPortalMode",
+                    "wgPortalState",
+                    "wgPortalError",
+                    "wgLegacyClientCidr",
+                    "driftReason",
+                    "driftAttempts",
+                    "driftRetryAt",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -14326,6 +14984,46 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "wgPortalMode": {
+                      "type": "string",
+                      "enum": [
+                        "per-client",
+                        "legacy",
+                        "unknown"
+                      ]
+                    },
+                    "wgPortalState": {
+                      "type": "string",
+                      "enum": [
+                        "disabled",
+                        "starting",
+                        "running",
+                        "unsupported",
+                        "error"
+                      ],
+                      "description": "WireGuard portal lifecycle state as last observed by the panel"
+                    },
+                    "wgPortalError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "wgLegacyClientCidr": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftReason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "driftAttempts": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "driftRetryAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "role": {
                       "type": "string",
                       "enum": [
@@ -14525,6 +15223,13 @@
                     "isHub",
                     "wgListenPort",
                     "wireguardClientCount",
+                    "wgPortalMode",
+                    "wgPortalState",
+                    "wgPortalError",
+                    "wgLegacyClientCidr",
+                    "driftReason",
+                    "driftAttempts",
+                    "driftRetryAt",
                     "role",
                     "effectiveRole",
                     "knowsSecret",
@@ -17769,6 +18474,116 @@
         }
       }
     },
+    "/api/devices/{deviceId}/wireguard-portal/config": {
+      "get": {
+        "operationId": "getDeviceWireguardPortalConfig",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "config": {
+                      "type": "string"
+                    },
+                    "filename": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "per-client",
+                        "legacy",
+                        "unknown"
+                      ]
+                    },
+                    "port": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "clientCidr": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "connectedClients": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "listener": {
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "config",
+                    "filename",
+                    "mode",
+                    "port",
+                    "clientCidr",
+                    "connectedClients",
+                    "listener"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{deviceId}/wireguard-portal/config/download": {
+      "get": {
+        "operationId": "downloadDeviceWireguardPortalConfig",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/devices/{deviceId}/wireguard-portal": {
       "put": {
         "operationId": "updateDeviceWireguardPortal",
@@ -17790,6 +18605,12 @@
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 65535
+                  },
+                  "clientCidr": {
+                    "nullable": true,
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
                   }
                 },
                 "required": [
@@ -17833,12 +18654,26 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "per-client",
+                        "legacy",
+                        "unknown"
+                      ]
+                    },
+                    "legacyClientCidr": {
+                      "nullable": true,
+                      "type": "string"
                     }
                   },
                   "required": [
                     "enabled",
                     "port",
-                    "clientCount"
+                    "clientCount",
+                    "mode",
+                    "legacyClientCidr"
                   ],
                   "additionalProperties": false
                 }

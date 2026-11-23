@@ -356,6 +356,14 @@ export const devices = pgTable(
      */
     wgPrivateKeyCiphertext: text("wg_private_key_ciphertext"),
     /**
+     * Legacy WireGuard portal (EasyTier < 2.7.0): one `client_cidr` prefix the
+     * portal hands addresses from. 2.6.x has no protocol field for the portal,
+     * so the panel stores the operator's intent, shows the exact
+     * `--vpn-portal wg://0.0.0.0:<port>/<cidr>` flag and reads the shared
+     * client config back from the device.
+     */
+    wgLegacyClientCidr: text("wg_legacy_client_cidr"),
+    /**
      * Last route report collected from the client: instances it runs, proxy
      * CIDRs it advertises, and which of those were not approved here.
      */

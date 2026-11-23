@@ -14,4 +14,10 @@ export type UpdateDeviceWireguardPortalBody = {
      * @nullable
      */
   port?: number | null;
+  /**
+     * @minLength 1
+     * @maxLength 64
+     * @nullable
+     */
+  clientCidr?: string | null;
 };

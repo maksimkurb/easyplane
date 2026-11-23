@@ -61,6 +61,17 @@ describe("device status machine", () => {
     expect(status({ desiredRevision: 4, appliedRevision: 3 }).sync).toBe("stale");
   });
 
+  it("marks a device with an active config drift as stale, not in-sync", () => {
+    // The instance is running the desired revision but reports a different
+    // config; the panel is backing off, so silence must not look healthy.
+    expect(status({ driftPending: true })).toMatchObject({
+      online: "online",
+      sync: "stale",
+    });
+    // A real push error still wins over drift.
+    expect(status({ driftPending: true, lastPushError: "boom" }).sync).toBe("error");
+  });
+
   it("marks a push error as error even when revisions match", () => {
     expect(status({ lastPushError: "boom" }).sync).toBe("error");
   });
