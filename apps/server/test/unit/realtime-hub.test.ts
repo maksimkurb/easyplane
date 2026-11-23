@@ -30,8 +30,11 @@ function deviceEvent(networkId = "net-1") {
       lastSeenAt: null,
       desiredRevision: 1,
       appliedRevision: 1,
+      appliedAt: null,
+      lastPushAt: null,
       lastPushError: null,
       reason: "heartbeat",
+      changed: [],
     },
   };
 }

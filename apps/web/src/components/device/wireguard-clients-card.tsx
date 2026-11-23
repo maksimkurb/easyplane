@@ -2,9 +2,7 @@ import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { PlusIcon } from "lucide-react"
 
-import {
-  useListWireguardClients,
-} from "@/api/generated/easyplane"
+import { useListWireguardClients } from "@/api/generated/easyplane"
 import type {
   ListDevices200Item,
   ListWireguardClients200Item,
@@ -36,9 +34,7 @@ export function WireguardClientsCard({
   const [addOpen, setAddOpen] = useState(false)
   const configState = useWireguardConfigDialogState()
   const invalidate = useInvalidateWireguardClients(networkId)
-  const clientsQuery = useListWireguardClients(networkId, {
-    query: { refetchInterval: 15_000 },
-  })
+  const clientsQuery = useListWireguardClients(networkId)
 
   const hubs = useMemo(
     () =>

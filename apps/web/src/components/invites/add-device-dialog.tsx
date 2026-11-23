@@ -170,14 +170,13 @@ export function AddDeviceDialog({
     },
   })
 
-  // Step 2 keeps listening for a device that presents this invite. Realtime
-  // events also invalidate this query, so approval shows up everywhere.
+  // Step 2 keeps listening for a device that presents this invite. The
+  // realtime `device.updated`/`joined` event invalidates this list, so no poll.
   const devicesQuery = useListDevices(
     { networkId: network.id },
     {
       query: {
         enabled: created !== null && step === 2,
-        refetchInterval: created !== null && step === 2 ? 4000 : false,
       },
     }
   )

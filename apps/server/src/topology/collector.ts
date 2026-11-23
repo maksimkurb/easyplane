@@ -335,6 +335,10 @@ export class TopologyService {
     // hub whose portal serves it.
     await this.appendWireguardNodes(snapshot, limited, offline);
 
+    const previousSnapshot = this.snapshots.get(networkId);
+    const graphChanged =
+      previousSnapshot === undefined ||
+      topologyFingerprint(previousSnapshot) !== topologyFingerprint(snapshot);
     this.snapshots.set(networkId, snapshot);
 
     // Keep the last public IPv4 addresses durably: the advertised hub endpoint
@@ -382,18 +386,23 @@ export class TopologyService {
       }
     }
 
-    this.options.realtime.publish({
-      type: "topology.updated",
-      orgId: network.orgId,
-      networkId,
-      data: {
+    // No watcher, no payload: the REST reader gets the snapshot from memory,
+    // and the next map open triggers a fresh collection. An unchanged graph is
+    // not re-published either, so an open map is not woken up by a timer.
+    if (graphChanged && this.options.realtime.topologyWatchers(networkId) > 0) {
+      this.options.realtime.publish({
+        type: "topology.updated",
+        orgId: network.orgId,
         networkId,
-        collectedAt: snapshot.collectedAt,
-        nodes: snapshot.nodes,
-        links: snapshot.links,
-        stats: snapshot.stats,
-      },
-    });
+        data: {
+          networkId,
+          collectedAt: snapshot.collectedAt,
+          nodes: snapshot.nodes,
+          links: snapshot.links,
+          stats: snapshot.stats,
+        },
+      });
+    }
     this.options.logger.debug("topology collected", {
       networkId,
       reason,
@@ -525,6 +534,20 @@ function sameAddresses(
   if (left.length !== right.length) return false;
   const set = new Set(left);
   return right.every((address) => set.has(address));
+}
+
+/**
+ * Everything the map renders, excluding collection bookkeeping. `collectedAt`,
+ * `generation`, `intervalMs` and the raw observations change every cycle even
+ * when the graph is identical, so they must not count as a real update.
+ */
+function topologyFingerprint(snapshot: NetworkTopologySnapshot): string {
+  return JSON.stringify({
+    partial: snapshot.partial,
+    nodes: snapshot.nodes,
+    links: snapshot.links,
+    stats: snapshot.stats,
+  });
 }
 
 function withTimeout<T>(

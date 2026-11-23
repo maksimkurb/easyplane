@@ -74,6 +74,7 @@ import { nextRevisionNumber, planRollback } from "../domain/revisions.js";
 import { dedupePeerUrls } from "../domain/peers.js";
 import type { ManagedClient } from "../control/managed-client.js";
 import type { Logger } from "../logger.js";
+import type { DeviceChangedField } from "../realtime/events.js";
 import type { RealtimeHub } from "../realtime/hub.js";
 import { sha256Hex } from "../security/crypto.js";
 import type { AuditService } from "./audit.js";
@@ -269,10 +270,36 @@ function exitNodeStateFor(
   return proposed ? "proposed" : "none";
 }
 
+/**
+ * Status projection compared between events. `lastSeenAt` participates in
+ * `changed` (the client patches it) but deliberately not in `signature`: a
+ * heartbeat that only refreshes it must not publish anything.
+ */
+interface DeviceEventFields {
+  state: "pending" | "approved" | "blocked";
+  online: OnlineState;
+  sync: DeviceStatus["sync"];
+  hostname: string;
+  virtualIpv4: string | null;
+  lastSeenAt: string | null;
+  desiredRevision: number | null;
+  appliedRevision: number | null;
+  appliedAt: string | null;
+  lastPushAt: string | null;
+  lastPushError: string | null;
+}
+
 export class DeviceService {
   readonly rateLimiter: UnknownTokenRateLimiter;
-  /** Last realtime event per device, to keep heartbeats from flooding SSE. */
-  private readonly lastEvent = new Map<string, { signature: string; at: number }>();
+  /**
+   * Last published status per device. Heartbeats arrive every second; only a
+   * real signature change is published, so an idle panel sees no traffic.
+   * `fields` is kept to report `changed` to the client for in-place patching.
+   */
+  private readonly lastEvent = new Map<
+    string,
+    { signature: string; fields: DeviceEventFields }
+  >();
   /**
    * Per-network approval queue. Address and MagicDNS-name allocation are
    * read-then-write against unique indexes; two concurrent approvals would
@@ -294,21 +321,22 @@ export class DeviceService {
   }
 
   /**
-   * Publishes a `device.updated` event. Heartbeats arrive every second, so an
-   * unchanged status is coalesced: a new event is emitted when any status
-   * field changes, or at most every `EVENT_COOLDOWN_MS` (which is what keeps
-   * `lastSeen` moving in the panel). Returns true when an event was published.
+   * Publishes a `device.updated` event for an explicit change (approval,
+   * rename, push result, …). Heartbeats are special: they arrive every second,
+   * so `reason === "heartbeat"` publishes only when the status signature
+   * really changed. Pure `lastSeenAt` refreshes never publish — the panel no
+   * longer needs a heartbeat to keep "last seen" moving, which is what turns
+   * an idle network page into zero requests (docs/REALTIME.md §3).
    */
   async notifyDevice(
     deviceId: string,
     reason: string,
     options: { online?: OnlineState } = {},
-    cooldownMs = 5_000,
   ): Promise<boolean> {
     if (!this.options.realtime) return false;
     const device = await getDeviceById(this.options.db, deviceId);
     if (!device) return false;
-    return this.publishDevice(device, reason, options, cooldownMs);
+    return this.publishDevice(device, reason, options);
   }
 
   /** Same as `notifyDevice` for a device row the caller already holds. */
@@ -316,7 +344,6 @@ export class DeviceService {
     device: Device,
     reason: string,
     options: { online?: OnlineState } = {},
-    cooldownMs = 5_000,
   ): boolean {
     const realtime = this.options.realtime;
     if (!realtime) return false;
@@ -329,22 +356,42 @@ export class DeviceService {
       appliedRevision: device.appliedRevision,
       lastPushError: device.lastPushError,
     });
-    const online = options.online ?? status.online;
-    const signature = [
-      status.state,
-      online,
-      status.sync,
-      device.desiredRevision,
-      device.appliedRevision,
-      device.lastPushError,
-      device.state === "blocked" ? "blocked" : "",
-    ].join("|");
-    const now = Date.now();
+    const fields: DeviceEventFields = {
+      state: device.state,
+      online: options.online ?? status.online,
+      sync: status.sync,
+      hostname: device.dnsName ?? device.hostname,
+      virtualIpv4: device.virtualIpv4,
+      lastSeenAt: device.lastSeenAt?.toISOString() ?? null,
+      desiredRevision: device.desiredRevision,
+      appliedRevision: device.appliedRevision,
+      appliedAt: device.appliedAt?.toISOString() ?? null,
+      lastPushAt: device.lastPushAt?.toISOString() ?? null,
+      lastPushError: device.lastPushError,
+    };
+    // Everything except lastSeenAt: a heartbeat that only touches it is a
+    // no-op for the panel.
+    const signature = JSON.stringify([
+      fields.state,
+      fields.online,
+      fields.sync,
+      fields.hostname,
+      fields.virtualIpv4,
+      fields.desiredRevision,
+      fields.appliedRevision,
+      fields.appliedAt,
+      fields.lastPushAt,
+      fields.lastPushError,
+    ]);
     const previous = this.lastEvent.get(device.id);
-    const changed = previous?.signature !== signature;
-    const stale = previous === undefined || now - previous.at >= cooldownMs;
-    if (!changed && !stale) return false;
-    this.lastEvent.set(device.id, { signature, at: now });
+    const isHeartbeat = reason === "heartbeat";
+    if (isHeartbeat && previous?.signature === signature) return false;
+    const changed = previous
+      ? (Object.keys(fields) as Array<keyof DeviceEventFields>).filter(
+          (field) => previous.fields[field] !== fields[field],
+        )
+      : [];
+    this.lastEvent.set(device.id, { signature, fields });
     realtime.publish({
       type: "device.updated",
       orgId: device.orgId,
@@ -353,16 +400,19 @@ export class DeviceService {
       data: {
         deviceId: device.id,
         networkId: device.networkId,
-        state: device.state,
-        online,
-        sync: status.sync,
-        hostname: device.dnsName ?? device.hostname,
-        virtualIpv4: device.virtualIpv4,
-        lastSeenAt: device.lastSeenAt?.toISOString() ?? null,
-        desiredRevision: device.desiredRevision,
-        appliedRevision: device.appliedRevision,
-        lastPushError: device.lastPushError,
+        state: fields.state,
+        online: fields.online,
+        sync: fields.sync,
+        hostname: fields.hostname,
+        virtualIpv4: fields.virtualIpv4,
+        lastSeenAt: fields.lastSeenAt,
+        desiredRevision: fields.desiredRevision,
+        appliedRevision: fields.appliedRevision,
+        appliedAt: fields.appliedAt,
+        lastPushAt: fields.lastPushAt,
+        lastPushError: fields.lastPushError,
         reason,
+        changed: changed as DeviceChangedField[],
       },
     });
     // Keep the cache small on a long-lived process.
@@ -1444,9 +1494,9 @@ export class DeviceService {
       targetId: deviceId,
       metadata: { previous, description, networkId: network.id },
     });
-    // Cooldown 0: the coalescing signature tracks status only, so a
-    // description-only change would otherwise wait for the next heartbeat.
-    this.publishDevice(updated, "description-updated", {}, 0);
+    // Explicit reasons always publish: the status signature does not track
+    // description, so dedupe must not swallow this change.
+    this.publishDevice(updated, "description-updated");
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
     return this.dto(updated, network, tags.get(deviceId) ?? []);
   }

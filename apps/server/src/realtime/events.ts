@@ -9,6 +9,36 @@
 
 export type RealtimeTopic = "devices" | "network" | "policy" | "routes" | "topology";
 
+/**
+ * Fields whose value really changed since the previous `device.updated` event.
+ * The client uses this to decide what can be patched in place and what needs a
+ * refetch; a heartbeat that only refreshed `lastSeenAt` carries just that field
+ * (or no event at all — see docs/REALTIME.md §3).
+ */
+export type DeviceChangedField =
+  | "state"
+  | "online"
+  | "sync"
+  | "hostname"
+  | "virtualIpv4"
+  | "lastSeenAt"
+  | "desiredRevision"
+  | "appliedRevision"
+  | "appliedAt"
+  | "lastPushAt"
+  | "lastPushError";
+
+/** Live WireGuard portal status carried by a `wireguard.updated` event. */
+export interface WireguardStatusEvent {
+  clientId: string;
+  state: "online" | "connecting" | "offline" | "error" | "unknown";
+  endpoint: string | null;
+  tunnelIp: string | null;
+  peerId: number | null;
+  error: string | null;
+  statusAt: string | null;
+}
+
 export interface RealtimeEventData {
   "device.updated": {
     deviceId: string;
@@ -21,9 +51,13 @@ export interface RealtimeEventData {
     lastSeenAt: string | null;
     desiredRevision: number | null;
     appliedRevision: number | null;
+    appliedAt: string | null;
+    lastPushAt: string | null;
     lastPushError: string | null;
-    /** Why the event was emitted (heartbeat, push, approve, offline, ...). */
+    /** Why the event was emitted (heartbeat, push, approve, rename, ...). */
     reason: string;
+    /** Status fields that differ from the previous event (empty on a baseline). */
+    changed: DeviceChangedField[];
   };
   "device.removed": { deviceId: string; networkId: string };
   "network.updated": { networkId: string; reason: string };
@@ -51,6 +85,13 @@ export interface RealtimeEventData {
     clientId?: string;
     hubDeviceId?: string;
     reason: string;
+    /**
+     * Live portal statuses that changed in this collection. The client patches
+     * its WireGuard list in place instead of refetching it; other reasons
+     * (created, renamed, deleted, portal toggled) omit this and invalidate the
+     * one network's client list.
+     */
+    statuses?: WireguardStatusEvent[];
   };
   "topology.updated": {
     networkId: string;

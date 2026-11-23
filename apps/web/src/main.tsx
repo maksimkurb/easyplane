@@ -15,8 +15,13 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      // Realtime events keep caches current, so a remount only refetches data
+      // that is actually stale instead of every navigation.
       staleTime: 30_000,
       gcTime: 5 * 60_000,
+      // SSE reconnects with replay/resync; a focus refetch would duplicate it
+      // and wake every stale query when the user returns to the tab.
+      refetchOnWindowFocus: false,
       retry: (failureCount, error) => {
         const status =
           typeof error === "object" &&

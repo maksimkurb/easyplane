@@ -92,26 +92,50 @@ data: {"seq":42,"type":"device.updated","at":"…","orgId":"…","networkId":"�
 | --- | --- | --- |
 | `hello` | a stream opens (includes user, role, heartbeat interval, cap) | status indicator |
 | `resync` | the reconnect id is unknown (server restart, evicted from the ring) | invalidate every query |
-| `device.updated` | join, heartbeat (coalesced), approval, block, rename, tags/owner, revision created, rollback, config pushed/failed, session closed | all `/api/devices*` and `/api/networks*` queries |
-| `device.removed` | device deleted | same |
-| `network.updated` / `network.deleted` | network created/updated/secret rotated/deleted | networks, devices, invites |
-| `policy.updated` | policy saved or disabled (with the new version) | networks (policy/versions), devices (revisions) |
-| `route.updated` | route requested/decided, or a client route report changed | networks (routes/reports), devices |
-| `wireguard.updated` | a portal client was created/renamed/tagged/deleted, the portal toggled, or its live status changed | networks (WireGuard clients), devices (hub count/port) |
-| `topology.updated` | each topology collection (whole snapshot, without raw observations) | patches the map query in place |
+| `device.updated` | join, approval, block, rename, tags/owner, revision created, rollback, config pushed/failed, session closed — and a heartbeat **only** when the status signature changed | patches the device list/detail from the payload; narrow refetch for fields the payload cannot express |
+| `device.removed` | device deleted | drop the device, refetch its network's tables |
+| `network.updated` / `network.deleted` | network created/updated/secret rotated/deleted | that network, its devices, peers/invites/routes as applicable |
+| `policy.updated` | policy saved or disabled (with the new version) | that network's policy, detail and device tables |
+| `route.updated` | route requested/decided, or a client route report changed | that network's routes + the one device's routes/detail |
+| `wireguard.updated` | a portal client was created/renamed/tagged/deleted, the portal toggled, or its live status changed. Status events carry the changed `statuses[]` payload | statuses are patched in place; other reasons refetch the one network's client list |
+| `topology.updated` | a collection produced a graph that differs from the previous one **and** at least one `topology=1` stream is open (whole snapshot, without raw observations) | patches the map query in place |
 
-Heartbeats arrive every second per device, so `device.updated` is coalesced: an
-event is emitted when any status field changes, otherwise at most every 5 s
-(which is what keeps "last seen" moving). The event carries only status fields
-and identifiers — never a secret, a config body or a token.
+Heartbeats arrive every second per device, but they no longer produce events by
+themselves: `device.updated` is emitted only when the status signature
+(`state`, `online`, `sync`, hostname, IP, revisions, applied/push timestamps,
+push error) really changes, or for an explicit reason (approval, rename, …).
+A pure `lastSeenAt` refresh is a no-op for the panel, so an idle network page
+makes **zero** HTTP requests. When `lastSeen` does change as part of a real
+event, `data.lastSeenAt` carries it and the client patches the cached row.
+
+`data.changed` lists exactly the status fields that differ from the previous
+event (empty for the first event after a restart). The client uses it to decide
+whether it can patch in place (`online`, `sync`, revisions, `lastSeenAt`, …) or
+must invalidate a narrow query (`state` changes membership/counts, `hostname`
+is not patchable because the DTO keeps the reported and DNS names separately).
+The event carries only status fields and identifiers — never a secret, a config
+body or a token.
+
+`wireguard.updated` with `reason: "status"` carries `data.statuses` (one entry
+per client whose portal state changed: state, endpoint, tunnel IP, peer id,
+error, statusAt) so the list is patched without a request. Other reasons carry
+no client detail and invalidate only `/api/networks/:id/wireguard-clients`.
 
 `topology.updated` is only delivered to streams that declared `topology=1`:
 the snapshot is the largest payload and no other page needs it, so the shell
-stream never receives it.
+stream never receives it. It is also emitted only when the graph changed,
+never for an identical re-collection.
 
 Clients must treat events as **cache hints**: the payload is not the full API
 object. The one exception is `topology.updated`, which carries the snapshot
 because re-fetching a large graph on every poll would defeat the purpose.
+
+The panel applies the payload to its TanStack Query cache in place where it is
+sufficient (`apps/web/src/realtime/apply-event.ts`). Everything else is
+invalidated by the narrowest matching key; invalidations from a burst are
+collected in a `Set` and flushed once after a 350 ms trailing window with
+`refetchType: "active"`. A hidden tab defers the flush until it becomes visible
+again. `resync` still invalidates every query exactly once.
 
 ## 4. Reconnect, replay and resync
 
@@ -160,6 +184,11 @@ networks; no history is stored).
 - Concurrent requests share the in-flight cycle (one probe fan-out per network),
   and the network list is re-discovered periodically so deleted networks free
   their snapshot.
+- **Quiet publishing:** a snapshot is pushed to `topology=1` streams only when
+  its graph (nodes/links/stats) differs from the previous one; collection
+  timestamps and raw observations alone do not wake the map. With no map open
+  no snapshot is pushed at all — the REST reader receives the in-memory copy,
+  and opening the map triggers a fresh collection when needed.
 
 ### 5.1 Field mapping (what the client actually reports)
 

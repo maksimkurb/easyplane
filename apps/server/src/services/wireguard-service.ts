@@ -34,6 +34,7 @@ import {
 } from "../domain/wireguard.js";
 import type { ManagedClient } from "../control/managed-client.js";
 import type { Logger } from "../logger.js";
+import type { RealtimeEventData } from "../realtime/events.js";
 import type { RealtimeHub } from "../realtime/hub.js";
 import { generateCredentialKeypair } from "../security/credential-keys.js";
 import type { SecretBox } from "../security/crypto.js";
@@ -637,13 +638,16 @@ export class WireguardService {
       return;
     }
     if (!info) return;
-    const statuses = new Map(
+    const byName = new Map(
       portalStatuses(info).map((status) => [status.name, status]),
     );
     const now = new Date();
     let changed = false;
+    const statuses: NonNullable<
+      RealtimeEventData["wireguard.updated"]["statuses"]
+    > = [];
     for (const row of rows) {
-      const status = statuses.get(row.name);
+      const status = byName.get(row.name);
       if (!status) continue;
       const previous = statusRecord(row);
       const next = {
@@ -662,11 +666,17 @@ export class WireguardService {
       if (same) continue;
       await recordWireguardStatus(this.options.db, row.id, next, now);
       changed = true;
+      statuses.push({
+        clientId: row.id,
+        ...next,
+        statusAt: now.toISOString(),
+      });
     }
     if (changed) {
       this.publish(device.orgId, device.networkId, {
         hubDeviceId: device.id,
         reason: "status",
+        statuses,
       });
     }
   }
@@ -674,7 +684,12 @@ export class WireguardService {
   private publish(
     orgId: string,
     networkId: string,
-    input: { clientId?: string; hubDeviceId?: string; reason: string },
+    input: {
+      clientId?: string;
+      hubDeviceId?: string;
+      reason: string;
+      statuses?: RealtimeEventData["wireguard.updated"]["statuses"];
+    },
   ): void {
     const realtime = this.options.realtime;
     if (!realtime) return;
@@ -687,6 +702,7 @@ export class WireguardService {
         reason: input.reason,
         ...(input.clientId ? { clientId: input.clientId } : {}),
         ...(input.hubDeviceId ? { hubDeviceId: input.hubDeviceId } : {}),
+        ...(input.statuses ? { statuses: input.statuses } : {}),
       },
     });
   }
