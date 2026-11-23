@@ -41,6 +41,8 @@ export type BlockDevice200 = {
   inviteId: string | null;
   /** @nullable */
   ownerUserId: string | null;
+  /** @nullable */
+  description: string | null;
   advertisedEndpoints: string[];
   /**
      * @minimum -9007199254740991

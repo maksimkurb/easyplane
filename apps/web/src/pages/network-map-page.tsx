@@ -414,6 +414,14 @@ function MapSidePanel({
               <Chip variant="relay">{t("topology.relayCapable")}</Chip>
             ) : null}
           </div>
+          {device?.description ? (
+            <p
+              className="mt-1 max-w-full truncate text-[13px] leading-5 text-fg-3"
+              title={device.description}
+            >
+              {device.description}
+            </p>
+          ) : null}
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-3">
             {device ? (
               <DeviceStatusCell device={device} />

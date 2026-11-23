@@ -43,6 +43,7 @@ import { PageContainer } from "@/components/layout/page-container"
 import { ConfirmDialog } from "@/components/device/confirm-dialog"
 import { DeviceAccessCard } from "@/components/device-access-card"
 import { DeviceConnectionsCard } from "@/components/device/device-connections-card"
+import { DeviceDescriptionLine } from "@/components/device/device-description"
 import { DeviceDetailsCard } from "@/components/device/device-details-card"
 import { DeviceHistoryCard } from "@/components/device/device-history-card"
 import { DeviceIcon } from "@/components/device/device-icon"
@@ -270,6 +271,12 @@ export function DeviceDetailPage() {
                   <Chip variant="warn">{t("devices.localConfig")}</Chip>
                 ) : null}
               </div>
+              <DeviceDescriptionLine
+                canManage={canManage}
+                className="mt-0.5"
+                description={device.description}
+                deviceId={device.id}
+              />
               <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-fg-3">
                 <DeviceStatusCell device={device} />
                 {device.virtualIpv4 ? (

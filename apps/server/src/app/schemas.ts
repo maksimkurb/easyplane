@@ -163,6 +163,8 @@ export const deviceSchema = z.object({
   virtualIpv4: z.string().nullable(),
   inviteId: z.string().nullable(),
   ownerUserId: z.string().nullable(),
+  /** Short human note about the device; null when unset. */
+  description: z.string().nullable(),
   advertisedEndpoints: z.array(z.string()),
   listenPort: z.number().int().nullable(),
   externalPort: z.number().int().nullable(),
@@ -239,6 +241,18 @@ export const linkNetworkPeerSchema = z
 
 export const updateDeviceEndpointsSchema = z
   .object({ endpoints: z.array(z.string().min(1).max(512)).max(16) })
+  .strict();
+
+export const updateDeviceDescriptionSchema = z
+  .object({
+    /**
+     * Short note; `null` clears it. The server trims the text and collapses
+     * newlines/spaces into one paragraph. The cap matches the column contract
+     * (DEVICE_DESCRIPTION_MAX_LENGTH); the service checks the normalized text
+     * as well, so a caller bypassing this schema still cannot store more.
+     */
+    description: z.string().max(280).nullable(),
+  })
   .strict();
 
 export const updateDeviceHubSchema = z

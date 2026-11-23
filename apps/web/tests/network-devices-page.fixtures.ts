@@ -29,6 +29,7 @@ const BASE_DEVICE = {
   accessMode: "shared_secret",
   credential: null,
   tags: [],
+  description: null,
   reportedState: {},
   reportedStateAt: null,
   desiredRevision: 1,

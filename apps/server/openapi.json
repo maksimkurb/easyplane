@@ -4575,6 +4575,10 @@
                         "nullable": true,
                         "type": "string"
                       },
+                      "description": {
+                        "nullable": true,
+                        "type": "string"
+                      },
                       "advertisedEndpoints": {
                         "type": "array",
                         "items": {
@@ -4793,6 +4797,7 @@
                       "virtualIpv4",
                       "inviteId",
                       "ownerUserId",
+                      "description",
                       "advertisedEndpoints",
                       "listenPort",
                       "externalPort",
@@ -4945,6 +4950,10 @@
                       "type": "string"
                     },
                     "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "description": {
                       "nullable": true,
                       "type": "string"
                     },
@@ -5166,6 +5175,7 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "description",
                     "advertisedEndpoints",
                     "listenPort",
                     "externalPort",
@@ -5395,6 +5405,10 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "description": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "advertisedEndpoints": {
                       "type": "array",
                       "items": {
@@ -5613,6 +5627,7 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "description",
                     "advertisedEndpoints",
                     "listenPort",
                     "externalPort",
@@ -5784,6 +5799,10 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "description": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "advertisedEndpoints": {
                       "type": "array",
                       "items": {
@@ -6002,6 +6021,7 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "description",
                     "advertisedEndpoints",
                     "listenPort",
                     "externalPort",
@@ -6156,6 +6176,10 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "description": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "advertisedEndpoints": {
                       "type": "array",
                       "items": {
@@ -6374,6 +6398,7 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "description",
                     "advertisedEndpoints",
                     "listenPort",
                     "externalPort",
@@ -6528,6 +6553,10 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "description": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "advertisedEndpoints": {
                       "type": "array",
                       "items": {
@@ -6746,6 +6775,7 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "description",
                     "advertisedEndpoints",
                     "listenPort",
                     "externalPort",
@@ -6926,6 +6956,10 @@
                           "type": "string"
                         },
                         "ownerUserId": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "description": {
                           "nullable": true,
                           "type": "string"
                         },
@@ -7147,6 +7181,7 @@
                         "virtualIpv4",
                         "inviteId",
                         "ownerUserId",
+                        "description",
                         "advertisedEndpoints",
                         "listenPort",
                         "externalPort",
@@ -7385,6 +7420,10 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "description": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "advertisedEndpoints": {
                       "type": "array",
                       "items": {
@@ -7603,6 +7642,405 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "description",
+                    "advertisedEndpoints",
+                    "listenPort",
+                    "externalPort",
+                    "publicIps",
+                    "isHub",
+                    "role",
+                    "effectiveRole",
+                    "knowsSecret",
+                    "accessMode",
+                    "credential",
+                    "tags",
+                    "exitNode",
+                    "configManagedLocally",
+                    "reportedState",
+                    "reportedStateAt",
+                    "desiredRevision",
+                    "appliedRevision",
+                    "policyVersion",
+                    "appliedAt",
+                    "lastPushAt",
+                    "lastPushError",
+                    "lastSeenAt",
+                    "approvedAt",
+                    "blockedAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{deviceId}/description": {
+      "put": {
+        "operationId": "updateDeviceDescription",
+        "tags": [
+          "devices"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "nullable": true,
+                    "type": "string",
+                    "maxLength": 280
+                  }
+                },
+                "required": [
+                  "description"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "deviceId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "networkId": {
+                      "type": "string"
+                    },
+                    "networkName": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "approved",
+                        "blocked"
+                      ]
+                    },
+                    "online": {
+                      "type": "string",
+                      "enum": [
+                        "online",
+                        "offline"
+                      ]
+                    },
+                    "sync": {
+                      "type": "string",
+                      "enum": [
+                        "not-applicable",
+                        "in-sync",
+                        "stale",
+                        "error"
+                      ]
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "machineId": {
+                      "type": "string"
+                    },
+                    "hostname": {
+                      "type": "string"
+                    },
+                    "dnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "magicDnsZone": {
+                      "type": "string"
+                    },
+                    "magicDnsEnabled": {
+                      "type": "boolean"
+                    },
+                    "easytierVersion": {
+                      "type": "string"
+                    },
+                    "os": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "distribution": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "version",
+                        "distribution"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "sourceIp": {
+                      "type": "string"
+                    },
+                    "virtualIpv4": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "inviteId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "ownerUserId": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "description": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "advertisedEndpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "listenPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "externalPort": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "publicIps": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "isHub": {
+                      "type": "boolean"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "effectiveRole": {
+                      "type": "string",
+                      "enum": [
+                        "anchor",
+                        "member"
+                      ]
+                    },
+                    "knowsSecret": {
+                      "type": "boolean"
+                    },
+                    "accessMode": {
+                      "type": "string",
+                      "enum": [
+                        "shared_secret",
+                        "credentials"
+                      ]
+                    },
+                    "credential": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "networkId": {
+                          "type": "string"
+                        },
+                        "deviceId": {
+                          "type": "string"
+                        },
+                        "credentialId": {
+                          "type": "string"
+                        },
+                        "publicKey": {
+                          "type": "string"
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "allowRelay": {
+                          "type": "boolean"
+                        },
+                        "allowedProxyCidrs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "reusable": {
+                          "type": "boolean"
+                        },
+                        "expiry": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "revoked",
+                            "expired"
+                          ]
+                        },
+                        "revocationReason": {
+                          "type": "string"
+                        },
+                        "revokedAt": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "networkId",
+                        "deviceId",
+                        "credentialId",
+                        "publicKey",
+                        "groups",
+                        "allowRelay",
+                        "allowedProxyCidrs",
+                        "reusable",
+                        "expiry",
+                        "status",
+                        "revocationReason",
+                        "revokedAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "exitNode": {
+                      "type": "string",
+                      "enum": [
+                        "none",
+                        "proposed",
+                        "approved"
+                      ]
+                    },
+                    "configManagedLocally": {
+                      "type": "boolean"
+                    },
+                    "reportedState": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "reportedStateAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "desiredRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedRevision": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "policyVersion": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "appliedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastPushError": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastSeenAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "approvedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "blockedAt": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "networkId",
+                    "networkName",
+                    "state",
+                    "online",
+                    "sync",
+                    "label",
+                    "machineId",
+                    "hostname",
+                    "dnsName",
+                    "magicDnsName",
+                    "magicDnsZone",
+                    "magicDnsEnabled",
+                    "easytierVersion",
+                    "os",
+                    "sourceIp",
+                    "virtualIpv4",
+                    "inviteId",
+                    "ownerUserId",
+                    "description",
                     "advertisedEndpoints",
                     "listenPort",
                     "externalPort",
@@ -7797,6 +8235,10 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "description": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "advertisedEndpoints": {
                       "type": "array",
                       "items": {
@@ -8015,6 +8457,7 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "description",
                     "advertisedEndpoints",
                     "listenPort",
                     "externalPort",
@@ -8364,6 +8807,10 @@
                           "nullable": true,
                           "type": "string"
                         },
+                        "description": {
+                          "nullable": true,
+                          "type": "string"
+                        },
                         "advertisedEndpoints": {
                           "type": "array",
                           "items": {
@@ -8582,6 +9029,7 @@
                         "virtualIpv4",
                         "inviteId",
                         "ownerUserId",
+                        "description",
                         "advertisedEndpoints",
                         "listenPort",
                         "externalPort",
@@ -8826,6 +9274,10 @@
                           "nullable": true,
                           "type": "string"
                         },
+                        "description": {
+                          "nullable": true,
+                          "type": "string"
+                        },
                         "advertisedEndpoints": {
                           "type": "array",
                           "items": {
@@ -9044,6 +9496,7 @@
                         "virtualIpv4",
                         "inviteId",
                         "ownerUserId",
+                        "description",
                         "advertisedEndpoints",
                         "listenPort",
                         "externalPort",
@@ -12813,6 +13266,10 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "description": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "advertisedEndpoints": {
                       "type": "array",
                       "items": {
@@ -13031,6 +13488,7 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "description",
                     "advertisedEndpoints",
                     "listenPort",
                     "externalPort",
@@ -13210,6 +13668,10 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "description": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "advertisedEndpoints": {
                       "type": "array",
                       "items": {
@@ -13428,6 +13890,7 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "description",
                     "advertisedEndpoints",
                     "listenPort",
                     "externalPort",
@@ -13604,6 +14067,10 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "description": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "advertisedEndpoints": {
                       "type": "array",
                       "items": {
@@ -13822,6 +14289,7 @@
                     "virtualIpv4",
                     "inviteId",
                     "ownerUserId",
+                    "description",
                     "advertisedEndpoints",
                     "listenPort",
                     "externalPort",

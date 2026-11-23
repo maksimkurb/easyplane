@@ -303,6 +303,11 @@ export const devices = pgTable(
       onDelete: "set null",
     }),
     /**
+     * Short human-readable note ("Роутер в гараже"): where the device is and
+     * what it is for. Single paragraph, at most 280 characters, null when unset.
+     */
+    description: text("description"),
+    /**
      * Peer URLs other devices may dial to reach this one (`tcp://host:11010`,
      * `udp://`, `ws://`, `wss://`, `quic://`, `wg://`, `ring://`, ...).
      * Advertised explicitly instead of being guessed from an IP or hostname.
