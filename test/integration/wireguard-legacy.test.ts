@@ -114,6 +114,17 @@ function fakeClient(
   };
 }
 
+async function waitForFallback(
+  lastRun: () => { config: { vpnPortalConfig?: unknown } } | undefined,
+  timeoutMs = 15_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (lastRun()?.config.vpnPortalConfig === undefined) return;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+}
+
 async function waitFor<T>(
   fn: () => Promise<T | undefined> | T | undefined,
   predicate: (value: T) => boolean,
@@ -628,6 +639,7 @@ describe("WireGuard portal generations", () => {
     expect(
       rejecting.runs.filter((run) => run.config.vpnPortalConfig !== undefined).length,
     ).toBe(portalPushes);
+    await waitForFallback(() => rejecting.lastRun);
     expect(rejecting.lastRun?.config.vpnPortalConfig).toBeUndefined();
 
     // "Retry now" re-attempts the portal (the fake still rejects it, so it
@@ -647,6 +659,7 @@ describe("WireGuard portal generations", () => {
       (count) => count > beforeRetry,
     );
     await waitQuiet(() => rejecting.pushCount);
+    await waitForFallback(() => rejecting.lastRun);
     expect(rejecting.lastRun?.config.vpnPortalConfig).toBeUndefined();
   });
 });
