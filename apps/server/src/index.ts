@@ -151,6 +151,7 @@ export {
   portalVirtualIpProblem,
   readPortalApplyError,
   readPortalSnapshot,
+  resolveClientEndpoint,
   resolvePortalMode,
   vpnPortalConfigMatches,
   withPortalApplyError,

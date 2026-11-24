@@ -751,3 +751,26 @@ export function cidrOverlapsAny(cidr: string, others: readonly string[]): boolea
   }
   return false;
 }
+
+/**
+ * EasyTier renders `Endpoint = 0.0.0.0:<port> # replace wildcard with the
+ * public address` for a wildcard listener. The comment makes the line invalid
+ * for most importers (wg-quick, Android, OpenWrt) and the address is useless
+ * to a client, so substitute the hub's public address when one is known and
+ * always drop the trailing comment.
+ */
+export function resolveClientEndpoint(
+  config: string,
+  publicHost: string | null,
+): string {
+  return config.replace(
+    /^(\s*Endpoint\s*=\s*)(\S+?)(?::(\d+))?\s*(?:#.*)?$/gim,
+    (line, prefix: string, host: string, port: string | undefined) => {
+      const wildcard = host === "0.0.0.0" || host === "[::]" || host === "::";
+      const target = wildcard && publicHost ? publicHost : host;
+      if (!port) return line;
+      const needsBrackets = target.includes(":") && !target.startsWith("[");
+      return `${prefix}${needsBrackets ? `[${target}]` : target}:${port}`;
+    },
+  );
+}

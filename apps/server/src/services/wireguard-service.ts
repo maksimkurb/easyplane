@@ -1,4 +1,5 @@
 import type { DbExecutor } from "../db/repositories.js";
+import { normalizePublicIpv4List } from "../domain/hub.js";
 import {
   approvedRoutesForNetwork,
   countWireguardClientsForHub,
@@ -34,6 +35,7 @@ import {
   interpretPortalProbe,
   isValidWireguardPort,
   legacyClientConfig,
+  resolveClientEndpoint,
   legacyConnectedClients,
   legacyPortalConfigHint,
   legacyPortalReplyError,
@@ -272,6 +274,11 @@ export class WireguardService {
       );
     }
     return name;
+  }
+
+  /** Address a WireGuard client should dial: the hub's first public IPv4. */
+  private hubPublicHost(hub: { publicIps?: readonly string[] | null }): string | null {
+    return normalizePublicIpv4List([...(hub.publicIps ?? [])])[0] ?? null;
   }
 
   private normalizeTags(tags: string[] | undefined): string[] {
@@ -802,7 +809,7 @@ export class WireguardService {
       metadata: { networkId: network.id, hubDeviceId: hub.id, name: client.name },
     });
     return {
-      config,
+      config: resolveClientEndpoint(config, this.hubPublicHost(hub)),
       client: dto(client, hub),
       filename: `${client.name}.conf`,
     };
@@ -865,7 +872,7 @@ export class WireguardService {
       metadata: { networkId: hub.networkId, mode },
     });
     return {
-      config,
+      config: resolveClientEndpoint(config, this.hubPublicHost(hub)),
       filename: `${hub.dnsName ?? hub.hostname ?? "wireguard"}.conf`,
       mode,
       port: hub.wgListenPort,
