@@ -774,3 +774,33 @@ export function resolveClientEndpoint(
     },
   );
 }
+
+/** Host part of an advertised peer URL such as `tcp://vpn.example.com:11010`. */
+function advertisedHost(url: string): string | null {
+  const match = /^[a-z0-9+.-]+:\/\/(\[[^\]]+\]|[^/:?#]+)/i.exec(url.trim())
+  if (!match?.[1]) return null
+  return match[1].replace(/^\[|\]$/g, "")
+}
+
+function isIpLiteral(host: string): boolean {
+  return /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(":")
+}
+
+/**
+ * Address a WireGuard client should dial: the first advertised domain, else
+ * the first advertised address, else the first known public IPv4.
+ */
+export function pickClientHost(
+  advertisedEndpoints: readonly string[],
+  publicIps: readonly string[],
+): string | null {
+  const hosts = advertisedEndpoints
+    .map(advertisedHost)
+    .filter((host): host is string => host !== null)
+  return (
+    hosts.find((host) => !isIpLiteral(host)) ??
+    hosts.find((host) => host !== "0.0.0.0" && host !== "::") ??
+    publicIps[0] ??
+    null
+  )
+}

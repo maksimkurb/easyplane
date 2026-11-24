@@ -22,3 +22,13 @@ describe("resolveClientEndpoint", () => {
     );
   });
 });
+
+describe("pickClientHost", () => {
+  it("prefers a domain, then an advertised address, then a public IP", async () => {
+    const { pickClientHost } = await import("@easyplane/server")
+    expect(pickClientHost(["tcp://1.1.1.1:1", "udp://vpn.example.com:2"], ["9.9.9.9"])).toBe("vpn.example.com")
+    expect(pickClientHost(["tcp://1.1.1.1:1"], ["9.9.9.9"])).toBe("1.1.1.1")
+    expect(pickClientHost([], ["9.9.9.9"])).toBe("9.9.9.9")
+    expect(pickClientHost([], [])).toBeNull()
+  })
+})

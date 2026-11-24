@@ -152,6 +152,7 @@ export {
   readPortalApplyError,
   readPortalSnapshot,
   resolveClientEndpoint,
+  pickClientHost,
   resolvePortalMode,
   vpnPortalConfigMatches,
   withPortalApplyError,

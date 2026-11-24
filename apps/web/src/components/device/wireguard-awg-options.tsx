@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next"
 import { RefreshCwIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import type { useAwgConfig } from "@/hooks/use-awg-config"
 
@@ -13,6 +14,19 @@ export function WireguardAwgOptions({
   const { t } = useTranslation()
   return (
     <div className="flex w-full flex-col gap-1.5 text-sm">
+      <label className="flex flex-col gap-1">
+        <span>{t("wireguard.endpoint.label")}</span>
+        <Input
+          autoComplete="off"
+          className="font-mono"
+          onChange={(event) => awg.setEndpoint(event.target.value)}
+          placeholder={awg.endpointPlaceholder}
+          value={awg.endpoint}
+        />
+      </label>
+      <p className="text-pretty text-xs text-fg-3">
+        {t("wireguard.endpoint.hint")}
+      </p>
       <label className="flex min-h-11 items-center gap-2.5 sm:min-h-8">
         <Checkbox
           checked={awg.fullTunnel}

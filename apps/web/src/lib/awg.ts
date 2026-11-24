@@ -39,6 +39,23 @@ export function applyAwgParams(config: string, params: AwgParams): string {
   )
 }
 
+/** Host of the first `Endpoint = host:port` line, brackets removed. */
+export function endpointHost(config: string | null): string {
+  const match = config ? /^\s*Endpoint\s*=\s*(\[[^\]]+\]|[^:\s]+)/im.exec(config) : null
+  return match?.[1]?.replace(/^\[|\]$/g, "") ?? ""
+}
+
+/** Replaces the host of every `Endpoint` line, keeping the port. */
+export function applyEndpointHost(config: string, host: string): string {
+  const value = host.trim()
+  if (!value) return config
+  const target = value.includes(":") && !value.startsWith("[") ? `[${value}]` : value
+  return config.replace(
+    /^(\s*Endpoint\s*=\s*)(?:\[[^\]]+\]|[^:\s]+)(:\d+\s*)$/gim,
+    (_line, prefix: string, port: string) => `${prefix}${target}${port}`
+  )
+}
+
 /** Browser download of a text config, without touching the server. */
 export function downloadTextFile(filename: string, text: string): void {
   const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }))

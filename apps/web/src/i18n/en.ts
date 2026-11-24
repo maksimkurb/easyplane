@@ -2038,6 +2038,10 @@ export const enTranslation = {
     configDescription:
       "Open the WireGuard app on the phone, choose Add tunnel, and scan this code. Or download the .conf file.",
     configHint: "The configuration contains a private key. Do not share it.",
+    endpoint: {
+      label: "Hub address in Endpoint",
+      hint: "Defaults to the first domain among the extra advertised addresses, then the first advertised address, then a known public IP. Type your own address to replace it in the config.",
+    },
     fullTunnel: {
       label: "Send all traffic through the EasyTier network",
       hint: "Writes AllowedIPs = 0.0.0.0/0. The hub forwards that traffic to its exit node, so the hub needs an exit_nodes list and the exit node must have exit-node mode enabled. Otherwise the client loses internet access.",

@@ -36,6 +36,7 @@ import {
   isValidWireguardPort,
   legacyClientConfig,
   resolveClientEndpoint,
+  pickClientHost,
   legacyConnectedClients,
   legacyPortalConfigHint,
   legacyPortalReplyError,
@@ -277,9 +278,15 @@ export class WireguardService {
     return name;
   }
 
-  /** Address a WireGuard client should dial: the hub's first public IPv4. */
-  private hubPublicHost(hub: { publicIps?: readonly string[] | null }): string | null {
-    return normalizePublicIpv4List([...(hub.publicIps ?? [])])[0] ?? null;
+  /** Address a WireGuard client should dial (see `pickClientHost`). */
+  private hubPublicHost(hub: {
+    publicIps?: readonly string[] | null;
+    advertisedEndpoints?: readonly string[] | null;
+  }): string | null {
+    return pickClientHost(
+      hub.advertisedEndpoints ?? [],
+      normalizePublicIpv4List([...(hub.publicIps ?? [])]),
+    );
   }
 
   /** History entry on the hub for a WireGuard change (never fails the change). */

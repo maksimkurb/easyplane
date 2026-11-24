@@ -37,3 +37,14 @@ describe("applyFullTunnel", () => {
     expect(out).toContain("Address = 10.0.0.2/32")
   })
 })
+
+describe("endpoint host", () => {
+  const conf = "[Peer]\nEndpoint = 1.2.3.4:11013\n"
+  it("reads and replaces the host, keeping the port", async () => {
+    const { endpointHost, applyEndpointHost } = await import("@/lib/awg")
+    expect(endpointHost(conf)).toBe("1.2.3.4")
+    expect(applyEndpointHost(conf, "vpn.example.com")).toContain("Endpoint = vpn.example.com:11013")
+    expect(applyEndpointHost(conf, "::1")).toContain("Endpoint = [::1]:11013")
+    expect(applyEndpointHost(conf, " ")).toBe(conf)
+  })
+})
