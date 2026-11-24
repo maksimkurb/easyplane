@@ -35,7 +35,7 @@ function PartialGlyph({ className }: { className?: string }) {
     <span
       aria-hidden="true"
       className={cn(
-        "inline-block size-3 rounded-full bg-[linear-gradient(90deg,var(--fg-2)_50%,transparent_50%)] ring-1 ring-fg-2",
+        "inline-block size-2.5 rounded-full bg-[linear-gradient(90deg,var(--fg-2)_50%,transparent_50%)] ring-1 ring-fg-2",
         className
       )}
     />
@@ -297,7 +297,8 @@ export function AccessMatrix({
               ) : null}
             </>
           )}
-          <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-fg-2">
+          {enforced && hasEntities ? (
+            <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-fg-2">
             <span className="inline-flex items-center gap-1">
               <ShieldCheckIcon
                 aria-hidden="true"
@@ -310,10 +311,11 @@ export function AccessMatrix({
               {t("accessA.matrix.denied")}
             </span>
             <span className="inline-flex items-center gap-1">
-              <PartialGlyph className="size-3.5 ring-fg-2" />
+              <PartialGlyph className="ring-fg-2" />
               {t("accessA.matrix.partialLegend")}
             </span>
           </p>
+          ) : null}
         </div>
       ) : null}
     </section>
