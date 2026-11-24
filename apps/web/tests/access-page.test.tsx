@@ -159,7 +159,10 @@ describe("NetworkAccessPage", () => {
       for (const toggle of screen.getAllByRole("switch")) {
         expect(toggle).toHaveAttribute("aria-disabled", "true")
       }
-      expect(screen.getByText("Off")).toBeInTheDocument()
+      expect(screen.getByTestId("rule-row-1")).toHaveAttribute(
+        "data-disabled",
+        "true"
+      )
     }
   )
 })
