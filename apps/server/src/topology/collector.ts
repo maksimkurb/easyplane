@@ -455,6 +455,28 @@ export class TopologyService {
           : {};
       const online = status.state === "online";
       const nodeId = `wg:${client.id}`;
+      // The hub also lists an attached portal client as an ordinary peer, so
+      // the same client would appear twice: once from the route table (often
+      // reported offline) and once from the portal. The portal node wins.
+      const clientIp = client.virtualIpv4.split("/")[0];
+      const phantomIds = new Set(
+        snapshot.nodes
+          .filter(
+            (node) =>
+              !node.managed &&
+              node.kind !== "wireguard" &&
+              ((typeof status.peerId === "number" && node.peerId === status.peerId) ||
+                (node.virtualIpv4 !== null &&
+                  node.virtualIpv4.split("/")[0] === clientIp)),
+          )
+          .map((node) => node.id),
+      );
+      if (phantomIds.size > 0) {
+        snapshot.nodes = snapshot.nodes.filter((node) => !phantomIds.has(node.id));
+        snapshot.links = snapshot.links.filter(
+          (link) => !phantomIds.has(link.source) && !phantomIds.has(link.target),
+        );
+      }
       snapshot.nodes.push({
         id: nodeId,
         deviceId: null,
