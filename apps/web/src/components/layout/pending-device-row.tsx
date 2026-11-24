@@ -79,25 +79,26 @@ export function PendingDeviceRow({
           />
         </span>
         <div className="flex min-w-0 flex-col justify-center gap-0.5">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+          <div className="flex min-w-0 items-center gap-x-2">
             <Link
               aria-label={t("devices.openDevice", { name })}
-              className="truncate font-semibold hover:underline"
+              className="min-w-[10ch] shrink truncate font-semibold hover:underline"
               href={`/devices/${device.id}`}
             >
               {name}
             </Link>
-            <Chip variant="warn">{t("devices.status.pending")}</Chip>
-            <span className="inline-flex min-w-0 flex-wrap items-center gap-x-1 self-center text-xs leading-none text-fg-3">
-              <span>{t("approvals.wantsToJoin")}</span>
+            <Chip className="flex-none" variant="warn">
+              {t("devices.status.pending")}
+            </Chip>
+            <span className="min-w-0 flex-1 truncate text-xs text-fg-3">
+              {t("approvals.wantsToJoin")}{" "}
               <Link
                 className="font-medium text-fg-2 hover:text-foreground hover:underline"
                 href={`/networks/${device.networkId}`}
               >
                 {networkName}
-              </Link>
-              <span aria-hidden="true">·</span>
-              <RelativeTime value={device.createdAt} />
+              </Link>{" "}
+              · <RelativeTime value={device.createdAt} />
             </span>
           </div>
           <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-fg-3">
