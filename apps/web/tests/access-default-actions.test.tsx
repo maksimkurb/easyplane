@@ -46,19 +46,47 @@ describe("default actions", () => {
     })
   })
 
-  it("shows the final Everything else row with every direction editable inline", async () => {
+  it("collapses into one muted summary with an Edit affordance", async () => {
+    const onToggleExpanded = vi.fn()
+    const user = userEvent.setup({ document })
+    renderWithTooltips(
+      <DefaultActionsRow
+        chains={CHAINS}
+        onChange={vi.fn()}
+        onToggleAdvanced={vi.fn()}
+        onToggleExpanded={onToggleExpanded}
+      />
+    )
+
+    expect(
+      screen.getByText(
+        "Everything else: Inbound blocked · Outbound allowed · Through this device blocked"
+      )
+    ).toBeInTheDocument()
+    expect(screen.queryByRole("radiogroup")).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: "Advanced settings" })
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Edit" }))
+    expect(onToggleExpanded).toHaveBeenCalled()
+  })
+
+  it("edits every direction and reaches advanced settings when expanded", async () => {
     const onChange = vi.fn()
     const onToggleAdvanced = vi.fn()
     const user = userEvent.setup({ document })
     renderWithTooltips(
       <DefaultActionsRow
+        advancedExpanded={false}
         chains={CHAINS}
+        expanded
         onChange={onChange}
         onToggleAdvanced={onToggleAdvanced}
+        onToggleExpanded={vi.fn()}
       />
     )
 
-    expect(screen.getByText("Everything else")).toBeInTheDocument()
     for (const name of ["Inbound", "Outbound", "Through this device"]) {
       expect(
         screen.getByRole("radiogroup", { name: `${name} default action` })

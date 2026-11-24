@@ -97,3 +97,11 @@ export const LongCidrs: Story = {
 }
 
 export const SingleRule: Story = { args: { rules: accessRules.slice(0, 1) } }
+
+export const LongBuildFarmRule: Story = {
+  args: { rules: [accessRules[3]!] },
+}
+
+export const DisabledAndDeny: Story = {
+  args: { rules: [accessRules[2]!, accessRules[4]!] },
+}

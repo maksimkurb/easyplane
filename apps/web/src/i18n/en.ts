@@ -822,6 +822,7 @@ export const enTranslation = {
       namePlaceholder: "e.g. Block SSH to NAS",
       suggestion: "{{action}} {{from}} → {{to}}",
       summaryTitle: "{{action}} {{from}} → {{to}}, {{service}}",
+      moreSubjects: "+{{count}} more",
       useSuggestion: "Use suggestion",
       action: "Action",
       allow: "Allow",
@@ -918,6 +919,11 @@ export const enTranslation = {
       done: "Done",
       everythingElse: "Everything else",
       advanced: "Advanced settings",
+      edit: "Edit",
+      blocked: "blocked",
+      allowed: "allowed",
+      summary: "Everything else: {{directions}}",
+      summaryPart: "{{chain}} {{state}}",
       explain: {
         inbound:
           "Traffic addressed to this device itself, for example a client connecting to its service.",

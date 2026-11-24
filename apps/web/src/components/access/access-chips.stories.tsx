@@ -6,6 +6,7 @@ import {
   PlainDeviceChip,
   SubjectChipView,
   SubjectChips,
+  SubjectTokenList,
   TagChip,
 } from "@/components/access/access-chips"
 import type { SubjectChip } from "@/lib/access-policy"
@@ -65,6 +66,47 @@ export const LongNames: Story = {
       <TagChip name="tag:an-extremely-long-tag-name-that-would-overflow-a-row" />
       <GroupChip name="group:a-whole-department-with-a-long-name" />
       <PlainDeviceChip name="a-very-long-hostname-that-keeps-going-beyond-any-reasonable-cell-width-01" />
+    </div>
+  ),
+}
+
+export const SubjectTokens: Story = {
+  render: () => (
+    <div className="max-w-xl space-y-2 text-[12.5px] leading-[17px] text-fg-3">
+      <div>
+        <SubjectTokenList
+          side="from"
+          subjects={accessSubjects}
+          values={["tag:work", "group:admins", "*"]}
+        />
+        <span aria-hidden="true" className="mx-1">
+          →
+        </span>
+        <SubjectTokenList
+          side="to"
+          subjects={accessSubjects}
+          values={["tag:storage", "host:nas"]}
+        />
+        <span aria-hidden="true" className="mx-1">
+          ·
+        </span>
+        <span>TCP 445, 548</span>
+      </div>
+      <div>
+        <SubjectTokenList
+          max={3}
+          side="to"
+          subjects={accessSubjects}
+          values={[
+            "cidr:10.42.1.0/24",
+            "cidr:10.42.2.0/24",
+            "subnet:office",
+            "host:nas",
+            "host:printer",
+            "tag:storage",
+          ]}
+        />
+      </div>
     </div>
   ),
 }

@@ -16,13 +16,21 @@ import { WireguardIcon } from "@/components/device/wireguard-badge"
 
 import type { AccessSubjects, SubjectChip } from "@/lib/access-policy"
 import { findSubnet, stripSubjectKind, subjectChip } from "@/lib/access-policy"
-import { prettySubnetName } from "@/components/access/access-rule-summary"
+import {
+  prettySubnetName,
+  subjectVisibleText,
+} from "@/components/access/access-rule-summary"
 import { cn } from "@/lib/utils"
 
 // No `min-w-0`: a chip must move to the next wrapped line as a whole instead of
 // being squeezed until its label breaks in the middle (CIDRs, IPv6, ports).
 const baseChip =
   "inline-flex min-h-6 max-w-full items-center gap-1.5 rounded-[7px] px-2 py-0.5 text-[13px] leading-[18px]"
+
+// Quiet inline counterpart of a chip: same colour cues, no ring or shadow, so a
+// rule row still reads as a sentence. Used in the collapsed rule row.
+const baseToken =
+  "inline-flex max-w-full flex-none items-center gap-1 rounded-[4px] px-1 align-baseline text-[12.5px] leading-[17px]"
 
 export function AllowDenyPill({
   action,
@@ -234,6 +242,143 @@ export function GroupChip({
       <span className="min-w-0 font-medium [overflow-wrap:anywhere]">
         {name}
       </span>
+    </span>
+  )
+}
+
+/**
+ * One subject in the collapsed row: a subtler version of `SubjectChipView`
+ * without the ring. Long details (a host's IP, a subnet's CIDR) stay in the
+ * native tooltip instead of eating the line.
+ */
+export function SubjectTokenView({
+  chip,
+  title,
+  className,
+}: {
+  chip: SubjectChip
+  title?: string
+  className?: string
+}) {
+  const { t } = useTranslation()
+  const ariaLabel = chipAriaLabel(chip, t)
+  const isAddress = chip.kind === "cidr" || chip.mono === true
+  return (
+    <span
+      aria-label={title ? `${ariaLabel} · ${title}` : ariaLabel}
+      className={cn(
+        baseToken,
+        chip.kind === "tag" &&
+          "bg-[var(--tag-bg)] text-[var(--tag-fg)]",
+        chip.kind === "group" &&
+          "rounded-full bg-[var(--ug-bg)] text-[var(--ug-fg)]",
+        chip.kind !== "tag" &&
+          chip.kind !== "group" &&
+          "bg-surface-2 text-fg-2",
+        className
+      )}
+      data-kind={chip.kind}
+      title={title}
+    >
+      {iconForKind(chip.kind)}
+      <span
+        className={cn(
+          "min-w-0",
+          isAddress
+            ? "font-mono text-[12px] whitespace-nowrap"
+            : "truncate whitespace-nowrap"
+        )}
+      >
+        {chip.label}
+      </span>
+    </span>
+  )
+}
+
+/** Label and tooltip for one subject, with host/subnet details kept hidden. */
+function tokenContent(
+  subject: string,
+  subjects: AccessSubjects,
+  side: "from" | "to",
+  t: TFunction
+): { chip: SubjectChip; title?: string } {
+  const chip = subjectChip(subject, subjects, side)
+  const base = {
+    ...chip,
+    label:
+      chip.kind === "any"
+        ? side === "from"
+          ? t("accessA.picker.anyFrom")
+          : t("accessA.picker.anyTo")
+        : chip.label,
+  }
+  if (chip.kind === "host") {
+    return { chip: base, ...(chip.detail ? { title: chip.detail } : {}) }
+  }
+  if (chip.kind === "subnet") {
+    const subnet = findSubnet(subjects, stripSubjectKind(subject).name)
+    const pretty = prettySubnetName(
+      chip.label,
+      subnet?.cidr,
+      subnet?.viaHostname
+    )
+    const via =
+      pretty.auto && pretty.via
+        ? t("accessA.accordion.via", { device: pretty.via })
+        : undefined
+    const title = [chip.detail, via].filter(Boolean).join(" · ")
+    return {
+      chip: { ...base, label: pretty.label },
+      ...(title ? { title } : {}),
+    }
+  }
+  return { chip: base }
+}
+
+/**
+ * The source or destination half of the row sentence. Shows at most `max`
+ * subjects and collapses the rest into `+N more`, whose tooltip lists them.
+ */
+export function SubjectTokenList({
+  subjects,
+  values,
+  side,
+  max = 3,
+  className,
+}: {
+  subjects: AccessSubjects
+  values: string[]
+  side: "from" | "to"
+  max?: number
+  className?: string
+}) {
+  const { t } = useTranslation()
+  const visible = values.slice(0, Math.max(0, max))
+  const hidden = values.slice(visible.length)
+  return (
+    <span className={cn("inline align-baseline", className)}>
+      {visible.map((value, index) => {
+        const { chip, title } = tokenContent(value, subjects, side, t)
+        return (
+          <Fragment key={value}>
+            {index > 0 ? ", " : null}
+            <SubjectTokenView chip={chip} title={title} />
+          </Fragment>
+        )
+      })}
+      {hidden.length > 0 ? (
+        <>
+          {" "}
+          <span
+            className="inline-flex rounded-[4px] px-1 align-baseline text-[12px] leading-[17px] font-medium text-fg-3"
+            title={hidden
+              .map((subject) => subjectVisibleText(subject, subjects, side, t))
+              .join(", ")}
+          >
+            {t("accessA.rules.moreSubjects", { count: hidden.length })}
+          </span>
+        </>
+      ) : null}
     </span>
   )
 }

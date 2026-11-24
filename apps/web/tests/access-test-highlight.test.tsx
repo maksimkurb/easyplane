@@ -59,7 +59,7 @@ describe("test-access highlighting", () => {
     expect(
       screen.getByText(/Rules are checked top to bottom/)
     ).toBeInTheDocument()
-    expect(screen.getByText("Everything else")).toBeInTheDocument()
+    expect(screen.getByText(/^Everything else:/)).toBeInTheDocument()
     const rows = screen.getAllByTestId(/^rule-row-/)
     expect(rows[0]).toHaveTextContent("Block SSH to NAS")
     expect(rows[1]).toHaveTextContent("LAN to VPS")

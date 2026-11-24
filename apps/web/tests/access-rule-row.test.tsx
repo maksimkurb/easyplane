@@ -44,17 +44,41 @@ function row(overrides?: Partial<ComponentProps<typeof RuleRow>>) {
 }
 
 describe("RuleRow", () => {
-  it("renders the name, sentence, off pill and disabled switch for a disabled rule", () => {
+  it("renders the name, sentence and disabled switch for a disabled rule", () => {
     render(row())
     expect(screen.getByText("Block SSH to NAS")).toBeInTheDocument()
-    expect(screen.getByText("Off")).toBeInTheDocument()
     expect(screen.getByText("TCP 22")).toBeInTheDocument()
     expect(screen.getByRole("switch")).not.toBeChecked()
+    // The old "Off" chip is gone: the row itself is marked as disabled.
+    expect(screen.queryByText("Off")).not.toBeInTheDocument()
+    expect(screen.getByTestId("rule-row-0")).toHaveAttribute(
+      "data-disabled",
+      "true"
+    )
     expect(
       screen.getByRole("button", {
         name: /^Block SSH to NAS Deny Anyone nas-01 TCP 22 Off .*Edit rule 1/,
       })
     ).toBeInTheDocument()
+  })
+
+  it("keeps host addresses out of the line and folds the target overflow", () => {
+    render(
+      row({
+        rule: {
+          ...RULE,
+          enabled: true,
+          action: "allow",
+          name: "Printers",
+          from: ["tag:home"],
+          to: ["host:printer", "tag:home", "tag:eu", "device:nas-01"],
+        },
+      })
+    )
+    const hostToken = screen.getByTitle("192.168.55.20")
+    expect(hostToken).toHaveTextContent("printer")
+    expect(hostToken).not.toHaveTextContent("192.168.55.20")
+    expect(screen.getByText("+1 more")).toBeInTheDocument()
   })
 
   it("gives an unnamed rule a plain-language heading", () => {

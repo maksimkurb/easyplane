@@ -68,6 +68,7 @@ export function AccessRules({
   const { t } = useTranslation()
   const [editing, setEditing] = useState<Editing | null>(null)
   const [defaultsOpen, setDefaultsOpen] = useState(false)
+  const [defaultsAdvanced, setDefaultsAdvanced] = useState(false)
   const dragIndex = useRef<number | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -107,7 +108,7 @@ export function AccessRules({
               {t("accessA.rules.order")}
             </p>
           </div>
-          {canEdit ? (
+          {canEdit && rules.length > 0 ? (
             <Button
               data-testid="add-rule"
               disabled={busy}
@@ -137,9 +138,22 @@ export function AccessRules({
           ref={listRef}
         >
           {rules.length === 0 ? (
-            <p className="px-3 py-3 text-sm text-fg-3">
-              {t("accessA.rules.empty")}
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-3">
+              <p className="text-sm text-fg-3">{t("accessA.rules.empty")}</p>
+              {canEdit ? (
+                <Button
+                  data-testid="add-rule-empty"
+                  disabled={busy}
+                  onClick={openNew}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <PlusIcon aria-hidden="true" />
+                  {t("accessA.rules.add")}
+                </Button>
+              ) : null}
+            </div>
           ) : null}
           {rules.map((rule, index) => (
             <RuleRow
@@ -172,29 +186,22 @@ export function AccessRules({
               subjects={subjects}
             />
           ))}
-
-          {canEdit ? (
-            <button
-              className="flex min-h-11 w-full cursor-pointer items-center gap-2 px-3 text-left text-[13px] font-medium text-fg-2 hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none max-sm:min-h-12"
-              data-testid="add-rule-row"
-              disabled={busy}
-              onClick={openNew}
-              type="button"
-            >
-              <PlusIcon aria-hidden="true" className="size-4" />
-              {t("accessA.rules.add")}
-            </button>
-          ) : null}
         </div>
 
         <DefaultActionsRow
+          advancedExpanded={defaultsAdvanced}
           chains={chains}
           disabled={!canEdit || busy}
           expanded={defaultsOpen}
           onChange={onChangeChain}
-          onToggleAdvanced={() => setDefaultsOpen((current) => !current)}
+          onToggleAdvanced={() => setDefaultsAdvanced((current) => !current)}
+          onToggleExpanded={() => {
+            const next = !defaultsOpen
+            setDefaultsOpen(next)
+            if (!next) setDefaultsAdvanced(false)
+          }}
         />
-        {defaultsOpen ? (
+        {defaultsOpen && defaultsAdvanced ? (
           <DefaultActionsPanel
             chains={chains}
             disabled={!canEdit || busy}

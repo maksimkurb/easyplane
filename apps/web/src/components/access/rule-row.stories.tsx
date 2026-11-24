@@ -37,6 +37,8 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
+export const DenyRule: Story = { args: { rule: accessRules[2]!, index: 2 } }
+
 export const DisabledRule: Story = { args: { rule: accessRules[4]!, index: 4 } }
 
 export const Highlighted: Story = { args: { highlighted: true } }

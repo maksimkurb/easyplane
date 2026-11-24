@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { AllowDenyPill, SubjectChips } from "@/components/access/access-chips"
+import { SubjectTokenList } from "@/components/access/access-chips"
 import {
   isGeneratedRuleName,
   ruleDisplayTitle,
@@ -28,11 +28,23 @@ import {
 } from "@/components/access/access-rule-summary"
 import { cn } from "@/lib/utils"
 
+function subjectLine(
+  values: string[],
+  side: "from" | "to",
+  subjects: AccessSubjects,
+  t: TFunction
+): string {
+  return values
+    .map((subject) => subjectVisibleText(subject, subjects, side, t))
+    .join(", ")
+}
+
 /**
  * The row is one big button whose accessible name must contain every visible
- * fragment in reading order: heading, action, both chip lists, ports, the off
- * pill and any error. The purpose ("Edit rule N") goes last so the name still
- * starts with the visible heading.
+ * fragment in reading order: heading, action, both subject groups, ports, the
+ * disabled state and any error. The truncated summary keeps the full list here.
+ * The purpose ("Edit rule N") goes last so the name still starts with the
+ * visible heading.
  */
 function ruleVisibleName(
   rule: AccessRule,
@@ -44,16 +56,11 @@ function ruleVisibleName(
 ): string {
   const action =
     rule.action === "allow" ? t("accessA.rules.allow") : t("accessA.rules.deny")
-  const subjectsText = [
-    ...rule.from.map((subject) =>
-      subjectVisibleText(subject, subjects, "from", t)
-    ),
-    ...rule.to.map((subject) => subjectVisibleText(subject, subjects, "to", t)),
-  ]
   return [
     title,
     action,
-    ...subjectsText,
+    subjectLine(rule.from, "from", subjects, t) || t("accessA.preview.anyone"),
+    subjectLine(rule.to, "to", subjects, t) || t("accessA.preview.anywhere"),
     portsSummary(rule, t),
     rule.enabled === false ? t("accessA.rules.off") : null,
     error ?? null,
@@ -64,8 +71,13 @@ function ruleVisibleName(
 }
 
 /**
- * One line of the ordered rule list. It reads as a sentence:
- * `[#] [Allow] from → to · ports [switch] [⋯]`.
+ * One rule in the ordered list, in two calm lines:
+ * `Title  ● Allow`
+ * `source → destination · TCP 445, 548`
+ *
+ * The row chrome is deliberately quiet: the drag handle appears on hover or
+ * keyboard focus (always on touch), the order number is gone, and a disabled
+ * rule is simply dimmed with its switch off.
  */
 export function RuleRow({
   rule,
@@ -112,13 +124,23 @@ export function RuleRow({
   const purpose = t("accessA.rules.edit", { rule: index + 1 })
   const visibleName = ruleVisibleName(rule, subjects, title, purpose, error, t)
   const dimmed = rule.enabled === false
+  const action =
+    rule.action === "allow" ? t("accessA.rules.allow") : t("accessA.rules.deny")
+  const fullSummary = [
+    subjectLine(rule.from, "from", subjects, t) || t("accessA.preview.anyone"),
+    "→",
+    subjectLine(rule.to, "to", subjects, t) || t("accessA.preview.anywhere"),
+    "·",
+    portsSummary(rule, t),
+  ].join(" ")
 
   return (
     <div
       className={cn(
-        "group/rule relative grid min-h-[52px] min-w-0 grid-cols-[20px_minmax(0,1fr)_44px_44px] items-start gap-x-1 px-2 py-1.5 sm:min-h-[52px] sm:grid-cols-[24px_22px_minmax(0,1fr)_40px_40px] sm:items-center sm:gap-x-1.5 sm:px-1",
+        "group/rule relative grid min-h-[52px] min-w-0 grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-x-1 px-1 py-1.5 max-sm:min-h-14",
         highlighted && "bg-brand-soft/70 shadow-[inset_3px_0_0_var(--brand)]"
       )}
+      data-disabled={dimmed ? "true" : undefined}
       data-highlighted={highlighted ? "true" : undefined}
       data-testid={`rule-row-${index}`}
       onDragOver={(event) => event.preventDefault()}
@@ -129,7 +151,7 @@ export function RuleRow({
     >
       <button
         aria-label={t("accessA.rules.drag", { rule: index + 1 })}
-        className="relative mt-0.5 grid size-6 cursor-grab place-items-center rounded-md text-fg-3 hover:bg-surface-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none active:cursor-grabbing max-sm:hidden sm:mt-0"
+        className="grid size-6 cursor-grab place-items-center rounded-md text-fg-3 opacity-0 transition-opacity group-hover/rule:opacity-100 group-focus-within/rule:opacity-100 hover:bg-surface-2 hover:text-foreground focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none active:cursor-grabbing disabled:cursor-default [@media(pointer:coarse)]:opacity-100"
         disabled={!canEdit}
         draggable={canEdit}
         onDragStart={(event) => {
@@ -152,62 +174,77 @@ export function RuleRow({
         <GripVerticalIcon aria-hidden="true" className="size-4" />
       </button>
 
-      <span className="mt-1 text-center text-[12.5px] leading-5 font-medium text-fg-3 tabular-nums sm:mt-0">
-        {index + 1}
-      </span>
-
       <button
         aria-label={visibleName}
-        className="flex min-w-0 cursor-pointer flex-col gap-1 text-left focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+        className={cn(
+          "flex min-w-0 cursor-pointer flex-col gap-0.5 text-left focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
+          dimmed && "opacity-60"
+        )}
         data-testid={`rule-open-${index}`}
         onClick={onOpen}
         type="button"
       >
+        <span className="flex min-w-0 items-center gap-2">
+          <span
+            className="min-w-0 flex-1 truncate text-[13.5px] leading-[18px] font-semibold"
+            title={title}
+          >
+            {title}
+          </span>
+          <span
+            className={cn(
+              "inline-flex flex-none items-center gap-1 text-[11.5px] leading-4 font-semibold",
+              rule.action === "allow" ? "text-ok" : "text-err"
+            )}
+          >
+            <span
+              aria-hidden="true"
+              className="size-1.5 flex-none rounded-full bg-current"
+            />
+            {action}
+          </span>
+        </span>
+
         <span
-          className="max-w-full truncate text-[13.5px] leading-[18px] font-semibold"
-          title={title}
+          className="flex min-w-0 items-center gap-1 text-[12.5px] leading-[17px] text-fg-3"
+          title={fullSummary}
         >
-          {title}
-        </span>{" "}
-        <span className="flex min-w-0 flex-wrap items-center gap-1">
-          <span className="flex min-w-0 flex-wrap items-center gap-1">
-            <AllowDenyPill
-              action={rule.action}
-              className="h-5 min-w-[48px] px-1.5 sm:h-6 sm:min-w-[52px]"
-            />{" "}
-            <SubjectChips side="from" subjects={subjects} values={rule.from} />{" "}
+          <span className="min-w-0 truncate">
+            <SubjectTokenList
+              side="from"
+              subjects={subjects}
+              values={rule.from}
+            />
             <ArrowRightIcon
               aria-hidden="true"
-              className="size-3.5 flex-none text-fg-3"
+              className="mx-1 inline size-3 flex-none align-[-1px] text-fg-3"
             />
-          </span>{" "}
-          <SubjectChips side="to" subjects={subjects} values={rule.to} />{" "}
-          <span className="inline-flex min-h-5 max-w-full items-center rounded-[7px] bg-surface-2 px-2 py-0.5 text-[12.5px] leading-[18px] shadow-[inset_0_0_0_1px_var(--line)] sm:min-h-6">
-            {portsSummary(rule, t)}
+            <SubjectTokenList side="to" subjects={subjects} values={rule.to} />
           </span>
-          {dimmed ? (
-            <>
-              {" "}
-              <span className="inline-flex h-[18px] flex-none items-center rounded-full bg-surface-3 px-1.5 text-[12px] leading-[18px] font-semibold text-fg-2">
-                {t("accessA.rules.off")}
-              </span>
-            </>
-          ) : null}
+          <span aria-hidden="true" className="flex-none text-fg-3">
+            ·
+          </span>
+          <span className="flex-none pl-0.5 whitespace-nowrap tabular-nums">
+            {portsSummary(rule, t, 2)}
+          </span>
         </span>
+
         {error ? (
-          <>
-            {" "}
-            <span
-              aria-live="polite"
-              className="text-[12px] leading-[18px] text-err"
-            >
-              {error}
-            </span>
-          </>
+          <span
+            aria-live="polite"
+            className="text-[12px] leading-[18px] text-err"
+          >
+            {error}
+          </span>
         ) : null}
       </button>
 
-      <span className="grid place-items-center">
+      <span
+        className={cn(
+          "flex flex-none items-center gap-0.5 sm:gap-1",
+          dimmed && "opacity-60"
+        )}
+      >
         <Switch
           aria-label={
             name
@@ -219,48 +256,52 @@ export function RuleRow({
           onCheckedChange={onToggle}
           size="sm"
         />
-      </span>
 
-      {canEdit ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            aria-label={
-              name
-                ? t("accessA.rules.actionsNamed", { name })
-                : t("accessA.rules.actions", { rule: index + 1 })
-            }
-            className="grid size-8 cursor-pointer place-items-center justify-self-end rounded-lg text-fg-2 outline-none hover:bg-surface-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 max-sm:size-11 sm:justify-self-center"
-            disabled={busy}
-            data-testid={`rule-menu-${index}`}
-          >
-            <MoreHorizontalIcon aria-hidden="true" className="size-[18px]" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={onOpen}>
-              <PencilIcon aria-hidden="true" />
-              {t("accessA.rules.editAction")}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDuplicate}>
-              <CopyIcon aria-hidden="true" />
-              {t("accessA.rules.duplicate")}
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={!canMoveUp} onClick={() => onMove(-1)}>
-              <ArrowUpIcon aria-hidden="true" />
-              {t("accessA.rules.moveUp")}
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={!canMoveDown} onClick={() => onMove(1)}>
-              <ArrowDownIcon aria-hidden="true" />
-              {t("accessA.rules.moveDown")}
-            </DropdownMenuItem>
-            <DropdownMenuItem destructive onClick={onDelete}>
-              <Trash2Icon aria-hidden="true" />
-              {t("accessA.rules.delete")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : (
-        <span />
-      )}
+        {canEdit ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              aria-label={
+                name
+                  ? t("accessA.rules.actionsNamed", { name })
+                  : t("accessA.rules.actions", { rule: index + 1 })
+              }
+              className="grid size-7 cursor-pointer place-items-center rounded-lg text-fg-3 outline-none hover:bg-surface-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 max-sm:size-11"
+              disabled={busy}
+              data-testid={`rule-menu-${index}`}
+            >
+              <MoreHorizontalIcon aria-hidden="true" className="size-[18px]" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={onOpen}>
+                <PencilIcon aria-hidden="true" />
+                {t("accessA.rules.editAction")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onDuplicate}>
+                <CopyIcon aria-hidden="true" />
+                {t("accessA.rules.duplicate")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!canMoveUp}
+                onClick={() => onMove(-1)}
+              >
+                <ArrowUpIcon aria-hidden="true" />
+                {t("accessA.rules.moveUp")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!canMoveDown}
+                onClick={() => onMove(1)}
+              >
+                <ArrowDownIcon aria-hidden="true" />
+                {t("accessA.rules.moveDown")}
+              </DropdownMenuItem>
+              <DropdownMenuItem destructive onClick={onDelete}>
+                <Trash2Icon aria-hidden="true" />
+                {t("accessA.rules.delete")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
+      </span>
     </div>
   )
 }

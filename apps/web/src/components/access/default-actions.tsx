@@ -1,8 +1,8 @@
+import { useId } from "react"
 import { useTranslation } from "react-i18next"
 import {
-  ArrowRightIcon,
+  ChevronDownIcon,
   InfoIcon,
-  LockIcon,
   SlidersHorizontalIcon,
 } from "lucide-react"
 
@@ -124,42 +124,85 @@ export function ChainDirectionLabel({ name }: { name: AccessChainName }) {
 
 /**
  * The final row of the rule list: what happens to traffic no rule matched.
- * Every direction is visible and editable in place; names and the enabled
- * switch stay under "Advanced settings".
+ * Collapsed it is one muted sentence with an Edit affordance; expanding it
+ * reveals the three direction controls and, below them, "Advanced settings"
+ * (chain names and the enabled switches).
  */
 export function DefaultActionsRow({
   chains,
   onChange,
   disabled = false,
   expanded = false,
+  advancedExpanded = false,
+  onToggleExpanded,
   onToggleAdvanced,
 }: {
   chains: Chains
   onChange: (name: AccessChainName, patch: Partial<AccessChain>) => void
   disabled?: boolean
   expanded?: boolean
+  advancedExpanded?: boolean
+  onToggleExpanded?: () => void
   onToggleAdvanced?: () => void
 }) {
   const { t } = useTranslation()
+  const controlsId = useId()
+  const directions = ACCESS_CHAINS.map((name) =>
+    t("accessA.defaults.summaryPart", {
+      chain: t(`accessA.defaults.${name}`),
+      state:
+        chains[name].default === "allow"
+          ? t("accessA.defaults.allowed")
+          : t("accessA.defaults.blocked"),
+    })
+  ).join(" · ")
+  const summary = t("accessA.defaults.summary", { directions })
+
   return (
     <div
-      className="min-w-0 bg-surface-2/70 px-2 py-2 sm:px-3"
+      className="min-w-0 bg-surface-2/70 px-3 py-2"
       data-testid="default-actions-row"
     >
-      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
-        <span className="inline-flex min-w-0 items-center gap-1.5 text-[12.5px] leading-[18px] font-semibold text-fg-2">
-          <LockIcon aria-hidden="true" className="size-3.5 flex-none" />
-          {t("accessA.defaults.everythingElse")}
-        </span>
-        <ArrowRightIcon
-          aria-hidden="true"
-          className="size-3.5 flex-none text-fg-3 max-sm:hidden"
-        />
+      <div className="flex min-w-0 items-center gap-2">
+        <p
+          className="min-w-0 flex-1 truncate text-[12.5px] leading-[18px] text-fg-2"
+          title={expanded ? undefined : summary}
+        >
+          {expanded ? t("accessA.defaults.everythingElse") : summary}
+        </p>
+        {onToggleExpanded ? (
+          <button
+            aria-controls={controlsId}
+            aria-expanded={expanded}
+            className="inline-flex flex-none cursor-pointer items-center gap-1 rounded-lg px-1.5 py-1 text-[12.5px] leading-[18px] font-medium text-fg-2 hover:bg-surface-3 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 max-sm:min-h-11 max-sm:px-2"
+            data-testid="default-actions-edit"
+            disabled={disabled}
+            onClick={onToggleExpanded}
+            type="button"
+          >
+            {expanded
+              ? t("accessA.defaults.done")
+              : t("accessA.defaults.edit")}
+            <ChevronDownIcon
+              aria-hidden="true"
+              className={cn(
+                "size-3.5 flex-none transition-transform",
+                expanded && "rotate-180"
+              )}
+            />
+          </button>
+        ) : null}
+      </div>
 
-        <div className="grid min-w-0 basis-full gap-1.5 sm:flex sm:flex-1 sm:basis-auto sm:flex-wrap sm:items-center">
+      {expanded ? (
+        <div
+          className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5"
+          data-testid="default-actions-controls"
+          id={controlsId}
+        >
           {ACCESS_CHAINS.map((name) => (
             <span
-              className="flex min-h-8 min-w-0 items-center justify-between gap-2 rounded-lg bg-card px-2 py-1 shadow-[inset_0_0_0_1px_var(--line)] sm:inline-flex sm:justify-start"
+              className="flex min-h-8 min-w-0 flex-1 items-center justify-between gap-2 rounded-lg bg-card px-2 py-1 shadow-[inset_0_0_0_1px_var(--line)] sm:flex-none sm:justify-start"
               key={name}
             >
               <ChainDirectionLabel name={name} />
@@ -186,22 +229,22 @@ export function DefaultActionsRow({
               />
             </span>
           ))}
-        </div>
 
-        {onToggleAdvanced ? (
-          <button
-            aria-expanded={expanded}
-            className="ml-auto inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-[12.5px] leading-[18px] font-medium text-fg-2 hover:bg-surface-3 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 max-sm:min-h-11"
-            data-testid="default-actions-advanced"
-            disabled={disabled}
-            onClick={onToggleAdvanced}
-            type="button"
-          >
-            <SlidersHorizontalIcon aria-hidden="true" className="size-3.5" />
-            {t("accessA.defaults.advanced")}
-          </button>
-        ) : null}
-      </div>
+          {onToggleAdvanced ? (
+            <button
+              aria-expanded={advancedExpanded}
+              className="ml-auto inline-flex min-h-8 flex-none cursor-pointer items-center gap-1.5 rounded-lg px-2 text-[12.5px] leading-[18px] font-medium text-fg-2 hover:bg-surface-3 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 max-sm:min-h-11"
+              data-testid="default-actions-advanced"
+              disabled={disabled}
+              onClick={onToggleAdvanced}
+              type="button"
+            >
+              <SlidersHorizontalIcon aria-hidden="true" className="size-3.5" />
+              {t("accessA.defaults.advanced")}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   )
 }

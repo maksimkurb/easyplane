@@ -524,8 +524,11 @@ export function protocolLabel(protocol: string): string {
   return ""
 }
 
-/** Compact ports pill text: `tcp 22, 443 +2`, `any port`, `ICMP`. */
-export function portsSummary(rule: AccessRule, t: TFunction): string {
+/**
+ * Compact ports text: `tcp 22, 443 +2`, `any port`, `ICMP`. Rows pass a smaller
+ * `limit` so a long allow list stays on one calm line.
+ */
+export function portsSummary(rule: AccessRule, t: TFunction, limit = 3): string {
   if (rule.protocol === "any") return t("accessA.ports.any")
   if (rule.protocol === "icmp" || rule.protocol === "icmpv6") {
     return protocolLabel(rule.protocol)
@@ -534,8 +537,10 @@ export function portsSummary(rule: AccessRule, t: TFunction): string {
   if (valid.length === 0) {
     return t("accessA.ports.anyFor", { protocol: protocolLabel(rule.protocol) })
   }
-  const shown = valid.slice(0, 3).join(", ")
+  const shown = valid.slice(0, limit).join(", ")
   const overflow =
-    valid.length > 3 ? ` ${t("accessA.ports.more", { count: valid.length - 3 })}` : ""
+    valid.length > limit
+      ? ` ${t("accessA.ports.more", { count: valid.length - limit })}`
+      : ""
   return `${protocolLabel(rule.protocol)} ${shown}${overflow}`
 }

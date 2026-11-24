@@ -825,6 +825,7 @@ export const ruTranslation: Translation = {
       namePlaceholder: "например, Запрет SSH к NAS",
       suggestion: "{{action}} {{from}} → {{to}}",
       summaryTitle: "{{action}} {{from}} → {{to}}, {{service}}",
+      moreSubjects: "ещё +{{count}}",
       useSuggestion: "Подставить",
       action: "Действие",
       allow: "Разрешить",
@@ -922,6 +923,11 @@ export const ruTranslation: Translation = {
       done: "Готово",
       everythingElse: "Всё остальное",
       advanced: "Дополнительные настройки",
+      edit: "Изменить",
+      blocked: "заблокировано",
+      allowed: "разрешено",
+      summary: "Всё остальное: {{directions}}",
+      summaryPart: "{{chain}} — {{state}}",
       explain: {
         inbound:
           "Трафик, адресованный самому устройству, например клиент подключается к его сервису.",
