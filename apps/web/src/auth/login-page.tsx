@@ -2,9 +2,9 @@ import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { KeyRoundIcon, LogInIcon } from "lucide-react"
 
-import logoUrl from "@/assets/logo.svg"
 import { useAuth } from "@/auth/auth-context"
 import { useBootstrapAdmin } from "@/api/generated/easyplane"
+import { BrandMark } from "@/components/layout/brand-mark"
 import { LanguageSelector } from "@/components/language-selector"
 import { ThemeSelector } from "@/components/theme-selector"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/shared/field"
@@ -53,8 +53,12 @@ export function LoginPage() {
         className="flex min-w-0 items-center bg-brand-panel px-5 py-4 text-white md:col-start-1 md:row-start-1 md:justify-center md:p-12"
       >
         <div className="flex min-w-0 items-center gap-3 md:gap-4">
-          <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-white/10 md:size-14 md:rounded-[13px]">
-            <img alt={t("brand.logoAlt")} className="size-full object-contain" src={logoUrl} />
+          <div
+            aria-label={t("brand.logoAlt")}
+            className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-white/10 p-1.5 md:size-14 md:rounded-[13px] md:p-2"
+            role="img"
+          >
+            <BrandMark className="block size-full text-white" />
           </div>
           <div className="min-w-0">
             <p className="text-base leading-tight font-semibold tracking-tight md:text-[22px]">
