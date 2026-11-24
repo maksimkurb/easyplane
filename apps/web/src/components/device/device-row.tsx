@@ -38,6 +38,7 @@ import { AnchorRemovalDialog } from "@/components/anchor-removal-dialog"
 import { DeviceRouteChips } from "@/components/routes/device-route-chips"
 import { useAuth } from "@/auth/auth-context"
 import { Chip } from "@/components/ui/chip"
+import { IconBadge } from "@/components/shared/icon-badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -80,7 +81,7 @@ export function DeviceRow({
   networkName?: string
 }) {
   const { t } = useTranslation()
-  const { canManage, isAdmin } = useAuth()
+  const { canManage, isAdmin, me } = useAuth()
   const queryClient = useQueryClient()
   const [renameOpen, setRenameOpen] = useState(false)
   const [tagsOpen, setTagsOpen] = useState(false)
@@ -206,10 +207,10 @@ export function DeviceRow({
   }
 
   const hubChip = device.isHub ? (
-    <Chip className="gap-1.5">
-      <RadioTowerIcon aria-hidden="true" className="size-3" />
-      <span className="max-sm:sr-only">{t("devices.detail.hub.badge")}</span>
-    </Chip>
+    <IconBadge
+      icon={<RadioTowerIcon aria-hidden="true" className="size-3.5" />}
+      label={t("devices.detail.hub.badge")}
+    />
   ) : null
 
   return (
@@ -226,14 +227,14 @@ export function DeviceRow({
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <Link
               aria-label={t("devices.openDevice", { name })}
-              className="relative inline-flex min-h-11 max-w-full min-w-0 items-center truncate font-semibold after:absolute after:inset-0 after:z-0 hover:underline focus-visible:underline sm:min-h-0"
+              className="inline-flex min-h-11 max-w-full min-w-0 items-center truncate font-semibold after:absolute after:inset-0 after:z-0 hover:underline focus-visible:underline sm:min-h-0"
               href={`/devices/${device.id}`}
               title={name}
             >
               <span className="truncate">{name}</span>
             </Link>
-            {hubChip}
-            <span className="relative z-[1] flex min-w-0 flex-wrap items-center gap-1.5">
+            <span className="relative z-[1] flex min-w-0 items-center gap-1.5">
+              {hubChip}
               <DeviceRouteChips routes={routes} />
             </span>
             {newDevice && device.state === "approved" ? (
@@ -267,7 +268,7 @@ export function DeviceRow({
             ) : null}
             {ownerPending ? (
               <Skeleton className="h-3 w-20" />
-            ) : owner ? (
+            ) : owner && owner.id !== me?.user.id ? (
               <span className="max-w-full truncate">
                 {t("deviceStatus.ownedBy", {
                   owner: owner.displayName || owner.email,

@@ -1,14 +1,12 @@
+import { GlobeIcon, NetworkIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 import type { ListDeviceRoutes200Item } from "@/api/generated/model"
-import { Chip } from "@/components/ui/chip"
+import { IconBadge } from "@/components/shared/icon-badge"
 
 /**
- * Route-derived chips for a device row.
- *
- * Kept in its own file because route proposal semantics are being extended
- * separately (device-declared routes, exit-node badge): this component only
- * reads the route state the API already returns.
+ * Route-derived marks for a device row: icon-only, with the subnets listed in
+ * the tooltip so the row never wraps.
  */
 export function DeviceRouteChips({
   routes,
@@ -17,7 +15,9 @@ export function DeviceRouteChips({
 }) {
   const { t } = useTranslation()
   const approved = routes.filter((route) => route.state === "approved")
-  const hasSubnet = approved.some((route) => route.kind === "subnet")
+  const subnets = approved
+    .filter((route) => route.kind === "subnet")
+    .map((route) => route.cidr)
   const hasExitNode = approved.some((route) => route.kind === "exit_node")
   const proposedExit =
     !hasExitNode &&
@@ -28,13 +28,31 @@ export function DeviceRouteChips({
         route.source === "device_declared"
     )
 
-  if (!hasSubnet && !hasExitNode && !proposedExit) return null
+  if (subnets.length === 0 && !hasExitNode && !proposedExit) return null
 
   return (
     <>
-      {hasSubnet ? <Chip>{t("routes.subnet")}</Chip> : null}
-      {hasExitNode ? <Chip variant="brand">{t("devices.exitNode.approved")}</Chip> : null}
-      {proposedExit ? <Chip variant="warn">{t("devices.exitNode.proposed")}</Chip> : null}
+      {subnets.length > 0 ? (
+        <IconBadge
+          icon={<NetworkIcon aria-hidden="true" className="size-3.5" />}
+          label={t("routes.subnet")}
+          lines={subnets}
+        />
+      ) : null}
+      {hasExitNode ? (
+        <IconBadge
+          icon={<GlobeIcon aria-hidden="true" className="size-3.5" />}
+          label={t("devices.exitNode.approved")}
+          variant="brand"
+        />
+      ) : null}
+      {proposedExit ? (
+        <IconBadge
+          icon={<GlobeIcon aria-hidden="true" className="size-3.5" />}
+          label={t("devices.exitNode.proposed")}
+          variant="warn"
+        />
+      ) : null}
     </>
   )
 }

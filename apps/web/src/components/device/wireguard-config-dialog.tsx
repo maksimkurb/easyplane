@@ -14,7 +14,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
-import { WireguardBadge } from "@/components/device/wireguard-badge"
 import { WireguardAwgOptions } from "@/components/device/wireguard-awg-options"
 import { useAwgConfig } from "@/hooks/use-awg-config"
 import { downloadTextFile } from "@/lib/awg"
@@ -58,7 +57,6 @@ export function WireguardConfigDialog({
         {client ? (
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="font-semibold">{client.name}</span>
-            <WireguardBadge />
             <span className="font-mono text-xs text-fg-3">
               {client.virtualIpv4}
             </span>

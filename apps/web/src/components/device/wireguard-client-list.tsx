@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
+import { Link } from "wouter"
 import {
   MoreHorizontalIcon,
   PencilIcon,
@@ -19,7 +20,6 @@ import type { ListWireguardClients200Item } from "@/api/generated/model"
 import { useAuth } from "@/auth/auth-context"
 import { WireguardConfigDialog } from "@/components/device/wireguard-config-dialog"
 import {
-  WireguardBadge,
   WireguardIcon,
 } from "@/components/device/wireguard-badge"
 import { ConfirmDialog } from "@/components/device/confirm-dialog"
@@ -276,7 +276,6 @@ export function WireguardClientRow({
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <span className="min-w-0 truncate font-semibold">{client.name}</span>
-            <WireguardBadge />
             {client.tags.length > 0 ? (
               <span className="flex min-w-0 flex-wrap items-center gap-1.5">
                 {client.tags.map((tag) => (
@@ -296,8 +295,14 @@ export function WireguardClientRow({
           <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-3">
             <span className="font-mono">{client.virtualIpv4}</span>
             {compact || !client.hubHostname ? null : (
-              <span className="max-w-full truncate">
-                {t("wireguard.hubLabel", { hub: client.hubHostname })}
+              <span className="relative z-[1] max-w-full truncate">
+                {t("wireguard.hubVia")}{" "}
+                <Link
+                  className="hover:text-foreground hover:underline"
+                  href={`/devices/${client.hubDeviceId}`}
+                >
+                  {client.hubHostname}
+                </Link>
               </span>
             )}
             {client.state === "unknown" ? (

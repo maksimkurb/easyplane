@@ -2030,7 +2030,7 @@ export const ruTranslation: Translation = {
       "Телефоны и другие устройства, на которые нельзя установить EasyTier, подключаются к сети через WireGuard-сервер на узле.",
     networkTitle: "WireGuard-клиенты",
     networkDescription:
-      "Обычные WireGuard-устройства, которые подключаются через WireGuard-сервер на узле. Это не устройства EasyTier, поэтому у них отдельная метка.",
+      "Обычные WireGuard-устройства, которые подключаются через WireGuard-сервер на узле.",
     empty: "WireGuard-клиентов пока нет.",
     add: "Добавить WireGuard-клиента",
     addTitle: "Новый WireGuard-клиент",
@@ -2087,7 +2087,7 @@ export const ruTranslation: Translation = {
     },
     statusNever: "Ждём, когда узел сообщит состояние",
     lastEndpoint: "Последний адрес: {{endpoint}}",
-    hubLabel: "через {{hub}}",
+    hubVia: "через",
     noPerClientHub:
       "В этой сети нет узла, который поддерживает отдельных клиентов WireGuard. EasyTier старше 2.7.0 выдаёт одну общую настройку — откройте карточку WireGuard на узле.",
     hubBuildUnsupported:

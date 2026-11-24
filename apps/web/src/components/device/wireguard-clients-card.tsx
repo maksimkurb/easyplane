@@ -18,7 +18,6 @@ import {
   useInvalidateWireguardClients,
   useWireguardConfigDialogState,
 } from "@/hooks/use-wireguard"
-import { WireguardBadge } from "@/components/device/wireguard-badge"
 import { Button } from "@/components/ui/button"
 
 /** Network-level list of WireGuard portal clients, marked as a separate kind. */
@@ -89,7 +88,6 @@ export function WireguardClientsCard({
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h2 className="flex flex-wrap items-center gap-2 text-base leading-6 font-semibold tracking-[-0.006em]">
             {t("wireguard.networkTitle")}
-            <WireguardBadge />
           </h2>
           <p className="text-[13px] text-pretty text-fg-3">
             {t("wireguard.networkDescription")}

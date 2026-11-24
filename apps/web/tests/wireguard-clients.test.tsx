@@ -119,12 +119,15 @@ describe("WireGuard clients in the panel", () => {
 
     expect(await screen.findByText("WireGuard clients")).toBeInTheDocument()
     expect(await screen.findByText("phone")).toBeInTheDocument()
-    // The badge appears both in the section heading and on the row.
-    expect(screen.getAllByTitle("WireGuard").length).toBeGreaterThanOrEqual(2)
+    // No per-row badge: the section heading already says what these are.
+    expect(screen.queryAllByTitle("WireGuard")).toHaveLength(0)
     expect(screen.getByText("10.144.144.9")).toBeInTheDocument()
     expect(screen.getAllByText("Connected").length).toBeGreaterThan(0)
     expect(screen.getByText(/198\.51\.100\.9:51820/)).toBeInTheDocument()
-    expect(screen.getByText("via hub-01")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "hub-01" })).toHaveAttribute(
+      "href",
+      expect.stringMatching(/^\/devices\//)
+    )
   })
 
   it("renders the offline and unknown states without pretending they are errors", () => {

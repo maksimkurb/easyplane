@@ -2017,7 +2017,7 @@ export const enTranslation = {
       "Phones and other devices that cannot run EasyTier can join this network through a hub's built-in WireGuard server.",
     networkTitle: "WireGuard clients",
     networkDescription:
-      "Ordinary WireGuard devices that connect through a hub's WireGuard server. They are not EasyTier devices and appear with a separate badge.",
+      "Ordinary WireGuard devices that connect through a hub's WireGuard server.",
     empty: "No WireGuard clients yet.",
     add: "Add WireGuard client",
     addTitle: "New WireGuard client",
@@ -2073,7 +2073,7 @@ export const enTranslation = {
     },
     statusNever: "Waiting for the hub to report the status",
     lastEndpoint: "Last address: {{endpoint}}",
-    hubLabel: "via {{hub}}",
+    hubVia: "via",
     noPerClientHub:
       "No hub in this network supports per-client WireGuard clients. EasyTier older than 2.7.0 serves one shared configuration instead — open the hub's WireGuard card to see it.",
     hubBuildUnsupported:
