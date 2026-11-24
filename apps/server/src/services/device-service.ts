@@ -1467,16 +1467,19 @@ export class DeviceService {
     if (!device) notFound("device not found");
     const network = await getNetworkById(this.options.db, device.networkId);
     if (!network) notFound("network not found");
-    const normalized = [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
-    if (normalized.length > 0) {
-      const known = new Set(
-        (await listTags(this.options.db, actor.orgId)).map((tag) => tag.name),
-      );
-      const unknown = normalized.filter((tag) => !known.has(tag));
-      if (unknown.length > 0) {
-        invalid(`unknown tag(s): ${unknown.join(", ")}`);
-      }
+    const requested = [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
+    // Policy imports store `tag:ru`, the API and UI use plain `ru`: match on the
+    // bare name and write the stored spelling.
+    const bare = (name: string) => name.replace(/^tag:/i, "").toLowerCase();
+    const knownRows = await listTags(this.options.db, actor.orgId);
+    const byBare = new Map(knownRows.map((tag) => [bare(tag.name), tag.name]));
+    const unknown = requested.filter((tag) => !byBare.has(bare(tag)));
+    if (unknown.length > 0) {
+      invalid(`unknown tag(s): ${unknown.join(", ")}`);
     }
+    const normalized = [
+      ...new Set(requested.map((tag) => byBare.get(bare(tag)) as string)),
+    ];
     await setDeviceTags(this.options.db, deviceId, normalized);
     const updated = await getDevice(this.options.db, actor.orgId, deviceId);
     if (!updated) notFound("device not found");

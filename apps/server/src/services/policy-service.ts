@@ -1568,7 +1568,13 @@ export class PolicyService {
         kind: "device" as const,
       }));
     for (const client of wireguardRows) {
-      if (!client.tags.some((entry) => entry.toLowerCase() === tag.name.toLowerCase())) {
+      if (
+        !client.tags.some(
+          (entry) =>
+            entry.replace(/^tag:/i, "").toLowerCase() ===
+            tag.name.replace(/^tag:/i, "").toLowerCase(),
+        )
+      ) {
         continue;
       }
       assigned.push({

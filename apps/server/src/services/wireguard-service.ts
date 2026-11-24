@@ -281,9 +281,14 @@ export class WireguardService {
   private async assertTagsKnown(orgId: string, tags: string[]): Promise<void> {
     if (tags.length === 0) return;
     const known = new Set(
-      (await listTags(this.options.db, orgId)).map((tag) => tag.name.toLowerCase()),
+      (await listTags(this.options.db, orgId)).map((tag) =>
+        tag.name.replace(/^tag:/i, "").toLowerCase(),
+      ),
     );
-    const unknown = tags.filter((tag) => !known.has(tag.toLowerCase()));
+    // Policy imports store `tag:ru`, the API and UI use plain `ru`.
+    const unknown = tags.filter(
+      (tag) => !known.has(tag.replace(/^tag:/i, "").toLowerCase()),
+    );
     if (unknown.length > 0) invalid(`unknown tag(s): ${unknown.join(", ")}`);
   }
 
