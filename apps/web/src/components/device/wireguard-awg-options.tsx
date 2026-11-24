@@ -15,6 +15,16 @@ export function WireguardAwgOptions({
     <div className="flex w-full flex-col gap-1.5 text-sm">
       <label className="flex min-h-11 items-center gap-2.5 sm:min-h-8">
         <Checkbox
+          checked={awg.fullTunnel}
+          onCheckedChange={(checked) => awg.setFullTunnel(checked === true)}
+        />
+        <span>{t("wireguard.fullTunnel.label")}</span>
+      </label>
+      <p className="text-pretty text-xs text-fg-3">
+        {t("wireguard.fullTunnel.hint")}
+      </p>
+      <label className="flex min-h-11 items-center gap-2.5 sm:min-h-8">
+        <Checkbox
           checked={awg.enabled}
           onCheckedChange={(checked) => awg.setEnabled(checked === true)}
         />

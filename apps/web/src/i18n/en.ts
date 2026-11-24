@@ -2038,6 +2038,10 @@ export const enTranslation = {
     configDescription:
       "Open the WireGuard app on the phone, choose Add tunnel, and scan this code. Or download the .conf file.",
     configHint: "The configuration contains a private key. Do not share it.",
+    fullTunnel: {
+      label: "Send all traffic through the EasyTier network",
+      hint: "Writes AllowedIPs = 0.0.0.0/0. The hub forwards that traffic to its exit node, so the hub needs an exit_nodes list and the exit node must have exit-node mode enabled. Otherwise the client loses internet access.",
+    },
     awg: {
       label: "Add AmneziaWG parameters",
       hint: "Random Jc, Jmin and Jmax: an AmneziaWG client sends junk packets before the handshake. The EasyTier server is plain WireGuard, so the other parameters (S1, S2, H1-H4) are not used.",

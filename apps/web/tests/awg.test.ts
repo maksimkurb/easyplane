@@ -25,3 +25,15 @@ describe("awg", () => {
     }
   })
 })
+
+import { applyFullTunnel } from "@/lib/awg"
+
+describe("applyFullTunnel", () => {
+  it("replaces AllowedIPs only", () => {
+    const out = applyFullTunnel(
+      "[Interface]\nAddress = 10.0.0.2/32\n\n[Peer]\nAllowedIPs = 10.0.0.0/24, 192.168.1.0/24\nPersistentKeepalive = 25\n"
+    )
+    expect(out).toContain("AllowedIPs = 0.0.0.0/0\n")
+    expect(out).toContain("Address = 10.0.0.2/32")
+  })
+})

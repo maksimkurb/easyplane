@@ -50,3 +50,14 @@ export function downloadTextFile(filename: string, text: string): void {
   link.remove()
   URL.revokeObjectURL(url)
 }
+
+/**
+ * Sends every IPv4 packet through the tunnel: the hub forwards non-mesh
+ * traffic to its exit node. Only the `[Peer]` section's `AllowedIPs` changes.
+ */
+export function applyFullTunnel(config: string): string {
+  return config.replace(
+    /^(\s*AllowedIPs\s*=).*$/gim,
+    "$1 0.0.0.0/0"
+  )
+}

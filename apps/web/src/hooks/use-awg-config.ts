@@ -1,18 +1,29 @@
 import { useMemo, useState } from "react"
 
-import { applyAwgParams, randomAwgParams, type AwgParams } from "@/lib/awg"
+import {
+  applyAwgParams,
+  applyFullTunnel,
+  randomAwgParams,
+  type AwgParams,
+} from "@/lib/awg"
 
-/** Optional AmneziaWG junk-packet parameters for a downloaded config. */
+/** Optional download tweaks: AmneziaWG junk parameters and full-tunnel routing. */
 export function useAwgConfig(config: string | null) {
   const [enabled, setEnabled] = useState(false)
   const [params, setParams] = useState<AwgParams>(() => randomAwgParams())
-  const value = useMemo(
-    () => (config && enabled ? applyAwgParams(config, params) : config),
-    [config, enabled, params]
-  )
+  const [fullTunnel, setFullTunnel] = useState(false)
+  const value = useMemo(() => {
+    if (!config) return config
+    let result = config
+    if (fullTunnel) result = applyFullTunnel(result)
+    if (enabled) result = applyAwgParams(result, params)
+    return result
+  }, [config, enabled, fullTunnel, params])
   return {
     enabled,
     setEnabled,
+    fullTunnel,
+    setFullTunnel,
     params,
     regenerate: () => setParams(randomAwgParams()),
     value,
