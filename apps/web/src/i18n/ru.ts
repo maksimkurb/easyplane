@@ -1723,6 +1723,12 @@ export const ruTranslation: Translation = {
         "{{actor}} попросил {{target}} получить конфигурацию",
       device_renamed: "{{actor}} переименовал {{target}} в {{name}}",
       device_tags_updated: "{{actor}} обновил теги {{target}}",
+      wireguard_client_created: "{{actor}} добавил WireGuard-клиент {{target}}",
+      wireguard_client_deleted: "{{actor}} удалил WireGuard-клиент {{target}}",
+      wireguard_client_renamed: "{{actor}} переименовал WireGuard-клиент {{target}}",
+      wireguard_client_tags_updated: "{{actor}} обновил теги WireGuard-клиента {{target}}",
+      wireguard_client_config_viewed: "{{actor}} открыл конфигурацию WireGuard-клиента {{target}}",
+      wireguard_portal_config_viewed: "{{actor}} открыл общую конфигурацию WireGuard-портала",
       device_description_updated:
         "{{actor}} обновил описание {{target}}",
       device_owner_updated: "{{actor}} сменил владельца {{target}}",
@@ -2033,6 +2039,11 @@ export const ruTranslation: Translation = {
     configDescription:
       "Откройте приложение WireGuard на телефоне, выберите «Добавить туннель» и отсканируйте код. Или скачайте файл .conf.",
     configHint: "В настройке есть закрытый ключ. Не передавайте её другим.",
+    awg: {
+      label: "Добавить параметры AmneziaWG",
+      hint: "Случайные Jc, Jmin и Jmax: клиент AmneziaWG будет посылать мусорные пакеты перед рукопожатием. Сервер EasyTier — обычный WireGuard, поэтому остальные параметры (S1, S2, H1–H4) не используются.",
+      regenerate: "Сгенерировать заново",
+    },
     download: "Скачать .conf",
     configUnavailable: "Настройка пока недоступна",
     configOffline:

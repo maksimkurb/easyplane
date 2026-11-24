@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next"
 import { QRCodeSVG } from "qrcode.react"
 import { DownloadIcon, KeyRoundIcon } from "lucide-react"
 
-import { getDownloadWireguardClientConfigUrl } from "@/api/generated/easyplane"
 import type { ListWireguardClients200Item } from "@/api/generated/model"
 import { CopyButton } from "@/components/copy-button"
 import { Button } from "@/components/ui/button"
@@ -16,6 +15,9 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { WireguardBadge } from "@/components/device/wireguard-badge"
+import { WireguardAwgOptions } from "@/components/device/wireguard-awg-options"
+import { useAwgConfig } from "@/hooks/use-awg-config"
+import { downloadTextFile } from "@/lib/awg"
 
 /**
  * The ready-made WireGuard config is fetched on demand from the hub: it is
@@ -40,10 +42,8 @@ export function WireguardConfigDialog({
   onRetry?: () => void
 }) {
   const { t } = useTranslation()
-  const downloadUrl =
-    client && config
-      ? getDownloadWireguardClientConfigUrl(client.id)
-      : undefined
+  const awg = useAwgConfig(config)
+  const shown = awg.value
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -72,7 +72,7 @@ export function WireguardConfigDialog({
               {t("wireguard.loadingConfig")}
             </span>
           </div>
-        ) : config ? (
+        ) : config && shown ? (
           <div className="flex flex-col items-center gap-3">
             <div className="rounded-xl bg-white p-3 ring-1 ring-line">
               <QRCodeSVG
@@ -80,17 +80,18 @@ export function WireguardConfigDialog({
                 className="size-52 max-w-full sm:size-56"
                 level="M"
                 role="img"
-                value={config}
+                value={shown}
               />
             </div>
             <p className="flex items-start gap-1.5 text-xs text-fg-3">
               <KeyRoundIcon aria-hidden="true" className="mt-0.5 size-3.5 flex-none" />
               <span className="text-pretty">{t("wireguard.configHint")}</span>
             </p>
+            <WireguardAwgOptions awg={awg} />
             <Button
               className="h-11 w-full sm:h-10"
-              onClick={async () => {
-                if (downloadUrl) window.location.assign(downloadUrl)
+              onClick={() => {
+                if (client) downloadTextFile(`${client.name}.conf`, shown)
               }}
               type="button"
               variant="outline"
@@ -114,11 +115,11 @@ export function WireguardConfigDialog({
         )}
 
         <DialogFooter>
-          {config ? (
+          {shown ? (
             <CopyButton
               className="h-11 sm:h-10"
               label={t("common.copy")}
-              value={config}
+              value={shown}
             />
           ) : null}
           <Button

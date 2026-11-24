@@ -1,4 +1,4 @@
-import { pruneOidcLoginStates, pruneSessions } from "./db/repositories.js";
+import { getDeviceById, pruneOidcLoginStates, pruneSessions } from "./db/repositories.js";
 import { createDatabase } from "./db/client.js";
 import { runMigrations } from "./db/migrate.js";
 import { readEnv } from "./env.js";
@@ -53,6 +53,32 @@ async function main(): Promise<void> {
     });
   }, 3_600_000);
   credentialRenewal.unref?.();
+  // WireGuard portal status is shown live: while someone watches the panel,
+  // probe the hubs that run a portal every few seconds (the topology cycle only
+  // runs every 30 s while nobody looks at the map).
+  let wireguardPolling = false;
+  const wireguardPoll = setInterval(() => {
+    if (wireguardPolling || context.realtime.size === 0) return;
+    wireguardPolling = true;
+    void (async () => {
+      for (const deviceId of context.deviceSessions.deviceIds()) {
+        const client = context.deviceSessions.get(deviceId);
+        if (!client) continue;
+        const device = await getDeviceById(database.db, deviceId);
+        if (!device || device.state !== "approved" || device.wgListenPort === null) continue;
+        await context.wireguard.collectStatuses(device, client);
+      }
+    })()
+      .catch((error: unknown) => {
+        logger.debug("WireGuard live poll failed", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      })
+      .finally(() => {
+        wireguardPolling = false;
+      });
+  }, 5_000);
+  wireguardPoll.unref?.();
   const metricsServer =
     env.metricsPort !== undefined && env.metricsPort > 0
       ? await startInternalMetricsServer(context, env.metricsHost, env.metricsPort)
@@ -91,6 +117,7 @@ async function main(): Promise<void> {
     stopping = true;
     logger.info("shutting down", { signal });
     clearInterval(housekeeping);
+    clearInterval(wireguardPoll);
     clearInterval(credentialRenewal);
     if (metricsServer) await metricsServer.close();
     await context.topology.stop();

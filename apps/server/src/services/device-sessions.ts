@@ -33,6 +33,11 @@ export class DeviceSessionRegistry {
     return client;
   }
 
+  /** Ids of devices with an open session. */
+  deviceIds(): string[] {
+    return [...this.byDevice.keys()].filter((id) => this.get(id) !== undefined);
+  }
+
   unbindClient(client: ManagedClient): void {
     const deviceId = this.bySession.get(client.id);
     if (deviceId === undefined) return;

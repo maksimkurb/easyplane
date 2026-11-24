@@ -1715,6 +1715,12 @@ export const enTranslation = {
       device_push_requested: "{{actor}} asked {{target}} to pull its config",
       device_renamed: "{{actor}} renamed {{target}} to {{name}}",
       device_tags_updated: "{{actor}} updated the tags of {{target}}",
+      wireguard_client_created: "{{actor}} added the WireGuard client {{target}}",
+      wireguard_client_deleted: "{{actor}} deleted the WireGuard client {{target}}",
+      wireguard_client_renamed: "{{actor}} renamed the WireGuard client {{target}}",
+      wireguard_client_tags_updated: "{{actor}} updated the tags of the WireGuard client {{target}}",
+      wireguard_client_config_viewed: "{{actor}} opened the config of the WireGuard client {{target}}",
+      wireguard_portal_config_viewed: "{{actor}} opened the shared WireGuard portal config",
       device_description_updated:
         "{{actor}} updated the description of {{target}}",
       device_owner_updated: "{{actor}} changed the owner of {{target}}",
@@ -2019,6 +2025,11 @@ export const enTranslation = {
     configDescription:
       "Open the WireGuard app on the phone, choose Add tunnel, and scan this code. Or download the .conf file.",
     configHint: "The configuration contains a private key. Do not share it.",
+    awg: {
+      label: "Add AmneziaWG parameters",
+      hint: "Random Jc, Jmin and Jmax: an AmneziaWG client sends junk packets before the handshake. The EasyTier server is plain WireGuard, so the other parameters (S1, S2, H1-H4) are not used.",
+      regenerate: "Regenerate",
+    },
     download: "Download .conf",
     configUnavailable: "The configuration is not available yet",
     configOffline:

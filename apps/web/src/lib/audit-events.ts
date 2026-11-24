@@ -19,7 +19,11 @@ export function auditCategory(action: string): AuditCategory | null {
   ) {
     return "access"
   }
-  if (action.startsWith("device.") || action.startsWith("route."))
+  if (
+    action.startsWith("device.") ||
+    action.startsWith("route.") ||
+    action.startsWith("wireguard_")
+  )
     return "devices"
   if (action.startsWith("invite.")) return "invites"
   return null

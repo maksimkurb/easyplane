@@ -3,7 +3,6 @@ import { QRCodeSVG } from "qrcode.react"
 import { DownloadIcon, KeyRoundIcon } from "lucide-react"
 
 import {
-  getDownloadDeviceWireguardPortalConfigUrl,
   useGetDeviceWireguardPortalConfig,
 } from "@/api/generated/easyplane"
 import { CopyButton } from "@/components/copy-button"
@@ -17,6 +16,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
+import { WireguardAwgOptions } from "@/components/device/wireguard-awg-options"
+import { useAwgConfig } from "@/hooks/use-awg-config"
+import { downloadTextFile } from "@/lib/awg"
 
 /**
  * Shared WireGuard config of a legacy (< 2.7.0) portal. 2.6.x serves exactly
@@ -38,7 +40,9 @@ export function WireguardSharedConfigDialog({
     query: { enabled: open, retry: false, gcTime: 0, staleTime: 0 },
   })
   const result = query.data?.data ?? null
-  const config = result?.config ?? null
+  const rawConfig = result?.config ?? null
+  const awg = useAwgConfig(rawConfig)
+  const config = awg.value
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -82,12 +86,11 @@ export function WireguardSharedConfigDialog({
               <KeyRoundIcon aria-hidden="true" className="mt-0.5 size-3.5 flex-none" />
               <span className="text-pretty">{t("wireguard.configHint")}</span>
             </p>
+            <WireguardAwgOptions awg={awg} />
             <Button
               className="h-11 w-full sm:h-10"
               onClick={() => {
-                window.location.assign(
-                  getDownloadDeviceWireguardPortalConfigUrl(deviceId)
-                )
+                downloadTextFile(result?.filename ?? "wireguard.conf", config)
               }}
               type="button"
               variant="outline"
