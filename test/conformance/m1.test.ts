@@ -284,12 +284,12 @@ describe("M1 conformance: invite -> pending -> approve -> config -> status -> bl
     expect(response.statusCode).toBe(201);
     expect(
       (response.json() as { revision: { revision: number } }).revision.revision,
-    ).toBe(3);
+    ).toBe(4);
 
     device = await poll(
-      "applied revision 3",
+      "applied revision 4",
       getDevice,
-      (value) => value.appliedRevision === 3,
+      (value) => value.appliedRevision === 4,
     );
     const client = test.context.controlPlane.listClients()[0]!;
     const instanceId = instanceIdFor(network.id, device.id);
@@ -322,11 +322,11 @@ describe("M1 conformance: invite -> pending -> approve -> config -> status -> bl
       30_000,
     );
     // The reconnected client is verified/re-pushed but the desired revision
-    // does not change.
+    // does not change. (The rename above added revision 3.)
     device = await poll(
       "revision retained",
       getDevice,
-      (value) => value.appliedRevision === 3 && value.sync === "in-sync",
+      (value) => value.appliedRevision === 4 && value.sync === "in-sync",
       60_000,
     );
   });
@@ -378,7 +378,7 @@ describe("M1 conformance: invite -> pending -> approve -> config -> status -> bl
     );
     const after = await getDevice();
     expect(after.state).toBe("blocked");
-    expect(after.appliedRevision).toBe(3);
+    expect(after.appliedRevision).toBe(4);
 
     const auditResponse = await test.app.inject({
       method: "GET",

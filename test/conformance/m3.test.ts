@@ -64,6 +64,7 @@ interface DeviceDto {
   hostname: string;
   virtualIpv4: string | null;
   appliedRevision: number | null;
+  desiredRevision: number | null;
   lastPushError: string | null;
   online: "online" | "offline";
 }
@@ -366,7 +367,7 @@ describe("M3 conformance: topology map and SSE on real easytier-core", () => {
       await poll(
         `${letter} applied revision 2`,
         () => getDevice(letter),
-        (device) => device.appliedRevision === 2 && device.lastPushError === null,
+        (device) => device.appliedRevision !== null && device.appliedRevision === device.desiredRevision && device.lastPushError === null,
       );
     }
   });

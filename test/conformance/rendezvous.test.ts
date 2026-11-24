@@ -58,6 +58,7 @@ interface DeviceDto {
   state: string;
   virtualIpv4: string | null;
   appliedRevision: number | null;
+  desiredRevision: number | null;
   lastPushError: string | null;
 }
 
@@ -491,7 +492,7 @@ describe("rendezvous conformance: private public node, relay off/on", () => {
       await poll(
         `${letter} applied revision 2`,
         () => getDevice(letter),
-        (device) => device.appliedRevision === 2 && device.lastPushError === null,
+        (device) => device.appliedRevision !== null && device.appliedRevision === device.desiredRevision && device.lastPushError === null,
       );
     }
 

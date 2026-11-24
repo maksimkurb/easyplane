@@ -438,7 +438,7 @@ describe("policy spike: EasyTier ACL semantics on real clients", () => {
       await poll(
         `${letter} applied the mesh revision`,
         () => getDevice(letter),
-        (device) => device.lastPushError === null && device.appliedRevision === 2,
+        (device) => device.lastPushError === null && device.appliedRevision !== null && device.appliedRevision === device.desiredRevision,
       );
     }
 
@@ -951,7 +951,7 @@ describe("policy spike: EasyTier ACL semantics on real clients", () => {
       await poll(
         `${letter} applied the v2 policy`,
         () => getDevice(letter),
-        (device) => device.lastPushError === null && device.appliedRevision === 3,
+        (device) => device.lastPushError === null && device.appliedRevision !== null && device.appliedRevision === device.desiredRevision,
         90_000,
       );
     }

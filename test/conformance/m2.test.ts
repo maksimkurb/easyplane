@@ -315,7 +315,7 @@ describe("M2 conformance: ACL enforcement, MagicDNS and routes on real easytier-
       await poll(
         `${letter} applied revision 2`,
         () => getDevice(letter),
-        (device) => device.appliedRevision === 2 && device.lastPushError === null,
+        (device) => device.appliedRevision !== null && device.appliedRevision === device.desiredRevision && device.lastPushError === null,
       );
     }
 
@@ -394,7 +394,7 @@ describe("M2 conformance: ACL enforcement, MagicDNS and routes on real easytier-
       await poll(
         `${letter} applied the policy revision`,
         () => getDevice(letter),
-        (device) => device.appliedRevision === 3 && device.lastPushError === null,
+        (device) => device.appliedRevision !== null && device.appliedRevision === device.desiredRevision && device.lastPushError === null,
       );
     }
 
@@ -512,7 +512,7 @@ describe("M2 conformance: ACL enforcement, MagicDNS and routes on real easytier-
       await poll(
         `${letter} applied the strict policy`,
         () => getDevice(letter),
-        (device) => device.appliedRevision === 4 && device.lastPushError === null,
+        (device) => device.appliedRevision !== null && device.appliedRevision === device.desiredRevision && device.lastPushError === null,
       );
     }
     const strictPushed = await pushedConfig("a");

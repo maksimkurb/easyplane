@@ -43,6 +43,7 @@ interface DeviceDto {
   hostname: string;
   state: string;
   appliedRevision: number | null;
+  desiredRevision: number | null;
   lastPushError: string | null;
 }
 
@@ -239,7 +240,7 @@ describe("hub conformance: a hub does not dial itself", () => {
       await poll(
         `${letter} applied revision 2`,
         () => getDevice(letter),
-        (device) => device.appliedRevision === 2 && device.lastPushError === null,
+        (device) => device.appliedRevision !== null && device.appliedRevision === device.desiredRevision && device.lastPushError === null,
       );
     }
 

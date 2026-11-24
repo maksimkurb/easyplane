@@ -385,7 +385,7 @@ describe("declared routes: one config-dir instance, real easytier-core", () => {
       const applied = await poll(
         `${letter} applied revision 2`,
         () => getDevice(letter),
-        (device) => device.appliedRevision === 2 && device.lastPushError === null,
+        (device) => device.appliedRevision !== null && device.appliedRevision === device.desiredRevision && device.lastPushError === null,
         120_000,
       );
       devices[letter] = applied;
