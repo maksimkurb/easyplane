@@ -90,6 +90,14 @@ export function DeviceHistoryCard({
       })
     }
     const note = revision.note?.trim()
+    if (revision.source === "settings" && note) {
+      const [code, ...args] = note.replace(/^settings:/, "").split("|")
+      return t(`device.history.settings.${code}`, {
+        defaultValue: t("device.history.change.manual"),
+        a: args[0] ?? "",
+        b: args[1] ?? "",
+      })
+    }
     if (!note) return t("device.history.change.manual")
     // The policy compiler used to write raw "policy vN" notes; describe them.
     const policy = /^policy\b(?:\s*v?(\d+))?/i.exec(note)

@@ -1,0 +1,1 @@
+ALTER TYPE "public"."revision_source" ADD VALUE 'settings';

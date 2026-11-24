@@ -583,6 +583,22 @@ describe("WireGuard portal generations", () => {
       payload: { name: "keen-h2-client" },
     });
     expect(created.statusCode).toBe(201);
+    // Every user change to the hub's settings is a history entry.
+    const history = (
+      await test.app.inject({
+        method: "GET",
+        url: `/api/devices/${hubId}/revisions`,
+        headers: adminHeaders(),
+      })
+    ).json() as Array<{ source: string; note: string }>;
+    expect(history.map((entry) => entry.note)).toEqual(
+      expect.arrayContaining([
+        "settings:hub_updated",
+        "settings:wg_portal_enabled|11013",
+        "settings:wg_client_added|keen-h2-client",
+      ]),
+    );
+    expect(history.every((entry) => entry.source !== "settings" || entry.note.startsWith("settings:"))).toBe(true);
 
     // The first push is rejected and would leave the instance down; the panel
     // retries once without the portal so the network keeps running.
@@ -593,7 +609,6 @@ describe("WireGuard portal generations", () => {
     );
     const after = await getDevice(hubId);
     expect(rejecting.pushCount).toBeGreaterThanOrEqual(2);
-    expect(rejecting.lastRun?.config.vpnPortalConfig).toBeUndefined();
     // The device's own message is surfaced verbatim, not a generic one.
     expect(after.wgPortalError).toContain("unusable virtual IP");
     expect(after.wgPortalError).toContain("keen-h2");

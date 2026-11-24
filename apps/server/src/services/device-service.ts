@@ -93,6 +93,7 @@ import {
 } from "./credential-service.js";
 import type { InviteService } from "./invite-service.js";
 import { instanceIdFor, type PushService } from "./push-service.js";
+import { recordSettingsRevision } from "./settings-revision.js";
 
 export interface RequestActor {
   orgId: string;
@@ -201,7 +202,7 @@ export interface RevisionDto {
   revision: number;
   config: Record<string, unknown>;
   note: string;
-  source: "approval" | "manual" | "rollback" | "policy";
+  source: "approval" | "manual" | "rollback" | "policy" | "settings";
   policyVersion: number | null;
   rollbackOfRevision: number | null;
   createdBy: string | null;
@@ -599,7 +600,7 @@ export class DeviceService {
     revision: number;
     config: Record<string, unknown>;
     note: string;
-    source: "approval" | "manual" | "rollback" | "policy";
+    source: "approval" | "manual" | "rollback" | "policy" | "settings";
     policyVersion: number | null;
     rollbackOfRevision: number | null;
     createdBy: string | null;
@@ -1455,10 +1456,16 @@ export class DeviceService {
       targetId: deviceId,
       metadata: { previous, dnsName: label, networkId: network.id },
     });
+    const withRevision = await this.recordSettings(
+      actor,
+      updated,
+      network,
+      `settings:dns_name|${label}`,
+    );
     this.options.push.schedule(deviceId, "renamed");
-    this.publishDevice(updated, "renamed");
+    this.publishDevice(withRevision, "renamed");
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
-    return this.dto(updated, network, tags.get(deviceId) ?? []);
+    return this.dto(withRevision, network, tags.get(deviceId) ?? []);
   }
 
   /** Replaces a device's tags (policy subjects of kind `tag:`). */
@@ -1502,9 +1509,15 @@ export class DeviceService {
       );
     }
     // A tag change changes the compiled ACL of other devices in the network.
+    const withRevision = await this.recordSettings(
+      actor,
+      updated,
+      network,
+      `settings:tags|${normalized.map((tag) => tag.replace(/^tag:/, "")).join(", ")}`,
+    );
     this.options.push.schedule(deviceId, "tags updated");
-    this.publishDevice(updated, "tags-updated");
-    return this.dto(updated, network, normalized);
+    this.publishDevice(withRevision, "tags-updated");
+    return this.dto(withRevision, network, normalized);
   }
 
   /**
@@ -1612,6 +1625,12 @@ export class DeviceService {
         endpoints: normalized,
       },
     });
+    const withRevision = await this.recordSettings(
+      actor,
+      updated,
+      network,
+      "settings:endpoints",
+    );
     await this.repushNetwork(network.id, "peer endpoints updated");
     this.options.realtime?.publish({
       type: "network.updated",
@@ -1619,9 +1638,9 @@ export class DeviceService {
       networkId: network.id,
       data: { networkId: network.id, reason: "peer-endpoints-updated" },
     });
-    this.publishDevice(updated, "endpoints-updated");
+    this.publishDevice(withRevision, "endpoints-updated");
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
-    return this.dto(updated, network, tags.get(deviceId) ?? []);
+    return this.dto(withRevision, network, tags.get(deviceId) ?? []);
   }
 
   /**
@@ -1706,6 +1725,12 @@ export class DeviceService {
         externalPort: updated.externalPort,
       },
     });
+    const withRevision = await this.recordSettings(
+      actor,
+      updated,
+      network,
+      isHub ? "settings:hub_updated" : "settings:hub_disabled",
+    );
     await this.repushNetwork(network.id, isHub ? "hub enabled" : "hub disabled");
     this.options.realtime?.publish({
       type: "network.updated",
@@ -1713,9 +1738,9 @@ export class DeviceService {
       networkId: network.id,
       data: { networkId: network.id, reason: "hub-updated" },
     });
-    this.publishDevice(updated, "hub-updated");
+    this.publishDevice(withRevision, "hub-updated");
     const tags = await this.tagsByDevice(actor.orgId, deviceId);
-    return this.dto(updated, network, tags.get(deviceId) ?? []);
+    return this.dto(withRevision, network, tags.get(deviceId) ?? []);
   }
 
   /** Validates, trims and de-duplicates a hub's extra advertised URLs. */
@@ -1742,6 +1767,32 @@ export class DeviceService {
    * the reported config first, so an unchanged device is not actually
    * repushed.
    */
+  /**
+   * Adds a history revision for a settings change and returns the device with
+   * the new desired revision. A failure here must not undo the change itself.
+   */
+  private async recordSettings(
+    actor: RequestActor,
+    device: Device,
+    network: Network,
+    note: string,
+  ): Promise<Device> {
+    try {
+      await recordSettingsRevision(this.options.db, {
+        actor: { orgId: actor.orgId, userId: actor.userId },
+        device,
+        network,
+        note,
+      });
+    } catch (error) {
+      this.options.logger.warn("failed to record a settings revision", {
+        deviceId: device.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+    return (await getDevice(this.options.db, actor.orgId, device.id)) ?? device;
+  }
+
   private async repushNetwork(networkId: string, reason: string): Promise<void> {
     const devices = await listApprovedDevicesInNetwork(this.options.db, networkId);
     for (const device of devices) {

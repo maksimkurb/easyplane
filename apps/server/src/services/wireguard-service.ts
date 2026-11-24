@@ -60,6 +60,7 @@ import type { DeviceSessionRegistry } from "./device-sessions.js";
 import { AppError, conflict, invalid, notFound } from "./errors.js";
 import type { RequestActor } from "./device-service.js";
 import { instanceIdFor, type PushService } from "./push-service.js";
+import { recordSettingsRevision } from "./settings-revision.js";
 
 export interface WireguardClientDto {
   id: string;
@@ -281,6 +282,28 @@ export class WireguardService {
     return normalizePublicIpv4List([...(hub.publicIps ?? [])])[0] ?? null;
   }
 
+  /** History entry on the hub for a WireGuard change (never fails the change). */
+  private async recordHubRevision(
+    actor: RequestActor,
+    hub: Device,
+    network: Network,
+    note: string,
+  ): Promise<void> {
+    try {
+      await recordSettingsRevision(this.options.db, {
+        actor: { orgId: actor.orgId, userId: actor.userId },
+        device: hub,
+        network,
+        note,
+      });
+    } catch (error) {
+      this.options.logger.warn("failed to record a WireGuard revision", {
+        deviceId: hub.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
   private normalizeTags(tags: string[] | undefined): string[] {
     return [...new Set((tags ?? []).map((tag) => tag.trim()).filter(Boolean))];
   }
@@ -466,6 +489,7 @@ export class WireguardService {
           tags,
         },
       });
+      await this.recordHubRevision(actor, hub, network, `settings:wg_client_added|${name}`);
       // The hub's pushed config carries the client list; nobody else changes.
       this.options.push.schedule(hub.id, "wireguard client created");
       this.publish(network.orgId, network.id, { clientId: row.id, hubDeviceId: hub.id, reason: "created" });
@@ -495,6 +519,12 @@ export class WireguardService {
         targetId: client.id,
         metadata: { networkId: network.id, previous: client.name, name },
       });
+      await this.recordHubRevision(
+        actor,
+        hub,
+        network,
+        `settings:wg_client_renamed|${client.name}|${name}`,
+      );
       this.options.push.schedule(hub.id, "wireguard client renamed");
       this.publish(network.orgId, network.id, { clientId: client.id, hubDeviceId: hub.id, reason: "renamed" });
       return dto(updated, hub);
@@ -522,6 +552,12 @@ export class WireguardService {
       targetId: client.id,
       metadata: { networkId: network.id, tags: normalized },
     });
+    await this.recordHubRevision(
+      actor,
+      hub,
+      network,
+      `settings:wg_client_tags|${client.name}`,
+    );
     this.options.push.schedule(hub.id, "wireguard client tags updated");
     this.publish(network.orgId, network.id, { clientId: client.id, hubDeviceId: hub.id, reason: "tags" });
     return dto(updated, hub);
@@ -543,6 +579,12 @@ export class WireguardService {
         virtualIpv4: client.virtualIpv4,
       },
     });
+    await this.recordHubRevision(
+      actor,
+      hub,
+      network,
+      `settings:wg_client_deleted|${client.name}`,
+    );
     this.options.push.schedule(hub.id, "wireguard client deleted");
     this.publish(network.orgId, network.id, { clientId: client.id, hubDeviceId: hub.id, reason: "deleted" });
   }
@@ -557,6 +599,27 @@ export class WireguardService {
    *   2.6.x has no protocol field for the portal.
    */
   async updatePortal(
+    actor: RequestActor,
+    deviceId: string,
+    input: { enabled: boolean; port?: number | null; clientCidr?: string | null },
+  ): Promise<WireguardPortalSettingsDto> {
+    const result = await this.applyPortalUpdate(actor, deviceId, input);
+    const hub = await getDeviceById(this.options.db, deviceId);
+    const network = hub ? await getNetworkById(this.options.db, hub.networkId) : null;
+    if (hub && network) {
+      await this.recordHubRevision(
+        actor,
+        hub,
+        network,
+        input.enabled
+          ? `settings:wg_portal_enabled|${hub.wgListenPort ?? ""}`
+          : "settings:wg_portal_disabled",
+      );
+    }
+    return result;
+  }
+
+  private async applyPortalUpdate(
     actor: RequestActor,
     deviceId: string,
     input: { enabled: boolean; port?: number | null; clientCidr?: string | null },

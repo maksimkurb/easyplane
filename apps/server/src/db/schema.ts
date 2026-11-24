@@ -54,6 +54,8 @@ export const revisionSourceEnum = pgEnum("revision_source", [
   "rollback",
   /** Created automatically when the network policy document changed. */
   "policy",
+  /** A user changed node settings (hub, WireGuard portal, tags, DNS name). */
+  "settings",
 ]);
 
 /** A route a device asks to serve (subnet proxy) or be (exit node). */

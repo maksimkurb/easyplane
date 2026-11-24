@@ -14,4 +14,5 @@ export const ListDeviceRevisions200ItemSource = {
   manual: 'manual',
   rollback: 'rollback',
   policy: 'policy',
+  settings: 'settings',
 } as const;

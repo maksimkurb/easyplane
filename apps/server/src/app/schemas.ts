@@ -296,7 +296,7 @@ export const revisionSchema = z.object({
   revision: z.number().int(),
   config: z.record(z.string(), z.unknown()),
   note: z.string(),
-  source: z.enum(["approval", "manual", "rollback", "policy"]),
+  source: z.enum(["approval", "manual", "rollback", "policy", "settings"]),
   policyVersion: z.number().int().nullable(),
   rollbackOfRevision: z.number().int().nullable(),
   createdBy: z.string().nullable(),

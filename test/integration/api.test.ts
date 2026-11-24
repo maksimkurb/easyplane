@@ -348,13 +348,13 @@ describe("networks, invites, devices, desired state and audit", () => {
       revision: { revision: number; source: string; rollbackOfRevision: number };
     };
     expect(body.revision).toMatchObject({
-      revision: 3,
+      revision: 4,
       source: "rollback",
       rollbackOfRevision: 1,
     });
 
-    const dto = await waitFor(getDevice, (value) => value.appliedRevision === 3);
-    expect(dto.desiredRevision).toBe(3);
+    const dto = await waitFor(getDevice, (value) => value.appliedRevision === 4);
+    expect(dto.desiredRevision).toBe(4);
     // The rename survives a rollback; the revision content (noTun/peers) does not.
     expect(activeFake.lastRun?.config?.hostname).toBe("node-a2");
     // Revision 1 inherited the network default (noTun: true).
@@ -368,7 +368,7 @@ describe("networks, invites, devices, desired state and audit", () => {
       headers: authed(admin),
     });
     expect((list.json() as Array<{ revision: number }>).map((r) => r.revision)).toEqual([
-      3, 2, 1,
+      4, 3, 2, 1,
     ]);
   });
 
@@ -497,7 +497,7 @@ describe("networks, invites, devices, desired state and audit", () => {
       (value) => (value.lastPushError ?? "").includes("simulated config error"),
     );
     expect(errored).toMatchObject({
-      desiredRevision: 4,
+      desiredRevision: 5,
       sync: "error",
     });
 
@@ -510,7 +510,7 @@ describe("networks, invites, devices, desired state and audit", () => {
 
     const healthy = await waitFor(
       getDevice,
-      (value) => value.appliedRevision === 4 && value.lastPushError === null,
+      (value) => value.appliedRevision === 5 && value.lastPushError === null,
     );
     expect(healthy.sync).toBe("in-sync");
   });

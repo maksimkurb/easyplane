@@ -374,10 +374,22 @@ describe("network peers: hub endpoints, raw URLs, roles and repushes", () => {
     expect(viewerRead.statusCode).toBe(200);
   });
 
-  it("repushes on a hub endpoint change without a revision, audited and over SSE", async () => {
+  it("repushes on a hub endpoint change, records a settings revision on the hub only, audited and over SSE", async () => {
     stream = await openSseStream(`${baseUrl}/api/events`, {
       cookie: sessionCookie(admin),
     });
+    const revisionCount = async (letter: "a" | "b") =>
+      (
+        (
+          await test.app.inject({
+            method: "GET",
+            url: `/api/devices/${devices[letter]!.id}/revisions`,
+            headers: authed(admin),
+          })
+        ).json() as unknown[]
+      ).length;
+    const hubBefore = await revisionCount("a");
+    const peerBefore = await revisionCount("b");
     const changedUrl = "tcp://node-a.example.com:11011";
     const changed = await test.app.inject({
       method: "PUT",
@@ -399,15 +411,10 @@ describe("network peers: hub endpoints, raw URLs, roles and repushes", () => {
     );
     expect(frame.data.networkId).toBe(networkId);
 
-    // Peer resolution is network state: no revision was created for either device.
-    for (const letter of ["a", "b"] as const) {
-      const revisions = await test.app.inject({
-        method: "GET",
-        url: `/api/devices/${devices[letter]!.id}/revisions`,
-        headers: authed(admin),
-      });
-      expect((revisions.json() as unknown[]).length).toBe(1);
-    }
+    // The hub's own settings change is a history entry; peers resolving the new
+    // address is network state and creates no revision for them.
+    expect(await revisionCount("a")).toBe(hubBefore + 1);
+    expect(await revisionCount("b")).toBe(peerBefore);
 
     const audit = await test.app.inject({
       method: "GET",

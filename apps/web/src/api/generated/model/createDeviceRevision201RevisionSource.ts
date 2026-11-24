@@ -14,4 +14,5 @@ export const CreateDeviceRevision201RevisionSource = {
   manual: 'manual',
   rollback: 'rollback',
   policy: 'policy',
+  settings: 'settings',
 } as const;
