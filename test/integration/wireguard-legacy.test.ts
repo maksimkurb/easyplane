@@ -510,6 +510,9 @@ describe("WireGuard portal generations", () => {
       () => getDevice(hubId),
       (device) => device.driftAttempts > 0,
     );
+    // The second ensure queues one more push; let it settle so the attempt
+    // counter below is the final one for this window.
+    await waitQuiet(() => neverEchoHub.pushCount);
     const drifting = await getDevice(hubId);
     expect(drifting.driftReason).toContain("vpnPortalConfig");
     expect(drifting.driftRetryAt).not.toBeNull();
