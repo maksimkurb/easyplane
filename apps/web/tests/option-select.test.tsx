@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 import { screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 
 import { OptionSelect } from "@/components/shared/option-select"
 import { renderWithProviders } from "./test-utils"
@@ -39,6 +40,27 @@ describe("OptionSelect", () => {
 
     expect(screen.getByRole("combobox", { name: "Device" })).toBeEnabled()
     expect(screen.queryByRole("status")).not.toBeInTheDocument()
+  })
+
+  it("keeps a long label selectable and exposes its full name", async () => {
+    const onValueChange = vi.fn()
+    const longLabel =
+      "a-very-long-hostname-that-keeps-going-beyond-any-reasonable-width"
+
+    renderWithProviders(
+      <OptionSelect
+        aria-label="Device"
+        onValueChange={onValueChange}
+        options={[{ value: "long", label: longLabel }]}
+        placeholder="Choose a device"
+        value=""
+      />
+    )
+
+    await userEvent.click(screen.getByRole("combobox", { name: "Device" }))
+    await userEvent.click(await screen.findByRole("option", { name: longLabel }))
+
+    expect(onValueChange).toHaveBeenCalledWith("long")
   })
 
   it("ignores the hint when the caller does not pass one", () => {
